@@ -229,6 +229,11 @@
                                 <span>📸</span>
                                 <span class="hidden sm:inline">Chụp Ảnh</span>
                             </button>
+                            <!-- Live Room Audio Listen Button -->
+                            <button id="live-audio-btn" onclick="toggleLiveAudio()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium select-none" title="Bật/Tắt nghe âm thanh trực tiếp từ phòng bé">
+                                <span id="live-audio-icon">🔇</span>
+                                <span id="live-audio-label" class="hidden sm:inline">Nghe Phòng</span>
+                            </button>
                         </div>
 
                         <div class="flex items-center gap-2">
@@ -2422,6 +2427,50 @@
                     showToast("Lỗi phát loa", "⚠️");
                 }
             };
+        }
+
+        // Realtime Baby Room Audio Listening
+        let liveAudioPlayer = null;
+        let isLiveAudioPlaying = false;
+
+        function toggleLiveAudio() {
+            const btn = document.getElementById('live-audio-btn');
+            const icon = document.getElementById('live-audio-icon');
+            const label = document.getElementById('live-audio-label');
+
+            if (!isLiveAudioPlaying) {
+                if (!liveAudioPlayer) {
+                    liveAudioPlayer = new Audio('/api/audio_feed?t=' + Date.now());
+                } else {
+                    liveAudioPlayer.src = '/api/audio_feed?t=' + Date.now();
+                }
+                liveAudioPlayer.play().then(() => {
+                    isLiveAudioPlaying = true;
+                    if (icon) icon.innerText = '🔊';
+                    if (label) label.innerText = 'Đang Nghe';
+                    if (btn) {
+                        btn.classList.add('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
+                        btn.classList.remove('bg-cardbg', 'text-slate-200');
+                    }
+                    showToast("Đang phát âm thanh phòng bé trực tiếp", "🔊");
+                }).catch(err => {
+                    console.error("Audio error:", err);
+                    showToast("Cần tương tác với trang để phát âm thanh", "⚠️");
+                });
+            } else {
+                if (liveAudioPlayer) {
+                    liveAudioPlayer.pause();
+                    liveAudioPlayer.src = '';
+                }
+                isLiveAudioPlaying = false;
+                if (icon) icon.innerText = '🔇';
+                if (label) label.innerText = 'Nghe Phòng';
+                if (btn) {
+                    btn.classList.remove('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
+                    btn.classList.add('bg-cardbg', 'text-slate-200');
+                }
+                showToast("Đã tắt âm thanh phòng", "🔇");
+            }
         }
 
         // Smart White Noise & Instrumental Lullaby Modal (Closed-Loop Mic Calibration)

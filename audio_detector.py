@@ -1,5 +1,6 @@
 import os
 import time
+import queue
 import threading
 import numpy as np
 import sounddevice as sd
@@ -100,8 +101,30 @@ class AudioCryDetector:
                 self.audio_buffer = np.roll(self.audio_buffer, -n)
                 self.audio_buffer[-n:] = audio_mono.astype(np.float32)
 
+            # Phát âm thanh thời gian thực (16-bit PCM) cho người nghe qua Web
+            if getattr(self, "audio_subscribers", None):
+                pcm_bytes = (np.clip(audio_mono, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
+                for q in self.audio_subscribers:
+                    if not q.full():
+                        q.put_nowait(pcm_bytes)
+
         if self.audio_callback:
             self.audio_callback(audio_mono)
+
+    def subscribe_audio(self):
+        """Đăng ký kênh nhận luồng âm thanh phòng bé thời gian thực."""
+        q = queue.Queue(maxsize=100)
+        with self.lock:
+            if not hasattr(self, "audio_subscribers"):
+                self.audio_subscribers = []
+            self.audio_subscribers.append(q)
+        return q
+
+    def unsubscribe_audio(self, q):
+        """Hủy đăng ký nhận luồng âm thanh."""
+        with self.lock:
+            if hasattr(self, "audio_subscribers") and q in self.audio_subscribers:
+                self.audio_subscribers.remove(q)
 
     @staticmethod
     def _calibrate_cry(raw_score: float) -> float:

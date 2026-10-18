@@ -68,6 +68,53 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             media_type="multipart/x-mixed-replace; boundary=frame"
         )
 
+    @app.get("/audio_feed")
+    @app.get("/api/audio_feed")
+    def audio_feed():
+        """Phát luồng âm thanh phòng bé thời gian thực qua Web Audio (WAV 16kHz mono)."""
+        def generate_wav_stream():
+            import struct
+            header = bytearray(44)
+            header[0:4] = b'RIFF'
+            struct.pack_into('<I', header, 4, 0x7FFFFFFF)
+            header[8:12] = b'WAVE'
+            header[12:16] = b'fmt '
+            struct.pack_into('<I', header, 16, 16)
+            struct.pack_into('<H', header, 20, 1)
+            struct.pack_into('<H', header, 22, 1)
+            struct.pack_into('<I', header, 24, 16000)
+            struct.pack_into('<I', header, 28, 32000)
+            struct.pack_into('<H', header, 32, 2)
+            struct.pack_into('<H', header, 34, 16)
+            header[36:40] = b'data'
+            struct.pack_into('<I', header, 40, 0x7FFFFFFF)
+            yield bytes(header)
+
+            if not hasattr(audio_detector, "subscribe_audio"):
+                return
+
+            q = audio_detector.subscribe_audio()
+            try:
+                while True:
+                    try:
+                        chunk = q.get(timeout=2.0)
+                        yield chunk
+                    except Exception:
+                        yield b'\x00' * 320
+            finally:
+                if hasattr(audio_detector, "unsubscribe_audio"):
+                    audio_detector.unsubscribe_audio(q)
+
+        return StreamingResponse(
+            generate_wav_stream(),
+            media_type="audio/wav",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+
     @app.get("/api/status")
     def api_status():
         vis_st = vision_tracker.get_status()
