@@ -1,0 +1,16 @@
+# BabyGuard AI - Core Dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+sounddevice>=0.4.6
+numpy>=1.24.0
+fastapi>=0.100.0
+uvicorn>=0.22.0
+jinja2>=3.1.2
+python-multipart>=0.0.6
+requests>=2.31.0
+pillow>=10.0.0
+scipy>=1.11.0
+google-genai>=1.0.0
+ai-edge-litert>=2.0.0; sys_platform == 'darwin'

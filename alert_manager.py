@@ -1,0 +1,321 @@
+import os
+import time
+import subprocess
+import threading
+from datetime import datetime
+import cv2
+import requests
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+class AlertManager:
+    def __init__(self, config: dict, snapshots_dir: str = None):
+        self.config = config
+        self.snapshots_dir = snapshots_dir or os.path.join(BASE_DIR, "snapshots")
+        os.makedirs(self.snapshots_dir, exist_ok=True)
+        
+        self.last_alert_time = {}
+        self.events = []
+        self.lock = threading.Lock()
+        self._bot_update_offset = 0
+        self.recent_bot_contacts = []
+        threading.Thread(target=self._bot_auto_reply_loop, daemon=True).start()
+
+    def update_config(self, new_config: dict):
+        with self.lock:
+            self.config.update(new_config)
+
+    def _bot_auto_reply_loop(self):
+        """
+        Luồng chạy ngầm 24/7: Bất cứ khi nào người nhà nhắn '/start' hoặc bất kỳ tin nhắn nào
+        vào Bot Telegram, Bot sẽ tự động trả lời ngay mã Chat ID trên điện thoại của họ
+        để họ đọc/nhập vào ô Chat ID bất cứ lúc nào mà không cần canh thời gian.
+        """
+        # Khởi tạo offset ban đầu để không trả lời lại các tin nhắn cũ từ quá khứ
+        initialized = False
+        while True:
+            try:
+                bot_token = str(self.config.get("telegram_bot_token", "")).strip()
+                if not bot_token:
+                    time.sleep(5)
+                    continue
+
+                url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
+                params = {"timeout": 10}
+                if self._bot_update_offset > 0:
+                    params["offset"] = self._bot_update_offset
+
+                resp = requests.get(url, params=params, timeout=15)
+                if resp.status_code == 200:
+                    updates = resp.json().get("result", [])
+                    if not initialized:
+                        # Lưu lại danh bạ những người đã từng nhắn trước đó và đặt offset mới nhất
+                        for upd in updates:
+                            uid = upd.get("update_id", 0)
+                            if uid >= self._bot_update_offset:
+                                self._bot_update_offset = uid + 1
+                            self._record_bot_contact(upd)
+                        initialized = True
+                    else:
+                        for upd in updates:
+                            uid = upd.get("update_id", 0)
+                            if uid >= self._bot_update_offset:
+                                self._bot_update_offset = uid + 1
+                            contact = self._record_bot_contact(upd)
+                            if contact:
+                                self._reply_chat_id_to_user(bot_token, contact)
+            except Exception:
+                pass
+            time.sleep(3)
+
+    def _record_bot_contact(self, upd: dict):
+        msg = upd.get("message") or upd.get("edited_message") or {}
+        chat = msg.get("chat", {})
+        cid = str(chat.get("id", "")).strip()
+        if not cid:
+            return None
+        first_name = chat.get("first_name", "")
+        last_name = chat.get("last_name", "")
+        username = chat.get("username", "")
+        full_name = f"{first_name} {last_name}".strip() or username or f"Người nhà ({cid})"
+        contact = {
+            "name": full_name,
+            "username": f"@{username}" if username else "",
+            "chat_id": cid,
+            "last_text": str(msg.get("text", ""))[:40],
+        }
+        # Cập nhật vào danh sách liên hệ gần đây
+        self.recent_bot_contacts = [c for c in self.recent_bot_contacts if c["chat_id"] != cid]
+        self.recent_bot_contacts.insert(0, contact)
+        return contact
+
+    def _reply_chat_id_to_user(self, bot_token: str, contact: dict):
+        try:
+            baby_name = self.config.get("baby_name", "Bé")
+            reply_text = (
+                f"🤖 <b>BabyGuard AI — Hệ Thống Trông Trẻ ({baby_name})</b>\n\n"
+                f"👋 Xin chào <b>{contact['name']}</b>!\n"
+                f"🔑 Mã <b>Telegram Chat ID</b> của bạn là:\n"
+                f"<code>{contact['chat_id']}</code>\n\n"
+                f"👉 <i>Hãy copy mã số trên và nhập vào ô <b>Chat ID</b> trong mục Cài đặt của BabyGuard AI để nhận cảnh báo cùng gia đình nhé!</i>"
+            )
+            requests.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={"chat_id": contact["chat_id"], "text": reply_text, "parse_mode": "HTML"},
+                timeout=8,
+            )
+        except Exception:
+            pass
+
+    def _can_alert(self, event_type: str) -> bool:
+        base_cooldown = self.config.get("alert_cooldown_seconds", 120)
+        # Routine motion has longer cooldown to avoid flooding local logs
+        if event_type == "motion":
+            cooldown = max(base_cooldown, 180)
+        elif event_type in ("covered_face", "prone", "apnea", "danger_zone"):
+            # Cảnh báo an toàn khẩn cấp & chạm mép giường có cooldown 30s để nhắc nhở kịp thời
+            cooldown = 30
+        else:
+            cooldown = base_cooldown
+        last_time = self.last_alert_time.get(event_type, 0)
+        return (time.time() - last_time) >= cooldown
+
+    def _should_notify_telegram(self, event_type: str) -> bool:
+        if not self.config.get("telegram_enabled", False):
+            return False
+        # Do not notify routine motion to Telegram unless explicitly enabled
+        if event_type == "motion" and not self.config.get("telegram_notify_motion", False):
+            return False
+        return True
+
+    def _play_mac_sound(self, event_type: str = "critical"):
+        if not self.config.get("sound_alert_on_mac", True):
+            return
+            
+        # 1. Chạm mép giường / nguy cơ lăn ngã: Kêu tiếng "ting ting" (Glass.aiff) theo đúng ý bố mẹ
+        # 2. Nguy hiểm mạnh (Mặt bị che, Ngưng thở, Lật úp sấp): Phát chuông cảnh báo mạnh (Sosumi.aiff)
+        # 3. Các sự kiện thông thường khác (khóc, ho nhẹ, cựa quậy, chụp ảnh): Hoàn toàn im lặng
+        if event_type == "danger_zone":
+            sound_file = "/System/Library/Sounds/Glass.aiff" # Tiếng ting ting
+        elif event_type in {"covered_face", "apnea", "prone"}:
+            sound_file = "/System/Library/Sounds/Sosumi.aiff" # Chuông cảnh báo mạnh
+        else:
+            return
+
+        def _play():
+            try:
+                subprocess.run(["afplay", sound_file], check=False)
+            except Exception:
+                pass
+        threading.Thread(target=_play, daemon=True).start()
+
+    def _get_recipient_list(self) -> list:
+        """Lấy danh sách tất cả người nhà được bật nhận thông báo Telegram."""
+        recipients = []
+        seen_ids = set()
+
+        # 1. Lấy từ danh sách người nhà (telegram_recipients)
+        raw_list = self.config.get("telegram_recipients", [])
+        if isinstance(raw_list, list):
+            for item in raw_list:
+                if isinstance(item, dict):
+                    cid = str(item.get("chat_id", "")).strip()
+                    name = str(item.get("name", "Người nhà")).strip()
+                    is_on = item.get("enabled", True)
+                    if cid and is_on and cid not in seen_ids:
+                        seen_ids.add(cid)
+                        recipients.append({"name": name, "chat_id": cid})
+
+        # 2. Tương thích ngược với trường telegram_chat_id chính (nếu chưa có trong danh sách)
+        primary_cid = str(self.config.get("telegram_chat_id", "")).strip()
+        if primary_cid and primary_cid not in seen_ids:
+            seen_ids.add(primary_cid)
+            recipients.append({"name": "Tài khoản chính", "chat_id": primary_cid})
+
+        return recipients
+
+    def _send_telegram(self, photo_path: str, caption: str):
+        bot_token = self.config.get("telegram_bot_token", "").strip()
+        enabled = self.config.get("telegram_enabled", False)
+        recipients = self._get_recipient_list()
+
+        if not enabled or not bot_token or not recipients:
+            return
+
+        def _send():
+            url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+            for r in recipients:
+                try:
+                    with open(photo_path, "rb") as f:
+                        files = {"photo": f}
+                        data = {"chat_id": r["chat_id"], "caption": caption, "parse_mode": "HTML"}
+                        resp = requests.post(url, files=files, data=data, timeout=10)
+                        if resp.status_code == 200:
+                            print(f"[AlertManager] Telegram alert sent to {r['name']} ({r['chat_id']})")
+                        else:
+                            print(f"[AlertManager] Telegram error for {r['name']} ({resp.status_code}): {resp.text}")
+                except Exception as e:
+                    print(f"[AlertManager] Failed to send Telegram to {r['name']}: {e}")
+
+        threading.Thread(target=_send, daemon=True).start()
+
+    def send_telegram_text(self, text: str):
+        bot_token = self.config.get("telegram_bot_token", "").strip()
+        enabled = self.config.get("telegram_enabled", False)
+        recipients = self._get_recipient_list()
+
+        if not enabled or not bot_token or not recipients:
+            return
+
+        def _send():
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            for r in recipients:
+                try:
+                    data = {"chat_id": r["chat_id"], "text": text, "parse_mode": "HTML", "disable_web_page_preview": False}
+                    requests.post(url, json=data, timeout=10)
+                except Exception as e:
+                    print(f"[AlertManager] Failed to send Telegram text to {r['name']}: {e}")
+
+        threading.Thread(target=_send, daemon=True).start()
+
+    def send_telegram_video(self, video_path: str, caption: str, event_type: str = "danger"):
+        bot_token = self.config.get("telegram_bot_token", "").strip()
+        enabled = self.config.get("telegram_enabled", False)
+        send_video = self.config.get("telegram_send_video", False)
+        recipients = self._get_recipient_list()
+
+        if not enabled or not send_video or not bot_token or not recipients:
+            return
+
+        # Never send video for routine motion
+        if event_type == "motion":
+            return
+
+        def _send():
+            url = f"https://api.telegram.org/bot{bot_token}/sendVideo"
+            for r in recipients:
+                try:
+                    with open(video_path, "rb") as f:
+                        files = {"video": f}
+                        data = {"chat_id": r["chat_id"], "caption": caption, "parse_mode": "HTML"}
+                        resp = requests.post(url, files=files, data=data, timeout=30)
+                        if resp.status_code == 200:
+                            print(f"[AlertManager] Telegram video sent to {r['name']}: {os.path.basename(video_path)}")
+                        else:
+                            print(f"[AlertManager] Telegram video error ({resp.status_code}): {resp.text}")
+                except Exception as e:
+                    print(f"[AlertManager] Failed to send Telegram video to {r['name']}: {e}")
+
+        threading.Thread(target=_send, daemon=True).start()
+
+    def trigger_event(self, event_type: str, message: str, frame=None, extra_info: dict = None):
+        """
+        event_type: 'cry', 'motion', 'prone'
+        """
+        if not self._can_alert(event_type):
+            return False
+
+        self.last_alert_time[event_type] = time.time()
+        now = datetime.now()
+        ts_str = now.strftime("%Y%m%d_%H%M%S")
+        display_time = now.strftime("%H:%M:%S - %d/%m/%Y")
+        
+        # Save snapshot
+        snapshot_filename = f"{ts_str}_{event_type}.jpg"
+        snapshot_path = os.path.join(self.snapshots_dir, snapshot_filename)
+        
+        if frame is not None:
+            cv2.imwrite(snapshot_path, frame)
+        else:
+            snapshot_filename = None
+
+        # Build notification message
+        emojis = {
+            "cry": "🚨 <b>[CẢNH BÁO BÉ KHÓC]</b>",
+            "cough": "🥛 <b>[CẢNH BÁO: BÉ HO / SẶC SỮA]</b>",
+            "apnea": "🆘 <b>[CẢNH BÁO KHẨN CẤP: NGUY CƠ NGƯNG THỞ]</b>",
+            "motion": "⚠️ <b>[BÉ CỬ ĐỘNG / THỨC GIẤC]</b>",
+            "prone": "⛔ <b>[NGUY HIỂM: BÉ NẰM SẤP / ÚP MẶT]</b>",
+            "covered_face": "🚨 <b>[NGUY CƠ NGẠT: MẶT BÉ BỊ CHE KHUẤT]</b>",
+            "danger_zone": "⛔ <b>[CẢNH BÁO: BÉ LĂN SÁT MÉP GIƯỜNG]</b>"
+        }
+        title = emojis.get(event_type, "🔔 <b>[THÔNG BÁO]</b>")
+        
+        caption = f"{title}\n\n"
+        caption += f"⏰ <b>Thời gian:</b> {display_time}\n"
+        caption += f"📝 <b>Chi tiết:</b> {message}\n"
+        if extra_info:
+            for k, v in extra_info.items():
+                caption += f"• {k}: {v}\n"
+
+        # Record event in log
+        event_record = {
+            "id": len(self.events) + 1,
+            "type": event_type,
+            "title": title.replace("<b>", "").replace("</b>", ""),
+            "message": message,
+            "timestamp": display_time,
+            "snapshot_url": f"/api/snapshots/{snapshot_filename}" if snapshot_filename else None,
+            "extra": extra_info or {}
+        }
+        
+        with self.lock:
+            self.events.insert(0, event_record)
+            if len(self.events) > 100:
+                self.events.pop()
+
+        # Alert outputs: Chỉ kêu chuông cảnh báo âm thanh trên Mac khi có nguy hiểm mạnh
+        self._play_mac_sound(event_type)
+            
+        if snapshot_path and os.path.exists(snapshot_path):
+            if self._should_notify_telegram(event_type):
+                self._send_telegram(snapshot_path, caption)
+
+        print(f"[AlertManager] Event triggered: [{event_type.upper()}] {message}")
+        return True
+
+    def get_events(self, limit: int = 30):
+        with self.lock:
+            return self.events[:limit]

@@ -1,0 +1,40 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Log files
+*.log
+logs/
+tunnel.log
+cloudflared.log
+app.log
+
+# Large recordings & private snapshots
+recordings/*
+!recordings/.gitkeep
+snapshots/*
+!snapshots/.gitkeep
+moments/*
+!moments/.gitkeep
+sleep_data.json
+*.zip
+
+# Sensitive personal configurations (Keep config.example.json)
+config.json
+!config.example.json
+
+# Test and debug fixtures
+tests/samples/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes

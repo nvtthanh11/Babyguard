@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BabyGuard AI - Trợ Lý Vệ Sĩ & Bác Sĩ Giấc Ngủ AI Cho Bé</title>
+  <meta name="description" content="Hệ thống AI giám sát em bé cục bộ thông minh: Chống nằm sấp, cảnh báo ngạt mặt, đo nhịp thở lồng ngực, nhận diện tiếng khóc, ho sặc sữa và phân tích giấc ngủ.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍼</text></svg>">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              900: '#4c1d95',
+            },
+            accent: {
+              teal: '#06b6d4',
+              rose: '#f43f5e',
+              amber: '#f59e0b',
+              emerald: '#10b981',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .gradient-hero {
+      background: radial-gradient(circle at 50% 20%, rgba(139, 92, 246, 0.15), transparent 70%),
+                  radial-gradient(circle at 80% 50%, rgba(6, 182, 212, 0.1), transparent 60%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .glow-purple {
+      box-shadow: 0 10px 40px -10px rgba(124, 58, 237, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- NAVIGATION -->
+  <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 to-accent-teal flex items-center justify-center text-white text-2xl shadow-md">
+          🍼
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-700 to-accent-teal">BabyGuard AI</span>
+          <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Next-Gen Baby Monitor</span>
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+        <a href="#features" class="hover:text-brand-600 transition">Tính năng AI</a>
+        <a href="#how-it-works" class="hover:text-brand-600 transition">Cách hoạt động</a>
+        <a href="#sleep-doctor" class="hover:text-brand-600 transition">Bác sĩ giấc ngủ</a>
+        <a href="#comparison" class="hover:text-brand-600 transition">So sánh</a>
+        <a href="#pricing" class="hover:text-brand-600 transition">Bảng giá</a>
+        <a href="#faq" class="hover:text-brand-600 transition">Hỏi đáp</a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="#pricing" class="px-5 py-2.5 rounded-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold text-sm shadow-md glow-purple transition transform active:scale-95">
+          Đặt Mua Ngay
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <header class="relative pt-16 pb-24 lg:pt-24 lg:pb-32 overflow-hidden gradient-hero">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold">
+            <span class="flex h-2 w-2 rounded-full bg-accent-emerald animate-pulse"></span>
+            Công nghệ AI Cục Bộ (Edge AI) • An Toàn Riêng Tư 100%
+          </div>
+
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            Vệ Sĩ & Bác Sĩ Giấc Ngủ AI <br>
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-accent-teal">Chăm Sóc Bé Yêu Từng Giây</span>
+          </h1>
+
+          <p class="text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+            Hệ thống camera AI đầu tiên tại Việt Nam tự động phát hiện <strong>nằm sấp, ngạt mặt, đo nhịp thở lồng ngực</strong>, nhận diện tiếng <strong>khóc, ho, sặc sữa</strong> và phân tích giấc ngủ chuẩn khoa học. Không cần đeo vòng vướng víu!
+          </p>
+
+          <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+            <a href="#pricing" class="w-full sm:w-auto px-8 py-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-base shadow-lg transition flex items-center justify-center gap-2">
+              <span>Trải Nghiệm Ngay</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+            <a href="#features" class="w-full sm:w-auto px-8 py-4 rounded-full bg-white hover:bg-slate-100 text-slate-700 font-bold text-base border border-slate-200 shadow-sm transition flex items-center justify-center">
+              Khám Phá Tính Năng
+            </a>
+          </div>
+
+          <!-- TRUST BADGES -->
+          <div class="pt-6 border-t border-slate-200/60 grid grid-cols-3 gap-4 text-center lg:text-left">
+            <div>
+              <div class="text-2xl font-extrabold text-brand-600">0.05s</div>
+              <div class="text-xs text-slate-500 font-medium">Tốc độ cảnh báo AI</div>
+            </div>
+            <div>
+              <div class="text-2xl font-extrabold text-accent-teal">100%</div>
+              <div class="text-xs text-slate-500 font-medium">Bảo mật trên máy chủ nhà</div>
+            </div>
+            <div>
+              <div class="text-2xl font-extrabold text-accent-rose">0 VNĐ</div>
+              <div class="text-xs text-slate-500 font-medium">Không phí duy trì hàng tháng</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MOCKUP DISPLAY -->
+        <div class="lg:col-span-5 relative">
+          <div class="relative mx-auto max-w-[340px] rounded-[42px] p-4 bg-slate-900 shadow-2xl ring-1 ring-slate-800">
+            <div class="w-32 h-4 bg-slate-800 rounded-full mx-auto mb-3"></div>
+            
+            <div class="rounded-[30px] overflow-hidden bg-slate-950 text-white p-4 space-y-4 text-xs font-sans">
+              <!-- Mockup Header -->
+              <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span class="font-bold">BabyGuard AI Live</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold text-[10px]">AN TOÀN</span>
+              </div>
+
+              <!-- Video Box HUD -->
+              <div class="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 aspect-[4/3] flex items-center justify-center">
+                <div class="absolute inset-0 bg-cover bg-center opacity-70" style="background-image: radial-gradient(#334155 1px, transparent 1px); background-size: 16px 16px;"></div>
+                <div class="z-10 text-center space-y-1">
+                  <div class="text-3xl">👶</div>
+                  <div class="text-[11px] font-semibold text-slate-300">Bé đang ngủ ngon</div>
+                </div>
+                <!-- HUD Pill -->
+                <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 text-[10px] space-y-0.5">
+                  <div>🫁 Nhịp thở: <strong class="text-emerald-400 font-bold">36 BPM</strong></div>
+                  <div>🛌 Tư thế: <strong class="text-blue-400 font-bold">Nằm ngửa</strong></div>
+                </div>
+                <div class="absolute bottom-2 right-2 bg-emerald-500/80 text-white font-bold px-2 py-0.5 rounded text-[9px]">
+                  KHUNG AN TOÀN
+                </div>
+              </div>
+
+              <!-- AI Cards -->
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                  <div class="text-slate-400 text-[10px]">Điểm Giấc Ngủ</div>
+                  <div class="text-lg font-bold text-brand-400">92/100</div>
+                  <div class="text-[9px] text-emerald-400">Rất sâu giấc</div>
+                </div>
+                <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                  <div class="text-slate-400 text-[10px]">Cửa Sổ Thức</div>
+                  <div class="text-lg font-bold text-accent-teal">1h 45m</div>
+                  <div class="text-[9px] text-slate-400">Cần ru lúc 20:30</div>
+                </div>
+              </div>
+
+              <!-- Quick Action Button -->
+              <div class="bg-gradient-to-r from-brand-600 to-brand-700 py-2 rounded-xl text-center font-bold text-white shadow-md">
+                🎙️ Nhấn giữ để vỗ về bé
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- PROBLEM VS SOLUTION -->
+  <section class="py-20 bg-white border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">Thấu Hiểu Nỗi Lòng Cha Mẹ</h2>
+        <h3 class="text-3xl font-extrabold text-slate-900">Tại sao Camera thường không thể bảo vệ bé?</h3>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Camera thường -->
+        <div class="p-8 rounded-3xl bg-rose-50/50 border border-rose-100 space-y-4">
+          <div class="inline-flex items-center gap-2 text-rose-600 font-bold text-lg">
+            <span>❌</span> Camera An Ninh Thông Thường
+          </div>
+          <ul class="space-y-3 text-slate-600 text-sm">
+            <li class="flex items-start gap-2">
+              <span class="text-rose-500 font-bold">✕</span>
+              <span>Chỉ báo chuyển động chung chung: tiếng xe chạy, quạt quay cũng réo chuông phiền toái.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-rose-500 font-bold">✕</span>
+              <span><strong>Không thể biết</strong> bé lật úp mặt hay bị chăn che ngạt thở.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-rose-500 font-bold">✕</span>
+              <span><strong>Không đo nhịp thở</strong>, cha mẹ phải thức trắng đêm ghé mũi kiểm tra.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-rose-500 font-bold">✕</span>
+              <span>Lưu video trên đám mây nước ngoài, nguy cơ rò rỉ clip phòng ngủ của bé và mẹ.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- BabyGuard AI -->
+        <div class="p-8 rounded-3xl bg-emerald-50/50 border border-emerald-200 space-y-4 relative shadow-sm">
+          <div class="inline-flex items-center gap-2 text-emerald-700 font-bold text-lg">
+            <span>✅</span> Giải Pháp Toàn Diện BabyGuard AI
+          </div>
+          <ul class="space-y-3 text-slate-700 text-sm">
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span><strong>AI Chống Nằm Sấp & Ngạt Mặt:</strong> Báo động trong 0.5s ngay khi có nguy cơ.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span><strong>Giám sát Nhịp thở & Ngưng thở:</strong> Đo chính xác BPM qua chuyển động lồng ngực.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span><strong>Phân biệt tiếng Khóc, Ho & Sặc sữa:</strong> Tự động bật nhạc ru xoa dịu bé.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span><strong>Bảo mật Edge AI Cục Bộ:</strong> Toàn bộ video lưu trên máy nhà bạn, an tâm 100%.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES GRID -->
+  <section id="features" class="py-24 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">Bộ Tính Năng Đỉnh Cao</h2>
+        <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900">Công Nghệ AI Tiên Tiến Bảo Vệ Toàn Diện</h3>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        <!-- Feature 1 -->
+        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center text-3xl text-brand-600">
+            🚼
+          </div>
+          <h4 class="text-xl font-bold text-slate-900">Chống Nằm Sấp & Ngạt Mặt</h4>
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Thuật toán YOLOv8 Pose liên tục tính toán góc quay khuôn mặt và sống mũi. Ngay khi bé lật sấp hoặc bị chăn gối phủ kín mặt, chuông báo động lập tức kích hoạt.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-cyan-50 flex items-center justify-center text-3xl text-cyan-600">
+            🫁
+          </div>
+          <h4 class="text-xl font-bold text-slate-900">Giám Sát Nhịp Thở Lồng Ngực</h4>
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Theo dõi dao động vi mô lồng ngực bé không cần chạm. Đo chuẩn xác nhịp thở sinh lý (30 - 60 BPM) và phát chuông báo động nếu ngưng thở quá 20 giây.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center text-3xl text-rose-600">
+            🍼
+          </div>
+          <h4 class="text-xl font-bold text-slate-900">Cảnh Báo Ho & Sặc Sữa</h4>
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Google YAMNet Audio AI phân tích sóng âm để phát hiện tiếng khóc ré, ho sặc hoặc tiếng thở dốc lúc nửa đêm, gửi cảnh báo kèm ảnh tức thì qua Telegram.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-3xl text-amber-600">
+            🛌
+          </div>
+          <h4 class="text-xl font-bold text-slate-900">Bác Sĩ Phân Tích Giấc Ngủ</h4>
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Đánh giá Sleep Score (0-100), biểu đồ chu kỳ ngủ nông/sâu và dự báo <strong>Wake Window</strong> (cửa sổ thức) giúp mẹ biết chuẩn xác giờ ru bé ngủ, không lo bé bị quá giấc.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-3xl text-emerald-600">
+            📸
+          </div>
+          <h4 class="text-xl font-bold text-slate-900">Tự Động Bắt Khoảnh Khắc Đẹp</h4>
+          <p class="text-slate-600 text-sm leading-relaxed">
+            AI tự động bắt trọn lúc bé mỉm cười, ngáp đáng yêu hay mút ngón tay và tự chụp ảnh độ phân giải cao lưu vào album kỷ niệm gia đình.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-3xl text-purple-600">
+            📻
+          </div>
+          <h4 class="text-xl font-bold text-slate-900">Đàm Thoại 2 Chiều & Nhạc Ru</h4>
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Nói chuyện trực tiếp với bé qua điện thoại. Kho nhạc ru độc quyền: Nhịp tim mẹ trầm ấm 65 BPM, tiếng ồn trắng, mưa rơi dịu êm và chuông ngân Twinkle.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON TABLE -->
+  <section id="comparison" class="py-20 bg-white border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">Bảng So Sánh Minh Bạch</h2>
+        <h3 class="text-3xl font-extrabold text-slate-900">BabyGuard AI vs Các Dòng Camera Khác</h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-500 font-bold">
+              <th class="py-4 px-6 bg-slate-50 rounded-tl-2xl">Tính Năng / Tiêu Chí</th>
+              <th class="py-4 px-6 text-slate-600">Camera Thường (Ezviz, Xiaomi)</th>
+              <th class="py-4 px-6 text-slate-600">Camera Ngoại (Nanit, Cubo Ai)</th>
+              <th class="py-4 px-6 bg-brand-50 text-brand-800 font-extrabold rounded-tr-2xl">🍼 BabyGuard AI</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-700">
+            <tr>
+              <td class="py-4 px-6 font-semibold">Chống nằm sấp & ngạt mặt</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không hỗ trợ</td>
+              <td class="py-4 px-6 text-emerald-600">✅ Có hỗ trợ</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Có (YOLOv8 Pose)</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Đo nhịp thở lồng ngực (BPM)</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không có</td>
+              <td class="py-4 px-6 text-amber-600">⚠️ Bắt buộc mua thêm đai vải/vớ</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Có sẵn (Không chạm)</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Cảnh báo ho & sặc sữa</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không có</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không có</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Có (YAMNet AI)</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Bảo mật dữ liệu riêng tư</td>
+              <td class="py-4 px-6 text-rose-500">⚠️ Lưu Cloud Trung Quốc/Nước ngoài</td>
+              <td class="py-4 px-6 text-amber-600">⚠️ Lưu Cloud AWS Mỹ</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">🔒 100% Edge AI Cục bộ</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Phí duy trì thuê bao (Subscription)</td>
+              <td class="py-4 px-6">Miễn phí cơ bản</td>
+              <td class="py-4 px-6 text-rose-500">❌ 2.500.000đ - 3.500.000đ / năm</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">🎉 Miễn phí vĩnh viễn</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Chi phí đầu tư ban đầu</td>
+              <td class="py-4 px-6">500.000đ - 800.000đ</td>
+              <td class="py-4 px-6 text-rose-500">8.000.000đ - 12.000.000đ</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-brand-700">Tận dụng máy có sẵn chỉ từ 0đ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING PACKAGES -->
+  <section id="pricing" class="py-24 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">Bảng Giá & Gói Phân Phối</h2>
+        <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900">Đầu Tư Xứng Đáng Cho Sự An Toàn Của Bé</h3>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+        
+        <!-- Package 1 -->
+        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="space-y-4">
+            <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider">Gói Bản Quyền Phần Mềm</span>
+            <h4 class="text-2xl font-bold text-slate-900">Bản Quyền Vĩnh Viễn</h4>
+            <div class="flex items-baseline gap-1">
+              <span class="text-4xl font-extrabold text-slate-900">990.000đ</span>
+              <span class="text-slate-500 text-xs">/ lần duy nhất</span>
+            </div>
+            <p class="text-slate-600 text-xs leading-relaxed">
+              Dành cho phụ huynh đã có sẵn máy tính Mac / PC hoặc Laptop và Camera IP gia đình.
+            </p>
+            <ul class="pt-4 border-t border-slate-100 space-y-2.5 text-xs text-slate-600">
+              <li class="flex items-center gap-2">✅ Full toàn bộ tính năng AI thị giác & âm thanh</li>
+              <li class="flex items-center gap-2">✅ Hỗ trợ cài đặt từ xa qua Ultraview / Teamviewer</li>
+              <li class="flex items-center gap-2">✅ Cập nhật tính năng miễn phí 12 tháng</li>
+              <li class="flex items-center gap-2">✅ Không tốn bất kỳ chi phí duy trì nào</li>
+            </ul>
+          </div>
+          <a href="https://t.me/nvtthanh11" target="_blank" class="mt-8 block text-center py-3 px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition">
+            Đăng Ký Bản Quyền
+          </a>
+        </div>
+
+        <!-- Package 2: FEATURED -->
+        <div class="p-8 rounded-3xl bg-slate-900 text-white shadow-xl glow-purple flex flex-col justify-between relative border border-brand-500/30">
+          <div class="absolute -top-3 right-8 bg-gradient-to-r from-brand-500 to-accent-teal text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow">
+            Khuyên Dùng Nhiều Nhất
+          </div>
+          <div class="space-y-4">
+            <span class="px-3 py-1 rounded-full bg-white/10 text-brand-300 text-xs font-bold uppercase tracking-wider">Trọn Bộ Phần Cứng AI</span>
+            <h4 class="text-2xl font-bold text-white">Full Bộ Cắm Là Chạy</h4>
+            <div class="flex items-baseline gap-1">
+              <span class="text-4xl font-extrabold text-brand-400">4.990.000đ</span>
+              <span class="text-slate-400 text-xs">/ trọn gói</span>
+            </div>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Trọn bộ giải pháp chìa khóa trao tay: Mini PC AI + Camera IP Góc Rộng Hồng Ngoại + Cài sẵn hệ thống.
+            </p>
+            <ul class="pt-4 border-t border-slate-800 space-y-2.5 text-xs text-slate-300">
+              <li class="flex items-center gap-2">🔥 01 Máy chủ Mini PC AI tiết kiệm điện (chạy 24/7)</li>
+              <li class="flex items-center gap-2">🔥 01 Camera IP hồng ngoại ban đêm chuyên dụng 1080p</li>
+              <li class="flex items-center gap-2">🔥 Cắm điện là tự động chạy, không cần cài đặt gì</li>
+              <li class="flex items-center gap-2">🔥 Bảo hành phần cứng 12 tháng 1 đổi 1</li>
+              <li class="flex items-center gap-2">🔥 Hỗ trợ kỹ thuật 24/7 qua Zalo & Telegram</li>
+            </ul>
+          </div>
+          <a href="https://t.me/nvtthanh11" target="_blank" class="mt-8 block text-center py-3.5 px-6 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-bold text-sm shadow-lg transition">
+            Đặt Hàng Trọn Gói
+          </a>
+        </div>
+
+        <!-- Package 3 -->
+        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="space-y-4">
+            <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider">Dành Cho Doanh Nghiệp</span>
+            <h4 class="text-2xl font-bold text-slate-900">Nhà Trẻ & Bệnh Viện</h4>
+            <div class="flex items-baseline gap-1">
+              <span class="text-3xl font-extrabold text-slate-900">Liên Hệ</span>
+            </div>
+            <p class="text-slate-600 text-xs leading-relaxed">
+              Giải pháp giám sát đa phòng (Multi-camera) cho trường mầm non, nhà trẻ song ngữ hoặc bệnh viện phụ sản.
+            </p>
+            <ul class="pt-4 border-t border-slate-100 space-y-2.5 text-xs text-slate-600">
+              <li class="flex items-center gap-2">✅ Quản lý đồng thời 8 - 32 camera nôi bé</li>
+              <li class="flex items-center gap-2">✅ Dashboard giám sát tập trung tại phòng y tế/trực</li>
+              <li class="flex items-center gap-2">✅ Tùy biến logo và thương hiệu riêng</li>
+              <li class="flex items-center gap-2">✅ Ký hợp đồng SLA hỗ trợ kỹ thuật tận nơi</li>
+            </ul>
+          </div>
+          <a href="mailto:contact@babyguard.ai" class="mt-8 block text-center py-3 px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition">
+            Tư Vấn Doanh Nghiệp
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-20 bg-white border-t border-slate-200">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">Giải Đáp Thắc Mắc</h2>
+        <h3 class="text-3xl font-extrabold text-slate-900">Câu Hỏi Thường Gặp</h3>
+      </div>
+
+      <div class="space-y-6">
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <h4 class="font-bold text-slate-900 text-base mb-2">1. Điện thoại của tôi cấu hình yếu có xem được không?</h4>
+          <p class="text-slate-600 text-sm">
+            Hoàn toàn mượt mà! Tất cả các thuật toán AI phức tạp (YOLOv8, YAMNet) đều được xử lý 100% trên máy chủ gia đình (Mac Mini hoặc PC). Điện thoại của bạn chỉ nhận luồng hình ảnh đã xử lý mượt mà như xem video Youtube, không hề bị nóng máy hay hao pin.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <h4 class="font-bold text-slate-900 text-base mb-2">2. Nhà tôi không có Mac Mini M4 thì dùng máy gì được?</h4>
+          <p class="text-slate-600 text-sm">
+            Bạn có thể dùng bất kỳ laptop hoặc máy bàn chạy Windows/Linux có chip Intel Core i5 đời 8 trở lên hoặc chip AMD Ryzen. Hoặc chọn gói trọn bộ Mini PC cắm là chạy của chúng tôi.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <h4 class="font-bold text-slate-900 text-base mb-2">3. Đi ra ngoài hoặc đi làm thì xem qua 4G như thế nào?</h4>
+          <p class="text-slate-600 text-sm">
+            Hệ thống hỗ trợ kết nối trực tiếp siêu bảo mật qua <strong>Tailscale</strong> (Mesh VPN Peer-to-Peer mã hóa đầu-cuối, xem mượt 60 FPS không cần mở port) hoặc <strong>Cloudflare Tunnel</strong>. Bạn chỉ cần mở điện thoại là có thể theo dõi, nghe âm thanh và nói chuyện với bé từ bất kỳ đâu trên thế giới.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <h4 class="font-bold text-slate-900 text-base mb-2">4. Dữ liệu phòng ngủ của bé có bị lộ lên mạng không?</h4>
+          <p class="text-slate-600 text-sm">
+            Tuyệt đối không! Đây là điểm khác biệt sống còn của BabyGuard AI so với camera thông thường. Hình ảnh, video và âm thanh được phân tích và lưu trực tiếp trên ổ cứng nhà bạn, không trung gian qua máy chủ bên thứ ba nào.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-950 text-slate-400 py-12 border-t border-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-xs">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🍼</span>
+        <div>
+          <span class="text-white font-bold text-sm">BabyGuard AI</span>
+          <p class="text-slate-500">Người bạn đồng hành an toàn tuyệt đối cho bé yêu.</p>
+        </div>
+      </div>
+      <div>
+        Phát triển với sự tận tâm bởi đội ngũ kỹ sư AI Việt Nam • © 2026 BabyGuard AI.
+      </div>
+      <div class="flex gap-4 text-slate-400">
+        <a href="#features" class="hover:text-white transition">Tính năng</a>
+        <a href="#pricing" class="hover:text-white transition">Báo giá</a>
+        <a href="https://github.com/nvtthanh11" target="_blank" class="hover:text-white transition">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

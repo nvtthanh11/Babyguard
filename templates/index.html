@@ -1,0 +1,3237 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BabyGuard AI • Vệ sĩ Thông minh cho Bé</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        obsidian: '#090D16',
+                        cardbg: '#111827',
+                        cardhover: '#172033',
+                        bordercol: '#1F293D',
+                        safe: '#10B981',
+                        danger: '#F43F5E',
+                        warning: '#F59E0B',
+                        sleep: '#8B5CF6',
+                        vital: '#06B6D4'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #090D16;
+            color: #F1F5F9;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090D16; }
+        ::-webkit-scrollbar-thumb { background: #1F293D; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        
+        /* iOS-Style Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 9999px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        input:checked + .toggle-slider {
+            background-color: #10B981;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+        }
+        .pulse-subtle {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
+
+    <!-- Top Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-slate-100 border border-slate-700/80 px-4 py-2.5 rounded-full shadow-2xl backdrop-blur-md text-xs font-medium flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none -translate-y-2">
+        <span id="toast-icon">✨</span>
+        <span id="toast-msg">Đã cập nhật</span>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-40 bg-obsidian/85 backdrop-blur-xl border-b border-bordercol px-4 lg:px-8 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-400/20 border border-emerald-500/30 flex items-center justify-center text-xl shadow-inner">
+                👶
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-base tracking-tight text-slate-100">BabyGuard<span class="text-emerald-400">.AI</span></span>
+                    <span class="text-[10px] uppercase font-semibold tracking-wider bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">Commercial Hybrid</span>
+                </div>
+                <p id="header-baby-subtitle" class="text-[11px] text-slate-400 font-medium">Bảo bọc giấc ngủ bé Siu 24/7</p>
+            </div>
+        </div>
+
+        <!-- Center Baby Status Pill (Desktop & Tablet) -->
+        <div id="header-status-pill" class="hidden md:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-slate-300 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-subtle"></span>
+            <span id="header-baby-status" class="font-medium text-slate-200">Đang quét phòng bé...</span>
+            <span class="text-slate-600">•</span>
+            <span id="header-sleep-nap" class="text-slate-400">Giấc ngủ: --</span>
+            <span class="text-slate-600">•</span>
+            <span id="header-breathing-pill" class="text-cyan-400 font-medium">🫁 -- RPM</span>
+        </div>
+
+        <!-- Right Quick Controls -->
+        <div class="flex items-center gap-2">
+            <button onclick="openSettingsModal()" id="header-gemini-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-xs font-semibold text-slate-300 transition" title="Cấu hình Gemini Hybrid AI">
+                <span id="header-gemini-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span id="header-gemini-text">Thiết lập AI</span>
+            </button>
+            <button onclick="toggleMusicModal()" class="p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-amber-400 hover:text-amber-300 transition" title="Nhạc ru & Tiếng ồn trắng">
+                🎵
+            </button>
+            <button onclick="openSettingsModal()" class="p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Cài đặt Hệ thống & Hồ sơ Bé">
+                ⚙️
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-obsidian border-b border-bordercol/80 px-4 lg:px-8">
+        <div class="flex gap-2 overflow-x-auto py-2.5 no-scrollbar text-xs font-semibold">
+            <button onclick="switchTab('live')" id="tab-btn-live" class="tab-btn px-4 py-2 rounded-xl bg-cardbg text-emerald-400 border border-emerald-500/30 flex items-center gap-2 whitespace-nowrap transition">
+                <span>📹</span>
+                <span>Camera & Vệ sĩ AI</span>
+            </button>
+            <button onclick="switchTab('toggles')" id="tab-btn-toggles" class="tab-btn px-4 py-2 rounded-xl bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent flex items-center gap-2 whitespace-nowrap transition">
+                <span>🎛️</span>
+                <span>Bật / Tắt Tính Năng AI</span>
+            </button>
+            <button onclick="switchTab('sleep')" id="tab-btn-sleep" class="tab-btn px-4 py-2 rounded-xl bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent flex items-center gap-2 whitespace-nowrap transition">
+                <span>📊</span>
+                <span>Bác Sĩ Giấc Ngủ</span>
+            </button>
+            <button onclick="switchTab('moments')" id="tab-btn-moments" class="tab-btn px-4 py-2 rounded-xl bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent flex items-center gap-2 whitespace-nowrap transition">
+                <span>📸</span>
+                <span>Khoảnh Khắc Đáng Yêu</span>
+            </button>
+            <button onclick="switchTab('recordings')" id="tab-btn-recordings" class="tab-btn px-4 py-2 rounded-xl bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent flex items-center gap-2 whitespace-nowrap transition">
+                <span>📁</span>
+                <span>Video Sự Kiện</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Workspace Content -->
+    <main class="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full">
+
+        <!-- ================= TAB 1: LIVE MONITOR & BABY GUARD ================= -->
+        <section id="tab-live" class="tab-content space-y-6">
+            
+            <!-- Video Stage + Quick Intercom -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                
+                <!-- Main Video Stream Frame (col-span-2) -->
+                <div class="lg:col-span-2 bg-cardbg rounded-3xl overflow-hidden border border-bordercol shadow-2xl relative">
+                    
+                    <!-- HUD Overlays on Top of Video -->
+                    <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none">
+                        <!-- Posture Badge -->
+                        <div id="hud-pose-badge" class="pointer-events-auto bg-slate-950/80 backdrop-blur-md border border-slate-700/70 text-slate-200 text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            <span id="hud-pose-text">Đang nhận diện tư thế...</span>
+                        </div>
+
+                        <!-- Real-time Vital Badge -->
+                        <div class="pointer-events-auto flex items-center gap-2">
+                            <div class="bg-slate-950/80 backdrop-blur-md border border-cyan-500/30 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                                <span>🫁</span>
+                                <span id="hud-breathing">-- RPM</span>
+                            </div>
+                            <div class="bg-slate-950/80 backdrop-blur-md border border-slate-700/70 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                                <span>🔊</span>
+                                <span id="hud-sound">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video / Canvas Container -->
+                    <div class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+                        <img id="live-stream-img" src="/video_feed" alt="Baby Monitor Live Feed" class="w-full h-full object-contain select-none">
+                        <canvas id="safe-zone-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-10" style="display: none;"></canvas>
+                        
+                        <!-- Safe Zone Edit Overlay Controls (when in editing mode) -->
+                        <div id="safe-zone-editor-controls" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-950/90 border border-emerald-500/40 rounded-full px-5 py-2 flex items-center gap-3 backdrop-blur-lg shadow-xl" style="display: none;">
+                            <span class="text-xs text-emerald-300 font-medium">Kéo rê 4 góc để đổi khung bảo vệ</span>
+                            <button onclick="saveSafeZone()" class="px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition">Lưu Khung</button>
+                            <button onclick="cancelSafeZoneEdit()" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition">Hủy</button>
+                        </div>
+                    </div>
+
+                    <!-- Action Bar Under Video -->
+                    <div class="p-3.5 bg-slate-950/90 border-t border-bordercol flex items-center justify-between gap-3 text-xs flex-wrap">
+                        <div class="flex items-center gap-2">
+                            <!-- Push-to-Talk Intercom Button -->
+                            <button id="talkback-btn" class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg transition active:scale-95 select-none">
+                                <span class="text-base">🎙️</span>
+                                <span id="talkback-label">Giữ để nói với bé</span>
+                            </button>
+                            <!-- Instant Snapshot Button -->
+                            <button onclick="takeManualSnapshot()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium">
+                                <span>📸</span>
+                                <span class="hidden sm:inline">Chụp Ảnh</span>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <!-- Gemini AI Auto-Calibrate Crib Status Badge (Automatic) -->
+                            <button id="btn-ai-calibrate" onclick="autoCalibrateCribWithGemini()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 transition font-semibold" title="Hệ thống tự động căn chỉnh khung nôi & giường bằng AI định kỳ (Bấm nếu muốn quét lại ngay)">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>Tự Động Căn Nôi: Bật</span>
+                            </button>
+                            <!-- Toggle Safe Zone Edit Button -->
+                            <button id="btn-toggle-safe-zone-edit" onclick="toggleSafeZoneEditor()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium" title="Chỉnh tay 4 góc nếu muốn">
+                                <span>📐</span>
+                                <span class="hidden sm:inline">Chỉnh Tay</span>
+                            </button>
+                            <!-- Fullscreen Button -->
+                            <button onclick="toggleFullscreen()" class="p-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Toàn màn hình">
+                                ⛶
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Vitals & Quick Insights Sidebar (col-span-1) -->
+                <div class="space-y-4">
+                    
+                    <!-- Card: Chuyển Động Hô Hấp Lồng Ngực (Contactless Optical Chest Motion) -->
+                    <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-3 relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300">
+                                    🫁
+                                </div>
+                                <div>
+                                    <span class="font-bold text-sm text-slate-200 block leading-tight">Chuyển Động Hô Hấp</span>
+                                    <span class="text-[10px] text-slate-400">Quang học không chạm (Optical DSP)</span>
+                                </div>
+                            </div>
+                            <span id="vital-breathing-status" class="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Đang đo...</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 pt-1">
+                            <span id="vital-breathing-bpm" class="text-3xl font-extrabold tracking-tight text-cyan-300">--</span>
+                            <span class="text-xs text-slate-400 font-medium">nhịp / phút (RPM)</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">Đo chuyển động phập phồng lồng ngực qua bộ lọc dải tần Butterworth 28–75 RPM (hoạt động tối ưu khi bé nằm yên tĩnh không đắp chăn quá dày).</p>
+                    </div>
+
+                    <!-- Card: Chu Kỳ Giấc Ngủ & Theo Dõi Lúc Bé Thức (24/7 Dual-Mode) -->
+                    <div class="p-5 rounded-3xl bg-cardbg border border-purple-500/25 space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <div id="vital-sleep-card-icon" class="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300">
+                                    😴
+                                </div>
+                                <div>
+                                    <span id="vital-sleep-card-title" class="font-bold text-sm text-slate-200 block leading-tight">Chu Kỳ Ngủ & Thức Chơi</span>
+                                    <span id="vital-sleep-start-sub" class="text-[10px] text-purple-300/80">Theo dõi 24/7 cả lúc ngủ lẫn lúc thức</span>
+                                </div>
+                            </div>
+                            <span id="vital-sleep-stage" class="text-[10px] font-bold text-purple-300 bg-purple-500/15 px-2.5 py-1 rounded-full border border-purple-500/30 whitespace-nowrap">Chu kỳ 1 • Ngủ sâu</span>
+                        </div>
+
+                        <div class="flex items-baseline justify-between pt-0.5">
+                            <div class="flex items-baseline gap-1.5">
+                                <span id="vital-current-nap" class="text-2xl font-extrabold tracking-tight text-purple-300">28 phút</span>
+                                <span id="vital-current-nap-unit" class="text-xs text-slate-400 font-medium">liên tục</span>
+                            </div>
+                            <span id="vital-cycle-minute-label" class="text-[11px] font-bold text-emerald-300">Phút 28/50</span>
+                        </div>
+
+                        <!-- Thanh tiến trình Chu kỳ ngủ (50p) hoặc Cửa sổ thức (90p) -->
+                        <div class="space-y-1">
+                            <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                                <div id="vital-sleep-cycle-bar" class="bg-gradient-to-r from-purple-500 via-indigo-400 to-emerald-400 h-full w-[56%] transition-all duration-500"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                                    <span id="vital-box1-label" class="text-slate-400">🌊 Ngủ sâu:</span>
+                                    <b id="vital-deep-pct" class="text-cyan-300">55%</b>
+                                </div>
+                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                                    <span id="vital-box2-label" class="text-slate-400">✨ Ngủ REM:</span>
+                                    <b id="vital-rem-pct" class="text-purple-300">45%</b>
+                                </div>
+                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                                    <span class="text-slate-400">📊 Ngủ hôm nay:</span>
+                                    <b id="vital-total-sleep-today" class="text-emerald-300">10.5h</b>
+                                </div>
+                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                                    <span id="vital-box4-label" class="text-slate-400">⚡ Vận động:</span>
+                                    <b id="vital-rem-twitches" class="text-amber-300">0 lần REM</b>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p id="vital-wake-hint" class="text-[11px] text-slate-400 leading-relaxed">Bé đang trong chu kỳ phục hồi năng lượng và phát triển thể chất.</p>
+                    </div>
+
+                    <!-- Card: Âm Thanh & Tiếng Khóc / Ho -->
+                    <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
+                                    🎙️
+                                </div>
+                                <span class="font-bold text-sm text-slate-200">Âm Thanh Phòng Bé</span>
+                            </div>
+                            <span id="vital-sound-label" class="text-[11px] font-semibold text-slate-300 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">Yên tĩnh</span>
+                        </div>
+                        <div class="space-y-2 pt-1">
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>Xác suất khóc: <b id="vital-cry-pct" class="text-slate-200">0%</b></span>
+                                <span>Tiếng ho/sặc: <b id="vital-cough-pct" class="text-slate-200">0%</b></span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div id="vital-sound-bar" class="bg-gradient-to-r from-emerald-500 to-amber-500 h-full w-[10%] transition-all duration-300"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card: Chuyên Gia Hội Chẩn & Giám Sát Tracking Gemini AI -->
+                    <div class="p-5 rounded-3xl bg-cardbg border border-indigo-500/25 space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-300">
+                                    ✨
+                                </div>
+                                <div>
+                                    <span class="font-bold text-sm text-slate-200 block leading-tight">Chuyên Gia Gemini AI</span>
+                                    <span id="vital-gemini-model-sub" class="text-[10px] text-indigo-300/80 font-mono">Pool 9 Model Flash Free</span>
+                                </div>
+                            </div>
+                            <span id="vital-gemini-badge" class="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/25 whitespace-nowrap">Đang kiểm tra...</span>
+                        </div>
+
+                        <!-- Bộ đếm Request Free & Pool Model -->
+                        <div class="p-2.5 rounded-2xl bg-slate-950/70 border border-slate-800/90 space-y-1.5 text-[11px]">
+                            <div class="flex items-center justify-between text-slate-300">
+                                <span class="text-slate-400">⚡ Đã gọi API:</span>
+                                <span id="vital-gemini-usage-count" class="font-bold text-emerald-300">0 lần (1p qua) • 0 hôm nay</span>
+                            </div>
+                            <div class="flex items-center justify-between text-slate-300">
+                                <span class="text-slate-400">🔋 Hạn mức Free Pool:</span>
+                                <span id="vital-gemini-pool-status" class="font-semibold text-cyan-300">9/9 Model sẵn sàng</span>
+                            </div>
+                            <div class="flex items-center justify-between text-slate-300 pt-1 border-t border-slate-800/80">
+                                <span class="text-slate-400">🎯 Giám sát Tracking:</span>
+                                <span id="vital-gemini-tracking-badge" class="font-bold text-indigo-300">Tự động khi rảnh</span>
+                            </div>
+                        </div>
+
+                        <p id="vital-gemini-opinion" class="text-[11px] text-slate-300 leading-relaxed bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-2.5">
+                            Tự động tận dụng Request Free khi rảnh để kiểm tra & hiệu chỉnh khung Tracking AI Local, hội chẩn cảnh báo và lọc ảnh riêng tư.
+                        </p>
+
+                        <!-- Nút bấm kiểm tra nhanh -->
+                        <div class="grid grid-cols-2 gap-2 pt-0.5">
+                            <button onclick="manualAuditTrackingWithGemini()" id="btn-audit-tracking" class="px-2.5 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold transition flex items-center justify-center gap-1 active:scale-95">
+                                <span>🎯</span>
+                                <span>Chấm điểm Tracking</span>
+                            </button>
+                            <button onclick="quickProbeGeminiHealth()" id="btn-probe-gemini" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-semibold transition flex items-center justify-center gap-1 active:scale-95">
+                                <span>🔄</span>
+                                <span>Kiểm tra hạn API</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Recent Alert Stream Box -->
+            <div class="p-6 rounded-3xl bg-cardbg border border-bordercol space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-lg">🔔</span>
+                        <h3 class="font-bold text-sm text-slate-100">Dòng Sự Kiện & Cảnh Báo Gần Nhất</h3>
+                    </div>
+                    <button onclick="fetchEvents(true)" id="btn-reload-events" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 transition active:scale-95 flex items-center gap-1.5">
+                        <span id="reload-events-icon" class="inline-block transition-transform duration-500">🔄</span>
+                        <span>Làm mới</span>
+                    </button>
+                </div>
+                <div id="recent-events-list" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                    <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 text-center">
+                        Đang tải danh sách sự kiện...
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 2: AI SAFETY TOGGLES ================= -->
+        <section id="tab-toggles" class="tab-content space-y-6 hidden">
+            
+            <div class="flex items-center justify-between pb-2 border-b border-bordercol">
+                <div>
+                    <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Trung Tâm Vệ Sĩ AI • Bật / Tắt Tính Năng</h2>
+                    <p class="text-xs text-slate-400">Tùy chỉnh các lớp bảo vệ thông minh cho bé bằng các công tắc tức thì.</p>
+                </div>
+                <div class="text-[11px] text-slate-400 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+                    ⚡ Tự động lưu khi gạt
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                
+                <!-- Toggle 1: Giám sát nhịp thở & Ngưng thở -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🫁</span>
+                            <span class="font-bold text-sm text-slate-100">Giám Sát Nhịp Thở Lồng Ngực (RPM)</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Đo số nhịp thở/phút qua dao động lồng ngực (chuẩn 30 - 60 RPM), tự cảnh báo nếu bé ngưng thở > 20s.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-breathing_monitor_enabled" onchange="handleToggle('breathing_monitor_enabled', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 2: Cảnh báo ho & sặc sữa -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🥛</span>
+                            <span class="font-bold text-sm text-slate-100">Cảnh Báo Ho & Sặc Sữa</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Nhận diện tiếng ho sặc sụa hoặc nôn trớ sữa ban đêm để bố mẹ vỗ ợ kịp thời.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-cough_alert_enabled" onchange="handleToggle('cough_alert_enabled', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 3: Chống nằm sấp / úp mặt (SIDS) -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">⛔</span>
+                            <span class="font-bold text-sm text-slate-100">Chống Nằm Sấp / Úp Mặt</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Ngăn ngừa nguy cơ đột tử (SIDS) khi bé lật úp mặt xuống đệm.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-prone_alert_enabled" onchange="handleToggle('prone_alert_enabled', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 4: Mặt bị chăn gối che khuất -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🚨</span>
+                            <span class="font-bold text-sm text-slate-100">Cảnh Báo Mặt Bị Che Khuất</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Cảnh báo khẩn khi chăn, gối ôm hoặc khăn trùm kín mũi miệng của bé.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-covered_face_alert" onchange="handleToggle('covered_face_alert', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 5: Hàng rào mép giường (Chống rơi) -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🛌</span>
+                            <span class="font-bold text-sm text-slate-100">Hàng Rào Ảo Mép Giường</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Báo động khi bé lăn hoặc bò sát mép giường có nguy cơ ngã xuống sàn.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-danger_zone_enabled" onchange="handleToggle('danger_zone_enabled', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 6: Tiếng khóc & La hét -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">😭</span>
+                            <span class="font-bold text-sm text-slate-100">Nhận Diện Bé Khóc</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Phân biệt chính xác tiếng khóc em bé với tiếng ồn sinh hoạt trong nhà.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-cry_alert_enabled" onchange="handleToggle('cry_alert_enabled', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 7: Bác sĩ giấc ngủ & Cữ thức -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">📊</span>
+                            <span class="font-bold text-sm text-slate-100">Bác Sĩ Giấc Ngủ AI</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Chấm điểm giấc ngủ (Sleep Score) và gợi ý giờ cho bé ngủ tiếp theo.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-sleep_analytics_enabled" onchange="handleToggle('sleep_analytics_enabled', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 8: Bắt trọn khoảnh khắc đáng yêu -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">📸</span>
+                            <span class="font-bold text-sm text-slate-100">Lưu Khoảnh Khắc Đáng Yêu</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Tự động chụp lúc bé cười/ngủ ngoan. Kiểm duyệt riêng tư & người đi cùng (bố/mẹ) cũng phải đẹp trước khi lưu.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-cute_moments_enabled" onchange="handleToggle('cute_moments_enabled', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 9: Tự động dỗ bé (Tiếng ồn trắng & Nhạc không lời cân bằng qua Micro) -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🌊</span>
+                            <span class="font-bold text-sm text-slate-100">Tự Động Phát Tiếng Ồn Trắng & Nhạc Không Lời</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Khi bé cựa quậy chuyển cữ hoặc chớm khóc, loa hệ thống tự phát <b class="text-emerald-300">từ mức rất nhỏ (4%) tăng dần lên</b> và dùng <b class="text-cyan-300">Micro đo cường độ</b> để tự khóa ở mức vừa đủ êm dịu tại nôi (~45 dB).
+                        </p>
+                        <button onclick="toggleMusicModal()" class="px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 font-bold text-[11px] flex items-center gap-1.5 transition">
+                            <span>🎛️</span>
+                            <span>Chọn Tiếng Ồn Trắng & Canh Mức Âm Lượng</span>
+                        </button>
+                    </div>
+                    <label class="toggle-switch shrink-0">
+                        <input type="checkbox" id="toggle-auto_lullaby_on_cry" onchange="handleToggle('auto_lullaby_on_cry', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 10: Chuông báo trên loa hệ thống -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🔔</span>
+                            <span class="font-bold text-sm text-slate-100">Chuông Cảnh Báo Trên Loa Hệ Thống</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Phát âm thanh cảnh báo trực tiếp qua loa trung tâm khi phát hiện tình huống nguy hiểm khẩn cấp.</p>
+                    </div>
+                    <label class="toggle-switch shrink-0">
+                        <input type="checkbox" id="toggle-sound_alert_on_mac" onchange="handleToggle('sound_alert_on_mac', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 11: Thông báo Telegram -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">✈️</span>
+                            <span class="font-bold text-sm text-slate-100">Gửi Tin Nhắn Telegram</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Gửi ảnh chụp sự việc về điện thoại bố mẹ khi có tình huống khẩn cấp.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-telegram_enabled" onchange="handleToggle('telegram_enabled', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 12: Gửi video qua Telegram -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">📹</span>
+                            <span class="font-bold text-sm text-slate-100">Gửi Cả Video Về Telegram</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed"><span class="text-amber-400 font-semibold">Khuyên tắt</span> để không làm đầy bộ nhớ lưu trữ của điện thoại.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-telegram_send_video" onchange="handleToggle('telegram_send_video', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 13: Hội Chẩn Chéo Cảnh Báo Bằng Gemini AI -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-indigo-500/30 flex items-start justify-between gap-4 hover:border-indigo-500/50 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">✨</span>
+                            <span class="font-bold text-sm text-indigo-300">Hội Chẩn Chéo Cảnh Báo (Gemini AI)</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Khi nghi ngờ mặt bị che khuất, gửi 1 ảnh cho Gemini xác nhận chéo để triệt tiêu báo giả do gối ôm.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-gemini_verify_alerts" onchange="handleToggle('gemini_verify_alerts', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Toggle 14: Giám Khảo Ảnh & Bảo Vệ Riêng Tư (Gemini AI) -->
+                <div class="p-5 rounded-3xl bg-cardbg border border-indigo-500/30 flex items-start justify-between gap-4 hover:border-indigo-500/50 transition">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🛡️</span>
+                            <span class="font-bold text-sm text-indigo-300">Duyệt Riêng Tư & Thẩm Mỹ Đồng Hiện</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">Gemini tự xóa ảnh nhạy cảm (thay tã/tắm) và chỉ lưu ảnh kỷ niệm khi cả bé lẫn bố/mẹ trong khung hình đều đẹp.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-gemini_filter_moments" onchange="handleToggle('gemini_filter_moments', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+            </div>
+
+            <!-- Commercial Package Download Card -->
+            <div class="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800/80 to-slate-900 border border-emerald-500/30 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+                <div class="space-y-1 text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start gap-2">
+                        <span class="text-xl">📦</span>
+                        <h3 class="text-sm font-extrabold text-slate-100">Gói Cài Đặt Thương Mại (BabyGuard AI Package)</h3>
+                        <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">v1.0 Sẵn Sàng</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Tệp nén 38MB đầy đủ mã nguồn, mô hình AI, âm thanh dỗ bé, kịch bản khởi động 1-click và Sổ tay hướng dẫn chi tiết.</p>
+                </div>
+                <a href="/api/download/full-package" download="BabyGuard_AI_v1.0_Commercial.zip" class="px-5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition active:scale-95 whitespace-nowrap">
+                    <span>⬇️ Tải Gói Cài Đặt (ZIP)</span>
+                </a>
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 3: SLEEP DOCTOR & INSIGHTS ================= -->
+        <section id="tab-sleep" class="tab-content space-y-6 hidden">
+            
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-bordercol">
+                <div>
+                    <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Bác Sĩ Giấc Ngủ AI • Tổng Kết Sáng Hôm Sau (07:00) & Theo Dõi 24/7</h2>
+                    <p class="text-xs text-slate-400">Đo lường xuyên suốt các cữ ngủ ngày + giấc ngủ ban đêm, tự động lập Bảng Phân Tích Nhi Khoa vào 07:00 sáng hôm sau.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-[11px] font-bold text-indigo-300">
+                        🌅 Tự động xuất báo cáo: 07:00 Sáng
+                    </span>
+                    <button onclick="triggerAiSleepReportNow()" id="btn-analyze-sleep-ai" class="px-4 py-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition active:scale-95">
+                        <span>🧠</span>
+                        <span>Phân Tích Ngay Với Bác Sĩ AI</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Sleep Quality Score Dial Card -->
+                <div class="p-6 rounded-3xl bg-cardbg border border-bordercol flex flex-col items-center justify-center text-center space-y-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Điểm Chất Lượng Giấc Ngủ 24h</span>
+                    
+                    <!-- Circular Score Gauge -->
+                    <div class="relative w-40 h-40 flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" stroke="#1F293D" stroke-width="8" fill="transparent"/>
+                            <circle id="sleep-score-circle" cx="50" cy="50" r="40" stroke="#10B981" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="30" stroke-linecap="round" fill="transparent" class="transition-all duration-1000"/>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span id="sleep-score-number" class="text-4xl font-extrabold text-slate-100 tracking-tight">92</span>
+                            <span class="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">Rất tốt</span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-400 max-w-xs leading-relaxed">Đánh giá tổng hợp dựa trên tỷ lệ Ngủ sâu NREM, độ liền mạch chu kỳ 50 phút và nhịp thở lồng ngực.</p>
+                </div>
+
+                <!-- Wake Window Countdown & Hint -->
+                <div class="lg:col-span-2 p-6 rounded-3xl bg-cardbg border border-bordercol space-y-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">⏰</span>
+                            <h3 class="font-bold text-sm text-slate-100">Bộ Đếm Chu Kỳ Ngủ & Cửa Sổ Thức (Wake Window 90p)</h3>
+                        </div>
+                        <span id="wake-window-pill" class="text-[11px] font-semibold text-purple-300 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/30">Khoa học Nhi khoa</span>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span id="wake-status-text" class="text-sm font-semibold text-slate-200">Đang đồng bộ trạng thái...</span>
+                            <span id="predicted-nap-time" class="text-xs font-bold text-purple-400">Cữ ngủ tới: --:--</span>
+                        </div>
+                        <p id="wake-hint-text" class="text-xs text-slate-400 leading-relaxed">Hệ thống theo dõi liên tục cả lúc bé ngủ lẫn lúc bé thức chơi để báo giờ ru ngủ chuẩn xác.</p>
+                    </div>
+
+                    <!-- Today's Sleep Metrics Breakdown -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                        <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-center">
+                            <span class="text-[11px] text-slate-400 font-medium block">Tổng ngủ hôm nay</span>
+                            <span id="sleep-total-hours" class="text-xl font-extrabold text-emerald-400 mt-0.5 block">10.7h</span>
+                        </div>
+                        <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-center">
+                            <span class="text-[11px] text-slate-400 font-medium block">Tổng thức chơi</span>
+                            <span id="sleep-total-awake" class="text-xl font-extrabold text-cyan-400 mt-0.5 block">2.5h</span>
+                        </div>
+                        <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-center">
+                            <span class="text-[11px] text-slate-400 font-medium block">Số lần chuyển cữ</span>
+                            <span id="sleep-wake-count" class="text-xl font-extrabold text-amber-400 mt-0.5 block">2 lần</span>
+                        </div>
+                        <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-center">
+                            <span class="text-[11px] text-slate-400 font-medium block">Cữ ngủ hiện tại</span>
+                            <span id="sleep-current-nap" class="text-xl font-extrabold text-purple-400 mt-0.5 block">28m</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BẢNG PHÂN TÍCH GIẤC NGỦ 24H & ĐÊM QUA TỪ BÁC SĨ AI (MORNING 07:00 REPORT) -->
+            <div class="p-6 rounded-3xl bg-cardbg border border-indigo-500/30 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-xl">🌅</span>
+                        <div>
+                            <h3 class="font-extrabold text-sm text-slate-100">Bảng Phân Tích Giấc Ngủ Đêm Qua & 24 Giờ Qua (Bác Sĩ Nhi Khoa AI)</h3>
+                            <span id="sleep-ai-report-meta" class="text-[11px] text-indigo-300/80">Tự động đối chiếu chuẩn Nhi khoa WHO/AAP vào mỗi sáng</span>
+                        </div>
+                    </div>
+                    <span id="sleep-ai-source-badge" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30">
+                        ✅ Đã cập nhật hôm nay
+                    </span>
+                </div>
+
+                <!-- Bảng đối chiếu 5 chỉ số sinh học -->
+                <div class="overflow-x-auto rounded-2xl border border-slate-800">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-900/90 text-slate-300 border-b border-slate-800">
+                                <th class="py-3 px-4 font-bold">Chỉ Số Sinh Học Của Bé</th>
+                                <th class="py-3 px-4 font-bold">Đo Lường Thực Tế (24h)</th>
+                                <th class="py-3 px-4 font-bold">Chuẩn Khuyến Nghị Nhi Khoa</th>
+                                <th class="py-3 px-4 font-bold text-right">Đánh Giá Từ AI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sleep-ai-analysis-table-body" class="divide-y divide-slate-800/70 bg-slate-950/50">
+                            <tr>
+                                <td colspan="4" class="py-4 text-center text-slate-400">Đang tải bảng phân tích giấc ngủ...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Nhận định chuyên sâu & 3 lời khuyên thực tế cho ngày mới -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="p-4 rounded-2xl bg-indigo-950/25 border border-indigo-500/25 space-y-2">
+                        <div class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                            <span>🩺</span>
+                            <span>Nhận Định Chuyên Sâu Của Bác Sĩ AI:</span>
+                        </div>
+                        <p id="sleep-ai-summary-text" class="text-xs text-slate-200 leading-relaxed">
+                            Đang tổng hợp dữ liệu các cữ ngủ và chu kỳ REM/NREM của bé...
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/25 space-y-2">
+                        <div class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                            <span>💡</span>
+                            <span>Khuyến Nghị Cho Bố Mẹ Hôm Nay:</span>
+                        </div>
+                        <ul id="sleep-ai-tips-list" class="text-xs text-slate-300 space-y-1.5 list-disc list-inside leading-relaxed">
+                            <li>Đang tải khuyến nghị...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lịch sử các cữ ngủ trong ngày + Lịch sử nhiều ngày -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="p-6 rounded-3xl bg-cardbg border border-bordercol space-y-4">
+                    <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                        <span>📋</span>
+                        <span>Chi Tiết Các Cữ Ngủ Gần Nhất (Hypnogram)</span>
+                    </h3>
+                    <div id="sleep-sessions-list" class="space-y-2.5">
+                        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 text-center">
+                            Đang đồng bộ dữ liệu giấc ngủ...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 rounded-3xl bg-cardbg border border-bordercol space-y-4">
+                    <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                        <span>📅</span>
+                        <span>Sổ Theo Dõi Tổng Kết Theo Từng Ngày</span>
+                    </h3>
+                    <div id="sleep-daily-history-list" class="space-y-2.5">
+                        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 text-center">
+                            Đang đồng bộ lịch sử các ngày...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 4: CUTE MOMENTS ALBUM ================= -->
+        <section id="tab-moments" class="tab-content space-y-6 hidden">
+            
+            <div class="flex items-center justify-between pb-2 border-b border-bordercol">
+                <div>
+                    <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Khoảnh Khắc Đáng Yêu Của Bé</h2>
+                    <p class="text-xs text-slate-400">Bộ sưu tập hình ảnh nụ cười, ngáp và cử chỉ ngộ nghĩnh do AI tự động lưu lại.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMomentSelectMode()" id="btn-toggle-select-moments" class="px-3.5 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition active:scale-95" title="Chọn nhiều ảnh để tải về hoặc xóa">
+                        <span>☑️</span>
+                        <span id="btn-select-mode-text">Chọn Nhiều</span>
+                    </button>
+                    <button onclick="takeManualSnapshot()" id="btn-take-snapshot-moments" class="px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg transition active:scale-95">
+                        <span>📸</span>
+                        <span>Chụp Ngay</span>
+                    </button>
+                    <button onclick="fetchMoments(true)" id="btn-reload-moments" class="p-2.5 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 transition active:scale-95 flex items-center justify-center" title="Làm mới album">
+                        <span id="reload-moments-icon" class="inline-block transition-transform duration-500">🔄</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Batch Action Bar -->
+            <div id="moments-batch-bar" class="hidden p-3 bg-slate-900/95 backdrop-blur-md rounded-2xl border border-emerald-500/40 flex flex-wrap items-center justify-between gap-3 shadow-xl transition-all">
+                <div class="flex items-center gap-2.5">
+                    <div class="flex items-center gap-1.5 bg-emerald-950/80 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-xs font-bold text-emerald-300">Đã chọn: <span id="moments-selected-count">0</span> ảnh</span>
+                    </div>
+                    <button onclick="selectAllMoments()" class="text-xs font-semibold text-slate-200 hover:text-white px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/60 transition active:scale-95">
+                        Chọn tất cả
+                    </button>
+                    <button onclick="deselectAllMoments()" class="text-xs font-semibold text-slate-400 hover:text-slate-200 px-2.5 py-1.5 rounded-xl hover:bg-slate-800 transition active:scale-95">
+                        Bỏ chọn
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="batchDownloadMoments()" id="btn-batch-download" class="px-4 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                        <span>⬇️</span>
+                        <span>Tải về (ZIP)</span>
+                    </button>
+                    <button onclick="batchDeleteMoments()" id="btn-batch-delete" class="px-4 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold text-xs flex items-center gap-1.5 transition active:scale-95">
+                        <span>🗑️</span>
+                        <span>Xóa đã chọn</span>
+                    </button>
+                    <button onclick="exitMomentSelectMode()" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl transition" title="Đóng chế độ chọn">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Moments Photo Grid -->
+            <div id="moments-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <div class="col-span-full p-8 text-center text-xs text-slate-400 bg-cardbg rounded-3xl border border-bordercol">
+                    Đang tải thư viện khoảnh khắc...
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 5: VIDEO RECORDINGS ================= -->
+        <section id="tab-recordings" class="tab-content space-y-6 hidden">
+            
+            <div class="flex items-center justify-between pb-2 border-b border-bordercol">
+                <div>
+                    <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Lịch Sử Video Sự Kiện</h2>
+                    <p class="text-xs text-slate-400">Các đoạn video clip 30 giây chất lượng cao được lưu trữ an toàn trên bộ nhớ thiết bị trung tâm.</p>
+                </div>
+                <button onclick="fetchRecordings(true)" id="btn-reload-recordings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 transition active:scale-95 flex items-center gap-1.5">
+                    <span id="reload-recordings-icon" class="inline-block transition-transform duration-500">🔄</span>
+                    <span>Làm mới danh sách</span>
+                </button>
+            </div>
+
+            <!-- Video Recordings List -->
+            <div id="recordings-list" class="space-y-3">
+                <div class="p-8 text-center text-xs text-slate-400 bg-cardbg rounded-3xl border border-bordercol">
+                    Đang tải danh sách video clip...
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Commercial Safety & Medical Disclaimer (Chuẩn Quốc Tế Nanit / Cubo Ai) -->
+        <footer class="pt-6 pb-2 border-t border-slate-800/80 text-center space-y-1 text-[11px] text-slate-500">
+            <div class="flex items-center justify-center gap-2 text-slate-400 font-semibold">
+                <span>🛡️ BabyGuard AI • Phiên Bản Thương Mại (Commercial Hybrid Edition)</span>
+            </div>
+            <p class="max-w-2xl mx-auto leading-relaxed text-slate-500">
+                <b>Tuyên bố miễn trừ trách nhiệm y tế:</b> Hệ thống BabyGuard AI được thiết kế hỗ trợ giám sát an toàn và ghi nhận thói quen sinh hoạt của trẻ (Wellness & Safety Monitor), không phải là thiết bị chẩn đoán y khoa chuyên dụng và không thay thế cho sự chăm sóc trực tiếp của phụ huynh.
+            </p>
+        </footer>
+
+    </main>
+
+    <!-- Modal: Smart White Noise & Instrumental Lullaby (Closed-Loop Mic Calibration) -->
+    <div id="music-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden" onclick="toggleMusicModal()">
+        <div class="bg-cardbg rounded-3xl border border-bordercol max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between border-b border-bordercol pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">🌊</span>
+                    <div>
+                        <h3 class="font-extrabold text-base text-slate-100">Tiếng Ồn Trắng & Nhạc Không Lời</h3>
+                        <p class="text-[11px] text-slate-400">Khởi động mềm từ 4% • Tự cân bằng mức vừa đủ bằng Micro (~45 dB)</p>
+                    </div>
+                </div>
+                <button onclick="toggleMusicModal()" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
+            </div>
+
+            <!-- Live Status & Closed-Loop Acoustic Meters -->
+            <div class="p-4 rounded-2xl bg-slate-900/90 border border-indigo-500/30 space-y-3 text-xs">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-slate-400">Trạng thái loa:</span>
+                    <span id="music-current-track" class="font-bold text-amber-300 truncate max-w-[260px]">Đang dừng</span>
+                </div>
+                <div id="music-calibration-state" class="text-[11px] font-semibold text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
+                    🌱 Sẵn sàng khởi động mềm từ 4% (Chống giật mình cho bé)
+                </div>
+
+                <!-- 2 Thanh đo trực tiếp: Âm lượng Loa vs Cường độ thu tại Micro -->
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
+                        <div class="flex justify-between text-[11px]">
+                            <span class="text-slate-400">🔊 Âm lượng phát:</span>
+                            <b id="music-live-vol-pct" class="text-purple-300">4%</b>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div id="music-live-vol-bar" class="bg-gradient-to-r from-purple-500 to-indigo-400 h-full w-[4%] transition-all duration-300"></div>
+                        </div>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
+                        <div class="flex justify-between text-[11px]">
+                            <span class="text-slate-400">🎙️ Cường độ tại nôi:</span>
+                            <b id="music-live-mic-pct" class="text-cyan-300">0% (~32 dB)</b>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div id="music-live-mic-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full w-[5%] transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-2 pt-1">
+                    <button onclick="playMusicTrack('Tieng_on_trang_White_Noise.wav')" class="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition">
+                        ▶ Phát Ngay Tiếng Ồn Trắng (Tăng dần từ 4%)
+                    </button>
+                    <button onclick="stopMusicTrack()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-rose-300 border border-rose-500/30 transition">
+                        ⏹ Dừng
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bộ Điều Chỉnh Âm Lượng Thông Minh Qua Micro (Closed-Loop Controls) -->
+            <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3.5 text-xs">
+                <label class="flex items-start gap-2.5 cursor-pointer">
+                    <input type="checkbox" id="chk-music-adaptive-mic" checked onchange="saveMusicCalibrationConfig()" class="mt-0.5 rounded bg-slate-800 border-slate-600 text-emerald-500">
+                    <div>
+                        <span class="font-bold text-slate-100 block">🎙️ Tự Cân Bằng Âm Lượng Bằng Micro (Khuyên bật)</span>
+                        <span class="text-[11px] text-slate-400">Phát từ mức cực nhỏ (4%) rồi tăng dần cho tới khi Micro đo thấy đạt đúng ngưỡng êm dịu tại nôi thì tự động khóa lại.</span>
+                    </div>
+                </label>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[11px]">
+                        <span class="text-slate-300 font-semibold">🎯 Ngưỡng cường độ vừa đủ tại nôi (Micro đo):</span>
+                        <b id="lbl-music-target-mic" class="text-cyan-300">32% (~45 dB Chuẩn AAP)</b>
+                    </div>
+                    <input type="range" id="slider-music-target-mic" min="15" max="60" value="32" oninput="onMusicSliderInput()" onchange="saveMusicCalibrationConfig()" class="w-full accent-cyan-400 cursor-pointer">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[11px]">
+                        <span class="text-slate-300 font-semibold">🔊 Giới hạn Âm lượng Loa tối đa (Hoặc chỉnh tay):</span>
+                        <b id="lbl-music-max-vol" class="text-purple-300">65%</b>
+                    </div>
+                    <input type="range" id="slider-music-max-vol" min="10" max="100" value="65" oninput="onMusicSliderInput()" onchange="saveMusicCalibrationConfig()" class="w-full accent-purple-400 cursor-pointer">
+                </div>
+            </div>
+
+            <!-- Danh Sách Tiếng Ồn Trắng & Nhạc Không Lời -->
+            <div class="space-y-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Kho Tiếng Ồn Trắng & Nhạc Không Lời Có Sẵn</span>
+                <div id="music-playlist" class="max-h-56 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                    <div class="text-center text-slate-500 py-4">Đang tải danh sách...</div>
+                </div>
+            </div>
+
+            <!-- Upload new track -->
+            <div class="pt-2 border-t border-bordercol">
+                <label class="block text-xs text-slate-400 mb-1.5">Tải thêm âm thanh / nhạc không lời vào hệ thống (WAV, MP3):</label>
+                <input type="file" id="music-file-input" accept="audio/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-emerald-400 hover:file:bg-slate-700" onchange="uploadMusicFile()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Commercial Onboarding & System Configuration Center -->
+    <div id="settings-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden" onclick="closeSettingsModal()">
+        <div class="bg-cardbg rounded-3xl border border-bordercol max-w-2xl w-full p-6 space-y-5 shadow-2xl max-h-[92vh] overflow-y-auto" onclick="event.stopPropagation()">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-bordercol">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-indigo-500/20 border border-emerald-500/30 flex items-center justify-center text-xl">
+                        ⚙️
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-base text-slate-100">Thiết Lập Hệ Thống & Trí Tuệ Nhân Tạo Hybrid</h3>
+                        <p class="text-[11px] text-slate-400">Cấu hình hồ sơ bé, khóa Gemini AI, Telegram và phần cứng giám sát</p>
+                    </div>
+                </div>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
+            </div>
+
+            <!-- Onboarding Welcome Banner (Shown on First Startup) -->
+            <div id="onboarding-welcome-banner" class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-indigo-500/15 to-purple-500/15 border border-emerald-500/30 text-xs space-y-1 hidden">
+                <div class="font-bold text-emerald-300 flex items-center gap-1.5">
+                    <span>👋</span>
+                    <span>Chào mừng bố mẹ đến với BabyGuard AI (Bản Thương Mại Hybrid)!</span>
+                </div>
+                <p class="text-slate-300 leading-relaxed">Vui lòng điền thông tin hồ sơ của bé và khóa API dưới đây để kích hoạt đầy đủ tính năng Hội chẩn Chuyên gia & Kiểm duyệt Khoảnh khắc Đáng yêu.</p>
+            </div>
+
+            <!-- 1. Hồ Sơ Bé Yêu -->
+            <div class="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-slate-100 flex items-center gap-1.5 text-sm">👶 1. Hồ Sơ Của Bé</span>
+                    <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Cá nhân hóa cữ ngủ & nhịp thở</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Tên thân mật của bé:</label>
+                        <input type="text" id="cfg-baby-name" placeholder="vd: Bé Siu, Bé Bơ..." class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-medium">Tháng tuổi hiện tại (0 - 36 tháng):</label>
+                        <input type="number" id="cfg-baby-age" min="0" max="36" placeholder="vd: 6" class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-semibold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Chuyên Gia Hội Chẩn & Giám Khảo Ảnh Gemini AI -->
+            <div class="p-4 rounded-2xl bg-slate-900/70 border border-indigo-500/30 space-y-3.5 text-xs">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <span class="font-bold text-indigo-300 flex items-center gap-1.5 text-sm">✨ 2. Chuyên Gia Hội Chẩn & Duyệt Ảnh (Gemini AI)</span>
+                    <span class="text-[10px] text-indigo-300 bg-indigo-500/15 px-2.5 py-0.5 rounded-full border border-indigo-500/30">Event-Driven • Chống báo giả</span>
+                </div>
+                <p class="text-slate-400 leading-relaxed">
+                    Kết hợp Edge AI chạy cục bộ 100% với Gemini Flash/Pro để: <b>(1)</b> Tự động căn chỉnh vùng nôi, <b>(2)</b> Hội chẩn chéo trước khi báo động ngạt thở, và <b>(3)</b> Kiểm duyệt ảnh kỷ niệm (đảm bảo bé kín đáo và <b>nếu có bố/mẹ trong hình thì bố/mẹ cũng phải tươi tắn, đẹp</b> mới lưu).
+                </p>
+                <div>
+                    <label class="block text-slate-300 mb-1 font-medium">Google Gemini API Key (<a href="https://aistudio.google.com/apikey" target="_blank" class="text-indigo-400 underline hover:text-indigo-300">Lấy khóa tại Google AI Studio</a>):</label>
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <input type="password" id="cfg-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-800 border border-slate-700 focus:border-indigo-500 outline-none rounded-xl pl-3 pr-9 py-2 text-slate-100 font-mono">
+                            <button type="button" onclick="toggleGeminiKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200" title="Hiện/Ẩn khóa">👁️</button>
+                        </div>
+                        <button type="button" onclick="testGeminiKey()" id="btn-test-gemini" class="px-3.5 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold rounded-xl transition border border-indigo-500/30 whitespace-nowrap">
+                            ⚡ Kiểm tra kết nối
+                        </button>
+                    </div>
+                    <p id="gemini-test-result" class="text-[11px] mt-1.5 hidden"></p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/70 cursor-pointer">
+                        <input type="checkbox" id="cfg-gemini-verify-alerts" class="mt-0.5 accent-indigo-500 w-4 h-4">
+                        <div>
+                            <span class="font-bold text-slate-200 block">Hội chẩn chéo cảnh báo nguy hiểm</span>
+                            <span class="text-[11px] text-slate-400">Chặn báo động giả do gối ôm đè cạnh cằm bé</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/70 cursor-pointer">
+                        <input type="checkbox" id="cfg-gemini-filter-moments" class="mt-0.5 accent-indigo-500 w-4 h-4">
+                        <div>
+                            <span class="font-bold text-slate-200 block">Duyệt riêng tư & Thẩm mỹ người đi cùng</span>
+                            <span class="text-[11px] text-slate-400">Xóa ảnh nhạy cảm; chỉ lưu khi cả bé và người lớn đều đẹp</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 3. Nguồn Camera Soi Nôi (Xem Thử Trực Tiếp) & Micro Thu Âm -->
+            <div class="p-4 rounded-2xl bg-slate-900/70 border border-emerald-500/30 space-y-3.5 text-xs">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <span class="font-bold text-emerald-300 flex items-center gap-1.5 text-sm">📷 3. Chọn Camera Quay Bé & Xem Thử Trực Tiếp</span>
+                    <button type="button" onclick="loadHardwareDevices(true)" class="text-[11px] text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-semibold transition">
+                        🔄 Làm mới danh sách thiết bị
+                    </button>
+                </div>
+
+                <!-- Chế độ kết nối Camera: USB hay Wi-Fi IP -->
+                <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-950 border border-slate-800">
+                    <button type="button" id="cam-tab-usb" onclick="switchCameraSourceTab('usb')" class="py-2 px-3 rounded-lg font-bold text-xs transition bg-emerald-500 text-slate-950">
+                        🔌 Camera Cắm Máy (USB / Webcam)
+                    </button>
+                    <button type="button" id="cam-tab-rtsp" onclick="switchCameraSourceTab('rtsp')" class="py-2 px-3 rounded-lg font-bold text-xs transition text-slate-400 hover:text-slate-200">
+                        📡 Camera Wi-Fi Gia Đình (Ezviz/Imou/Tapo)
+                    </button>
+                </div>
+
+                <!-- Khung A: Chọn Camera USB -->
+                <div id="cam-panel-usb" class="space-y-2.5">
+                    <label class="block text-slate-300 font-medium">Chọn Camera trong danh sách và bấm <b>"👁️ Xem thử"</b> để biết chiếc nào đang quay em bé:</label>
+                    <div class="flex gap-2">
+                        <select id="cfg-camera-index" class="flex-1 bg-slate-800 border border-slate-700 focus:border-emerald-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-semibold">
+                            <option value="0">📷 Cổng 0: Đang tải tên thiết bị...</option>
+                        </select>
+                        <button type="button" onclick="previewSelectedCamera()" id="btn-preview-usb" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold rounded-xl transition border border-emerald-500/30 whitespace-nowrap flex items-center gap-1.5">
+                            <span>👁️</span>
+                            <span>Xem thử Camera này</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Khung B: Kết nối Camera Wi-Fi Gia Đình (RTSP / ONVIF) -->
+                <div id="cam-panel-rtsp" class="space-y-3 hidden">
+                    <div class="flex items-center justify-between gap-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+                        <span class="text-slate-300 text-[11px]">Bấm quét để tìm các Camera Wi-Fi trong nhà, sau đó <b>chọn 1 chiếc</b> quay em bé:</span>
+                        <button type="button" onclick="scanWifiCameras()" id="btn-scan-wifi-cam" class="px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold rounded-lg border border-indigo-500/30 whitespace-nowrap transition">
+                            🔍 Quét Camera trong nhà
+                        </button>
+                    </div>
+
+                    <!-- Danh sách Camera Wi-Fi quét được -->
+                    <div id="wifi-cameras-found-list" class="space-y-1.5 hidden"></div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Hãng Camera (Có tự động dò):</label>
+                            <select id="cfg-rtsp-brand" onchange="onRtspBrandChange()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-slate-100 font-semibold">
+                                <option value="auto">🤖 Tự động dò mọi hãng (Auto)</option>
+                                <option value="imou">Imou / Dahua / Nomi / KBVision</option>
+                                <option value="ezviz">Ezviz / Hikvision / HiLook</option>
+                                <option value="tapo">TP-Link Tapo / Reolink</option>
+                                <option value="yoosee">Yoosee / CareCam / Siepem</option>
+                                <option value="viettel">Xiaomi / Viettel / Tenda / Khác</option>
+                                <option value="custom">🔗 Tự nhập link RTSP tùy chỉnh</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">IP hoặc Mã Máy (Để trống = Tự dò):</label>
+                            <input type="text" id="cfg-rtsp-ip" autocomplete="off" oninput="onIpOrSerialInput(this.value)" placeholder="Tự động khớp hoặc nhập Mã máy/IP" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-emerald-300 font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Mã Xác Thực / Mật khẩu (6 chữ đáy Cam):</label>
+                            <input type="password" id="cfg-rtsp-password" autocomplete="new-password" placeholder="Nhập 6 chữ dưới đáy Cam quay bé" class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-mono">
+                        </div>
+                    </div>
+
+                    <div id="cfg-rtsp-custom-row" class="hidden">
+                        <label class="block text-slate-400 mb-1">Đường dẫn luồng RTSP / HTTP đầy đủ:</label>
+                        <input type="text" id="cfg-camera-rtsp-url" placeholder="rtsp://admin:ABCDEF@192.168.1.203:554/cam/realmonitor?channel=1&subtype=0" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono text-[11px]">
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <span class="text-[11px] text-slate-300">
+                            🎯 <b>Tự động bắt đúng Camera:</b> Bạn chỉ cần nhập <b>Mã Xác Thực (6 chữ dưới đáy chiếc Camera phòng bé)</b> rồi bấm nút bên phải — hệ thống sẽ <b>tự dò trong danh sách đã quét</b> để bắt đúng chiếc Camera khớp mã đó!
+                        </span>
+                        <button type="button" onclick="previewSelectedCamera()" id="btn-preview-rtsp" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-xl transition shadow flex items-center gap-1.5 ml-auto">
+                            <span>🎯</span>
+                            <span>Tự khớp Camera theo Mã & Xem thử</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KHUNG HIỂN THỊ HÌNH ẢNH XEM THỬ TRỰC TIẾP (CAMERA PREVIEW BOX) -->
+                <div id="camera-preview-box" class="p-3 rounded-2xl bg-slate-950 border border-emerald-500/40 space-y-2.5 hidden">
+                    <div class="flex items-center justify-between">
+                        <span id="camera-preview-title" class="font-bold text-emerald-300 text-xs flex items-center gap-1.5">
+                            <span>👁️</span>
+                            <span>Hình ảnh thực tế từ Camera đang chọn</span>
+                        </span>
+                        <span id="camera-preview-res" class="text-[10px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">1280x720</span>
+                    </div>
+                    <div class="relative w-full aspect-video max-h-56 bg-black rounded-xl overflow-hidden flex items-center justify-center border border-slate-800">
+                        <img id="camera-preview-img" src="" alt="Camera Preview" class="w-full h-full object-contain">
+                    </div>
+                    <div class="flex items-center justify-between gap-2 pt-1">
+                        <span class="text-[11px] text-slate-300">Hình ảnh trên có đúng là chiếc Camera đang quay nôi của bé không?</span>
+                        <button type="button" onclick="confirmPreviewedCamera()" class="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition whitespace-nowrap shadow">
+                            ✅ Đúng, dùng Camera này!
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chọn Micro Thu Âm -->
+                <div class="pt-2 border-t border-slate-800">
+                    <label class="block text-slate-300 mb-1 font-medium">🎙️ Chọn Micro Thu Âm Phòng Bé (Nghe tiếng khóc / tiếng ho):</label>
+                    <select id="cfg-audio-index" class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-semibold">
+                        <option value="2">🎙️ Cổng 2: Đang tải danh sách Micro...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 4. Cấu Hình Cảnh Báo Telegram Cho Cả Gia Đình (Chế độ Nhập ID Trực Tiếp) -->
+            <div class="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3 text-xs">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <span class="font-bold text-slate-100 flex items-center gap-1.5 text-sm">✈️ 4. Cảnh Báo Telegram Cho Cả Gia Đình</span>
+                        <span class="text-[11px] text-slate-400">Nhập trực tiếp mã Chat ID của Bố, Mẹ, Ông Bà hoặc Cô Bảo Mẫu để nhận cảnh báo cùng lúc</span>
+                    </div>
+                    <button type="button" onclick="testTelegram()" class="px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold rounded-lg transition border border-emerald-500/30">
+                        ✉️ Gửi thử cho tất cả ID
+                    </button>
+                </div>
+
+                <!-- Bot Token -->
+                <div>
+                    <label class="block text-slate-300 mb-1 font-semibold">🔑 Telegram Bot Token (Kênh thông báo của gia đình):</label>
+                    <input type="text" id="cfg-telegram-token" autocomplete="off" placeholder="vd: 8999651261:AAECeyqJa..." class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 outline-none rounded-xl px-3 py-2 text-slate-200 font-mono text-[11px]">
+                    <input type="hidden" id="cfg-telegram-chatid" value="">
+                </div>
+
+                <!-- Bảng Nhập Trực Tiếp Chat ID Người Nhà -->
+                <div class="space-y-2 pt-1">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <label class="text-slate-200 font-bold">👨‍👩‍👧‍👦 Danh sách Ô Nhập Chat ID Người Nhận (<span id="tg-family-count">1</span> người đang bật):</label>
+                        <button type="button" onclick="addEmptyTelegramRow()" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-[11px] transition flex items-center gap-1 shadow">
+                            <span>➕</span><span>Thêm ô nhập ID người nhà</span>
+                        </button>
+                    </div>
+
+                    <!-- Tiêu đề cột -->
+                    <div class="grid grid-cols-12 gap-2 px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                        <div class="col-span-5">Tên người nhận (Bố, Mẹ, Bà...)</div>
+                        <div class="col-span-5">Mã Telegram Chat ID</div>
+                        <div class="col-span-2 text-right">Thao tác</div>
+                    </div>
+
+                    <!-- Các dòng ô nhập ID trực tiếp -->
+                    <div id="telegram-family-list" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- Hướng dẫn lấy Chat ID chủ động 24/7 -->
+                <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90 text-[11px] text-slate-300 space-y-1 leading-relaxed">
+                    <div class="font-bold text-emerald-300">💡 Làm sao để người nhà biết mã Chat ID của họ để nhập vào ô trên?</div>
+                    <div>
+                        • <b>Cách 1 (Tự động 24/7):</b> Bất cứ lúc nào người nhà mở Telegram, tìm Bot của gia đình và bấm <b>Start</b> (hoặc nhắn 1 chữ bất kỳ), <b>Bot sẽ tự động nhắn trả lời lại ngay mã số Chat ID trên màn hình điện thoại của người nhà đó</b>. Bạn chỉ cần lấy mã số đó gõ vào ô <b>Mã Telegram Chat ID</b> ở trên!
+                    </div>
+                    <div>
+                        • <b>Cách 2:</b> Người nhà gõ tìm <code>@userinfobot</code> trên Telegram và bấm Start để xem ngay dãy số <b>Id</b> của mình.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between gap-3 pt-3 border-t border-bordercol">
+                <div class="text-[11px] text-slate-400 hidden sm:block">
+                    💡 Mẹo: Nhấn <b>"✨ AI Căn Chỉnh Nôi"</b> dưới màn hình Live sau khi đặt bé vào nôi.
+                </div>
+                <div class="flex items-center gap-2 ml-auto">
+                    <button onclick="closeSettingsModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">Đóng</button>
+                    <button onclick="saveAllSettings()" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs font-extrabold text-slate-950 shadow-lg transition">💾 Lưu & Hoàn Tất Thiết Lập</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Media Player / Preview -->
+    <div id="media-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden" onclick="closeMediaModal()">
+        <div class="bg-cardbg rounded-3xl border border-bordercol max-w-3xl w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+            <div class="p-4 bg-slate-950 flex justify-between items-center border-b border-bordercol">
+                <span id="media-modal-title" class="text-xs font-bold text-slate-200 truncate">Xem Chi Tiết</span>
+                <div class="flex items-center gap-3">
+                    <a id="media-modal-download-btn" href="#" download class="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center gap-1">
+                        <span>⬇️</span>
+                        <span>Tải Về</span>
+                    </a>
+                    <button onclick="closeMediaModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+                </div>
+            </div>
+            <div id="media-modal-body" class="p-2 flex items-center justify-center bg-black min-h-[300px]">
+                <!-- Injected img or video -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Core App Logic -->
+    <script>
+        let currentConfig = {};
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecordingTalkback = false;
+        let hasCheckedOnboarding = false;
+        let selectedCameraSourceType = 'usb';
+        let lastPreviewResolvedSource = null;
+
+        // Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-cardbg', 'text-emerald-400', 'border-emerald-500/30');
+                el.classList.add('bg-transparent', 'text-slate-400', 'border-transparent');
+            });
+
+            const content = document.getElementById(`tab-${tabId}`);
+            const btn = document.getElementById(`tab-btn-${tabId}`);
+            if (content) content.classList.remove('hidden');
+            if (btn) {
+                btn.classList.add('bg-cardbg', 'text-emerald-400', 'border-emerald-500/30');
+                btn.classList.remove('bg-transparent', 'text-slate-400', 'border-transparent');
+            }
+
+            if (tabId === 'moments') fetchMoments();
+            if (tabId === 'recordings') fetchRecordings();
+            if (tabId === 'sleep') fetchSleepData();
+        }
+
+        // Toast Notification
+        function showToast(msg, icon = '✨') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            document.getElementById('toast-icon').innerText = icon;
+            toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 3000);
+        }
+
+        function updateHeaderBabyProfile() {
+            const bName = currentConfig.baby_name || 'Bé Siu';
+            const bAge = currentConfig.baby_age_months !== undefined ? `${currentConfig.baby_age_months} tháng` : '';
+            const subEl = document.getElementById('header-baby-subtitle');
+            if (subEl) {
+                subEl.innerText = bAge ? `Bảo bọc giấc ngủ ${bName} (${bAge}) • 24/7` : `Bảo bọc giấc ngủ ${bName} • 24/7`;
+            }
+
+            const hasGeminiKey = Boolean(currentConfig.gemini_api_key && currentConfig.gemini_api_key.trim().length > 8);
+            const dotEl = document.getElementById('header-gemini-dot');
+            const txtEl = document.getElementById('header-gemini-text');
+            const vBadgeEl = document.getElementById('vital-gemini-badge');
+            if (dotEl && txtEl) {
+                if (hasGeminiKey) {
+                    dotEl.className = "w-2 h-2 rounded-full bg-emerald-400 pulse-subtle";
+                    txtEl.innerText = "Gemini AI: Bật";
+                } else {
+                    dotEl.className = "w-2 h-2 rounded-full bg-amber-400";
+                    txtEl.innerText = "Thiết lập AI";
+                }
+            }
+            if (vBadgeEl) {
+                if (hasGeminiKey) {
+                    vBadgeEl.className = "text-[10px] font-semibold text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30";
+                    vBadgeEl.innerText = "Đang trực chiến";
+                } else {
+                    vBadgeEl.className = "text-[10px] font-semibold text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20";
+                    vBadgeEl.innerText = "Chưa gắn API";
+                }
+            }
+        }
+
+        // Load Real Hardware Names (USB Cameras & Microphones)
+        async function loadHardwareDevices(showFeedback = false) {
+            try {
+                const res = await fetch('/api/hardware/devices');
+                const d = await res.json();
+                if (!d.success) return;
+
+                const camSel = document.getElementById('cfg-camera-index');
+                if (camSel && d.cameras) {
+                    const currentCamIdx = Number(currentConfig.camera_index || 0);
+                    camSel.innerHTML = d.cameras.map(c =>
+                        `<option value="${c.index}" ${c.index === currentCamIdx ? 'selected' : ''}>${c.label}</option>`
+                    ).join('');
+                }
+
+                const micSel = document.getElementById('cfg-audio-index');
+                if (micSel && d.microphones) {
+                    const currentMicIdx = Number(currentConfig.audio_device_index !== undefined ? currentConfig.audio_device_index : 2);
+                    micSel.innerHTML = d.microphones.map(m =>
+                        `<option value="${m.index}" ${m.index === currentMicIdx ? 'selected' : ''}>${m.label}</option>`
+                    ).join('');
+                }
+
+                if (showFeedback) {
+                    showToast("Đã cập nhật danh sách Camera & Micro!", "🔄");
+                }
+            } catch (e) {
+                console.error("Hardware load error:", e);
+            }
+        }
+
+        // Fetch Config & Populate Toggles + Onboarding Wizard
+        async function fetchConfig() {
+            try {
+                const res = await fetch('/api/config');
+                currentConfig = await res.json();
+                
+                // Populate all toggles
+                const toggleKeys = [
+                    'breathing_monitor_enabled', 'cough_alert_enabled', 'prone_alert_enabled',
+                    'covered_face_alert', 'danger_zone_enabled', 'cry_alert_enabled',
+                    'sleep_analytics_enabled', 'cute_moments_enabled', 'auto_lullaby_on_cry',
+                    'sound_alert_on_mac', 'telegram_enabled', 'telegram_send_video',
+                    'gemini_verify_alerts', 'gemini_filter_moments'
+                ];
+                toggleKeys.forEach(k => {
+                    const el = document.getElementById(`toggle-${k}`);
+                    if (el) el.checked = (currentConfig[k] === true);
+                });
+
+                // Sync SafeZone editor coords with server config
+                if (currentConfig.safe_zone_top !== undefined) {
+                    safeZoneCoords = {
+                        top: Number(currentConfig.safe_zone_top),
+                        bottom: Number(currentConfig.safe_zone_bottom),
+                        left: Number(currentConfig.safe_zone_left),
+                        right: Number(currentConfig.safe_zone_right)
+                    };
+                }
+
+                // Populate Settings Modal inputs
+                document.getElementById('cfg-baby-name').value = currentConfig.baby_name || 'Bé Siu';
+                document.getElementById('cfg-baby-age').value = currentConfig.baby_age_months !== undefined ? currentConfig.baby_age_months : 6;
+                document.getElementById('cfg-gemini-key').value = currentConfig.gemini_api_key || '';
+                document.getElementById('cfg-gemini-verify-alerts').checked = currentConfig.gemini_verify_alerts !== false;
+                document.getElementById('cfg-gemini-filter-moments').checked = currentConfig.gemini_filter_moments !== false;
+                document.getElementById('cfg-telegram-token').value = currentConfig.telegram_bot_token || '';
+                document.getElementById('cfg-telegram-chatid').value = currentConfig.telegram_chat_id || '';
+                document.getElementById('cfg-camera-rtsp-url').value = currentConfig.camera_rtsp_url || '';
+
+                initTelegramFamilyFromConfig();
+                await loadHardwareDevices(false);
+                switchCameraSourceTab(currentConfig.camera_source_type || 'usb');
+                updateHeaderBabyProfile();
+
+                // Auto-open Setup Wizard on first launch if setup_completed is false
+                if (!hasCheckedOnboarding) {
+                    hasCheckedOnboarding = true;
+                    if (currentConfig.setup_completed === false) {
+                        const banner = document.getElementById('onboarding-welcome-banner');
+                        if (banner) banner.classList.remove('hidden');
+                        openSettingsModal();
+                    }
+                }
+            } catch (e) {
+                console.error("Config fetch error:", e);
+            }
+        }
+
+        // Handle Instant Switch Toggle
+        async function handleToggle(key, value) {
+            try {
+                const res = await fetch('/api/config/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, value })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentConfig[key] = value;
+                    showToast(value ? "Đã bật tính năng" : "Đã tắt tính năng", value ? "✅" : "⚪");
+                }
+            } catch (e) {
+                showToast("Lỗi cập nhật", "⚠️");
+            }
+        }
+
+        // Periodic Status Polling
+        async function pollStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                const v = data.vision || {};
+                const a = data.audio || {};
+                const m = data.music || {};
+                const s = data.sleep || {};
+                const g = data.gemini || {};
+
+                // Update Header Pill & Vitals
+                // Fix Bug 1: Do NOT require breathing_bpm > 0 to consider the baby in the crib!
+                const isAdultHolding = Boolean(v.adult_holding);
+                const isBabyInBed = !isAdultHolding && (v.baby_detected === true);
+                const rawBpm = Number(v.breathing_bpm || 0);
+                
+                let pose = "Ngoài nôi";
+                let bpmText = "-- RPM";
+                let bpmValue = "--";
+                let status = "Không có trong nôi";
+                let napText = "Nôi trống";
+                let sleepStage = "Bé đã rời nôi";
+                let breathingStatus = "Ngoài giường";
+
+                if (isAdultHolding) {
+                    pose = "Đang được bế trên tay";
+                    bpmText = "Đang bế";
+                    bpmValue = "--";
+                    status = "Bố mẹ đang bế / chăm bé";
+                    napText = "Đang được bế";
+                    sleepStage = "Bố mẹ vỗ về";
+                    breathingStatus = "Bố mẹ đang bế";
+                } else if (isBabyInBed) {
+                    const isAwakeNow = (s.current_state === "AWAKE");
+                    pose = v.sleep_pose || (isAwakeNow ? "Đang thức chơi" : "Nằm ngửa (An toàn)");
+                    bpmText = rawBpm > 0 ? `${Math.round(rawBpm)} RPM` : "Đang đo...";
+                    bpmValue = rawBpm > 0 ? Math.round(rawBpm) : "--";
+                    status = v.baby_status || (isAwakeNow ? "Đang thức tỉnh táo" : "Bình thường");
+                    napText = isAwakeNow
+                        ? `☀️ Đã thức: ${s.current_awake_formatted || '0m'}`
+                        : `😴 Giấc ngủ: ${s.current_nap_formatted || ((s.current_nap_minutes || 0) + 'm')}`;
+                    sleepStage = s.sleep_stage || (isAwakeNow ? "☀️ Đang thức chơi" : "Đang ngủ");
+                    breathingStatus = v.breathing_status || (rawBpm > 0 ? "Bình thường" : "Đang hội tụ DSP...");
+                }
+                
+                document.getElementById('header-baby-status').innerText = status;
+                document.getElementById('header-breathing-pill').innerText = isAdultHolding ? `👨‍👩‍👦 ${bpmText}` : `🫁 ${bpmText}`;
+                document.getElementById('header-sleep-nap').innerText = napText;
+
+                // Sync safeZoneCoords when auto-calibrated by backend (unless user is manually dragging)
+                if (v.safe_zone && !isEditingSafeZone) {
+                    safeZoneCoords.left = Number(v.safe_zone.left ?? safeZoneCoords.left);
+                    safeZoneCoords.top = Number(v.safe_zone.top ?? safeZoneCoords.top);
+                    safeZoneCoords.right = Number(v.safe_zone.right ?? safeZoneCoords.right);
+                    safeZoneCoords.bottom = Number(v.safe_zone.bottom ?? safeZoneCoords.bottom);
+                }
+
+                // Update HUD Badges on Video
+                document.getElementById('hud-pose-text').innerText = pose;
+                document.getElementById('hud-breathing').innerText = bpmText;
+                document.getElementById('hud-sound').innerText = `${a.volume || 0}%`;
+
+                // Update Vital Sidebar
+                document.getElementById('vital-breathing-bpm').innerText = bpmValue;
+                document.getElementById('vital-breathing-status').innerText = breathingStatus;
+                
+                document.getElementById('vital-sleep-stage').innerText = sleepStage;
+                const isAwakeMode = (s.current_state === "AWAKE");
+                const cardIconEl = document.getElementById('vital-sleep-card-icon');
+                const cardTitleEl = document.getElementById('vital-sleep-card-title');
+                const napEl = document.getElementById('vital-current-nap');
+                const napUnitEl = document.getElementById('vital-current-nap-unit');
+                const sleepSubEl = document.getElementById('vital-sleep-start-sub');
+                const cycLabelEl = document.getElementById('vital-cycle-minute-label');
+                const cycBarEl = document.getElementById('vital-sleep-cycle-bar');
+                const box1Label = document.getElementById('vital-box1-label');
+                const box2Label = document.getElementById('vital-box2-label');
+                const box4Label = document.getElementById('vital-box4-label');
+                const deepPctEl = document.getElementById('vital-deep-pct');
+                const remPctEl = document.getElementById('vital-rem-pct');
+                const totalTodayEl = document.getElementById('vital-total-sleep-today');
+                const remTwitchEl = document.getElementById('vital-rem-twitches');
+
+                if (isBabyInBed && isAwakeMode) {
+                    if (cardIconEl) cardIconEl.innerText = "☀️";
+                    if (cardTitleEl) cardTitleEl.innerText = "Theo Dõi Lúc Bé Thức";
+                    if (napEl) napEl.innerText = s.current_awake_formatted || "0 phút";
+                    if (napUnitEl) napUnitEl.innerText = "đang thức";
+                    if (sleepSubEl) {
+                        const predTime = (s.wake_window && s.wake_window.predicted_nap_time) || "--:--";
+                        sleepSubEl.innerText = `Thức từ ${s.state_start_time || '--:--'} • Dự kiến buồn ngủ lúc ${predTime}`;
+                    }
+                    if (cycLabelEl) {
+                        cycLabelEl.innerText = `Cửa sổ thức: ${s.cycle_minute || 0} / 90 phút`;
+                    }
+                    if (cycBarEl) {
+                        cycBarEl.style.width = `${Math.min(100, Math.max(5, s.cycle_progress_pct || 5))}%`;
+                    }
+                    if (box1Label) box1Label.innerText = "🤸 Vận động:";
+                    if (deepPctEl) deepPctEl.innerText = `${s.activity_level_pct || 0}%`;
+                    if (box2Label) box2Label.innerText = "⏰ Cữ ngủ kế:";
+                    if (remPctEl) remPctEl.innerText = (s.wake_window && s.wake_window.predicted_nap_time) || "--:--";
+                    if (totalTodayEl) totalTodayEl.innerText = `${s.total_sleep_today_hours || 0} giờ`;
+                    if (box4Label) box4Label.innerText = "🔄 Số lần dậy:";
+                    if (remTwitchEl) remTwitchEl.innerText = `${s.wake_count_today || 0} lần`;
+                } else {
+                    if (cardIconEl) cardIconEl.innerText = "😴";
+                    if (cardTitleEl) cardTitleEl.innerText = "Chu Kỳ Giấc Ngủ";
+                    if (napEl) {
+                        napEl.innerText = isBabyInBed ? (s.current_nap_formatted || `${s.current_nap_minutes || 0}m`) : "0 phút";
+                    }
+                    if (napUnitEl) napUnitEl.innerText = "liên tục";
+                    if (sleepSubEl) {
+                        if (isBabyInBed && s.nap_start_time) {
+                            sleepSubEl.innerText = `Ngủ liên tục từ ${s.nap_start_time} • Chu kỳ sinh học #${s.cycle_number || 1}`;
+                        } else {
+                            sleepSubEl.innerText = `Bé đang ngoài nôi hoặc được bế`;
+                        }
+                    }
+                    if (cycLabelEl) {
+                        cycLabelEl.innerText = `Phút ${s.cycle_minute || 0} / 50 (Chu kỳ #${s.cycle_number || 1})`;
+                    }
+                    if (cycBarEl) {
+                        cycBarEl.style.width = `${Math.min(100, Math.max(4, s.cycle_progress_pct || 4))}%`;
+                    }
+                    if (box1Label) box1Label.innerText = "🌊 Ngủ sâu:";
+                    if (deepPctEl) deepPctEl.innerText = `${s.deep_ratio_pct || 0}%`;
+                    if (box2Label) box2Label.innerText = "✨ Ngủ REM:";
+                    if (remPctEl) remPctEl.innerText = `${s.rem_ratio_pct || 0}%`;
+                    if (totalTodayEl) totalTodayEl.innerText = `${s.total_sleep_today_hours || 0} giờ`;
+                    if (box4Label) box4Label.innerText = "⚡ Giật mình:";
+                    if (remTwitchEl) remTwitchEl.innerText = `${s.rem_twitch_count || 0} lần REM`;
+                }
+
+                if (s.wake_window && s.wake_window.hint) {
+                    document.getElementById('vital-wake-hint').innerText = s.wake_window.hint;
+                }
+
+                // Update Gemini API Health, Request Counter, Multi-Model Pool & Tracking Supervision
+                const gBadge = document.getElementById('vital-gemini-badge');
+                const gModelSub = document.getElementById('vital-gemini-model-sub');
+                const gUsageCount = document.getElementById('vital-gemini-usage-count');
+                const gPoolStatus = document.getElementById('vital-gemini-pool-status');
+                const gTrackBadge = document.getElementById('vital-gemini-tracking-badge');
+                const opinionEl = document.getElementById('vital-gemini-opinion');
+                const hdrDot = document.getElementById('header-gemini-dot');
+                const hdrText = document.getElementById('header-gemini-text');
+
+                if (g && gBadge) {
+                    const kh = g.key_health || (g.has_api_key ? 'valid' : 'missing');
+                    if (kh === 'valid') {
+                        gBadge.innerText = "✅ API Còn Hạn";
+                        gBadge.className = "text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/30 whitespace-nowrap";
+                        if (hdrDot) hdrDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                        if (hdrText) hdrText.innerText = `Gemini: Còn hạn (${(g.usage && g.usage.calls_today) || 0} req)`;
+                    } else if (kh === 'quota_exceeded') {
+                        gBadge.innerText = "⚠️ Tạm hết Quota (429)";
+                        gBadge.className = "text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/30 whitespace-nowrap";
+                        if (hdrDot) hdrDot.className = "w-2 h-2 rounded-full bg-amber-400";
+                        if (hdrText) hdrText.innerText = "Gemini: Đợi hồi Quota";
+                    } else if (kh === 'expired_or_invalid') {
+                        gBadge.innerText = "❌ Key Hết Hạn / Sai";
+                        gBadge.className = "text-[10px] font-bold text-rose-300 bg-rose-500/15 px-2.5 py-1 rounded-full border border-rose-500/30 whitespace-nowrap";
+                        if (hdrDot) hdrDot.className = "w-2 h-2 rounded-full bg-rose-500";
+                        if (hdrText) hdrText.innerText = "Gemini: Key Lỗi/Hết hạn";
+                    } else {
+                        gBadge.innerText = "Chưa gắn API";
+                        gBadge.className = "text-[10px] font-bold text-slate-400 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700 whitespace-nowrap";
+                        if (hdrDot) hdrDot.className = "w-2 h-2 rounded-full bg-slate-500";
+                        if (hdrText) hdrText.innerText = "Gemini: Chưa bật";
+                    }
+
+                    if (gModelSub && g.model) {
+                        gModelSub.innerText = `Đang dùng: ${g.model}${g.last_checked_at ? ' • ' + g.last_checked_at : ''}`;
+                    }
+
+                    if (g.usage) {
+                        const u = g.usage;
+                        if (gUsageCount) {
+                            gUsageCount.innerText = `${u.calls_last_1m || 0} lần (1p qua) • ${u.calls_today || 0} lần hôm nay`;
+                        }
+                        if (gPoolStatus) {
+                            gPoolStatus.innerText = `${u.healthy_models_count || 0}/${u.total_models_pool || 9} Model Free sẵn sàng`;
+                        }
+                    }
+
+                    if (g.tracking_audit && gTrackBadge) {
+                        const ta = g.tracking_audit;
+                        if (ta.timestamp) {
+                            const lblCrib = document.getElementById('lbl-auto-crib');
+                            if (lblCrib) {
+                                lblCrib.innerText = `Tự Động Căn Nôi (${ta.timestamp})`;
+                            }
+                            if (ta.corrected) {
+                                gTrackBadge.innerText = `🔧 Đã tự căn chỉnh (${ta.timestamp})`;
+                                gTrackBadge.className = "font-bold text-amber-300";
+                            } else {
+                                gTrackBadge.innerText = `✅ Chuẩn ${ta.accuracy_score || 95}% (${ta.timestamp})`;
+                                gTrackBadge.className = "font-bold text-emerald-300";
+                            }
+                        }
+                    }
+
+                    if (opinionEl) {
+                        if (g.last_consultation && g.last_consultation.summary_vi && g.last_consultation.timestamp) {
+                            opinionEl.innerText = `🕒 [${g.last_consultation.timestamp}] ${g.last_consultation.summary_vi}`;
+                        } else if (g.error_detail && kh !== 'valid') {
+                            opinionEl.innerText = `⚠️ Chi tiết lỗi API: ${g.error_detail}`;
+                        }
+                    }
+                }
+
+                const cryPct = Math.round(a.cry_probability || 0);
+                const coughPct = Math.round(a.cough_probability || 0);
+                const soundLabelEl = document.getElementById('vital-sound-label');
+                const cryPctEl = document.getElementById('vital-cry-pct');
+                const soundBarEl = document.getElementById('vital-sound-bar');
+
+                soundLabelEl.innerText = a.top_sound || "Yên tĩnh";
+                cryPctEl.innerText = `${cryPct}%`;
+                document.getElementById('vital-cough-pct').innerText = `${coughPct}%`;
+                soundBarEl.style.width = `${Math.min(100, Math.max(5, a.volume || 5))}%`;
+
+                // Cảnh báo màu sắc nổi bật khi bé khóc hoặc ho
+                if (cryPct >= 40 || a.is_crying) {
+                    soundLabelEl.className = "text-[11px] font-bold text-rose-300 bg-rose-500/25 px-2.5 py-0.5 rounded-full border border-rose-500/50 animate-pulse";
+                    cryPctEl.className = "text-rose-400 font-bold text-sm";
+                    soundBarEl.className = "bg-gradient-to-r from-amber-500 to-rose-500 h-full transition-all duration-300";
+                } else if (coughPct >= 35 || a.is_coughing) {
+                    soundLabelEl.className = "text-[11px] font-bold text-amber-300 bg-amber-500/25 px-2.5 py-0.5 rounded-full border border-amber-500/50 animate-pulse";
+                    cryPctEl.className = "text-slate-200 font-semibold";
+                    soundBarEl.className = "bg-gradient-to-r from-emerald-500 to-amber-500 h-full transition-all duration-300";
+                } else {
+                    soundLabelEl.className = "text-[11px] font-semibold text-slate-300 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700";
+                    cryPctEl.className = "text-slate-200 font-semibold";
+                    soundBarEl.className = "bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300";
+                }
+
+                // Update Smart White Noise & Closed-Loop Mic Status
+                const curTrackEl = document.getElementById('music-current-track');
+                const calStateEl = document.getElementById('music-calibration-state');
+                const liveVolEl = document.getElementById('music-live-vol-pct');
+                const liveVolBar = document.getElementById('music-live-vol-bar');
+                const liveMicEl = document.getElementById('music-live-mic-pct');
+                const liveMicBar = document.getElementById('music-live-mic-bar');
+
+                if (m.is_playing) {
+                    if (curTrackEl) curTrackEl.innerText = `Đang phát: ${m.current_track_label || m.current_track}`;
+                } else {
+                    if (curTrackEl) curTrackEl.innerText = `Đang dừng (Mặc định: ${m.current_track_label || 'Tiếng Ồn Trắng'})`;
+                }
+                if (calStateEl && m.calibration_state_vi) {
+                    calStateEl.innerText = m.calibration_state_vi;
+                }
+                const curVolPct = m.is_playing ? (m.current_volume_pct || 4) : 0;
+                const curMicPct = Math.round(m.measured_mic_pct || a.volume || 0);
+                const estDb = m.estimated_db || Math.round(32 + curMicPct * 0.42);
+                if (liveVolEl) liveVolEl.innerText = m.is_playing ? `${curVolPct}% (Tối đa ${m.max_volume_pct || 65}%)` : `0% (Chờ phát từ 4%)`;
+                if (liveVolBar) liveVolBar.style.width = `${Math.min(100, Math.max(4, curVolPct))}%`;
+                if (liveMicEl) liveMicEl.innerText = `${curMicPct}% (~${estDb} dB)`;
+                if (liveMicBar) liveMicBar.style.width = `${Math.min(100, Math.max(5, curMicPct))}%`;
+
+            } catch (e) {
+                // Silently ignore transient network blips
+            }
+        }
+
+        // 1-Click Manual Tracking Audit & Hot-Calibration via Gemini
+        async function manualAuditTrackingWithGemini() {
+            const btn = document.getElementById('btn-audit-tracking');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span><span>Đang chấm...</span>`;
+            }
+            showToast("Đang gửi hình cho Gemini kiểm tra & hiệu chỉnh khung Tracking...", "🎯");
+            try {
+                const res = await fetch('/api/gemini/audit-tracking', { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    const icon = d.tracking_accurate ? "✅" : "🔧";
+                    showToast(`${icon} Điểm Tracking: ${d.accuracy_score}% — ${d.feedback_vi}`, icon);
+                    fetchStatus();
+                } else {
+                    showToast(d.error || "Không kiểm tra được Tracking", "⚠️");
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối khi kiểm tra Tracking", "⚠️");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>🎯</span><span>Chấm điểm Tracking</span>`;
+                }
+            }
+        }
+
+        // 1-Click Probe Google Gemini API Key Expiration & Quota Pool
+        async function quickProbeGeminiHealth() {
+            const btn = document.getElementById('btn-probe-gemini');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span><span>Đang thử...</span>`;
+            }
+            try {
+                const res = await fetch('/api/test-gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: "" })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    showToast(d.message || "✅ API Google còn hạn & hoạt động tốt!", "✅");
+                } else {
+                    showToast(d.error || "❌ API Key hết hạn hoặc lỗi!", "❌");
+                }
+                fetchStatus();
+            } catch (e) {
+                showToast("Lỗi khi kiểm tra hạn API", "⚠️");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>🔄</span><span>Kiểm tra hạn API</span>`;
+                }
+            }
+        }
+
+        // Fetch Sleep Insights & Morning 07:00 Pediatric AI Analysis Table
+        function renderSleepSummaryUI(s) {
+            const score = s.sleep_score || 90;
+            document.getElementById('sleep-score-number').innerText = score;
+            const circle = document.getElementById('sleep-score-circle');
+            const offset = 251.2 - (251.2 * score / 100);
+            circle.style.strokeDashoffset = offset;
+
+            document.getElementById('sleep-total-hours').innerText = `${s.total_sleep_today_hours || 0}h`;
+            const awakeHoursEl = document.getElementById('sleep-total-awake');
+            if (awakeHoursEl) awakeHoursEl.innerText = `${s.total_awake_today_hours || 0.5}h`;
+            document.getElementById('sleep-wake-count').innerText = `${s.wake_count_today || 0} lần`;
+            document.getElementById('sleep-current-nap').innerText = s.current_state === "AWAKE"
+                ? `Thức ${s.current_awake_formatted || '0m'}`
+                : (s.current_nap_formatted || `${s.current_nap_minutes || 0}m`);
+
+            if (s.wake_window) {
+                document.getElementById('wake-status-text').innerText = s.wake_window.status_text || "Bé đang ngủ";
+                document.getElementById('predicted-nap-time').innerText = s.wake_window.predicted_nap_time ? `Cữ ngủ tới: ${s.wake_window.predicted_nap_time}` : "Đang trong cữ ngủ";
+                document.getElementById('wake-hint-text').innerText = s.wake_window.hint || "";
+            }
+
+            // Render Bảng Phân Tích Nhi Khoa 24h & Đêm Qua (Morning 07:00 Report)
+            if (s.daily_analysis) {
+                const da = s.daily_analysis;
+                const metaEl = document.getElementById('sleep-ai-report-meta');
+                if (metaEl) {
+                    metaEl.innerText = `Ngày ${da.date || s.today_date} • Nguồn: ${da.source || 'Bác Sĩ Giấc Ngủ AI'} • Cập nhật lúc ${da.generated_at || '--:--'}`;
+                }
+                const tbody = document.getElementById('sleep-ai-analysis-table-body');
+                if (tbody && da.rows) {
+                    tbody.innerHTML = da.rows.map(r => {
+                        const colorMap = {
+                            emerald: "text-emerald-300 bg-emerald-500/15 border-emerald-500/30",
+                            amber: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                            cyan: "text-cyan-300 bg-cyan-500/15 border-cyan-500/30"
+                        };
+                        const badgeCls = colorMap[r.badge_color] || colorMap.emerald;
+                        return `
+                        <tr class="hover:bg-slate-900/50 transition">
+                            <td class="py-3 px-4 font-semibold text-slate-200">${r.metric}</td>
+                            <td class="py-3 px-4 font-bold text-purple-300">${r.measured}</td>
+                            <td class="py-3 px-4 text-slate-400">${r.standard}</td>
+                            <td class="py-3 px-4 text-right">
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border ${badgeCls}">${r.status}</span>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                }
+                const sumEl = document.getElementById('sleep-ai-summary-text');
+                if (sumEl && da.summary_vi) {
+                    sumEl.innerText = da.summary_vi;
+                }
+                const tipsEl = document.getElementById('sleep-ai-tips-list');
+                if (tipsEl && da.tips_vi && da.tips_vi.length > 0) {
+                    tipsEl.innerHTML = da.tips_vi.map(t => `<li>${t}</li>`).join('');
+                }
+            }
+
+            // Render Chi tiết các cữ ngủ trong ngày
+            const list = document.getElementById('sleep-sessions-list');
+            if (s.sessions && s.sessions.length > 0) {
+                list.innerHTML = s.sessions.map(ss => `
+                    <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-3">
+                            <span class="text-base">💤</span>
+                            <div>
+                                <span class="font-bold text-slate-200">${ss.start} - ${ss.end}</span>
+                                <span class="text-slate-400 block text-[11px]">Ngày ${ss.date || s.today_date || ''}</span>
+                            </div>
+                        </div>
+                        <span class="font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">${ss.duration_minutes} phút</span>
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Bé đang trong cữ theo dõi hiện tại. Các cữ ngủ hoàn tất (≥ 3 phút) sẽ được tự động lưu vào đây.</div>`;
+            }
+
+            // Render Sổ theo dõi tổng kết theo từng ngày
+            const histList = document.getElementById('sleep-daily-history-list');
+            if (histList) {
+                const todayEntry = {
+                    date: `${s.today_date || 'Hôm nay'} (Đang đếm trực tiếp)`,
+                    total_sleep_hours: s.total_sleep_today_hours || 0,
+                    total_awake_hours: s.total_awake_today_hours || 0.5,
+                    wake_count: s.wake_count_today || 0,
+                    longest_nap_minutes: s.longest_nap_minutes || 0,
+                    sleep_score: s.sleep_score || 92
+                };
+                const allDays = [todayEntry, ...(s.daily_history || [])];
+                histList.innerHTML = allDays.map((d, idx) => `
+                    <div class="p-3 rounded-2xl ${idx === 0 ? 'bg-indigo-950/30 border border-indigo-500/30' : 'bg-slate-900/60 border border-slate-800/80'} flex items-center justify-between text-xs">
+                        <div>
+                            <span class="font-bold ${idx === 0 ? 'text-indigo-200' : 'text-slate-200'}">📅 ${d.date}</span>
+                            <span class="text-slate-400 block text-[11px] mt-0.5">
+                                Ngủ: <b class="text-emerald-300">${d.total_sleep_hours}h</b> • Thức: <b class="text-cyan-300">${d.total_awake_hours || 2.0}h</b> • Cữ dài nhất: <b>${d.longest_nap_minutes}p</b>
+                            </span>
+                        </div>
+                        <span class="font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/30">Điểm: ${d.sleep_score}/100</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function fetchSleepData() {
+            try {
+                const res = await fetch('/api/sleep_summary');
+                const s = await res.json();
+                renderSleepSummaryUI(s);
+            } catch (e) {
+                console.error("Sleep fetch error:", e);
+            }
+        }
+
+        async function triggerAiSleepReportNow() {
+            const btn = document.getElementById('btn-analyze-sleep-ai');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span><span>Bác sĩ AI đang phân tích 24h...</span>`;
+            }
+            showToast("Đang gửi số liệu giấc ngủ 24h cho Bác sĩ Nhi khoa Gemini phân tích...", "🧠");
+            try {
+                const res = await fetch('/api/sleep/analyze-ai', { method: 'POST' });
+                const d = await res.json();
+                if (d.success && d.summary) {
+                    renderSleepSummaryUI(d.summary);
+                    showToast("Đã cập nhật Bảng Phân Tích Chuyên Sâu từ Bác Sĩ AI!", "🌅");
+                } else {
+                    showToast(d.error || "Không tạo được báo cáo AI", "⚠️");
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối khi phân tích giấc ngủ", "⚠️");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>🧠</span><span>Phân Tích Ngay Với Bác Sĩ AI</span>`;
+                }
+            }
+        }
+
+        // ================= MOMENTS MULTI-SELECT STATE & LOGIC =================
+        let cachedMoments = [];
+        let selectedMoments = new Set();
+        let isMomentSelectMode = false;
+
+        function toggleMomentSelectMode() {
+            isMomentSelectMode = !isMomentSelectMode;
+            if (!isMomentSelectMode) {
+                selectedMoments.clear();
+            }
+            updateMomentsSelectionUI();
+        }
+
+        function exitMomentSelectMode() {
+            isMomentSelectMode = false;
+            selectedMoments.clear();
+            updateMomentsSelectionUI();
+        }
+
+        function toggleMomentSelection(filename, evt) {
+            if (evt) {
+                evt.stopPropagation();
+                evt.preventDefault();
+            }
+            if (selectedMoments.has(filename)) {
+                selectedMoments.delete(filename);
+            } else {
+                selectedMoments.add(filename);
+            }
+            if (selectedMoments.size > 0) {
+                isMomentSelectMode = true;
+            }
+            updateMomentsSelectionUI();
+        }
+
+        function selectAllMoments() {
+            cachedMoments.forEach(m => selectedMoments.add(m.filename));
+            updateMomentsSelectionUI();
+        }
+
+        function deselectAllMoments() {
+            selectedMoments.clear();
+            updateMomentsSelectionUI();
+        }
+
+        function handleMomentCardClick(filename, url, captionWithTime, evt) {
+            if (isMomentSelectMode || selectedMoments.size > 0) {
+                toggleMomentSelection(filename, evt);
+            } else {
+                openMediaModal(url, captionWithTime, 'image');
+            }
+        }
+
+        function updateMomentsSelectionUI() {
+            const countEl = document.getElementById('moments-selected-count');
+            const batchBar = document.getElementById('moments-batch-bar');
+            const selectBtnText = document.getElementById('btn-select-mode-text');
+            const selectBtn = document.getElementById('btn-toggle-select-moments');
+
+            const count = selectedMoments.size;
+            if (countEl) countEl.textContent = count;
+
+            if (isMomentSelectMode || count > 0) {
+                if (batchBar) batchBar.classList.remove('hidden');
+                if (selectBtnText) selectBtnText.textContent = count > 0 ? `Đang Chọn (${count})` : 'Hủy Chọn';
+                if (selectBtn) {
+                    selectBtn.classList.add('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
+                    selectBtn.classList.remove('bg-cardbg', 'text-slate-200');
+                }
+            } else {
+                if (batchBar) batchBar.classList.add('hidden');
+                if (selectBtnText) selectBtnText.textContent = 'Chọn Nhiều';
+                if (selectBtn) {
+                    selectBtn.classList.remove('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
+                    selectBtn.classList.add('bg-cardbg', 'text-slate-200');
+                }
+            }
+
+            cachedMoments.forEach(m => {
+                const card = document.getElementById(`moment-card-${m.filename}`);
+                const chk = document.getElementById(`moment-chk-${m.filename}`);
+                const chkSvg = document.getElementById(`moment-chk-svg-${m.filename}`);
+                if (!card) return;
+
+                const isSel = selectedMoments.has(m.filename);
+                if (isSel) {
+                    card.classList.add('ring-2', 'ring-emerald-400', 'border-transparent', 'shadow-emerald-500/20', 'shadow-lg');
+                    card.classList.remove('border-bordercol');
+                } else {
+                    card.classList.remove('ring-2', 'ring-emerald-400', 'border-transparent', 'shadow-emerald-500/20', 'shadow-lg');
+                    card.classList.add('border-bordercol');
+                }
+
+                if (chk) {
+                    if (isSel) {
+                        chk.className = 'w-6 h-6 rounded-full border-2 bg-emerald-500 text-slate-950 border-emerald-400 flex items-center justify-center transition-all shadow-md active:scale-90';
+                    } else if (isMomentSelectMode) {
+                        chk.className = 'w-6 h-6 rounded-full border-2 bg-slate-950/80 text-transparent border-slate-400/60 hover:border-emerald-400 flex items-center justify-center transition-all shadow-md active:scale-90';
+                    } else {
+                        chk.className = 'w-6 h-6 rounded-full border-2 bg-slate-950/70 text-transparent border-slate-500/40 hover:border-emerald-400 hidden group-hover:flex items-center justify-center transition-all shadow-md active:scale-90';
+                    }
+                }
+                if (chkSvg) {
+                    if (isSel) {
+                        chkSvg.classList.add('stroke-slate-950');
+                        chkSvg.classList.remove('stroke-transparent');
+                    } else {
+                        chkSvg.classList.add('stroke-transparent');
+                        chkSvg.classList.remove('stroke-slate-950');
+                    }
+                }
+            });
+        }
+
+        async function batchDeleteMoments() {
+            const count = selectedMoments.size;
+            if (count === 0) {
+                showToast("Vui lòng chọn ít nhất 1 ảnh để xóa", "ℹ️");
+                return;
+            }
+            if (!confirm(`Bạn có chắc chắn muốn xóa ${count} khoảnh khắc đã chọn không?`)) return;
+
+            try {
+                const filenames = Array.from(selectedMoments);
+                const res = await fetch('/api/moments/batch-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filenames })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    showToast(`Đã xóa thành công ${d.deleted_count} khoảnh khắc!`, "🗑️");
+                    selectedMoments.clear();
+                    fetchMoments(false);
+                } else {
+                    showToast("Lỗi xóa: " + (d.error || "Không rõ"), "⚠️");
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối khi xóa hàng loạt", "⚠️");
+            }
+        }
+
+        async function batchDownloadMoments() {
+            const count = selectedMoments.size;
+            if (count === 0) {
+                showToast("Vui lòng chọn ít nhất 1 ảnh để tải về", "ℹ️");
+                return;
+            }
+            showToast(`Đang nén ${count} ảnh thành tệp ZIP...`, "📦");
+            try {
+                const filenames = Array.from(selectedMoments);
+                const res = await fetch('/api/moments/batch-download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filenames })
+                });
+                if (!res.ok) {
+                    throw new Error("Lỗi tải tệp nén");
+                }
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const now = new Date();
+                const ts = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+                a.download = `khoanh_khac_be_${ts}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                showToast(`Đã tải về tệp ZIP (${count} khoảnh khắc)!`, "🎉");
+            } catch (e) {
+                console.error(e);
+                showToast("Lỗi khi tải tệp ZIP", "⚠️");
+            }
+        }
+
+        // Fetch Cute Moments (with Authentic Gemini AI Badge Verification)
+        async function fetchMoments(isUserClick = false) {
+            const icon = document.getElementById('reload-moments-icon');
+            if (icon) icon.classList.add('rotate-180');
+            try {
+                const res = await fetch('/api/moments');
+                const moments = await res.json();
+                cachedMoments = moments || [];
+                const presentSet = new Set(cachedMoments.map(m => m.filename));
+                for (const fn of selectedMoments) {
+                    if (!presentSet.has(fn)) selectedMoments.delete(fn);
+                }
+
+                const grid = document.getElementById('moments-grid');
+                if (!cachedMoments || cachedMoments.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full p-8 text-center text-xs text-slate-400 bg-cardbg rounded-3xl border border-bordercol">Chưa có khoảnh khắc nào được chụp. AI sẽ tự động chụp khi bé mỉm cười hoặc ngủ ngoan (đã qua bộ lọc quyền riêng tư & thẩm mỹ nghiêm ngặt)!</div>`;
+                    if (isUserClick) showToast("Chưa có khoảnh khắc mới", "ℹ️");
+                    updateMomentsSelectionUI();
+                    return;
+                }
+                grid.innerHTML = cachedMoments.map(m => {
+                    const caption = (m.caption_vi || 'Khoảnh khắc đáng yêu của bé').replace(/'/g, "\\'");
+                    const isAiVerified = Boolean(m.checked_by_gemini);
+                    const badgeText = isAiVerified
+                        ? (m.has_other_person ? '👨‍👩‍👧 Có người thân • AI Duyệt' : '✨ AI Đã Duyệt Riêng Tư')
+                        : '📷 Chụp Cục Bộ';
+                    const badgeClass = isAiVerified
+                        ? 'text-emerald-300 border-emerald-500/30'
+                        : 'text-slate-300 border-slate-600/40';
+                    const scoreBadge = (isAiVerified && m.aesthetic_score) ? `⭐ ${m.aesthetic_score}/10` : '';
+
+                    const isSel = selectedMoments.has(m.filename);
+                    const ringClass = isSel ? 'ring-2 ring-emerald-400 border-transparent shadow-emerald-500/20 shadow-lg' : 'border-bordercol';
+                    const chkClass = isSel 
+                        ? 'w-6 h-6 rounded-full border-2 bg-emerald-500 text-slate-950 border-emerald-400 flex items-center justify-center transition-all shadow-md active:scale-90'
+                        : (isMomentSelectMode 
+                            ? 'w-6 h-6 rounded-full border-2 bg-slate-950/80 text-transparent border-slate-400/60 hover:border-emerald-400 flex items-center justify-center transition-all shadow-md active:scale-90'
+                            : 'w-6 h-6 rounded-full border-2 bg-slate-950/70 text-transparent border-slate-500/40 hover:border-emerald-400 hidden group-hover:flex items-center justify-center transition-all shadow-md active:scale-90');
+                    const chkSvgStroke = isSel ? 'stroke-slate-950' : 'stroke-transparent';
+
+                    return `
+                    <div id="moment-card-${m.filename}" class="group relative rounded-2xl overflow-hidden border ${ringClass} bg-slate-900 aspect-square cursor-pointer transition-all duration-200 select-none" onclick="handleMomentCardClick('${m.filename}', '${m.url}', '${caption} (${m.timestamp})', event)">
+                        <img src="${m.url}" class="w-full h-full object-cover transition-transform duration-300 ${isSel ? 'scale-95 brightness-90' : 'group-hover:scale-105'}" loading="lazy">
+                        
+                        <!-- Multi-select Checkbox (Top-Right) -->
+                        <div class="absolute top-2 right-2 z-10">
+                            <button type="button" id="moment-chk-${m.filename}" onclick="toggleMomentSelection('${m.filename}', event)" 
+                                    class="${chkClass}"
+                                    title="${isSel ? 'Bỏ chọn' : 'Chọn ảnh này'}">
+                                <svg id="moment-chk-svg-${m.filename}" class="w-3.5 h-3.5 stroke-[3] ${chkSvgStroke}" fill="none" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- AI Badge & Score (Top-Left) -->
+                        <div class="absolute top-2 left-2 flex items-center gap-1 pointer-events-none z-0">
+                            <span class="bg-slate-950/80 backdrop-blur-md text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badgeClass}">${badgeText}</span>
+                            ${scoreBadge ? `<span class="bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">${scoreBadge}</span>` : ''}
+                        </div>
+
+                        <!-- Hover Gradient Overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end pointer-events-none">
+                            <p class="text-[11px] font-medium text-slate-100 line-clamp-2 mb-1">${m.caption_vi || 'Khoảnh khắc đáng yêu'}</p>
+                            <span class="text-[10px] text-slate-400">${m.timestamp}</span>
+                            <div class="flex items-center justify-between pt-1.5 border-t border-slate-700/60 mt-1 pointer-events-auto">
+                                <a href="${m.url}" download="${m.filename}" onclick="event.stopPropagation()" class="text-emerald-400 hover:text-emerald-300 text-[11px] font-semibold">⬇️ Tải về</a>
+                                <button onclick="deleteMoment('${m.filename}', event)" class="text-rose-400 hover:text-rose-300 text-[11px] font-semibold">🗑️ Xóa</button>
+                            </div>
+                        </div>
+                    </div>
+                `}).join('');
+                updateMomentsSelectionUI();
+                if (isUserClick) {
+                    showToast(`Đã làm mới! Có ${cachedMoments.length} khoảnh khắc sạch đẹp`, "🔄");
+                }
+            } catch (e) {
+                console.error("Moments error:", e);
+                if (isUserClick) showToast("Lỗi làm mới", "⚠️");
+            } finally {
+                if (icon) {
+                    setTimeout(() => icon.classList.remove('rotate-180'), 500);
+                }
+            }
+        }
+
+        async function deleteMoment(fn, evt) {
+            if (evt) evt.stopPropagation();
+            if (!confirm("Bạn có chắc chắn muốn xóa khoảnh khắc này?")) return;
+            try {
+                await fetch(`/api/moments/${fn}`, { method: 'DELETE' });
+                showToast("Đã xóa khoảnh khắc thành công", "🗑️");
+                selectedMoments.delete(fn);
+                fetchMoments(false);
+            } catch (e) {
+                showToast("Lỗi khi xóa", "⚠️");
+            }
+        }
+
+        // Fetch Event Recordings
+        async function fetchRecordings(isUserClick = false) {
+            const icon = document.getElementById('reload-recordings-icon');
+            if (icon) icon.classList.add('rotate-180');
+            try {
+                const res = await fetch('/api/recordings');
+                const recs = await res.json();
+                const list = document.getElementById('recordings-list');
+                if (!recs || recs.length === 0) {
+                    list.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-cardbg rounded-3xl border border-bordercol">Chưa có video sự kiện nào được ghi lại.</div>`;
+                    if (isUserClick) showToast("Chưa có video mới", "ℹ️");
+                    return;
+                }
+                list.innerHTML = recs.map(r => `
+                    <div class="p-4 rounded-2xl bg-cardbg border border-bordercol flex items-center justify-between gap-4 hover:border-slate-700 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-lg">📹</div>
+                            <div>
+                                <span class="font-bold text-xs text-slate-100 block">${r.title || r.name}</span>
+                                <span class="text-[11px] text-slate-400">${r.timestamp || ''} • ${r.size_mb || 0} MB</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openMediaModal('${r.video_url}', '${r.title || r.name}', 'video')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-400 transition">
+                                ▶ Xem
+                            </button>
+                            <a href="${r.video_url}" download class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition text-xs" title="Tải về máy">
+                                ⬇️
+                            </a>
+                        </div>
+                    </div>
+                `).join('');
+                if (isUserClick) showToast(`Đã làm mới! Có ${recs.length} video sự kiện`, "📁");
+            } catch (e) {
+                console.error("Recordings error:", e);
+                if (isUserClick) showToast("Lỗi làm mới", "⚠️");
+            } finally {
+                if (icon) {
+                    setTimeout(() => icon.classList.remove('rotate-180'), 500);
+                }
+            }
+        }
+
+        // Fetch Recent Events
+        async function fetchEvents(isUserClick = false) {
+            const icon = document.getElementById('reload-events-icon');
+            if (icon) icon.classList.add('rotate-180');
+            try {
+                const res = await fetch('/api/events');
+                const events = await res.json();
+                const container = document.getElementById('recent-events-list');
+                if (!events || events.length === 0) {
+                    container.innerHTML = `<div class="p-3 text-center text-xs text-slate-500">Chưa có sự kiện nào gần đây.</div>`;
+                    if (isUserClick) showToast("Chưa có sự kiện mới", "ℹ️");
+                    return;
+                }
+                container.innerHTML = events.slice(0, 15).map(ev => `
+                    <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-base">${ev.type === 'cry' ? '🚨' : (ev.type === 'cough' ? '🥛' : (ev.type === 'prone' ? '⛔' : '⚠️'))}</span>
+                            <div>
+                                <span class="font-bold text-slate-200 block">${ev.title || ev.type}</span>
+                                <span class="text-[11px] text-slate-400">${ev.message || ''}</span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-slate-500 whitespace-nowrap">${ev.timestamp || ''}</span>
+                    </div>
+                `).join('');
+                if (isUserClick) showToast(`Đã cập nhật sự kiện mới nhất`, "🔔");
+            } catch (e) {
+                console.error("Events error:", e);
+                if (isUserClick) showToast("Lỗi làm mới", "⚠️");
+            } finally {
+                if (icon) {
+                    setTimeout(() => icon.classList.remove('rotate-180'), 500);
+                }
+            }
+        }
+
+        // Manual Snapshot (with Gemini Privacy & Co-Presence Aesthetic Check if enabled)
+        async function takeManualSnapshot() {
+            showToast("Đang chụp & kiểm duyệt thẩm mỹ...", "⏳");
+            try {
+                const res = await fetch('/api/take-snapshot', { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    showToast(d.caption_vi ? `Đã lưu: "${d.caption_vi}"` : "Đã lưu khoảnh khắc mới vào Album!", "📸");
+                    await fetchMoments(false);
+                } else {
+                    showToast(d.error || "Không lưu được ảnh", "🛡️");
+                }
+            } catch (e) {
+                showToast("Lỗi khi chụp ảnh", "⚠️");
+            }
+        }
+
+        // Gemini AI Smart Crib Auto-Calibration
+        async function autoCalibrateCribWithGemini() {
+            const btn = document.getElementById('btn-ai-calibrate');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span><span>Đang phân tích...</span>`;
+            }
+            showToast("Gemini AI đang phân tích vùng nôi & vật cản...", "✨");
+            try {
+                const res = await fetch('/api/gemini/auto-calibrate', { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    if (d.safe_zone) {
+                        safeZoneCoords = {
+                            top: d.safe_zone.top,
+                            bottom: d.safe_zone.bottom,
+                            left: d.safe_zone.left,
+                            right: d.safe_zone.right
+                        };
+                    }
+                    const opinionEl = document.getElementById('vital-gemini-opinion');
+                    if (opinionEl && d.safety_advice_vi) {
+                        opinionEl.innerText = `✨ Căn chỉnh: ${d.safety_advice_vi}`;
+                    }
+                    showToast(d.safety_advice_vi || "Đã căn chỉnh vùng nôi thành công!", "✅");
+                } else {
+                    showToast(d.error || "Chưa thể căn chỉnh tự động", "⚠️");
+                    if (d.error && d.error.includes("API")) {
+                        openSettingsModal();
+                    }
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối Gemini AI", "⚠️");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>✨</span><span>AI Căn Chỉnh Nôi</span>`;
+                }
+            }
+        }
+
+        // Push-to-Talk Two-way Intercom
+        const talkBtn = document.getElementById('talkback-btn');
+        talkBtn.addEventListener('mousedown', startTalkback);
+        talkBtn.addEventListener('mouseup', stopTalkback);
+        talkBtn.addEventListener('mouseleave', stopTalkback);
+        talkBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startTalkback(); });
+        talkBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopTalkback(); });
+        talkBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); stopTalkback(); });
+
+        async function startTalkback() {
+            if (isRecordingTalkback) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.start();
+                isRecordingTalkback = true;
+                talkBtn.classList.remove('bg-emerald-500');
+                talkBtn.classList.add('bg-rose-500', 'animate-pulse');
+                document.getElementById('talkback-label').innerText = "Đang nói... thả ra để phát";
+            } catch (err) {
+                showToast("Vui lòng cấp quyền Micro trên trình duyệt", "⚠️");
+            }
+        }
+
+        async function stopTalkback() {
+            if (!isRecordingTalkback || !mediaRecorder) return;
+            mediaRecorder.stop();
+            isRecordingTalkback = false;
+            talkBtn.classList.remove('bg-rose-500', 'animate-pulse');
+            talkBtn.classList.add('bg-emerald-500');
+            document.getElementById('talkback-label').innerText = "Giữ để nói với bé";
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('audio_file', audioBlob, 'talk.webm');
+                try {
+                    await fetch('/api/talkback', { method: 'POST', body: formData });
+                    showToast("Đã phát giọng nói qua loa phòng bé!", "🔊");
+                } catch (e) {
+                    showToast("Lỗi phát loa", "⚠️");
+                }
+            };
+        }
+
+        // Smart White Noise & Instrumental Lullaby Modal (Closed-Loop Mic Calibration)
+        function toggleMusicModal() {
+            const m = document.getElementById('music-modal');
+            m.classList.toggle('hidden');
+            if (!m.classList.contains('hidden')) {
+                fetchPlaylist();
+            }
+        }
+
+        function onMusicSliderInput() {
+            const targetMic = Number(document.getElementById('slider-music-target-mic')?.value || 32);
+            const maxVol = Number(document.getElementById('slider-music-max-vol')?.value || 65);
+            const estDb = Math.round(32 + targetMic * 0.42);
+            const lblMic = document.getElementById('lbl-music-target-mic');
+            const lblVol = document.getElementById('lbl-music-max-vol');
+            if (lblMic) lblMic.innerText = `${targetMic}% (~${estDb} dB Chuẩn AAP)`;
+            if (lblVol) lblVol.innerText = `${maxVol}%`;
+        }
+
+        async function saveMusicCalibrationConfig() {
+            onMusicSliderInput();
+            const adaptiveMic = Boolean(document.getElementById('chk-music-adaptive-mic')?.checked);
+            const targetMic = Number(document.getElementById('slider-music-target-mic')?.value || 32);
+            const maxVol = Number(document.getElementById('slider-music-max-vol')?.value || 65);
+            try {
+                await fetch('/api/music/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        adaptive_mic_mode: adaptiveMic,
+                        target_mic_pct: targetMic,
+                        max_volume_pct: maxVol
+                    })
+                });
+            } catch (e) {
+                console.error("Music config error:", e);
+            }
+        }
+
+        async function fetchPlaylist() {
+            try {
+                const res = await fetch('/api/music/list');
+                const list = await res.json();
+                const container = document.getElementById('music-playlist');
+                if (!list || list.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-500 py-3">Chưa có âm thanh nào trong hệ thống.</div>`;
+                    return;
+                }
+                container.innerHTML = list.map(item => {
+                    const fn = typeof item === 'string' ? item : item.filename;
+                    const displayName = typeof item === 'string' ? item : (item.name || item.filename);
+                    const desc = (typeof item === 'object' && item.desc) ? item.desc : 'Âm thanh ru ngủ êm dịu';
+                    const isWhiteNoise = (typeof item === 'object' && item.category === 'white_noise');
+                    const badge = isWhiteNoise
+                        ? `<span class="text-[10px] font-bold text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded-full border border-cyan-500/30">Tiếng ồn trắng</span>`
+                        : `<span class="text-[10px] font-bold text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded-full border border-purple-500/30">Nhạc không lời</span>`;
+                    return `
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800/80 flex items-center justify-between gap-2 hover:border-slate-700 transition">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="truncate font-bold text-slate-100">${displayName}</span>
+                                ${badge}
+                            </div>
+                            <span class="text-[11px] text-slate-400 block truncate mt-0.5">${desc}</span>
+                        </div>
+                        <button onclick="playMusicTrack('${fn}')" class="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl transition text-xs font-extrabold shrink-0">
+                            ▶ Phát Mềm
+                        </button>
+                    </div>
+                `}).join('');
+            } catch (e) {
+                console.error("Music error:", e);
+            }
+        }
+
+        async function playMusicTrack(track) {
+            const adaptiveMic = Boolean(document.getElementById('chk-music-adaptive-mic')?.checked ?? true);
+            const maxVol = Number(document.getElementById('slider-music-max-vol')?.value || 65) / 100.0;
+            try {
+                await fetch('/api/music/play', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filename: track,
+                        loop: true,
+                        volume: maxVol,
+                        adaptive_mic: adaptiveMic
+                    })
+                });
+                showToast(`🌱 Đang khởi động mềm từ 4% và tự canh theo Micro...`, "🌊");
+            } catch (e) {
+                showToast("Lỗi phát âm thanh", "⚠️");
+            }
+        }
+
+        async function stopMusicTrack() {
+            try {
+                await fetch('/api/music/stop', { method: 'POST' });
+                showToast("Đã dừng phát âm thanh", "⏹");
+            } catch (e) {
+                showToast("Lỗi dừng âm thanh", "⚠️");
+            }
+        }
+
+        async function uploadMusicFile() {
+            const input = document.getElementById('music-file-input');
+            if (!input.files || input.files.length === 0) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            try {
+                await fetch('/api/music/upload', { method: 'POST', body: formData });
+                showToast("Đã tải âm thanh lên thành công!", "🎵");
+                fetchPlaylist();
+            } catch (e) {
+                showToast("Lỗi tải file âm thanh", "⚠️");
+            }
+        }
+
+        // Settings Modal, Hardware Preview, Gemini Key Test & Save All
+        function openSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+            loadHardwareDevices(false);
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function switchCameraSourceTab(mode) {
+            selectedCameraSourceType = (mode === 'rtsp') ? 'rtsp' : 'usb';
+            const tabUsb = document.getElementById('cam-tab-usb');
+            const tabRtsp = document.getElementById('cam-tab-rtsp');
+            const panelUsb = document.getElementById('cam-panel-usb');
+            const panelRtsp = document.getElementById('cam-panel-rtsp');
+
+            if (selectedCameraSourceType === 'usb') {
+                tabUsb.className = "py-2 px-3 rounded-lg font-bold text-xs transition bg-emerald-500 text-slate-950";
+                tabRtsp.className = "py-2 px-3 rounded-lg font-bold text-xs transition text-slate-400 hover:text-slate-200";
+                panelUsb.classList.remove('hidden');
+                panelRtsp.classList.add('hidden');
+            } else {
+                tabRtsp.className = "py-2 px-3 rounded-lg font-bold text-xs transition bg-emerald-500 text-slate-950";
+                tabUsb.className = "py-2 px-3 rounded-lg font-bold text-xs transition text-slate-400 hover:text-slate-200";
+                panelRtsp.classList.remove('hidden');
+                panelUsb.classList.add('hidden');
+            }
+        }
+
+        function onRtspBrandChange() {
+            const brand = document.getElementById('cfg-rtsp-brand').value;
+            const customRow = document.getElementById('cfg-rtsp-custom-row');
+            if (customRow) {
+                if (brand === 'custom') customRow.classList.remove('hidden');
+                else customRow.classList.add('hidden');
+            }
+        }
+
+        let lastScannedWifiCameras = [];
+
+        function renderScannedWifiList(selectedIp = null) {
+            const listEl = document.getElementById('wifi-cameras-found-list');
+            if (!listEl) return;
+            listEl.classList.remove('hidden');
+
+            if (selectedIp) {
+                const chosen = lastScannedWifiCameras.find(c => c.ip === selectedIp);
+                if (chosen) {
+                    listEl.innerHTML = `
+                        <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-between gap-2">
+                            <div>
+                                <span class="font-bold text-emerald-300 block">✅ Đã chọn 1 Camera theo dõi bé: ${chosen.brand_hint}</span>
+                                <span class="text-[11px] text-slate-300 font-mono">Đã điền thông số IP: <b>${chosen.ip}</b> (Cổng ${chosen.port}) xuống ô bên dưới</span>
+                            </div>
+                            ${lastScannedWifiCameras.length > 1 ? `
+                                <button type="button" onclick="renderScannedWifiList(null)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] transition border border-slate-700 whitespace-nowrap">
+                                    🔄 Đổi chiếc khác (${lastScannedWifiCameras.length})
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                    return;
+                }
+            }
+
+            listEl.innerHTML = lastScannedWifiCameras.map(c => {
+                const safeBrand = (c.brand_code || 'auto').replace(/'/g, "\\'");
+                return `
+                    <div class="p-2.5 rounded-xl bg-slate-900 border border-indigo-500/30 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="font-bold text-indigo-300 block">📡 ${c.brand_hint}</span>
+                            <span class="text-[11px] text-slate-400 font-mono">Địa chỉ IP: ${c.ip} (Cổng ${c.port})</span>
+                        </div>
+                        <button type="button" onclick="selectDiscoveredWifiCam('${c.ip}', '${safeBrand}')" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-[11px] transition whitespace-nowrap">
+                            Chọn 1 chiếc này
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function scanWifiCameras() {
+            const btn = document.getElementById('btn-scan-wifi-cam');
+            const listEl = document.getElementById('wifi-cameras-found-list');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "⏳ Đang quét mạng Wi-Fi...";
+            }
+            if (listEl) {
+                listEl.classList.remove('hidden');
+                listEl.innerHTML = `<div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 text-[11px] text-center">Đang dò tìm các Camera IP trong mạng nội bộ...</div>`;
+            }
+            try {
+                const res = await fetch('/api/hardware/scan-wifi-cameras');
+                const d = await res.json();
+                if (d.success && d.cameras && d.cameras.length > 0) {
+                    lastScannedWifiCameras = d.cameras;
+                    renderScannedWifiList(null);
+                    showToast(`Tìm thấy ${d.cameras.length} Camera Wi-Fi! Hãy bấm chọn 1 chiếc quay em bé.`, "📡");
+                } else {
+                    listEl.innerHTML = `<div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-300 text-[11px]">Không tìm thấy Camera IP mở cổng tự động trên dải mạng ${d.subnet || 'Wi-Fi'}. Bạn vẫn có thể nhập thẳng địa chỉ IP Camera vào ô bên dưới.</div>`;
+                }
+            } catch (e) {
+                if (listEl) {
+                    listEl.innerHTML = `<div class="p-2.5 rounded-xl bg-slate-900 border border-rose-500/30 text-rose-300 text-[11px]">Lỗi khi quét mạng Wi-Fi.</div>`;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = "🔍 Quét Camera trong nhà";
+                }
+            }
+        }
+
+        function onIpOrSerialInput(val) {
+            const q = String(val || '').trim().toUpperCase();
+            if (!q || q.length < 3 || lastScannedWifiCameras.length === 0) return;
+            const found = lastScannedWifiCameras.find(c =>
+                (c.serial && String(c.serial).toUpperCase().includes(q)) ||
+                (c.brand_hint && String(c.brand_hint).toUpperCase().includes(q)) ||
+                (c.ip && String(c.ip) === q)
+            );
+            if (found) {
+                renderScannedWifiList(found.ip);
+                if (found.brand_code) {
+                    const sel = document.getElementById('cfg-rtsp-brand');
+                    if (sel) sel.value = found.brand_code;
+                }
+            }
+        }
+
+        function selectDiscoveredWifiCam(ip, brandCode) {
+            document.getElementById('cfg-rtsp-ip').value = ip;
+            document.getElementById('cfg-camera-rtsp-url').value = '';
+            if (brandCode) {
+                const sel = document.getElementById('cfg-rtsp-brand');
+                if (sel) {
+                    sel.value = brandCode;
+                    onRtspBrandChange();
+                }
+            }
+            renderScannedWifiList(ip);
+            showToast(`Đã nạp thông số Camera ${ip}! Hãy nhập Mật khẩu / Mã xác thực để cấp quyền xem hình.`, "🔒");
+            document.getElementById('cfg-rtsp-password').focus();
+        }
+
+        async function previewSelectedCamera() {
+            const btnUsb = document.getElementById('btn-preview-usb');
+            const btnRtsp = document.getElementById('btn-preview-rtsp');
+            const box = document.getElementById('camera-preview-box');
+            const img = document.getElementById('camera-preview-img');
+            const resBadge = document.getElementById('camera-preview-res');
+            const titleEl = document.getElementById('camera-preview-title');
+
+            if (btnUsb) btnUsb.innerHTML = `<span>⏳</span><span>Đang lấy hình...</span>`;
+            if (btnRtsp) btnRtsp.innerHTML = `<span>⏳</span><span>Đang tự dò đúng Camera khớp mã...</span>`;
+
+            // Nếu đang ở chế độ Wi-Fi mà chưa quét danh sách lần nào và chưa điền IP, tự động quét nhanh trước!
+            const currentIpVal = document.getElementById('cfg-rtsp-ip').value.trim();
+            if (selectedCameraSourceType === 'rtsp' && lastScannedWifiCameras.length === 0 && !currentIpVal) {
+                await scanWifiCameras();
+            }
+
+            const reqBody = {
+                source_type: selectedCameraSourceType,
+                camera_index: Number(document.getElementById('cfg-camera-index').value || 0),
+                brand: document.getElementById('cfg-rtsp-brand').value,
+                ip: document.getElementById('cfg-rtsp-ip').value.trim(),
+                username: 'admin',
+                password: document.getElementById('cfg-rtsp-password').value.trim(),
+                rtsp_url: document.getElementById('cfg-camera-rtsp-url').value.trim(),
+                scanned_cameras: lastScannedWifiCameras
+            };
+
+            try {
+                const res = await fetch('/api/hardware/preview-camera', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reqBody)
+                });
+                const d = await res.json();
+                if (d.success && d.image_base64) {
+                    lastPreviewResolvedSource = d.resolved_source;
+                    if (typeof d.resolved_source === 'string' && d.resolved_source.startsWith('rtsp://')) {
+                        document.getElementById('cfg-camera-rtsp-url').value = d.resolved_source;
+                    }
+                    // Nếu hệ thống tự động bắt được đúng chiếc Camera trong danh sách khớp với Mã Xác Thực:
+                    if (d.matched_ip) {
+                        document.getElementById('cfg-rtsp-ip').value = d.matched_ip;
+                        if (d.matched_brand) {
+                            const sel = document.getElementById('cfg-rtsp-brand');
+                            if (sel) sel.value = d.matched_brand;
+                        }
+                        renderScannedWifiList(d.matched_ip);
+                    }
+                    if (img) img.src = d.image_base64;
+                    if (resBadge) resBadge.innerText = d.resolution || 'HD';
+                    if (titleEl) {
+                        const camLabel = selectedCameraSourceType === 'usb'
+                            ? document.getElementById('cfg-camera-index').options[document.getElementById('cfg-camera-index').selectedIndex]?.text
+                            : `Camera Wi-Fi (${d.matched_ip || reqBody.ip || 'RTSP'})`;
+                        titleEl.innerHTML = `<span>👁️</span><span>Xem thử: ${camLabel || 'Camera'}</span>`;
+                    }
+                    if (box) box.classList.remove('hidden');
+                    showToast(`Đã bắt đúng Camera (${d.matched_ip || 'USB'}) & lấy hình thành công!`, "🎯");
+                } else {
+                    alert(d.error || "Không kết nối được với Camera này.");
+                }
+            } catch (e) {
+                alert("Lỗi khi kết nối xem thử Camera.");
+            } finally {
+                if (btnUsb) btnUsb.innerHTML = `<span>👁️</span><span>Xem thử Camera này</span>`;
+                if (btnRtsp) btnRtsp.innerHTML = `<span>🎯</span><span>Tự khớp Camera theo Mã & Xem thử</span>`;
+            }
+        }
+
+        async function confirmPreviewedCamera() {
+            showToast("Đã chọn Camera này làm Camera chính soi nôi!", "✅");
+            await saveAllSettings();
+        }
+
+        function toggleGeminiKeyVisibility() {
+            const input = document.getElementById('cfg-gemini-key');
+            if (input) {
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
+        }
+
+        async function testGeminiKey() {
+            const key = document.getElementById('cfg-gemini-key').value.trim();
+            const resEl = document.getElementById('gemini-test-result');
+            const btn = document.getElementById('btn-test-gemini');
+            if (!key) {
+                if (resEl) {
+                    resEl.classList.remove('hidden');
+                    resEl.className = "text-[11px] mt-1.5 text-amber-400 font-semibold";
+                    resEl.innerText = "⚠️ Vui lòng nhập Gemini API Key trước khi kiểm tra.";
+                }
+                return;
+            }
+            if (btn) btn.innerText = "⏳ Đang thử...";
+            try {
+                const res = await fetch('/api/test-gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: key })
+                });
+                const d = await res.json();
+                if (resEl) {
+                    resEl.classList.remove('hidden');
+                    if (d.success) {
+                        resEl.className = "text-[11px] mt-1.5 text-emerald-400 font-semibold";
+                        resEl.innerText = `✅ ${d.message || 'Kết nối Gemini thành công!'}`;
+                        showToast("Kết nối Gemini AI thành công!", "✨");
+                    } else {
+                        resEl.className = "text-[11px] mt-1.5 text-rose-400 font-semibold";
+                        resEl.innerText = `❌ ${d.error || 'Khóa API không hợp lệ'}`;
+                    }
+                }
+            } catch (e) {
+                if (resEl) {
+                    resEl.classList.remove('hidden');
+                    resEl.className = "text-[11px] mt-1.5 text-rose-400 font-semibold";
+                    resEl.innerText = "❌ Lỗi kết nối tới máy chủ.";
+                }
+            } finally {
+                if (btn) btn.innerText = "⚡ Kiểm tra kết nối";
+            }
+        }
+
+        let telegramRecipients = [];
+
+        function initTelegramFamilyFromConfig() {
+            const rawList = Array.isArray(currentConfig.telegram_recipients) ? currentConfig.telegram_recipients : [];
+            const seen = new Set();
+            telegramRecipients = [];
+            for (const item of rawList) {
+                if (item && item.chat_id !== undefined) {
+                    const cid = String(item.chat_id).trim();
+                    if (cid && !seen.has(cid)) {
+                        seen.add(cid);
+                        telegramRecipients.push({
+                            name: String(item.name || "Người nhà").trim(),
+                            chat_id: cid,
+                            enabled: item.enabled !== false
+                        });
+                    }
+                }
+            }
+            const legacyChatId = String(currentConfig.telegram_chat_id || "").trim();
+            if (legacyChatId && !seen.has(legacyChatId)) {
+                telegramRecipients.unshift({
+                    name: "Bố / Mẹ (Chính)",
+                    chat_id: legacyChatId,
+                    enabled: true
+                });
+            }
+            // Nếu chưa có dòng nào, mở sẵn 2 ô nhập ID (Người nhận chính + Người nhà 2) để khách gõ trực tiếp
+            if (telegramRecipients.length === 0) {
+                telegramRecipients.push({ name: "Bố / Mẹ (Chính)", chat_id: "", enabled: true });
+            }
+            renderTelegramFamilyList();
+        }
+
+        function syncTelegramCounters() {
+            const countEl = document.getElementById('tg-family-count');
+            const hiddenPrimary = document.getElementById('cfg-telegram-chatid');
+            const activeList = telegramRecipients.filter(r => r.enabled !== false && String(r.chat_id || '').trim() !== '');
+            if (countEl) countEl.innerText = activeList.length;
+            if (hiddenPrimary) {
+                const firstEnabled = activeList[0] || telegramRecipients[0];
+                hiddenPrimary.value = firstEnabled ? String(firstEnabled.chat_id || '').trim() : '';
+            }
+        }
+
+        function renderTelegramFamilyList() {
+            const listEl = document.getElementById('telegram-family-list');
+            syncTelegramCounters();
+            if (!listEl) return;
+
+            listEl.innerHTML = telegramRecipients.map((r, idx) => {
+                const safeName = String(r.name || '').replace(/"/g, '&quot;');
+                const safeCid = String(r.chat_id || '').replace(/"/g, '&quot;');
+                return `
+                <div class="p-2 rounded-xl bg-slate-950/90 border ${r.enabled !== false ? 'border-emerald-500/30' : 'border-slate-800 opacity-60'} grid grid-cols-12 gap-2 items-center">
+                    <div class="col-span-5 flex items-center gap-2">
+                        <input type="checkbox" ${r.enabled !== false ? 'checked' : ''} onchange="toggleTelegramRecipient(${idx}, this.checked)" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0" title="Bật/Tắt nhận thông báo">
+                        <input type="text" value="${safeName}" autocomplete="off"
+                            oninput="updateTelegramRowField(${idx}, 'name', this.value)"
+                            placeholder="Tên (vd: Mẹ, Bà Nội)"
+                            class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-2.5 py-1.5 text-slate-100 font-semibold text-xs">
+                    </div>
+                    <div class="col-span-5">
+                        <input type="text" id="tg-row-chatid-${idx}" value="${safeCid}" autocomplete="off"
+                            oninput="updateTelegramRowField(${idx}, 'chat_id', this.value)"
+                            placeholder="Nhập mã Chat ID (vd: 2082937337)"
+                            class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-2.5 py-1.5 text-emerald-300 font-mono font-bold text-xs">
+                    </div>
+                    <div class="col-span-2 flex items-center justify-end gap-1">
+                        <button type="button" onclick="testTelegramRow(${idx})" class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-[10px] transition border border-slate-700" title="Gửi tin nhắn thử tới ID này">
+                            ✉️ Thử
+                        </button>
+                        <button type="button" onclick="removeTelegramRecipient(${idx})" class="px-2 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 font-bold text-[10px] transition border border-rose-500/20" title="Xóa dòng này">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function updateTelegramRowField(idx, field, val) {
+            if (!telegramRecipients[idx]) return;
+            telegramRecipients[idx][field] = val;
+            syncTelegramCounters();
+        }
+
+        function addEmptyTelegramRow() {
+            const nextNum = telegramRecipients.length + 1;
+            telegramRecipients.push({
+                name: `Người nhà #${nextNum}`,
+                chat_id: "",
+                enabled: true
+            });
+            renderTelegramFamilyList();
+            const newIdx = telegramRecipients.length - 1;
+            const inputEl = document.getElementById(`tg-row-chatid-${newIdx}`);
+            if (inputEl) inputEl.focus();
+        }
+
+        function toggleTelegramRecipient(idx, enabled) {
+            if (telegramRecipients[idx]) {
+                telegramRecipients[idx].enabled = Boolean(enabled);
+                renderTelegramFamilyList();
+            }
+        }
+
+        function removeTelegramRecipient(idx) {
+            if (telegramRecipients.length <= 1) {
+                telegramRecipients[0] = { name: "Bố / Mẹ (Chính)", chat_id: "", enabled: true };
+                renderTelegramFamilyList();
+                return;
+            }
+            if (telegramRecipients[idx]) {
+                const removed = telegramRecipients.splice(idx, 1)[0];
+                renderTelegramFamilyList();
+                showToast(`Đã xóa "${removed.name || 'dòng ID'}"`, "🗑️");
+            }
+        }
+
+        async function saveAllSettings() {
+            let finalRtspUrl = document.getElementById('cfg-camera-rtsp-url').value.trim();
+            if (selectedCameraSourceType === 'rtsp' && !finalRtspUrl) {
+                const brand = document.getElementById('cfg-rtsp-brand').value;
+                const ip = document.getElementById('cfg-rtsp-ip').value.trim();
+                const pwd = document.getElementById('cfg-rtsp-password').value.trim();
+                if (ip) {
+                    if (brand === 'ezviz') finalRtspUrl = `rtsp://admin:${pwd}@${ip}:554/h264/ch1/main/av_stream`;
+                    else if (brand === 'imou' || brand === 'auto') finalRtspUrl = `rtsp://admin:${pwd}@${ip}:554/cam/realmonitor?channel=1&subtype=0`;
+                    else if (brand === 'tapo') finalRtspUrl = `rtsp://admin:${pwd}@${ip}:554/stream1`;
+                    else if (brand === 'yoosee') finalRtspUrl = `rtsp://admin:${pwd}@${ip}:554/onvif1`;
+                    else if (brand === 'viettel') finalRtspUrl = `rtsp://admin:${pwd}@${ip}:554/live/ch0`;
+                }
+            }
+
+            // Lọc các dòng có nhập Chat ID thực sự
+            const cleanedRecipients = telegramRecipients
+                .map((r, i) => ({
+                    name: String(r.name || `Người nhà #${i + 1}`).trim(),
+                    chat_id: String(r.chat_id || '').trim(),
+                    enabled: r.enabled !== false
+                }))
+                .filter(r => r.chat_id !== '');
+
+            const primaryRecipient = cleanedRecipients.find(r => r.enabled !== false) || cleanedRecipients[0];
+            const primaryChatId = primaryRecipient ? String(primaryRecipient.chat_id) : '';
+
+            const payload = {
+                baby_name: document.getElementById('cfg-baby-name').value.trim() || 'Bé Siu',
+                baby_age_months: Number(document.getElementById('cfg-baby-age').value || 6),
+                gemini_api_key: document.getElementById('cfg-gemini-key').value.trim(),
+                gemini_verify_alerts: document.getElementById('cfg-gemini-verify-alerts').checked,
+                gemini_filter_moments: document.getElementById('cfg-gemini-filter-moments').checked,
+                telegram_bot_token: document.getElementById('cfg-telegram-token').value.trim(),
+                telegram_chat_id: primaryChatId,
+                telegram_recipients: cleanedRecipients,
+                camera_source_type: selectedCameraSourceType,
+                camera_rtsp_url: finalRtspUrl,
+                camera_index: Number(document.getElementById('cfg-camera-index').value || 0),
+                audio_device_index: Number(document.getElementById('cfg-audio-index').value || 0),
+                setup_completed: true
+            };
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const d = await res.json();
+                if (d.success) {
+                    Object.assign(currentConfig, payload);
+                    telegramRecipients = cleanedRecipients.length > 0
+                        ? cleanedRecipients
+                        : [{ name: "Bố / Mẹ (Chính)", chat_id: "", enabled: true }];
+                    renderTelegramFamilyList();
+                    updateHeaderBabyProfile();
+                    const banner = document.getElementById('onboarding-welcome-banner');
+                    if (banner) banner.classList.add('hidden');
+                    // Sync Tab 2 toggles
+                    const t1 = document.getElementById('toggle-gemini_verify_alerts');
+                    const t2 = document.getElementById('toggle-gemini_filter_moments');
+                    if (t1) t1.checked = payload.gemini_verify_alerts;
+                    if (t2) t2.checked = payload.gemini_filter_moments;
+                    showToast("Đã lưu toàn bộ cấu hình & danh sách Chat ID!", "✅");
+                    closeSettingsModal();
+                } else {
+                    showToast("Lỗi khi lưu cấu hình", "⚠️");
+                }
+            } catch (e) {
+                showToast("Lỗi lưu cấu hình", "⚠️");
+            }
+        }
+
+        async function testTelegramRow(idx) {
+            const row = telegramRecipients[idx];
+            if (!row) return;
+            const token = document.getElementById('cfg-telegram-token').value.trim();
+            const chatId = String(row.chat_id || '').trim();
+            const name = String(row.name || 'Người nhà').trim();
+            if (!token || !chatId) {
+                alert("Vui lòng nhập đủ Bot Token và Mã Chat ID ở dòng này trước khi bấm Thử!");
+                return;
+            }
+            try {
+                const res = await fetch('/api/test-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, chat_id: chatId, name })
+                });
+                const d = await res.json();
+                if (d.success) showToast(`Đã gửi tin nhắn thử tới ${name} (${chatId})!`, "✉️");
+                else alert("Lỗi gửi tin: " + (d.error || "Không gửi được. Hãy kiểm tra lại mã Chat ID hoặc nhắc người nhà bấm Start trên Bot."));
+            } catch (e) {
+                alert("Lỗi kết nối test Telegram: " + e);
+            }
+        }
+
+        async function testTelegram() {
+            const token = document.getElementById('cfg-telegram-token').value.trim();
+            const enabledList = telegramRecipients
+                .map(r => ({ name: String(r.name || 'Người nhà').trim(), chat_id: String(r.chat_id || '').trim(), enabled: r.enabled !== false }))
+                .filter(r => r.enabled && r.chat_id !== '');
+            if (!token || enabledList.length === 0) {
+                alert("Vui lòng nhập Bot Token và điền ít nhất 1 Mã Chat ID trước khi gửi thử!");
+                return;
+            }
+            try {
+                const res = await fetch('/api/test-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, recipients: enabledList })
+                });
+                const d = await res.json();
+                if (d.success) showToast(`Đã gửi tin nhắn thử tới ${d.sent_count || enabledList.length} người nhà!`, "✉️");
+                else alert("Lỗi gửi tin: " + (d.error || "Không gửi được"));
+            } catch (e) {
+                alert("Lỗi kết nối test Telegram: " + e);
+            }
+        }
+
+        // Media Preview Modal
+        function openMediaModal(url, title, type = 'image') {
+            document.getElementById('media-modal-title').innerText = title;
+            const dl = document.getElementById('media-modal-download-btn');
+            if (dl) {
+                dl.href = url;
+                dl.download = url.split('/').pop() || 'media';
+            }
+            const body = document.getElementById('media-modal-body');
+            if (type === 'video') {
+                body.innerHTML = `<video src="${url}" controls autoplay class="max-h-[70vh] w-auto max-w-full rounded-2xl shadow-lg"></video>`;
+            } else {
+                body.innerHTML = `<img src="${url}" class="max-h-[70vh] w-auto max-w-full object-contain rounded-2xl shadow-lg">`;
+            }
+            document.getElementById('media-modal').classList.remove('hidden');
+        }
+
+        function closeMediaModal() {
+            const body = document.getElementById('media-modal-body');
+            body.innerHTML = '';
+            document.getElementById('media-modal').classList.add('hidden');
+        }
+
+        // Fullscreen Toggle
+        function toggleFullscreen() {
+            const elem = document.getElementById('live-stream-img');
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) elem.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        // Safe Zone Canvas Editor
+        let isEditingSafeZone = false;
+        let safeZoneCoords = { top: 0.08, bottom: 0.98, left: 0.01, right: 0.99 };
+        const canvas = document.getElementById('safe-zone-canvas');
+        const ctx = canvas.getContext('2d');
+        let dragHandle = null;
+
+        function toggleSafeZoneEditor() {
+            isEditingSafeZone = !isEditingSafeZone;
+            canvas.style.display = isEditingSafeZone ? 'block' : 'none';
+            document.getElementById('safe-zone-editor-controls').style.display = isEditingSafeZone ? 'flex' : 'none';
+            if (isEditingSafeZone) {
+                resizeCanvas();
+                drawSafeZone();
+            }
+        }
+
+        function resizeCanvas() {
+            const img = document.getElementById('live-stream-img');
+            canvas.width = img.clientWidth;
+            canvas.height = img.clientHeight;
+        }
+
+        function drawSafeZone() {
+            if (!isEditingSafeZone) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const x = safeZoneCoords.left * canvas.width;
+            const y = safeZoneCoords.top * canvas.height;
+            const w = (safeZoneCoords.right - safeZoneCoords.left) * canvas.width;
+            const h = (safeZoneCoords.bottom - safeZoneCoords.top) * canvas.height;
+
+            // Shaded exterior
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(x, y, w, h);
+
+            // Bounding box
+            ctx.strokeStyle = '#10B981';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, w, h);
+
+            // 4 Corner Handles
+            const handles = [
+                { x: x, y: y }, { x: x + w, y: y },
+                { x: x, y: y + h }, { x: x + w, y: y + h }
+            ];
+            ctx.fillStyle = '#FFFFFF';
+            handles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        function getCanvasPointer(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                mx: clientX - rect.left,
+                my: clientY - rect.top,
+                nx: Math.max(0, Math.min(1, (clientX - rect.left) / canvas.width)),
+                ny: Math.max(0, Math.min(1, (clientY - rect.top) / canvas.height))
+            };
+        }
+
+        function onPointerStart(e) {
+            if (e.touches) e.preventDefault();
+            const p = getCanvasPointer(e);
+            const x = safeZoneCoords.left * canvas.width;
+            const y = safeZoneCoords.top * canvas.height;
+            const w = (safeZoneCoords.right - safeZoneCoords.left) * canvas.width;
+            const h = (safeZoneCoords.bottom - safeZoneCoords.top) * canvas.height;
+
+            if (Math.hypot(p.mx - x, p.my - y) < 30) dragHandle = 'top-left';
+            else if (Math.hypot(p.mx - (x + w), p.my - y) < 30) dragHandle = 'top-right';
+            else if (Math.hypot(p.mx - x, p.my - (y + h)) < 30) dragHandle = 'bottom-left';
+            else if (Math.hypot(p.mx - (x + w), p.my - (y + h)) < 30) dragHandle = 'bottom-right';
+        }
+
+        function onPointerMove(e) {
+            if (!dragHandle) return;
+            if (e.touches) e.preventDefault();
+            const p = getCanvasPointer(e);
+
+            if (dragHandle === 'top-left') {
+                safeZoneCoords.left = Math.min(p.nx, safeZoneCoords.right - 0.1);
+                safeZoneCoords.top = Math.min(p.ny, safeZoneCoords.bottom - 0.1);
+            } else if (dragHandle === 'top-right') {
+                safeZoneCoords.right = Math.max(p.nx, safeZoneCoords.left + 0.1);
+                safeZoneCoords.top = Math.min(p.ny, safeZoneCoords.bottom - 0.1);
+            } else if (dragHandle === 'bottom-left') {
+                safeZoneCoords.left = Math.min(p.nx, safeZoneCoords.right - 0.1);
+                safeZoneCoords.bottom = Math.max(p.ny, safeZoneCoords.top + 0.1);
+            } else if (dragHandle === 'bottom-right') {
+                safeZoneCoords.right = Math.max(p.nx, safeZoneCoords.left + 0.1);
+                safeZoneCoords.bottom = Math.max(p.ny, safeZoneCoords.top + 0.1);
+            }
+            drawSafeZone();
+        }
+
+        function onPointerEnd() {
+            dragHandle = null;
+        }
+
+        canvas.addEventListener('mousedown', onPointerStart);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerEnd);
+
+        canvas.addEventListener('touchstart', onPointerStart, { passive: false });
+        canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+        window.addEventListener('touchend', onPointerEnd);
+        window.addEventListener('touchcancel', onPointerEnd);
+
+        async function saveSafeZone() {
+            try {
+                await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        safe_zone_top: safeZoneCoords.top,
+                        safe_zone_bottom: safeZoneCoords.bottom,
+                        safe_zone_left: safeZoneCoords.left,
+                        safe_zone_right: safeZoneCoords.right
+                    })
+                });
+                showToast("Đã lưu khung bảo vệ giường mới!", "📐");
+                toggleSafeZoneEditor();
+            } catch (e) {
+                showToast("Lỗi lưu khung", "⚠️");
+            }
+        }
+
+        function cancelSafeZoneEdit() {
+            toggleSafeZoneEditor();
+        }
+
+        // Initialize App on DOM Ready
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchConfig();
+            fetchEvents();
+            setInterval(pollStatus, 1000);
+            setInterval(fetchEvents, 5000);
+        });
+    </script>
+</body>
+</html>
