@@ -131,6 +131,10 @@
 
         <!-- Right Quick Controls -->
         <div class="flex items-center gap-2">
+            <button onclick="openGrowthModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-emerald-500/30 text-xs font-semibold text-emerald-300 transition" title="Sổ Đo Chiều Cao & Cân Nặng (Chuẩn Tăng Trưởng WHO)">
+                <span>📏</span>
+                <span class="hidden sm:inline">Sổ Đo WHO</span>
+            </button>
             <button onclick="openSettingsModal()" id="header-gemini-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-xs font-semibold text-slate-300 transition" title="Cấu hình Gemini Hybrid AI">
                 <span id="header-gemini-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
                 <span id="header-gemini-text">Thiết lập AI</span>
@@ -199,77 +203,130 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 
                 <!-- Main Video Stream Frame (col-span-2) -->
-                <div class="lg:col-span-2 bg-cardbg rounded-3xl overflow-hidden border border-bordercol shadow-2xl relative">
-                    
-                    <!-- HUD Overlays on Top of Video -->
-                    <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none">
-                        <!-- Posture Badge -->
-                        <div id="hud-pose-badge" class="pointer-events-auto bg-slate-950/80 backdrop-blur-md border border-slate-700/70 text-slate-200 text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                            <span id="hud-pose-text">Đang nhận diện tư thế...</span>
-                        </div>
-
-                        <!-- Real-time Vital Badge -->
-                        <div class="pointer-events-auto flex items-center gap-2">
-                            <div class="bg-slate-950/80 backdrop-blur-md border border-cyan-500/30 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-                                <span>🫁</span>
-                                <span id="hud-breathing">-- RPM</span>
-                            </div>
-                            <div class="bg-slate-950/80 backdrop-blur-md border border-slate-700/70 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-                                <span>🔊</span>
-                                <span id="hud-sound">0%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Video / Canvas Container -->
-                    <div class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
-                        <img id="live-stream-img" src="/video_feed" alt="Baby Monitor Live Feed" class="w-full h-full object-contain select-none">
-                        <canvas id="safe-zone-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-10" style="display: none;"></canvas>
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-cardbg rounded-3xl overflow-hidden border border-bordercol shadow-2xl relative">
                         
-                        <!-- Safe Zone Edit Overlay Controls (when in editing mode) -->
-                        <div id="safe-zone-editor-controls" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-950/90 border border-emerald-500/40 rounded-full px-5 py-2 flex items-center gap-3 backdrop-blur-lg shadow-xl" style="display: none;">
-                            <span class="text-xs text-emerald-300 font-medium">Kéo rê 4 góc để đổi khung bảo vệ</span>
-                            <button onclick="saveSafeZone()" class="px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition">Lưu Khung</button>
-                            <button onclick="cancelSafeZoneEdit()" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition">Hủy</button>
+                        <!-- HUD Overlays on Top of Video -->
+                        <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none">
+                            <!-- Posture Badge -->
+                            <div id="hud-pose-badge" class="pointer-events-auto bg-slate-950/80 backdrop-blur-md border border-slate-700/70 text-slate-200 text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                <span id="hud-pose-text">Đang nhận diện tư thế...</span>
+                            </div>
+
+                            <!-- Real-time Vital Badge -->
+                            <div class="pointer-events-auto flex items-center gap-2">
+                                <div class="bg-slate-950/80 backdrop-blur-md border border-cyan-500/30 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                                    <span>🫁</span>
+                                    <span id="hud-breathing">-- RPM</span>
+                                </div>
+                                <div class="bg-slate-950/80 backdrop-blur-md border border-slate-700/70 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                                    <span>🔊</span>
+                                    <span id="hud-sound">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Video / Canvas Container -->
+                        <div class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+                            <img id="live-stream-img" src="/video_feed" alt="Baby Monitor Live Feed" class="w-full h-full object-contain select-none">
+                            <canvas id="safe-zone-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-10" style="display: none;"></canvas>
+                            
+                            <!-- Safe Zone Edit Overlay Controls (when in editing mode) -->
+                            <div id="safe-zone-editor-controls" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-950/90 border border-emerald-500/40 rounded-full px-5 py-2 flex items-center gap-3 backdrop-blur-lg shadow-xl" style="display: none;">
+                                <span class="text-xs text-emerald-300 font-medium">Kéo rê 4 góc để đổi khung bảo vệ</span>
+                                <button onclick="saveSafeZone()" class="px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition">Lưu Khung</button>
+                                <button onclick="cancelSafeZoneEdit()" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition">Hủy</button>
+                            </div>
+                        </div>
+
+                        <!-- Action Bar Under Video -->
+                        <div class="p-3.5 bg-slate-950/90 border-t border-bordercol flex items-center justify-between gap-3 text-xs flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <!-- Push-to-Talk Intercom Button -->
+                                <button id="talkback-btn" class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg transition active:scale-95 select-none">
+                                    <span class="text-base">🎙️</span>
+                                    <span id="talkback-label">Giữ để nói với bé</span>
+                                </button>
+                                <!-- Instant Snapshot Button -->
+                                <button onclick="takeManualSnapshot()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium">
+                                    <span>📸</span>
+                                    <span class="hidden sm:inline">Chụp Ảnh</span>
+                                </button>
+                                <!-- Live Room Audio Listen Button -->
+                                <button id="live-audio-btn" onclick="toggleLiveAudio()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium select-none" title="Bật/Tắt nghe âm thanh trực tiếp từ phòng bé">
+                                    <span id="live-audio-icon">🔇</span>
+                                    <span id="live-audio-label" class="hidden sm:inline">Nghe Phòng</span>
+                                </button>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <!-- Gemini AI Auto-Calibrate Crib Status Badge (Automatic) -->
+                                <button id="btn-ai-calibrate" onclick="autoCalibrateCribWithGemini()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 transition font-semibold" title="Hệ thống tự động căn chỉnh khung nôi & giường bằng AI định kỳ (Bấm nếu muốn quét lại ngay)">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span>Tự Động Căn Nôi: Bật</span>
+                                </button>
+                                <!-- Toggle Safe Zone Edit Button -->
+                                <button id="btn-toggle-safe-zone-edit" onclick="toggleSafeZoneEditor()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium" title="Chỉnh tay 4 góc nếu muốn">
+                                    <span>📐</span>
+                                    <span class="hidden sm:inline">Chỉnh Tay</span>
+                                </button>
+                                <!-- Fullscreen Button -->
+                                <button onclick="toggleFullscreen()" class="p-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Toàn màn hình">
+                                    ⛶
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Action Bar Under Video -->
-                    <div class="p-3.5 bg-slate-950/90 border-t border-bordercol flex items-center justify-between gap-3 text-xs flex-wrap">
-                        <div class="flex items-center gap-2">
-                            <!-- Push-to-Talk Intercom Button -->
-                            <button id="talkback-btn" class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg transition active:scale-95 select-none">
-                                <span class="text-base">🎙️</span>
-                                <span id="talkback-label">Giữ để nói với bé</span>
-                            </button>
-                            <!-- Instant Snapshot Button -->
-                            <button onclick="takeManualSnapshot()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium">
-                                <span>📸</span>
-                                <span class="hidden sm:inline">Chụp Ảnh</span>
-                            </button>
-                            <!-- Live Room Audio Listen Button -->
-                            <button id="live-audio-btn" onclick="toggleLiveAudio()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium select-none" title="Bật/Tắt nghe âm thanh trực tiếp từ phòng bé">
-                                <span id="live-audio-icon">🔇</span>
-                                <span id="live-audio-label" class="hidden sm:inline">Nghe Phòng</span>
-                            </button>
+                    <!-- Quick Vitals Under Video: 2 Cột Cân Đối (Chuyển Động Hô Hấp & Âm Thanh Phòng) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Card: Chuyển Động Hô Hấp Lồng Ngực (Contactless Optical Chest Motion) -->
+                        <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-3 relative overflow-hidden flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300">
+                                            🫁
+                                        </div>
+                                        <div>
+                                            <span class="font-bold text-sm text-slate-200 block leading-tight">Chuyển Động Hô Hấp</span>
+                                            <span class="text-[10px] text-slate-400">Quang học không chạm (Optical DSP)</span>
+                                        </div>
+                                    </div>
+                                    <span id="vital-breathing-status" class="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Đang đo...</span>
+                                </div>
+                                <div class="flex items-baseline gap-2 pt-2">
+                                    <span id="vital-breathing-bpm" class="text-3xl font-extrabold tracking-tight text-cyan-300">--</span>
+                                    <span class="text-xs text-slate-400 font-medium">nhịp / phút (RPM)</span>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/80 pt-2">Đo dao động phập phồng lồng ngực qua bộ lọc Butterworth 28–75 RPM (bám theo trục cơ thể bé).</p>
                         </div>
 
-                        <div class="flex items-center gap-2">
-                            <!-- Gemini AI Auto-Calibrate Crib Status Badge (Automatic) -->
-                            <button id="btn-ai-calibrate" onclick="autoCalibrateCribWithGemini()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 transition font-semibold" title="Hệ thống tự động căn chỉnh khung nôi & giường bằng AI định kỳ (Bấm nếu muốn quét lại ngay)">
-                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                <span>Tự Động Căn Nôi: Bật</span>
-                            </button>
-                            <!-- Toggle Safe Zone Edit Button -->
-                            <button id="btn-toggle-safe-zone-edit" onclick="toggleSafeZoneEditor()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium" title="Chỉnh tay 4 góc nếu muốn">
-                                <span>📐</span>
-                                <span class="hidden sm:inline">Chỉnh Tay</span>
-                            </button>
-                            <!-- Fullscreen Button -->
-                            <button onclick="toggleFullscreen()" class="p-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Toàn màn hình">
-                                ⛶
-                            </button>
+                        <!-- Card: Âm Thanh & Tiếng Khóc / Ho -->
+                        <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-3 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
+                                            🎙️
+                                        </div>
+                                        <span class="font-bold text-sm text-slate-200">Âm Thanh Phòng Bé</span>
+                                    </div>
+                                    <span id="vital-sound-label" class="text-[11px] font-semibold text-slate-300 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">Yên tĩnh</span>
+                                </div>
+                                <div class="space-y-2 pt-2">
+                                    <div class="flex justify-between text-xs text-slate-400">
+                                        <span>Xác suất khóc: <b id="vital-cry-pct" class="text-slate-200">0%</b></span>
+                                        <span>Tiếng ho/sặc: <b id="vital-cough-pct" class="text-slate-200">0%</b></span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                        <div id="vital-sound-bar" class="bg-gradient-to-r from-emerald-500 to-amber-500 h-full w-[10%] transition-all duration-300"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/80 pt-2">Google YAMNet AI bóc tách tiếng khóc, ho sặc & tự bật tiếng ồn trắng dỗ bé.</p>
                         </div>
                     </div>
                 </div>
@@ -277,27 +334,6 @@
                 <!-- Live Vitals & Quick Insights Sidebar (col-span-1) -->
                 <div class="space-y-4">
                     
-                    <!-- Card: Chuyển Động Hô Hấp Lồng Ngực (Contactless Optical Chest Motion) -->
-                    <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-3 relative overflow-hidden">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300">
-                                    🫁
-                                </div>
-                                <div>
-                                    <span class="font-bold text-sm text-slate-200 block leading-tight">Chuyển Động Hô Hấp</span>
-                                    <span class="text-[10px] text-slate-400">Quang học không chạm (Optical DSP)</span>
-                                </div>
-                            </div>
-                            <span id="vital-breathing-status" class="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Đang đo...</span>
-                        </div>
-                        <div class="flex items-baseline gap-2 pt-1">
-                            <span id="vital-breathing-bpm" class="text-3xl font-extrabold tracking-tight text-cyan-300">--</span>
-                            <span class="text-xs text-slate-400 font-medium">nhịp / phút (RPM)</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 leading-relaxed">Đo chuyển động phập phồng lồng ngực qua bộ lọc dải tần Butterworth 28–75 RPM (hoạt động tối ưu khi bé nằm yên tĩnh không đắp chăn quá dày).</p>
-                    </div>
-
                     <!-- Card: Chu Kỳ Giấc Ngủ & Theo Dõi Lúc Bé Thức (24/7 Dual-Mode) -->
                     <div class="p-5 rounded-3xl bg-cardbg border border-purple-500/25 space-y-3">
                         <div class="flex items-center justify-between gap-2">
@@ -349,28 +385,6 @@
                         <p id="vital-wake-hint" class="text-[11px] text-slate-400 leading-relaxed">Bé đang trong chu kỳ phục hồi năng lượng và phát triển thể chất.</p>
                     </div>
 
-                    <!-- Card: Âm Thanh & Tiếng Khóc / Ho -->
-                    <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
-                                    🎙️
-                                </div>
-                                <span class="font-bold text-sm text-slate-200">Âm Thanh Phòng Bé</span>
-                            </div>
-                            <span id="vital-sound-label" class="text-[11px] font-semibold text-slate-300 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">Yên tĩnh</span>
-                        </div>
-                        <div class="space-y-2 pt-1">
-                            <div class="flex justify-between text-xs text-slate-400">
-                                <span>Xác suất khóc: <b id="vital-cry-pct" class="text-slate-200">0%</b></span>
-                                <span>Tiếng ho/sặc: <b id="vital-cough-pct" class="text-slate-200">0%</b></span>
-                            </div>
-                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                                <div id="vital-sound-bar" class="bg-gradient-to-r from-emerald-500 to-amber-500 h-full w-[10%] transition-all duration-300"></div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Card: Chuyên Gia Hội Chẩn & Giám Sát Tracking Gemini AI -->
                     <div class="p-5 rounded-3xl bg-cardbg border border-indigo-500/25 space-y-3">
                         <div class="flex items-center justify-between gap-2">
@@ -406,15 +420,15 @@
                             Tự động tận dụng Request Free khi rảnh để kiểm tra & hiệu chỉnh khung Tracking AI Local, hội chẩn cảnh báo và lọc ảnh riêng tư.
                         </p>
 
-                        <!-- Nút bấm kiểm tra nhanh -->
+                        <!-- Nút bấm kiểm tra nhanh & Mở Sổ Đo WHO -->
                         <div class="grid grid-cols-2 gap-2 pt-0.5">
-                            <button onclick="manualAuditTrackingWithGemini()" id="btn-audit-tracking" class="px-2.5 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold transition flex items-center justify-center gap-1 active:scale-95">
-                                <span>🎯</span>
-                                <span>Chấm điểm Tracking</span>
-                            </button>
                             <button onclick="quickProbeGeminiHealth()" id="btn-probe-gemini" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-semibold transition flex items-center justify-center gap-1 active:scale-95">
                                 <span>🔄</span>
                                 <span>Kiểm tra hạn API</span>
+                            </button>
+                            <button onclick="openGrowthModal()" class="px-2.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold transition flex items-center justify-center gap-1 active:scale-95">
+                                <span>📏</span>
+                                <span>Sổ Đo WHO</span>
                             </button>
                         </div>
                     </div>
@@ -674,21 +688,6 @@
                     </label>
                 </div>
 
-            </div>
-
-            <!-- Commercial Package Download Card -->
-            <div class="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800/80 to-slate-900 border border-emerald-500/30 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
-                <div class="space-y-1 text-center md:text-left">
-                    <div class="flex items-center justify-center md:justify-start gap-2">
-                        <span class="text-xl">📦</span>
-                        <h3 class="text-sm font-extrabold text-slate-100">Gói Cài Đặt Thương Mại (BabyGuard AI Package)</h3>
-                        <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">v1.0 Sẵn Sàng</span>
-                    </div>
-                    <p class="text-xs text-slate-400">Tệp nén 38MB đầy đủ mã nguồn, mô hình AI, âm thanh dỗ bé, kịch bản khởi động 1-click và Sổ tay hướng dẫn chi tiết.</p>
-                </div>
-                <a href="/api/download/full-package" download="BabyGuard_AI_v1.0_Commercial.zip" class="px-5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition active:scale-95 whitespace-nowrap">
-                    <span>⬇️ Tải Gói Cài Đặt (ZIP)</span>
-                </a>
             </div>
 
         </section>
@@ -1105,7 +1104,7 @@
     </div>
 
     <!-- ================= MODAL: SỔ ĐO CHIỀU CAO - CÂN NẶNG & CHUẨN WHO ================= -->
-    <div id="growth-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden" onclick="closeGrowthModal()">
+    <div id="growth-modal" class="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden" onclick="closeGrowthModal()">
         <div class="bg-cardbg rounded-3xl border border-bordercol max-w-2xl w-full p-6 space-y-5 shadow-2xl max-h-[92vh] overflow-y-auto" onclick="event.stopPropagation()">
             
             <!-- Modal Header -->
@@ -1159,6 +1158,31 @@
                 <p class="text-[11px] text-slate-400 italic">
                     * Nguồn trích dẫn: Tiêu chuẩn Tăng trưởng Trẻ em của Tổ chức Y tế Thế giới (WHO Child Growth Standards).
                 </p>
+            </div>
+
+            <!-- Gemini Pediatrician Growth Advice Card -->
+            <div id="growth-gemini-advice-card" class="p-4 rounded-2xl bg-gradient-to-r from-indigo-950/70 via-slate-900 to-indigo-950/70 border border-indigo-500/35 space-y-2.5 text-xs">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">🩺</span>
+                        <span class="font-bold text-indigo-300 text-sm">Đề Xuất & Nhận Định Từ Bác Sĩ Nhi Khoa Gemini AI</span>
+                    </div>
+                    <span id="growth-gemini-status-badge" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                        Đang phân tích...
+                    </span>
+                </div>
+                <div id="growth-gemini-velocity-eval" class="text-xs text-slate-200 leading-relaxed font-medium">
+                    Đang đối chiếu mức tăng trưởng với lần đo trước...
+                </div>
+                <div class="pt-2 border-t border-indigo-500/20">
+                    <span class="text-[11px] font-bold text-indigo-300 block mb-1">💡 Lời khuyên cụ thể cho ba mẹ:</span>
+                    <ul id="growth-gemini-recommendations" class="space-y-1.5 text-xs text-slate-300 list-disc list-inside">
+                        <li>Đang tải lời khuyên chuyên gia...</li>
+                    </ul>
+                </div>
+                <div id="growth-gemini-quote" class="text-[11px] text-indigo-300/90 italic pt-1.5 border-t border-indigo-500/15">
+                    "Chúc bé luôn khỏe mạnh và tăng trưởng đều đặn!"
+                </div>
             </div>
 
             <!-- Form: Thêm số đo mới -->
@@ -3446,6 +3470,7 @@
         }
 
         function openGrowthModal() {
+            closeSettingsModal(); // Đảm bảo đóng cửa sổ Settings nếu đang mở để tránh chồng chéo
             const modal = document.getElementById('growth-modal');
             if (modal) modal.classList.remove('hidden');
             const dateInput = document.getElementById('input-growth-date');
@@ -3534,7 +3559,30 @@
                     if (whoHeightRange) whoHeightRange.innerText = `Bình thường: ${rngL}`;
                 }
 
-                // 3. History Table
+                // 3. Gemini AI Pediatric Advice Card
+                const ai = d.ai_analysis || (evalData && evalData.ai_analysis);
+                if (ai) {
+                    const statusBadge = document.getElementById('growth-gemini-status-badge');
+                    const velEval = document.getElementById('growth-gemini-velocity-eval');
+                    const recoList = document.getElementById('growth-gemini-recommendations');
+                    const quoteEl = document.getElementById('growth-gemini-quote');
+
+                    if (statusBadge) {
+                        statusBadge.innerText = ai.status_badge || 'Đạt chuẩn WHO';
+                    }
+                    if (velEval) {
+                        const gapText = ai.days_gap ? `[Khoảng cách ${ai.days_gap} ngày giữa 2 lần đo] ` : '';
+                        velEval.innerHTML = `<span class="text-emerald-300 font-bold">${gapText}${ai.velocity_str || ''}</span><br>${ai.velocity_evaluation_vi || ''} ${ai.who_percentile_comparison_vi || ''}`;
+                    }
+                    if (recoList && Array.isArray(ai.recommendations_vi)) {
+                        recoList.innerHTML = ai.recommendations_vi.map(r => `<li>${r}</li>`).join('');
+                    }
+                    if (quoteEl && ai.doctor_quote_vi) {
+                        quoteEl.innerText = `"${ai.doctor_quote_vi}" • Bác sĩ Nhi khoa Gemini (${ai.model_used || 'AI'})`;
+                    }
+                }
+
+                // 4. History Table
                 const tbody = document.getElementById('growth-history-tbody');
                 if (tbody) {
                     const records = evalData.history || evalData.records || [];
@@ -3572,7 +3620,11 @@
                 return;
             }
 
-            if (btn) btn.disabled = true;
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span><span>Đang lưu & Gemini hội chẩn...</span>`;
+                btn.className = "px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-lg flex items-center gap-1.5 cursor-wait";
+            }
             try {
                 const res = await fetch('/api/growth', {
                     method: 'POST',
@@ -3587,20 +3639,37 @@
                 });
                 const d = await res.json();
                 if (d.success) {
-                    showToast("Đã lưu số đo tháng này và đối chiếu chuẩn WHO!", "📏");
+                    showToast("Đã lưu số đo tháng này và Bác sĩ AI đã phân tích!", "📏");
                     document.getElementById('input-growth-weight').value = '';
                     document.getElementById('input-growth-height').value = '';
                     document.getElementById('input-growth-head').value = '';
                     document.getElementById('input-growth-note').value = '';
+                    if (btn) {
+                        btn.innerHTML = `<span>✅</span><span>Đã Lưu & AI Đánh Giá Xong!</span>`;
+                        btn.className = "px-5 py-2.5 rounded-xl bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg flex items-center gap-1.5";
+                        setTimeout(() => {
+                            btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này</span>`;
+                            btn.className = "px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5";
+                            btn.disabled = false;
+                        }, 2500);
+                    }
                     await fetchGrowthData();
                     dismissGrowthReminder();
                 } else {
                     showToast(d.error || "Lỗi khi lưu số đo", "⚠️");
+                    if (btn) {
+                        btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này</span>`;
+                        btn.className = "px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5";
+                        btn.disabled = false;
+                    }
                 }
             } catch (e) {
                 showToast("Lỗi kết nối khi lưu số đo", "⚠️");
-            } finally {
-                if (btn) btn.disabled = false;
+                if (btn) {
+                    btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này</span>`;
+                    btn.className = "px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5";
+                    btn.disabled = false;
+                }
             }
         }
 

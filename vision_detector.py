@@ -80,7 +80,10 @@ class VisionTracker:
         self.moments_dir = moments_dir or os.path.join(BASE_DIR, "moments")
         os.makedirs(self.moments_dir, exist_ok=True)
         # Cho phép tự động chụp khoảnh khắc đầu tiên sau 15s kể từ khi khởi động
-        self.last_moment_time = time.time() - 165.0
+        self.last_moment_time = time.time() - 585.0
+        self.recent_moment_crops = [] # Lưu các thumbnail 64x64 để chống chụp trùng lặp >= 80%
+        self.last_moment_landmarks = None # (mouth_ratio, open_ratio)
+        self.last_gemini_moment_call = 0.0
         self.initial_crib_calibrated = bool(safe_zone_polygon and len(safe_zone_polygon) == 4)
         
         # Breathing metrics (Đo quang học nhịp thở thật từ bụng & lồng ngực với Butterworth DSP)
@@ -834,12 +837,9 @@ class VisionTracker:
             return
 
         now_t = time.time()
-        if (now_t - self.last_moment_time) < 180.0:
+        # Giới hạn tối thiểu 10 phút (600s) giữa các lần chụp tự động để không làm phiền và không spam ảnh
+        if (now_t - self.last_moment_time) < 600.0:
             return
-
-        self.pending_moment_eval = True
-        self.last_moment_time = now_t
-        frame_copy = frame.copy()
 
         # Tạo khung chân dung em bé (Portrait Crop) chuẩn xác theo tọa độ khuôn mặt thật từ YuNet:
         # Mở rộng ngang ~1.5x fw mỗi bên, trên ~0.8x fh, dưới ~2.6x fh (ôm trọn thân bé)
@@ -848,23 +848,91 @@ class VisionTracker:
         crop_x2 = min(w, fx + fw + int(fw * 1.5))
         crop_y2 = min(h, fy + fh + int(fh * 2.6))
 
-        portrait_crop = frame_copy[crop_y1:crop_y2, crop_x1:crop_x2].copy()
+        portrait_crop = frame[crop_y1:crop_y2, crop_x1:crop_x2].copy()
+        if portrait_crop.size == 0 or portrait_crop.shape[0] < 40 or portrait_crop.shape[1] < 40:
+            return
+
+        # =====================================================================
+        # KIỂM TRA ĐỘ TƯƠNG ĐỒNG (DEDUPLICATION) & BIỂU CẢM ĐẶC BIỆT CỦA BÉ
+        # Tuyệt đối không chụp các tấm giống nhau >= 80% trừ khi bé có biểu cảm mới
+        # =====================================================================
+        try:
+            thumb_gray = cv2.cvtColor(cv2.resize(portrait_crop, (64, 64)), cv2.COLOR_BGR2GRAY)
+        except Exception:
+            thumb_gray = None
+
+        # 1. Đo lường biến đổi biểu cảm khuôn mặt từ 5 điểm mốc YuNet (Mắt, Mũi, 2 Khóe Miệng)
+        landmarks = baby_face_info.get("landmarks")
+        has_special_expression = False
+        curr_geom = None
+        if landmarks is not None and len(landmarks) == 5:
+            try:
+                re, le, nose, rm, lm = [np.array(p, dtype=np.float32) for p in landmarks]
+                eye_dist = max(1.0, float(np.linalg.norm(le - re)))
+                mouth_width = float(np.linalg.norm(lm - rm))
+                mouth_center = (lm + rm) / 2.0
+                mouth_nose_dist = float(np.linalg.norm(mouth_center - nose))
+                mouth_ratio = mouth_width / eye_dist
+                open_ratio = mouth_nose_dist / eye_dist
+                curr_geom = (mouth_ratio, open_ratio)
+
+                if self.last_moment_landmarks is not None:
+                    p_mr, p_or = self.last_moment_landmarks
+                    # Nếu độ rộng miệng (cười) hoặc độ mở miệng (ngáp/mút tay/mở miệng) biến thiên > 18%
+                    if abs(mouth_ratio - p_mr) > 0.18 or abs(open_ratio - p_or) > 0.18:
+                        has_special_expression = True
+            except Exception:
+                pass
+
+        # 2. So sánh độ tương đồng quang học với các bức ảnh gần nhất
+        if thumb_gray is not None and self.recent_moment_crops:
+            max_sim = 0.0
+            for prev_thumb in self.recent_moment_crops:
+                try:
+                    sim = cv2.matchTemplate(thumb_gray, prev_thumb, cv2.TM_CCOEFF_NORMED)[0][0]
+                    if sim > max_sim:
+                        max_sim = float(sim)
+                except Exception:
+                    pass
+
+            if max_sim >= 0.80 and not has_special_expression:
+                print(f"[VisionTracker] ⏭️ Bỏ qua ảnh tự động: Tương đồng {max_sim*100:.1f}% >= 80% với ảnh cũ & bé không có biểu cảm mới.")
+                return
+
+        self.pending_moment_eval = True
+        self.last_moment_time = now_t
+        if curr_geom:
+            self.last_moment_landmarks = curr_geom
+        if thumb_gray is not None:
+            self.recent_moment_crops.append(thumb_gray)
+            if len(self.recent_moment_crops) > 4:
+                self.recent_moment_crops.pop(0)
 
         def _worker():
             try:
                 frame_to_save = portrait_crop
-                if self.gemini_verifier is not None and self.gemini_verifier.filter_moments_enabled and self.gemini_verifier.is_ready():
+                # Tiết kiệm Quota Gemini: Chỉ gọi Gemini thẩm định tối đa 1 lần mỗi 15 phút
+                use_gemini = (
+                    self.gemini_verifier is not None and 
+                    self.gemini_verifier.filter_moments_enabled and 
+                    self.gemini_verifier.is_ready() and
+                    (time.time() - getattr(self, "last_gemini_moment_call", 0.0)) > 900.0
+                )
+                
+                if use_gemini:
+                    self.last_gemini_moment_call = time.time()
                     res = self.gemini_verifier.evaluate_cute_moment(frame_to_save, is_manual=False)
                     if not (res.get("approved", False) and res.get("privacy_safe", False)):
                         print(f"[VisionTracker] 🚫 Ảnh khoảnh khắc bị từ chối bởi Gemini: {res.get('reason_vi')}")
                         return
                 else:
+                    caption = "Bé có nụ cười / biểu cảm đáng yêu" if has_special_expression else "Khoảnh khắc em bé ngủ ngoan"
                     res = {
                         "checked_by_gemini": False,
                         "approved": True,
                         "privacy_safe": True,
-                        "caption_vi": "Khoảnh khắc đáng yêu của bé",
-                        "aesthetic_score": 8,
+                        "caption_vi": caption,
+                        "aesthetic_score": 9 if has_special_expression else 8,
                         "has_other_person": False
                     }
 
@@ -874,7 +942,7 @@ class VisionTracker:
                 cv2.imwrite(m_path, frame_to_save)
                 if self.gemini_verifier is not None:
                     self.gemini_verifier.save_moment_metadata(fn, res)
-                print(f"[VisionTracker] ✨ Đã chụp chân dung bé đạt chuẩn: {m_path} ({res.get('caption_vi')})")
+                print(f"[VisionTracker] ✨ Đã chụp chân dung bé đạt chuẩn (biểu cảm mới={has_special_expression}): {m_path} ({res.get('caption_vi')})")
             except Exception as e:
                 print(f"[VisionTracker] Lỗi lưu khoảnh khắc: {e}")
             finally:

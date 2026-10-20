@@ -975,6 +975,110 @@ Trả về đúng định dạng JSON:
             return {"success": False, "error": str(e)}
 
     # =========================================================================
+    # 5. HỘI CHẨN TĂNG TRƯỞNG THỂ CHẤT (CHIỀU CAO - CÂN NẶNG CHUẨN WHO)
+    # =========================================================================
+    def consult_growth_progress(self, baby_name: str, age_display: str, gender: str,
+                                current_rec: dict, prev_rec: dict = None, who_standard: dict = None) -> dict:
+        """
+        Bác Sĩ Nhi Khoa Gemini AI so sánh số đo lần này với lần trước,
+        tính toán khoảng cách ngày, tốc độ tăng cân/chiều cao và đưa ra đề xuất dinh dưỡng, chăm sóc cho ba mẹ.
+        """
+        if not self.is_ready():
+            return {"success": False, "error": "Gemini AI chưa sẵn sàng hoặc chưa nhập API Key"}
+
+        c_w = current_rec.get("weight_kg", 0.0)
+        c_h = current_rec.get("height_cm", 0.0)
+        c_head = current_rec.get("head_circ_cm")
+        c_date = current_rec.get("date", "Hôm nay")
+
+        prev_info = "Đây là lần đo đầu tiên được ghi nhận của bé."
+        days_gap = 0
+        w_diff_g = 0
+        h_diff_cm = 0
+        velocity_str = ""
+
+        if prev_rec:
+            p_w = prev_rec.get("weight_kg", 0.0)
+            p_h = prev_rec.get("height_cm", 0.0)
+            p_head = prev_rec.get("head_circ_cm")
+            p_date = prev_rec.get("date", "")
+            
+            try:
+                d_curr = datetime.strptime(str(c_date)[:10], "%Y-%m-%d").date()
+                d_prev = datetime.strptime(str(p_date)[:10], "%Y-%m-%d").date()
+                days_gap = max(1, (d_curr - d_prev).days)
+            except Exception:
+                days_gap = 15
+
+            w_diff_g = round((c_w - p_w) * 1000)
+            h_diff_cm = round(c_h - p_h, 1)
+            g_per_day = round(w_diff_g / max(1, days_gap), 1)
+            prev_info = (
+                f"Lần đo trước ngày {p_date}: Cân nặng {p_w} kg, Chiều cao {p_h} cm"
+                f"{f', Vòng đầu {p_head} cm' if p_head else ''}.\n"
+                f"Khoảng cách giữa 2 lần đo: {days_gap} ngày.\n"
+                f"Mức tăng trưởng thực tế: Tăng +{w_diff_g}g ({g_per_day} g/ngày) và +{h_diff_cm} cm."
+            )
+            velocity_str = f"+{w_diff_g}g ({g_per_day}g/ngày), +{h_diff_cm}cm trong {days_gap} ngày"
+
+        who_info = ""
+        if who_standard:
+            who_info = (
+                f"Chuẩn WHO lứa tuổi: Cân nặng trung vị {who_standard.get('weight_median')} kg (Khoảng bình thường: {who_standard.get('weight_range')}), "
+                f"Chiều cao trung vị {who_standard.get('length_median')} cm (Khoảng bình thường: {who_standard.get('length_range')})."
+            )
+
+        prompt = f"""
+Bạn là Bác sĩ Nhi khoa Chuyên gia Dinh dưỡng & Phát triển Thể chất Trẻ em (Senior Pediatrician).
+Dưới đây là số liệu đo lường thể trạng của em bé:
+- Tên bé: {baby_name} ({gender}, {age_display})
+- Số đo lần này ({c_date}): Cân nặng = {c_w} kg, Chiều cao/dài = {c_h} cm{f', Vòng đầu = {c_head} cm' if c_head else ''}
+- So sánh với lần đo trước:
+{prev_info}
+- Đối chiếu Bảng Chuẩn Tăng Trưởng WHO:
+{who_info}
+
+Hãy phân tích y khoa sâu sắc và đưa ra ĐỀ XUẤT CHO BA MẸ theo định dạng JSON bắt buộc:
+{{
+  "growth_status_badge": "Tăng trưởng rất tốt" | "Đạt chuẩn WHO" | "Cần theo dõi thêm",
+  "velocity_evaluation_vi": "Nhận xét chi tiết 2-3 câu về tốc độ tăng cân/chiều cao trong khoảng thời gian {days_gap} ngày qua so với chuẩn sinh lý trẻ sơ sinh (khoảng 25-35g/ngày ở tháng đầu).",
+  "who_percentile_comparison_vi": "Đánh giá vị trí của bé so với trung vị WHO (rất tốt, đạt chuẩn hay cần cải thiện).",
+  "recommendations_vi": [
+    "Khuyến nghị cụ thể 1 về cữ bú / lượng sữa ml mỗi ngày phù hợp với cân nặng {c_w}kg",
+    "Khuyến nghị cụ thể 2 về giấc ngủ & vận động (Tummy Time, tắm nắng, massage)",
+    "Khuyến nghị cụ thể 3 về bổ sung vi chất (như Vitamin D3 400 IU/ngày) và lưu ý theo dõi"
+  ],
+  "doctor_quote_vi": "Lời nhắn nhủ ấm áp, động viên ba mẹ từ Bác sĩ Nhi khoa (1 câu)"
+}}
+"""
+        try:
+            resp = self._call_gemini_resilient(
+                contents=prompt,
+                call_type="growth_consult",
+                json_mode=True,
+                temperature=0.1
+            )
+            data = json.loads(resp.text)
+            return {
+                "success": True,
+                "analysis": {
+                    "analyzed_at": time.strftime("%H:%M - %d/%m/%Y"),
+                    "days_gap": days_gap,
+                    "weight_gain_g": w_diff_g,
+                    "height_gain_cm": h_diff_cm,
+                    "velocity_str": velocity_str,
+                    "status_badge": data.get("growth_status_badge", "Đạt chuẩn WHO"),
+                    "velocity_evaluation_vi": data.get("velocity_evaluation_vi", ""),
+                    "who_percentile_comparison_vi": data.get("who_percentile_comparison_vi", ""),
+                    "recommendations_vi": data.get("recommendations_vi", []),
+                    "doctor_quote_vi": data.get("doctor_quote_vi", "Chúc bé luôn mau ăn chóng lớn!"),
+                    "model_used": self.active_model
+                }
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    # =========================================================================
     # QUẢN LÝ METADATA CHO ALBUM KHOẢNH KHẮC ĐÁNG YÊU
     # =========================================================================
     @staticmethod

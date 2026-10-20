@@ -621,13 +621,15 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         cfg = load_config()
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         gender = cfg.get("baby_gender", "boy")
+        growth_eval = growth_tracker.evaluate_growth(b_date, gender)
         return {
             "success": True,
             "baby_name": cfg.get("baby_name", "Bé"),
             "baby_birth_date": b_date,
             "baby_gender": gender,
             "age_info": calculate_exact_age(b_date),
-            "growth_evaluation": growth_tracker.evaluate_growth(b_date, gender),
+            "growth_evaluation": growth_eval,
+            "ai_analysis": growth_tracker.get_latest_ai_analysis(),
             "monthly_reminder": growth_tracker.should_trigger_monthly_reminder()
         }
 
@@ -650,10 +652,43 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         cfg = load_config()
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         gender = cfg.get("baby_gender", "boy")
+        growth_eval = growth_tracker.evaluate_growth(b_date, gender)
+
+        # Gọi Gemini AI so sánh lần này với lần trước & đưa ra đề xuất cho ba mẹ
+        ai_analysis = None
+        if gemini_verifier is not None and gemini_verifier.is_ready():
+            try:
+                prev_rec = None
+                history = growth_eval.get("history", [])
+                for idx, r in enumerate(history):
+                    if r.get("date") == rec.get("date") and idx > 0:
+                        prev_rec = history[idx - 1]
+                        break
+                if not prev_rec and len(history) >= 2:
+                    prev_rec = history[-2]
+
+                ai_res = gemini_verifier.consult_growth_progress(
+                    baby_name=cfg.get("baby_name", "Bé"),
+                    age_display=growth_eval.get("age_info", {}).get("age_display", "1.5 tháng tuổi"),
+                    gender="Bé Trai" if gender == "boy" else "Bé Gái",
+                    current_rec=rec,
+                    prev_rec=prev_rec,
+                    who_standard=growth_eval.get("who_standards")
+                )
+                if ai_res.get("success"):
+                    ai_analysis = ai_res.get("analysis")
+                    growth_tracker.save_ai_analysis(ai_analysis)
+            except Exception as e:
+                print(f"[Growth] Lỗi gọi Gemini hội chẩn tăng trưởng: {e}")
+
+        if not ai_analysis:
+            ai_analysis = growth_tracker.get_latest_ai_analysis()
+
         return {
             "success": True,
             "record": rec,
-            "growth_evaluation": growth_tracker.evaluate_growth(b_date, gender),
+            "growth_evaluation": growth_eval,
+            "ai_analysis": ai_analysis,
             "monthly_reminder": growth_tracker.should_trigger_monthly_reminder()
         }
 
