@@ -1905,7 +1905,7 @@
                         gBadge.innerText = "✅ API Còn Hạn";
                         gBadge.className = "text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/30 whitespace-nowrap";
                         if (hdrDot) hdrDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-                        if (hdrText) hdrText.innerText = `Gemini: Còn hạn (${(g.usage && g.usage.calls_today) || 0} req)`;
+                        if (hdrText) hdrText.innerText = `Gemini: Hoạt động (Đã gọi ${(g.usage && g.usage.calls_today) || 0} req)`;
                     } else if (kh === 'quota_exceeded') {
                         gBadge.innerText = "⚠️ Tạm hết Quota (429)";
                         gBadge.className = "text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/30 whitespace-nowrap";
