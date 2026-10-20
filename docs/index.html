@@ -189,7 +189,7 @@
                 <div class="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10 text-[10px] space-y-1 shadow-lg">
                   <div class="flex items-center gap-1.5">
                     <span>🫁</span>
-                    <span>Nhịp thở: <strong class="text-emerald-400 font-extrabold">32 BPM</strong></span>
+                    <span>Ước lượng nhịp thở: <strong class="text-emerald-400 font-extrabold">32 BPM</strong></span>
                   </div>
                   <div class="flex items-center gap-1.5">
                     <span>🛌</span>
@@ -294,15 +294,23 @@
             </li>
             <li class="flex items-start gap-2">
               <span class="text-emerald-600 font-bold">✓</span>
-              <span><strong>Giám sát Nhịp thở & Ngưng thở:</strong> Đo chính xác BPM qua chuyển động lồng ngực không chạm.</span>
+              <span><strong>Ước Lượng Vi Biến Thiên Thở & Báo Ngưng Thở:</strong> Phân tích quang học vi biến thiên pixel lồng ngực không chạm dựa trên định vị khuôn mặt & khung xương của bé.</span>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-emerald-600 font-bold">✓</span>
-              <span><strong>Nghe Âm Thanh Phòng Realtime:</strong> Lắng nghe trực tiếp độ trễ cực thấp < 200ms.</span>
+              <span><strong>Vùng An Toàn Phối Cảnh 3D:</strong> Định vị 4 góc nôi trong không gian thực, tự động nhận biết bố mẹ đang bế để chống báo động giả.</span>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-emerald-600 font-bold">✓</span>
-              <span><strong>Phân biệt tiếng Khóc, Ho & Sặc sữa:</strong> Tự động bật tiếng ồn trắng xoa dịu bé.</span>
+              <span><strong>Nghe Âm Thanh Phòng Realtime & Đàm Thoại:</strong> Lắng nghe trực tiếp độ trễ cực thấp < 200ms, hỗ trợ Push-to-Talk 2 chiều.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-600 font-bold">✓</span>
+              <span><strong>Bác Sĩ Giấc Ngủ AI (Chuẩn AAP/AASM) & Ghim Telegram:</strong> Phân tích toàn diện giấc ngủ và tự động ghim báo cáo 07:00 sáng.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-600 font-bold">✓</span>
+              <span><strong>Album Khoảnh Khắc Siêu Bảo Mật:</strong> Chỉ lưu khi AI nhận diện rõ mặt bé, tuyệt đối loại trừ ảnh hở hang của người lớn.</span>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-emerald-600 font-bold">✓</span>
@@ -322,75 +330,137 @@
         <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900">Công Nghệ AI Tiên Tiến Bảo Vệ Toàn Diện</h3>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <!-- Feature 1 -->
-        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center text-3xl text-brand-600">
-            🚼
+        <!-- Feature 1: Chống Nằm Sấp & Ngạt Mặt -->
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center text-2xl text-brand-600 mb-3">
+              🚼
+            </div>
+            <h4 class="text-lg font-bold text-slate-900">Chống Nằm Sấp & Ngạt Mặt</h4>
+            <p class="text-slate-600 text-xs leading-relaxed mt-2">
+              Kết hợp YOLOv8-Pose và YuNet Face Tracking định vị liên tục góc mặt, mắt, mũi. Lập tức hú còi báo động trong 0.5s nếu bé úp mặt xuống nệm hoặc bị chăn gối che thở quá 5 giây.
+            </p>
           </div>
-          <h4 class="text-xl font-bold text-slate-900">Chống Nằm Sấp & Ngạt Mặt</h4>
-          <p class="text-slate-600 text-sm leading-relaxed">
-            Thuật toán YOLOv8 Pose tính toán liên tục góc mặt, mắt và sống mũi. Ngay khi bé lật sấp hoặc bị chăn gối phủ kín mặt quá 5 giây, chuông báo động lập tức réo vang để cha mẹ xử lý.
-          </p>
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-brand-600">
+            <span>🛡️ Bảo vệ đường thở 24/7</span>
+          </div>
         </div>
 
-        <!-- Feature 2: Realtime Audio Feed -->
-        <div id="live-audio" class="p-8 rounded-3xl bg-white border-2 border-emerald-500/40 shadow-md transition space-y-4 relative">
-          <div class="absolute top-4 right-4 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">
-            Mới Nâng Cấp
+        <!-- Feature 2: Nghe Âm Thanh Phòng Realtime & Đàm Thoại -->
+        <div id="live-audio" class="p-6 rounded-3xl bg-white border-2 border-emerald-500/40 shadow-md transition space-y-3 relative flex flex-col justify-between">
+          <div class="absolute top-3 right-3 bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+            Realtime
           </div>
-          <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-3xl text-emerald-600">
-            🔊
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-2xl text-emerald-600 mb-3">
+              🔊
+            </div>
+            <h4 class="text-lg font-bold text-slate-900">Âm Thanh Realtime & Đàm Thoại</h4>
+            <p class="text-slate-600 text-xs leading-relaxed mt-2">
+              Phát luồng âm thanh 16kHz mono không độ trễ (< 200ms) trực tiếp về điện thoại. Tích hợp nút Push-to-Talk hai chiều giúp bố mẹ dễ dàng trò chuyện, vỗ về bé từ xa.
+            </p>
           </div>
-          <h4 class="text-xl font-bold text-slate-900">Nghe Âm Thanh Phòng Realtime</h4>
-          <p class="text-slate-600 text-sm leading-relaxed">
-            Phát luồng âm thanh 16kHz mono không độ trễ (< 200ms) trực tiếp về điện thoại hoặc máy tính. Bố mẹ có thể lắng nghe tiếng bé trở mình, ọ ẹ hay tiếng thở như đang nằm cạnh bé.
-          </p>
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
+            <span>🎙️ Push-to-Talk 2 chiều</span>
+          </div>
         </div>
 
-        <!-- Feature 3 -->
-        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-cyan-50 flex items-center justify-center text-3xl text-cyan-600">
-            🫁
+        <!-- Feature 3: Ước Lượng Vi Biến Thiên Thở & Báo Ngưng Thở -->
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-cyan-50 flex items-center justify-center text-2xl text-cyan-600 mb-3">
+              🫁
+            </div>
+            <h4 class="text-lg font-bold text-slate-900">Vi Cử Động Thở & Báo Ngưng Thở</h4>
+            <p class="text-slate-600 text-xs leading-relaxed mt-2">
+              Định vị lồng ngực tự thích ứng từ trục khuôn mặt & khung xương của bé. Phân tích quang học vi biến thiên pixel qua bộ lọc DSP Butterworth (0.46 - 1.42 Hz), báo động khẩn khi ngưng thở > 15s.
+            </p>
           </div>
-          <h4 class="text-xl font-bold text-slate-900">Đo Nhịp Thở Lồng Ngực Quang Học</h4>
-          <p class="text-slate-600 text-sm leading-relaxed">
-            Theo dõi dao động lồng ngực bé không cần chạm (Contactless Optical Chest Motion). Đo chuẩn xác nhịp thở sinh lý (30 - 60 BPM) và phát báo động nếu phát hiện ngưng thở quá 20 giây.
-          </p>
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-cyan-700">
+            <span>⚡ Cảnh báo ngưng thở > 15s</span>
+          </div>
         </div>
 
-        <!-- Feature 4 -->
-        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center text-3xl text-rose-600">
-            🍼
+        <!-- Feature 4: Phân Biệt Tiếng Khóc, Cơn Ho & Sặc Sữa -->
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-2xl text-rose-600 mb-3">
+              🍼
+            </div>
+            <h4 class="text-lg font-bold text-slate-900">Phân Biệt Khóc, Ho & Sặc Sữa</h4>
+            <p class="text-slate-600 text-xs leading-relaxed mt-2">
+              Google YAMNet Audio AI bóc tách chính xác tiếng khóc gắt, tiếng ho sặc sữa hay tiếng nấc. Tự động bật tiếng ồn trắng (tiếng mưa rơi, nhịp tim 65 BPM) xoa dịu bé và gửi ảnh tức thì qua Telegram.
+            </p>
           </div>
-          <h4 class="text-xl font-bold text-slate-900">Nhận Diện Tiếng Khóc & Ho Sặc Sữa</h4>
-          <p class="text-slate-600 text-sm leading-relaxed">
-            Google YAMNet Audio AI phân tích sóng âm để phát hiện tiếng khóc gắt, ho sặc hoặc tiếng thở dốc, gửi cảnh báo kèm ảnh chụp tức thì qua Telegram và điện thoại của cha mẹ.
-          </p>
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-rose-600">
+            <span>🎵 Tự bật White Noise dỗ bé</span>
+          </div>
         </div>
 
-        <!-- Feature 5 -->
-        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-3xl text-amber-600">
-            🛌
+        <!-- Feature 5: Bác Sĩ Giấc Ngủ AI & Ghim Telegram -->
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-2xl text-amber-600 mb-3">
+              🛌
+            </div>
+            <h4 class="text-lg font-bold text-slate-900">Bác Sĩ Giấc Ngủ & Ghim Telegram</h4>
+            <p class="text-slate-600 text-xs leading-relaxed mt-2">
+              Gemini AI đối chiếu nghiên cứu y khoa AAP/AASM, phân tích giấc ngủ trong và ngoài tầm cam, tính toán Wake Window và tự động GHIM bản tin tổng kết lúc 07:00 sáng trên Telegram kèm link rút gọn.
+            </p>
           </div>
-          <h4 class="text-xl font-bold text-slate-900">Bác Sĩ Phân Tích Giấc Ngủ AI</h4>
-          <p class="text-slate-600 text-sm leading-relaxed">
-            Đánh giá Sleep Score (0-100), chu kỳ ngủ nông/sâu và tự động tính toán <strong>Wake Window</strong> (cửa sổ thức) giúp mẹ biết chính xác giờ ru bé ngủ, không lo bé bị mệt quá giấc.
-          </p>
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
+            <span>📌 Tự ghim Telegram 07:00</span>
+          </div>
         </div>
 
-        <!-- Feature 6 -->
-        <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-3xl text-purple-600">
-            📻
+        <!-- Feature 6: Vùng An Toàn Phối Cảnh 3D -->
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-2xl text-indigo-600 mb-3">
+              📐
+            </div>
+            <h4 class="text-lg font-bold text-slate-900">Vùng An Toàn Phối Cảnh 3D</h4>
+            <p class="text-slate-600 text-xs leading-relaxed mt-2">
+              Xóa bỏ khung chữ nhật cứng nhắc! Kéo thả 4 góc phối cảnh 3D bám sát góc nằm nôi thật. Tự động nhận biết bố mẹ bế bé ra ngoài để không báo động giả, chỉ cảnh báo khi bé trườn mép giường.
+            </p>
           </div>
-          <h4 class="text-xl font-bold text-slate-900">Đàm Thoại 2 Chiều & Tiếng Ồn Trắng</h4>
-          <p class="text-slate-600 text-sm leading-relaxed">
-            Nói chuyện trực tiếp với bé từ xa qua tính năng Push-to-Talk. Tự động bật tiếng ồn trắng (tiếng tim mẹ 65 BPM, tiếng mưa rơi) khi bé khóc và tự tắt khi bé đã ngủ say.
-          </p>
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600">
+            <span>🎯 4 góc 3D không gian thực</span>
+          </div>
+        </div>
+
+        <!-- Feature 7: Sổ Tăng Trưởng Chiều Cao - Cân Nặng WHO -->
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-2xl text-teal-600 mb-3">
+              📈
+            </div>
+            <h4 class="text-lg font-bold text-slate-900">Sổ Tăng Trưởng Chuẩn WHO</h4>
+            <p class="text-slate-600 text-xs leading-relaxed mt-2">
+              Nhập ngày sinh chính xác từng ngày tuổi. Tự động bật thông báo nổi nhắc nhở bố mẹ bổ sung số đo ngày đầu tháng hoặc mỗi 30 ngày, vẽ biểu đồ Z-Score đối soát chuẩn tăng trưởng Nhi khoa WHO.
+            </p>
+          </div>
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-teal-700">
+            <span>📊 Nhắc lịch đo định kỳ 30 ngày</span>
+          </div>
+        </div>
+
+        <!-- Feature 8: Album Khoảnh Khắc Siêu Bảo Mật -->
+        <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-2xl text-purple-600 mb-3">
+              📸
+            </div>
+            <h4 class="text-lg font-bold text-slate-900">Album Khoảnh Khắc Bảo Mật</h4>
+            <p class="text-slate-600 text-xs leading-relaxed mt-2">
+              Hệ thống YuNet Face Tracking chỉ tự động lưu ảnh khi nhận diện rõ nét khuôn mặt bé (Conf ≥ 0.65). Bộ lọc Gemini AI nghiêm ngặt loại trừ 100% hình ảnh người lớn hở hang hoặc giường trống.
+            </p>
+          </div>
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-purple-600">
+            <span>🔒 Bảo mật riêng tư gia đình</span>
+          </div>
         </div>
 
       </div>
@@ -549,10 +619,34 @@
               <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Có (YOLOv8 Pose)</td>
             </tr>
             <tr>
-              <td class="py-4 px-6 font-semibold">Đo nhịp thở lồng ngực (BPM)</td>
+              <td class="py-4 px-6 font-semibold">Ước lượng vi cử động thở & Báo ngưng thở (BPM)</td>
               <td class="py-4 px-6 text-rose-500">❌ Không có</td>
-              <td class="py-4 px-6 text-amber-600">⚠️ Bắt buộc mua thêm đai vải/vớ</td>
-              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Có sẵn (Không chạm)</td>
+              <td class="py-4 px-6 text-amber-600">⚠️ Bắt buộc mua thêm đai vải/vớ phụ kiện</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Có sẵn (Quang học AI không chạm)</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Vùng an toàn phối cảnh 3D nôi</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không có</td>
+              <td class="py-4 px-6 text-amber-600">⚠️ Khung chữ nhật 2D cứng nhắc</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Đa giác 4 góc 3D không gian thực</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Báo cáo giấc ngủ y khoa AAP & Tự ghim Telegram</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không có</td>
+              <td class="py-4 px-6 text-amber-600">⚠️ Chỉ vẽ biểu đồ chung chung</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Gemini AI chuẩn AAP & Tự ghim 07:00</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Sổ theo dõi Chiều cao - Cân nặng WHO</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không có</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không có</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">✅ Z-score WHO & Nhắc nhở định kỳ 30 ngày</td>
+            </tr>
+            <tr>
+              <td class="py-4 px-6 font-semibold">Album ảnh khoảnh khắc bảo mật</td>
+              <td class="py-4 px-6 text-rose-500">❌ Không có</td>
+              <td class="py-4 px-6 text-amber-600">⚠️ Tải lên đám mây nước ngoài</td>
+              <td class="py-4 px-6 bg-brand-50 font-bold text-emerald-600">🛡️ AI bóc tách rõ mặt bé, lọc ảnh nhạy cảm</td>
             </tr>
             <tr>
               <td class="py-4 px-6 font-semibold">Nghe âm thanh phòng Realtime</td>
