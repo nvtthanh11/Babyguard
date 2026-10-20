@@ -418,8 +418,8 @@ A. KIỂM TRA TRACKING CƠ THỂ & TRẠNG THÁI THỨC/NGỦ CỦA EM BÉ:
 - head_direction ("right" | "left" | "up" | "down"): Đỉnh đầu của em bé đang hướng về phía nào?
 
 B. KIỂM TRA & TỰ ĐỘNG CĂN CHỈNH KHUNG NÔI / TẤM ĐỆM EM BÉ (SAFE ZONE 3D):
-- crib_zone_accurate (boolean): Khung viền xanh lá cây hiện tại đã bao quanh hợp lý vùng tấm đệm/chiếu/lòng nôi nơi em bé nằm chưa? (Nếu khung xanh lá đang quá rộng tràn hết ra giường người lớn hoặc bị lệch khỏi tấm đệm trắng của bé -> false).
-- true_safe_zone_polygon ([[x, y], [x, y], [x, y], [x, y]] từ 0.03 đến 0.97): Tọa độ 4 đỉnh đa giác tứ giác theo thứ tự [Top-Left, Top-Right, Bottom-Right, Bottom-Left] bao quanh vừa vặn tấm đệm/nôi nơi em bé nằm theo đúng góc phối cảnh 3D/xiên của camera.
+- crib_zone_accurate (boolean): Khung viền xanh lá cây hiện tại đã bao quanh hợp lý vùng tấm đệm/nôi nơi em bé nằm chưa? (Nếu khung xanh lá đang cắt ngang qua đầu/cổ bé, quá hẹp hoặc bị lệch khỏi tấm đệm trắng của bé -> false).
+- true_safe_zone_polygon ([[x, y], [x, y], [x, y], [x, y]] từ 0.03 đến 0.97): Tọa độ 4 đỉnh đa giác tứ giác theo thứ tự [Top-Left, Top-Right, Bottom-Right, Bottom-Left] bao quanh TRỌN VẸN tấm đệm nơi em bé nằm theo đúng góc phối cảnh 3D xiên. TUYỆT ĐỐI KHÔNG ĐƯỢC để cạnh cắt ngang đầu/thân bé; cạnh trên phải chạy phía trên đỉnh đầu và gối bé để đảm bảo an toàn. Không bao gồm người lớn nằm cạnh.
 - true_safe_zone ([left, top, right, bottom] từ 0.03 đến 0.97): Tọa độ khung chữ nhật bao ngoài tấm đệm của em bé.
 
 Trả về đúng JSON:
@@ -747,7 +747,13 @@ Trả về đúng định dạng JSON:
         prompt = """
 Bạn là Kỹ sư Thị giác Máy tính & Chuyên gia An toàn Nôi Em Bé (AI Crib 3D Calibration Specialist).
 Hãy phân tích khung hình camera giám sát này và xác định:
-1. Tọa độ đa giác 4 đỉnh (3D Perspective Quadrilateral) bao quanh vừa vặn LÒNG NÔI / TẤM ĐỆM AN TOÀN nơi em bé nằm theo đúng góc xiên/phối cảnh 3D thực tế của camera (không fix cứng ngang dọc):
+1. Tọa độ đa giác 4 đỉnh (3D Perspective Quadrilateral) bao quanh TRỌN VẸN VÙNG TẤM ĐỆM / NÔI AN TOÀN của bé theo đúng góc phối cảnh 3D xiên của camera:
+   - QUY TẮC BẮT BUỘC:
+     + Toàn bộ đầu em bé, gối nằm của bé, thân bé, chăn và gối ôm cạnh bé PHẢI NẰM HOÀN TOÀN 100% BÊN TRONG safe_zone_polygon.
+     + TUYỆT ĐỐI KHÔNG ĐƯỢC để cạnh trên hay bất kỳ cạnh nào cắt ngang qua đầu, cổ hay cơ thể em bé!
+     + Cạnh trên (Top edge) phải chạy phía TRÊN đỉnh đầu và gối của bé ít nhất 5-8% chiều cao ảnh để chừa khoảng thở an toàn.
+     + Cạnh phải (Right edge) phải mở rộng qua hết gối/đệm của bé.
+     + Nếu có người lớn nằm ngủ cạnh bé trên giường lớn, đa giác Safe Zone 3D chỉ bao quanh tấm đệm/nôi của em bé, ranh giới cạnh trên chạy sát mép đệm bé mà không bao người lớn.
    - safe_zone_polygon: [[x_tl, y_tl], [x_tr, y_tr], [x_br, y_br], [x_bl, y_bl]] theo thứ tự:
      + Top-Left (Góc trên bên trái tấm đệm/nôi)
      + Top-Right (Góc trên bên phải tấm đệm/nôi)
@@ -814,7 +820,13 @@ Trả về đúng định dạng JSON:
                 "safety_advice_vi": str(data.get("safety_advice_vi", "Đã tự động căn chỉnh vùng an toàn 3D theo lòng nôi."))
             }
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            err_msg = str(e)
+            if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                return {
+                    "success": False,
+                    "error": "Khóa Gemini API đã chạm hạn mức Free (20 lượt/ngày). Khung 3D đã được hiệu chỉnh tối ưu sẵn, hoặc bố mẹ có thể bấm 'Chỉnh Tay' để tinh chỉnh 4 góc."
+                }
+            return {"success": False, "error": f"Lỗi Gemini AI: {err_msg[:120]}"}
 
     # =========================================================================
     # 5. BÁC SĨ NHI KHOA AI: PHÂN TÍCH GIẤC NGỦ ĐÊM QUA & 24H (SÁNG HÔM SAU 07:00)
