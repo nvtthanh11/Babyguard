@@ -652,32 +652,34 @@ Trả về đúng định dạng JSON:
             return {"checked_by_gemini": False, "approved": False, "reason_vi": "Lỗi mã hóa ảnh."}
 
         prompt = f"""
-Bạn là Giám khảo Nhiếp ảnh Gia đình & Cắt Khung Thông Minh (Smart Auto-Crop) của hệ thống BabyGuard AI.
-Hãy đánh giá bức ảnh chụp bé {self.baby_name} để lưu vào Album Kỷ Niệm theo quy tắc THÔNG MINH & LINH HOẠT sau:
+Bạn là Giám khảo Nhiếp ảnh Trẻ Sơ Sinh & Giám sát Quyền Riêng Tư (Strict Infant Photography & Privacy Inspector) của hệ thống BabyGuard AI.
+Bức ảnh này được hệ thống chụp để lưu vào Album Kỷ Niệm của bé {self.baby_name}.
 
-1. KIỂM TRA BẢN THÂN EM BÉ (baby_valid & aesthetic_score từ 1-10):
-   - Em bé có mặc quần áo/quấn khăn lịch sự (không phải đang thay tã) và gương mặt bé có rõ ràng, đáng yêu, bình yên không?
-   - Nếu không thấy mặt bé hoặc bé đang thay tã -> baby_valid = false.
+QUY TẮC KIỂM DUYỆT BẮT BUỘC (TUYỆT ĐỐI KHÔNG DU DI):
 
-2. KIỂM TRA NGƯỜI KHÁC / VÙNG XUNG QUANH & CHỌN CHẾ ĐỘ XỬ LÝ (crop_mode):
-   - Trường hợp A ("family_wide" - Giữ nguyên toàn khung hình):
-     + Khi trong ảnh hoàn toàn KHÔNG có người lớn/vật nhạy cảm nào khác;
-     + HOẶC có bố/mẹ nằm cạnh bé mà bố/mẹ mặc trang phục lịch sự kín đáo VÀ gương mặt bố/mẹ xuất hiện nguyên vẹn, đẹp đẽ, tình cảm cùng bé.
-   - Trường hợp B ("baby_portrait" - Tự động cắt lấy riêng khung cận cảnh em bé):
-     + Khi bản thân em bé rất đáng yêu (baby_valid = true), NHƯNG ở xung quanh/rìa ảnh có bố/mẹ đang nằm quay lưng, bị cắt nửa mặt, trang phục ở nhà chưa kín đáo, hoặc có màn hình laptop/iPad ở rìa.
-     + ĐỪNG TỪ CHỐI ẢNH! Hãy chọn crop_mode = "baby_portrait" và trả về tọa độ `clean_crop_box: [xmin, ymin, xmax, ymax]` (từ 0.0 đến 1.0) chỉ đóng khung gọn quanh em bé và phần gối/đệm sạch sẽ của bé, sao cho bên trong vùng cắt `clean_crop_box` TUYỆT ĐỐI KHÔNG dính phần cơ thể nhạy cảm hay màn hình phụ của người lớn!
-   - Trường hợp C ("reject" - Từ chối hoàn toàn):
-     + Chỉ chọn "reject" khi baby_valid = false, hoặc phần cơ thể nhạy cảm của người lớn nằm đè trực tiếp ngay sát mặt/người bé khiến ngay cả khi cắt hẹp (`clean_crop_box`) vẫn bị lộ vùng nhạy cảm.
+1. KIỂM DUYỆT QUYỀN RIÊNG TƯ & AN TOÀN (ZERO TOLERANCE - TỪ CHỐI NGAY LẬP TỨC):
+   - NẾU trong ảnh có bất kỳ người lớn nào cởi trần, hở lưng, lộ đùi, mặc đồ lót, đồ ngủ nhạy cảm, hoặc nằm ở tư thế khó coi/phản cảm:
+     -> BẮT BUỘC TỪ CHỐI (approved = false, privacy_safe = false, reason_vi = "Ảnh có người lớn chưa chỉnh tề hoặc tư thế nhạy cảm").
+   - NẾU KHÔNG THẤY RÕ RÀNG KHUÔN MẶT CỦA EM BÉ (ảnh chỉ có tay/chân/lưng bé, chụp sau gáy, chăn gối che mất mặt, ảnh tối đen hoặc mờ tịt):
+     -> BẮT BUỘC TỪ CHỐI (approved = false, baby_face_clear = false, reason_vi = "Không nhận diện được rõ nét khuôn mặt em bé").
+   - NẾU em bé đang thay tã hoặc không mặc tã/quần áo:
+     -> BẮT BUỘC TỪ CHỐI (approved = false, reason_vi = "Bé chưa mặc đồ chỉnh tề").
+
+2. ĐIỀU KIỆN ĐỂ DUYỆT LƯU VÀO ALBUM (approved = true):
+   - CHỈ DUYỆT khi và chỉ khi nhìn thấy RÕ RÀNG VÀ ĐẦY ĐỦ KHUÔN MẶT EM BÉ (mắt, mũi, miệng rõ ràng). Bé đang ngủ bình yên hoặc thức nhìn đáng yêu.
+   - Bé mặc quần áo/tã/quấn khăn lịch sự kín đáo.
+   - Bố cục ảnh tập trung vào em bé, hoàn toàn KHÔNG có cảnh nhạy cảm của người lớn.
+   - Điểm thẩm mỹ đạt từ 7/10 trở lên.
 
 Trả về đúng định dạng JSON:
 {{
-  "baby_valid": boolean,
-  "crop_mode": "family_wide" | "baby_portrait" | "reject",
-  "clean_crop_box": [float, float, float, float],
-  "has_other_person_in_final": boolean,
+  "baby_face_clear": boolean,
+  "privacy_safe": boolean,
+  "has_adult_nudity_or_body": boolean,
+  "approved": boolean,
   "aesthetic_score": integer,
-  "caption_vi": "Một câu chú thích tiếng Việt thật ngọt ngào, ấm áp cho bức ảnh",
-  "reason_vi": "Giải thích ngắn gọn (VD: Đã tự động cắt gọn khung chân dung bé để loại bỏ phần rìa)"
+  "caption_vi": "Một câu chú thích tiếng Việt thật ấm áp về nụ cười hoặc giấc ngủ của bé",
+  "reason_vi": "Giải thích lý do duyệt hoặc từ chối"
 }}
 """
         try:
@@ -692,30 +694,32 @@ Trả về đúng định dạng JSON:
                 temperature=0.1
             )
             data = json.loads(resp.text)
-            baby_valid = bool(data.get("baby_valid", False))
-            crop_mode = str(data.get("crop_mode", "reject")).lower()
-            score = int(data.get("aesthetic_score", 8))
-            clean_box = data.get("clean_crop_box", [0.15, 0.15, 0.85, 0.85])
+            baby_face_clear = bool(data.get("baby_face_clear", False))
+            privacy_safe = bool(data.get("privacy_safe", False))
+            has_nudity = bool(data.get("has_adult_nudity_or_body", False))
+            score = int(data.get("aesthetic_score", 0))
 
-            approved = baby_valid and (crop_mode in ("family_wide", "baby_portrait")) and (score >= 6)
-            auto_cropped = (crop_mode == "baby_portrait")
+            approved = (
+                baby_face_clear
+                and privacy_safe
+                and not has_nudity
+                and bool(data.get("approved", False))
+                and score >= 7
+            )
 
             result = {
                 "checked_by_gemini": True,
                 "approved": approved,
                 "privacy_safe": approved,
-                "crop_mode": crop_mode,
-                "auto_cropped": auto_cropped,
-                "clean_crop_box": clean_box,
-                "has_other_person": bool(data.get("has_other_person_in_final", False)) if not auto_cropped else False,
-                "other_person_aesthetic": True,
+                "baby_face_clear": baby_face_clear,
+                "has_other_person": False,
                 "aesthetic_score": score,
                 "caption_vi": str(data.get("caption_vi", f"Khoảnh khắc đáng yêu của {self.baby_name}")),
                 "reason_vi": str(data.get("reason_vi", ""))
             }
 
             print(f"[GeminiVerifier] Duyệt ảnh Cute Moment ({self.active_model}): approved={approved}, "
-                  f"mode={crop_mode}, score={score} -> {result['reason_vi']}")
+                  f"face_clear={baby_face_clear}, privacy_safe={privacy_safe}, score={score} -> {result['reason_vi']}")
             return result
         except Exception as e:
             print(f"[GeminiVerifier] Lỗi evaluate_cute_moment: {e}")

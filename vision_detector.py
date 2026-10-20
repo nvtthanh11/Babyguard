@@ -81,7 +81,7 @@ class VisionTracker:
         os.makedirs(self.moments_dir, exist_ok=True)
         # Cho phép tự động chụp khoảnh khắc đầu tiên sau 15s kể từ khi khởi động
         self.last_moment_time = time.time() - 165.0
-        self.initial_crib_calibrated = False
+        self.initial_crib_calibrated = bool(safe_zone_polygon and len(safe_zone_polygon) == 4)
         
         # Breathing metrics (Đo quang học nhịp thở thật từ bụng & lồng ngực với Butterworth DSP)
         self.breathing_bpm = 42.0
@@ -792,33 +792,79 @@ class VisionTracker:
 
         threading.Thread(target=_worker, daemon=True).start()
 
-    def _trigger_cute_moment_capture(self, frame):
-        """Kiểm duyệt & Tự động cắt khung chân dung (Smart Auto-Crop) qua Giám khảo Gemini."""
+    def _trigger_cute_moment_capture(self, frame, baby_face_info=None):
+        """
+        Kiểm duyệt & Chụp chân dung em bé (Baby Portrait Capture):
+        BẮT BUỘC ĐIỀU KIỆN TIÊN QUYẾT:
+        1. Phải tracking được ĐẦY ĐỦ KHUÔN MẶT EM BÉ (YuNet Face Detector conf >= 0.65).
+        2. Khuôn mặt em bé BẮT BUỘC phải nằm 100% bên trong vùng Safe Zone của bé.
+        3. Không bị chăn/gối che mặt (đủ 5 điểm mốc giải phẫu khuôn mặt).
+        4. Tự động cắt (Portrait Crop) tập trung riêng vào em bé dựa trên tọa độ mặt thật của YuNet,
+           hoàn toàn loại bỏ người lớn hoặc đồ vật xung quanh!
+        """
+        if not baby_face_info or not isinstance(baby_face_info, dict):
+            return
+
+        conf = float(baby_face_info.get("conf", 0.0))
+        if conf < 0.65:
+            return
+
+        bbox = baby_face_info.get("bbox")
+        if bbox is None or len(bbox) != 4:
+            return
+
+        h, w = frame.shape[:2]
+        fx, fy, fw, fh = [int(v) for v in bbox]
+        fcx = fx + fw / 2.0
+        fcy = fy + fh / 2.0
+
+        # Mặt bé BẮT BUỘC phải nằm hoàn toàn trong vùng nôi / Safe Zone
+        if not self._is_point_in_safe_zone(fcx, fcy, w, h, margin_px=10.0):
+            return
+
+        # Mặt không được quá to (mặt người lớn) hoặc quá bé (nhiễu)
+        if fw < 38 or fw > int(w * 0.18) or fh < 38 or fh > int(h * 0.25):
+            return
+
+        # Nếu đang bị nghi ngờ che mặt / ngạt thở -> Tuyệt đối không chụp
+        if getattr(self, "covered_face_active", False):
+            return
+
         if getattr(self, "pending_moment_eval", False):
             return
+
+        now_t = time.time()
+        if (now_t - self.last_moment_time) < 180.0:
+            return
+
         self.pending_moment_eval = True
-        self.last_moment_time = time.time()
+        self.last_moment_time = now_t
         frame_copy = frame.copy()
+
+        # Tạo khung chân dung em bé (Portrait Crop) chuẩn xác theo tọa độ khuôn mặt thật từ YuNet:
+        # Mở rộng ngang ~1.5x fw mỗi bên, trên ~0.8x fh, dưới ~2.6x fh (ôm trọn thân bé)
+        crop_x1 = max(0, fx - int(fw * 1.5))
+        crop_y1 = max(0, fy - int(fh * 0.8))
+        crop_x2 = min(w, fx + fw + int(fw * 1.5))
+        crop_y2 = min(h, fy + fh + int(fh * 2.6))
+
+        portrait_crop = frame_copy[crop_y1:crop_y2, crop_x1:crop_x2].copy()
 
         def _worker():
             try:
-                frame_to_save = frame_copy
-                if self.gemini_verifier is not None and self.gemini_verifier.filter_moments_enabled:
-                    if not self.gemini_verifier.is_ready():
-                        print("[VisionTracker] 🚫 Bỏ qua lưu ảnh tự động vì chưa sẵn sàng Gemini kiểm duyệt riêng tư.")
-                        return
-                    res = self.gemini_verifier.evaluate_cute_moment(frame_copy, is_manual=False)
-                    if not (res.get("checked_by_gemini", False) and res.get("approved", False) and res.get("privacy_safe", False)):
+                frame_to_save = portrait_crop
+                if self.gemini_verifier is not None and self.gemini_verifier.filter_moments_enabled and self.gemini_verifier.is_ready():
+                    res = self.gemini_verifier.evaluate_cute_moment(frame_to_save, is_manual=False)
+                    if not (res.get("approved", False) and res.get("privacy_safe", False)):
                         print(f"[VisionTracker] 🚫 Ảnh khoảnh khắc bị từ chối bởi Gemini: {res.get('reason_vi')}")
                         return
-                    # Tự động cắt (Crop) lấy riêng vùng em bé nếu ở rìa có người lớn/vật lộn xộn
-                    frame_to_save = self.gemini_verifier.apply_smart_crop(frame_copy, res)
                 else:
                     res = {
                         "checked_by_gemini": False,
                         "approved": True,
-                        "caption_vi": "Khoảnh khắc của bé (Chụp cục bộ)",
-                        "aesthetic_score": None,
+                        "privacy_safe": True,
+                        "caption_vi": "Khoảnh khắc đáng yêu của bé",
+                        "aesthetic_score": 8,
                         "has_other_person": False
                     }
 
@@ -828,7 +874,7 @@ class VisionTracker:
                 cv2.imwrite(m_path, frame_to_save)
                 if self.gemini_verifier is not None:
                     self.gemini_verifier.save_moment_metadata(fn, res)
-                print(f"[VisionTracker] ✨ Đã duyệt & lưu khoảnh khắc đáng yêu: {m_path} ({res.get('caption_vi')})")
+                print(f"[VisionTracker] ✨ Đã chụp chân dung bé đạt chuẩn: {m_path} ({res.get('caption_vi')})")
             except Exception as e:
                 print(f"[VisionTracker] Lỗi lưu khoảnh khắc: {e}")
             finally:
@@ -881,29 +927,16 @@ class VisionTracker:
                 tsz_poly = res.get("true_safe_zone_polygon")
                 tsz = res.get("true_safe_zone")
                 crib_acc = res.get("crib_zone_accurate", True)
-                if (need_init_crib or not crib_acc) and ((isinstance(tsz_poly, list) and len(tsz_poly) == 4) or (isinstance(tsz, list) and len(tsz) == 4)):
+                if (need_init_crib or not crib_acc) and (isinstance(tsz_poly, list) and len(tsz_poly) == 4):
                     try:
                         with self.lock:
-                            if isinstance(tsz_poly, list) and len(tsz_poly) == 4:
-                                self.safe_zone_polygon = [[round(float(p[0]), 3), round(float(p[1]), 3)] for p in tsz_poly]
-                                xs = [p[0] for p in self.safe_zone_polygon]
-                                ys = [p[1] for p in self.safe_zone_polygon]
-                                self.safe_zone_left = round(min(xs), 3)
-                                self.safe_zone_right = round(max(xs), 3)
-                                self.safe_zone_top = round(min(ys), 3)
-                                self.safe_zone_bottom = round(max(ys), 3)
-                            elif isinstance(tsz, list) and len(tsz) == 4:
-                                s_left, s_top, s_right, s_bottom = [float(v) for v in tsz]
-                                self.safe_zone_left = round(float(np.clip(min(s_left, s_right), 0.03, 0.45)), 3)
-                                self.safe_zone_right = round(float(np.clip(max(s_left, s_right), 0.55, 0.97)), 3)
-                                self.safe_zone_top = round(float(np.clip(min(s_top, s_bottom), 0.03, 0.45)), 3)
-                                self.safe_zone_bottom = round(float(np.clip(max(s_top, s_bottom), 0.55, 0.97)), 3)
-                                self.safe_zone_polygon = [
-                                    [self.safe_zone_left, self.safe_zone_top],
-                                    [self.safe_zone_right, self.safe_zone_top],
-                                    [self.safe_zone_right, self.safe_zone_bottom],
-                                    [self.safe_zone_left, self.safe_zone_bottom]
-                                ]
+                            self.safe_zone_polygon = [[round(float(p[0]), 3), round(float(p[1]), 3)] for p in tsz_poly]
+                            xs = [p[0] for p in self.safe_zone_polygon]
+                            ys = [p[1] for p in self.safe_zone_polygon]
+                            self.safe_zone_left = round(min(xs), 3)
+                            self.safe_zone_right = round(max(xs), 3)
+                            self.safe_zone_top = round(min(ys), 3)
+                            self.safe_zone_bottom = round(max(ys), 3)
                             self.initial_crib_calibrated = True
                         # Lưu luôn vào config.json để đồng bộ giao diện
                         cfg_path = os.path.join(BASE_DIR, "config.json")
@@ -1200,8 +1233,8 @@ class VisionTracker:
                 is_valid_face = (nose_conf >= 0.50 and le_conf >= 0.40 and re_conf >= 0.40 and 12.0 <= eye_dist <= 65.0)
                 is_valid_infant_size = (shoulder_w == 0.0 or (30.0 <= shoulder_w <= 130.0))
 
-                if is_valid_face and is_valid_infant_size:
-                    self._trigger_cute_moment_capture(frame)
+                if baby_face_info is not None and is_valid_face and is_valid_infant_size:
+                    self._trigger_cute_moment_capture(frame, baby_face_info)
 
             if not getattr(self, "covered_face_active", False):
                 if self.smoothed_motion > self.motion_threshold:
@@ -1305,9 +1338,9 @@ class VisionTracker:
                 getattr(self, "baby_stable_frames", 0) >= 20 and
                 not getattr(self, "covered_face_active", False) and
                 self.smoothed_motion < 12.0 and
-                baby_face_info.get("conf", 0.0) >= 0.55 and
+                baby_face_info.get("conf", 0.0) >= 0.65 and
                 (now_t - self.last_moment_time >= 180.0)):
-                self._trigger_cute_moment_capture(frame)
+                self._trigger_cute_moment_capture(frame, baby_face_info)
 
             if not getattr(self, "covered_face_active", False):
                 is_awake_mode = (self.sleep_tracker is not None and self.sleep_tracker.current_state == "AWAKE")
