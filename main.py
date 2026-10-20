@@ -168,6 +168,7 @@ def main():
         safe_zone_bottom=config.get("safe_zone_bottom", config.get("danger_zone_y_percent", 0.98)),
         safe_zone_left=config.get("safe_zone_left", 0.01),
         safe_zone_right=config.get("safe_zone_right", config.get("danger_zone_x_percent", 0.99)),
+        safe_zone_polygon=config.get("safe_zone_polygon"),
         covered_face_alert=config.get("covered_face_alert", True),
         breathing_monitor_enabled=config.get("breathing_monitor_enabled", True),
         cute_moments_enabled=config.get("cute_moments_enabled", True),

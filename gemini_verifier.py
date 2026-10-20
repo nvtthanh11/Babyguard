@@ -417,9 +417,10 @@ A. KIỂM TRA TRACKING CƠ THỂ & TRẠNG THÁI THỨC/NGỦ CỦA EM BÉ:
 - true_head_box ([xmin, ymin, xmax, ymax] từ 0.0 đến 1.0): Tọa độ phần đầu thực tế của em bé.
 - head_direction ("right" | "left" | "up" | "down"): Đỉnh đầu của em bé đang hướng về phía nào?
 
-B. KIỂM TRA & TỰ ĐỘNG CĂN CHỈNH KHUNG NÔI / TẤM ĐỆM EM BÉ (SAFE ZONE):
+B. KIỂM TRA & TỰ ĐỘNG CĂN CHỈNH KHUNG NÔI / TẤM ĐỆM EM BÉ (SAFE ZONE 3D):
 - crib_zone_accurate (boolean): Khung viền xanh lá cây hiện tại đã bao quanh hợp lý vùng tấm đệm/chiếu/lòng nôi nơi em bé nằm chưa? (Nếu khung xanh lá đang quá rộng tràn hết ra giường người lớn hoặc bị lệch khỏi tấm đệm trắng của bé -> false).
-- true_safe_zone ([left, top, right, bottom] từ 0.03 đến 0.97): Tọa độ khung chữ nhật bao quanh vừa vặn tấm đệm/chiếu/lòng nôi của em bé (mở rộng dư ra khoảng 3-5% quanh mép tấm đệm của bé để làm ranh giới an toàn).
+- true_safe_zone_polygon ([[x, y], [x, y], [x, y], [x, y]] từ 0.03 đến 0.97): Tọa độ 4 đỉnh đa giác tứ giác theo thứ tự [Top-Left, Top-Right, Bottom-Right, Bottom-Left] bao quanh vừa vặn tấm đệm/nôi nơi em bé nằm theo đúng góc phối cảnh 3D/xiên của camera.
+- true_safe_zone ([left, top, right, bottom] từ 0.03 đến 0.97): Tọa độ khung chữ nhật bao ngoài tấm đệm của em bé.
 
 Trả về đúng JSON:
 {{
@@ -431,6 +432,7 @@ Trả về đúng JSON:
   "true_head_box": [float, float, float, float],
   "head_direction": "right" | "left" | "up" | "down",
   "crib_zone_accurate": boolean,
+  "true_safe_zone_polygon": [[float, float], [float, float], [float, float], [float, float]],
   "true_safe_zone": [float, float, float, float],
   "sleep_pose_vi": "string",
   "feedback_vi": "Nhận xét ngắn gọn 1 câu tiếng Việt về trạng thái Thức/Ngủ, khung Tracking và Khung Nôi"
@@ -486,6 +488,7 @@ Trả về đúng JSON:
                 "true_head_box": data.get("true_head_box"),
                 "head_direction": data.get("head_direction", "up"),
                 "true_safe_zone": data.get("true_safe_zone"),
+                "true_safe_zone_polygon": data.get("true_safe_zone_polygon"),
                 "sleep_pose_vi": data.get("sleep_pose_vi", "Nằm ngửa"),
                 "feedback_vi": feedback
             }
@@ -742,18 +745,22 @@ Trả về đúng định dạng JSON:
             return {"success": False, "error": "Không lấy được khung hình từ camera."}
 
         prompt = """
-Bạn là Kỹ sư Thị giác Máy tính & Chuyên gia An toàn Nôi Em Bé.
+Bạn là Kỹ sư Thị giác Máy tính & Chuyên gia An toàn Nôi Em Bé (AI Crib 3D Calibration Specialist).
 Hãy phân tích khung hình camera giám sát này và xác định:
-1. Tọa độ khung chữ nhật bao quanh LÒNG NÔI / VÙNG ĐỆM AN TOÀN nơi em bé nằm (tính theo tỷ lệ chuẩn hóa từ 0.0 đến 1.0 so với chiều rộng và chiều cao ảnh):
-   - safe_zone_left (0.02 - 0.45)
-   - safe_zone_right (0.55 - 0.98)
-   - safe_zone_top (0.02 - 0.45)
-   - safe_zone_bottom (0.55 - 0.98)
-2. Danh sách các vật thể đang có trong nôi (gối ôm, gối chặn, chăn, thú bông...).
-3. Nhận xét ngắn gọn bằng tiếng Việt về mức độ thông thoáng và an toàn của nôi hiện tại.
+1. Tọa độ đa giác 4 đỉnh (3D Perspective Quadrilateral) bao quanh vừa vặn LÒNG NÔI / TẤM ĐỆM AN TOÀN nơi em bé nằm theo đúng góc xiên/phối cảnh 3D thực tế của camera (không fix cứng ngang dọc):
+   - safe_zone_polygon: [[x_tl, y_tl], [x_tr, y_tr], [x_br, y_br], [x_bl, y_bl]] theo thứ tự:
+     + Top-Left (Góc trên bên trái tấm đệm/nôi)
+     + Top-Right (Góc trên bên phải tấm đệm/nôi)
+     + Bottom-Right (Góc dưới bên phải tấm đệm/nôi)
+     + Bottom-Left (Góc dưới bên trái tấm đệm/nôi)
+     (Tất cả x, y là số float từ 0.02 đến 0.98 chuẩn hóa theo chiều rộng và chiều cao ảnh).
+2. Tọa độ khung chữ nhật bao ngoài: safe_zone_top, safe_zone_bottom, safe_zone_left, safe_zone_right.
+3. Danh sách các vật thể đang có trong nôi (gối ôm, gối chặn, chăn, thú bông...).
+4. Nhận xét ngắn gọn bằng tiếng Việt về mức độ thông thoáng và an toàn của nôi hiện tại.
 
 Trả về đúng định dạng JSON:
 {
+  "safe_zone_polygon": [[float, float], [float, float], [float, float], [float, float]],
   "safe_zone_top": float,
   "safe_zone_bottom": float,
   "safe_zone_left": float,
@@ -775,10 +782,22 @@ Trả về đúng định dạng JSON:
                 temperature=0.1
             )
             data = json.loads(resp.text)
-            top = float(np.clip(data.get("safe_zone_top", 0.08), 0.02, 0.45))
-            bottom = float(np.clip(data.get("safe_zone_bottom", 0.95), 0.55, 0.98))
-            left = float(np.clip(data.get("safe_zone_left", 0.05), 0.02, 0.45))
-            right = float(np.clip(data.get("safe_zone_right", 0.95), 0.55, 0.98))
+            poly = data.get("safe_zone_polygon")
+            if isinstance(poly, list) and len(poly) == 4:
+                valid_poly = [[round(float(np.clip(p[0], 0.01, 0.99)), 3),
+                               round(float(np.clip(p[1], 0.01, 0.99)), 3)] for p in poly]
+                xs = [p[0] for p in valid_poly]
+                ys = [p[1] for p in valid_poly]
+                left = min(xs)
+                right = max(xs)
+                top = min(ys)
+                bottom = max(ys)
+            else:
+                top = float(np.clip(data.get("safe_zone_top", 0.08), 0.02, 0.45))
+                bottom = float(np.clip(data.get("safe_zone_bottom", 0.95), 0.55, 0.98))
+                left = float(np.clip(data.get("safe_zone_left", 0.05), 0.02, 0.45))
+                right = float(np.clip(data.get("safe_zone_right", 0.95), 0.55, 0.98))
+                valid_poly = [[left, top], [right, top], [right, bottom], [left, bottom]]
 
             self.status_text = "Đã căn chỉnh nôi thành công"
             return {
@@ -787,11 +806,12 @@ Trả về đúng định dạng JSON:
                     "top": round(top, 3),
                     "bottom": round(bottom, 3),
                     "left": round(left, 3),
-                    "right": round(right, 3)
+                    "right": round(right, 3),
+                    "polygon": valid_poly
                 },
                 "baby_present": bool(data.get("baby_present", True)),
                 "objects_detected": data.get("objects_detected", []),
-                "safety_advice_vi": str(data.get("safety_advice_vi", "Đã tự động căn chỉnh vùng an toàn theo lòng nôi."))
+                "safety_advice_vi": str(data.get("safety_advice_vi", "Đã tự động căn chỉnh vùng an toàn 3D theo lòng nôi."))
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -802,34 +822,70 @@ Trả về đúng định dạng JSON:
     def generate_daily_sleep_report(self, sleep_summary: dict) -> dict:
         """
         Gửi toàn bộ thống kê Chu kỳ ngủ (NREM/REM), Cửa sổ thức (Wake Window),
-        các cữ ngủ đêm qua & 24h qua lên Gemini để lập Bảng Phân Tích Nhi Khoa vào sáng hôm sau (07:00) hoặc theo yêu cầu.
+        các cơn khóc, ho/sặc sữa, nhịp thở và chỉ số tăng trưởng lên Gemini
+        để lập Báo Cáo Sức Khỏe & Giấc Ngủ Nhi Khoa Chuyên Sâu vào sáng hôm sau (07:00)
+        kèm trích nguồn nghiên cứu y khoa chính thống (AAP, WHO, AASM).
         """
         if not self.is_ready():
             return {"success": False, "error": "Chưa cấu hình Gemini API Key"}
 
-        prompt = f"""
-Bạn là Bác sĩ Nhi khoa Chuyên gia về Giấc ngủ Trẻ sơ sinh & Trẻ nhỏ (Pediatric Sleep Specialist) của hệ thống BabyGuard AI.
-Dưới đây là số liệu đo lường sinh học thực tế của em bé trong 24 giờ qua (bao gồm trọn vẹn giấc ngủ đêm qua và các cữ ngủ/thức):
-- Ngày báo cáo: {sleep_summary.get("today_date")}
-- Tổng thời gian ngủ tích lũy: {sleep_summary.get("total_sleep_today_hours")} giờ
-- Tổng thời gian thức chơi & vận động: {sleep_summary.get("total_awake_today_hours")} giờ
-- Tỷ lệ Ngủ Sâu (NREM): {sleep_summary.get("deep_ratio_pct")}% | Ngủ Động (REM): {sleep_summary.get("rem_ratio_pct")}%
-- Cữ ngủ liền mạch dài nhất: {sleep_summary.get("longest_nap_minutes")} phút
-- Số lần thức giấc chuyển cữ: {sleep_summary.get("wake_count_today")} lần
-- Số lần giật mình sinh lý (Moro / REM): {sleep_summary.get("rem_twitch_count")} lần
-- Điểm chất lượng giấc ngủ: {sleep_summary.get("sleep_score")}/100
-- Danh sách các cữ ngủ đã ghi nhận: {json.dumps(sleep_summary.get("sessions", [])[:8], ensure_ascii=False)}
+        baby_name = sleep_summary.get("baby_name", "Bé")
+        age_display = sleep_summary.get("age_display", "1 tháng tuổi")
+        total_sleep = float(sleep_summary.get("total_sleep_today_hours", 0.0))
+        total_awake = float(sleep_summary.get("total_awake_today_hours", 0.0))
+        camera_offline = round(max(0.0, 24.0 - (total_sleep + total_awake)), 1)
+        
+        crying_count = int(sleep_summary.get("crying_count", 0))
+        cough_count = int(sleep_summary.get("cough_count", 0))
+        avg_bpm = float(sleep_summary.get("avg_bpm", 36.0))
+        apnea_count = int(sleep_summary.get("apnea_count", 0))
+        growth = sleep_summary.get("growth_data", {})
+        growth_str = f"Cân nặng: {growth.get('weight_kg', 'Chưa nhập')} kg | Chiều cao: {growth.get('height_cm', 'Chưa nhập')} cm ({growth.get('weight_status', 'Đang cập nhật')})"
 
-Hãy phân tích chuyên sâu như một Bác sĩ Nhi khoa gửi Báo cáo Tổng kết Sáng hôm sau (07:00 sáng) cho bố mẹ:
-1. summary_vi: Nhận xét tổng quan (2-3 câu tiếng Việt ấm áp, khoa học) đánh giá chất lượng giấc ngủ đêm qua & 24h qua của bé (độ sâu giấc ngủ, khả năng tự nối giấc qua chu kỳ 50 phút, sự phát triển trí não trong pha REM và chiều cao trong pha NREM).
-2. schedule_advice_vi: Gợi ý lịch sinh hoạt & cách canh Cửa sổ thức (Wake Window) cho các cữ ngủ trong ngày hôm nay dựa trên chất lượng giấc ngủ đêm qua.
-3. tips_vi: Mảng gồm đúng 3 lời khuyên thực tế, ngắn gọn cho bố mẹ trong ngày hôm nay.
+        prompt = f"""
+Bạn là Bác sĩ Nhi khoa Chuyên gia về Sơ sinh & Giấc ngủ Trẻ em (Pediatrician & Sleep Specialist) của hệ thống BabyGuard AI.
+Dưới đây là hồ sơ đo lường sinh học thực tế của em bé {baby_name} ({age_display}) trong 24 giờ qua:
+
+1. DỮ LIỆU ĐO LƯỜNG THỰC TẾ QUA CAMERA BABYGUARD AI:
+- Thời gian ngủ trực tiếp qua camera ghi nhận: {total_sleep} giờ
+- Thời gian thức chơi / vận động trong tầm camera: {total_awake} giờ
+- Thời gian ngoài tầm camera (được bố mẹ bế ra ngoài, bú sữa, tắm, chơi...): ~{camera_offline} giờ
+- Tỷ lệ Ngủ sâu (NREM): {sleep_summary.get("deep_ratio_pct", 55)}% | Ngủ động (REM): {sleep_summary.get("rem_ratio_pct", 45)}%
+- Cữ ngủ liền mạch dài nhất: {sleep_summary.get("longest_nap_minutes", 0)} phút
+- Điểm chất lượng giấc ngủ: {sleep_summary.get("sleep_score", 85)}/100
+- Số lần giật mình sinh lý Moro/REM: {sleep_summary.get("rem_twitch_count", 0)} lần
+- Nhịp thở quang học lồng ngực trung bình: {avg_bpm} BPM (Cảnh báo nguy cơ ngưng thở: {apnea_count} lần)
+- Thống kê âm thanh AI: {crying_count} lần quấy khóc, {cough_count} cơn ho / tiếng thở dốc / nguy cơ sặc sữa.
+- Chỉ số thể trạng & tăng trưởng: {growth_str}
+
+Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG (07:00) cho bố mẹ với các yêu cầu bắt buộc:
+A. PHÂN TÍCH RÕ RÀNG: Dữ liệu ghi nhận trong camera vs Thời gian ngoài camera:
+   - Ghi nhận chính xác số giờ camera bắt được ({total_sleep}h ngủ, {total_awake}h thức).
+   - Với thời gian ngoài camera ({camera_offline} giờ): Phân tích dựa trên chuẩn sinh lý của Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) và Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) cho trẻ ở độ tuổi {age_display} (nhu cầu ngủ tổng 14-17 giờ/ngày, cửa sổ thức 45-90 phút).
+B. ĐÁNH GIÁ SỨC KHỎE HÔ HẤP & TIÊU HÓA:
+   - Đánh giá nhịp thở {avg_bpm} BPM (đối chiếu chuẩn sinh lý sơ sinh 30 - 60 BPM).
+   - Đánh giá các cơn ho/sặc sữa ({cough_count} lần) và quấy khóc ({crying_count} lần), hướng dẫn mẹ cách chống sặc sữa và trào ngược dạ dày thực quản (GERD): giữ bé thẳng đứng 15-20 phút sau bú, vỗ ợ hơi, kê cao đầu nôi 15 độ.
+C. ĐÁNH GIÁ THỂ TRẠNG THEO CHUẨN WHO:
+   - Nhận xét chiều cao và cân nặng so với Chuẩn Tăng trưởng Trẻ em của WHO (WHO Child Growth Standards).
+D. LỜI KHUYÊN & LỊCH SINH HOẠT HÔM NAY:
+   - Hướng dẫn Cửa sổ thức (Wake Window) và giờ ru ngủ tối ưu cho ngày hôm nay.
+   - Tuân thủ quy tắc ngủ an toàn ABC (Alone, Back, Crib) của AAP.
+E. TRÍCH DẪN NGUỒN NGHIÊN CỨU KHOA HỌC:
+   - Phải ghi rõ nguồn trích dẫn: Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP Policy Statement on Safe Sleep), Tổ chức Y tế Thế giới (WHO Child Growth Standards), Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM).
 
 Trả về đúng định dạng JSON:
 {{
-  "summary_vi": "string",
-  "schedule_advice_vi": "string",
-  "tips_vi": ["string", "string", "string"]
+  "headline_vi": "Tiêu đề báo cáo ngắn gọn, ấm áp",
+  "summary_vi": "Phân tích cụ thể giữa số liệu đo trong camera và ước lượng thời gian ngoài camera theo chuẩn sinh lý lứa tuổi (3-4 câu tiếng Việt)",
+  "respiratory_and_reflux_vi": "Nhận xét chi tiết về nhịp thở, ho/sặc sữa và hướng dẫn xử lý chống sặc sữa (3-4 câu tiếng Việt)",
+  "growth_analysis_vi": "Đánh giá chiều cao, cân nặng đối chiếu bảng chuẩn WHO (2-3 câu tiếng Việt)",
+  "schedule_advice_vi": "Lịch sinh hoạt và gợi ý canh cửa sổ thức (Wake Window) hôm nay (2-3 câu tiếng Việt)",
+  "tips_vi": ["Lời khuyên thực tế 1", "Lời khuyên thực tế 2", "Lời khuyên thực tế 3"],
+  "scientific_citations_vi": [
+    "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) - Hướng dẫn Giấc ngủ An toàn & Phòng ngừa SIDS",
+    "Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) - Khuyến nghị Thời lượng Giấc ngủ Nhi khoa",
+    "Tổ chức Y tế Thế giới (WHO) - Bộ Tiêu chuẩn Tăng trưởng Trẻ em (Child Growth Standards)"
+  ]
 }}
 """
         try:
@@ -840,13 +896,63 @@ Trả về đúng định dạng JSON:
                 temperature=0.2
             )
             data = json.loads(resp.text)
+            
+            headline = data.get("headline_vi", f"Báo cáo Giấc ngủ & Sức khỏe Ngày {sleep_summary.get('today_date')} của {baby_name}")
+            summary_vi = str(data.get("summary_vi", ""))
+            reflux_vi = str(data.get("respiratory_and_reflux_vi", ""))
+            growth_vi = str(data.get("growth_analysis_vi", ""))
+            schedule_vi = str(data.get("schedule_advice_vi", ""))
+            tips_vi = data.get("tips_vi", [])[:3]
+            citations = data.get("scientific_citations_vi", [
+                "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) - Policy Statement on Infant Safe Sleep",
+                "Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) - Pediatric Sleep Duration Consensus",
+                "Tổ chức Y tế Thế giới (WHO) - Child Growth Standards"
+            ])
+
+            # Soạn thảo nội dung định dạng HTML chuẩn đẹp để gửi Telegram
+            tele_msg = (
+                f"🩺 <b>BÁO CÁO NHI KHOA BUỔI SÁNG (07:00) — {baby_name.upper()}</b>\n"
+                f"👶 <i>Độ tuổi: {age_display} | Ngày: {sleep_summary.get('today_date')}</i>\n"
+                f"━━━━━━━━━━━━━━━━━━━\n\n"
+                f"📊 <b>1. GIÁM SÁT GIẤC NGỦ & CAMERA 24H:</b>\n"
+                f"• Ghi nhận qua Camera: <b>{total_sleep}h ngủ</b> | <b>{total_awake}h thức</b>\n"
+                f"• Ngoài tầm quan sát: ~<b>{camera_offline}h</b> (bế chơi, bú sữa, tắm...)\n"
+                f"• Chu kỳ: <b>{sleep_summary.get('deep_ratio_pct', 55)}% NREM</b> (Sâu) | <b>{sleep_summary.get('rem_ratio_pct', 45)}% REM</b> (Động)\n"
+                f"• Điểm giấc ngủ AI: <b>{sleep_summary.get('sleep_score', 85)}/100</b>\n"
+                f"👉 <i>{summary_vi}</i>\n\n"
+                f"🫁 <b>2. HÔ HẤP, HO & PHÒNG CHỐNG SẶC SỮA:</b>\n"
+                f"• Nhịp thở khi ngủ: <b>{avg_bpm} BPM</b> (Chuẩn sơ sinh: 30 - 60 BPM)\n"
+                f"• Cơn ho / trớ sặc sữa: <b>{cough_count} lần</b> | Tiếng khóc: <b>{crying_count} lần</b>\n"
+                f"👉 <i>{reflux_vi}</i>\n\n"
+                f"📈 <b>3. THỂ TRẠNG & TĂNG TRƯỞNG (CHUẨN WHO):</b>\n"
+                f"• Số đo mới nhất: <b>{growth.get('weight_kg', 'N/A')} kg</b> | <b>{growth.get('height_cm', 'N/A')} cm</b>\n"
+                f"👉 <i>{growth_vi}</i>\n\n"
+                f"⏰ <b>4. LỊCH SINH HOẠT & CỬA SỔ THỨC (WAKE WINDOW):</b>\n"
+                f"👉 <i>{schedule_vi}</i>\n\n"
+                f"💡 <b>LỜI KHUYÊN HÔM NAY CHO BỐ MẸ:</b>\n"
+            )
+            for idx, tip in enumerate(tips_vi, 1):
+                tele_msg += f" {idx}. {tip}\n"
+
+            tele_msg += (
+                f"\n📚 <b>TRÍCH NGUỒN NGHIÊN CỨU Y KHOA:</b>\n"
+                f"<i>• {citations[0]}\n"
+                f"• {citations[1]}\n"
+                f"• {citations[2]}</i>\n"
+            )
+
             report = {
                 "date": sleep_summary.get("today_date"),
                 "generated_at": time.strftime("%H:%M - %d/%m"),
                 "model": f"Bác Sĩ AI ({self.active_model})",
-                "summary_vi": str(data.get("summary_vi", "")),
-                "schedule_advice_vi": str(data.get("schedule_advice_vi", "")),
-                "tips_vi": data.get("tips_vi", [])[:3]
+                "headline_vi": headline,
+                "summary_vi": summary_vi,
+                "respiratory_and_reflux_vi": reflux_vi,
+                "growth_analysis_vi": growth_vi,
+                "schedule_advice_vi": schedule_vi,
+                "tips_vi": tips_vi,
+                "scientific_citations_vi": citations,
+                "telegram_text": tele_msg
             }
             return {"success": True, "report": report}
         except Exception as e:

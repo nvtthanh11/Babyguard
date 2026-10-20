@@ -274,7 +274,37 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         return {"success": success, "playlist": music_player.get_playlist()}
 
     # --- SLEEP ANALYTICS & MORNING 07:00 PEDIATRIC AI REPORT APIS ---
+    from growth_tracker import GrowthTracker, calculate_exact_age
+    growth_tracker = GrowthTracker()
     _ai_sleep_State = {"generating": False, "last_auto_date": ""}
+
+    def _enrich_summary_with_health_metrics(summary_dict: dict) -> dict:
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        gender = cfg.get("baby_gender", "boy")
+        age_info = calculate_exact_age(b_date)
+        summary_dict["baby_name"] = cfg.get("baby_name", "Bé")
+        summary_dict["age_display"] = age_info["age_display"]
+        summary_dict["age_stage"] = age_info["age_stage"]
+
+        growth_eval = growth_tracker.evaluate_growth(b_date, gender)
+        if growth_eval.get("has_data") and growth_eval.get("latest_record"):
+            summary_dict["growth_data"] = {
+                "weight_kg": growth_eval["latest_record"].get("weight_kg"),
+                "height_cm": growth_eval["latest_record"].get("height_cm"),
+                "weight_status": growth_eval.get("weight_status"),
+                "length_status": growth_eval.get("length_status"),
+                "growth_velocity": growth_eval.get("growth_velocity")
+            }
+
+        daily_counts = alert_manager.get_daily_event_counts() if alert_manager else {}
+        summary_dict["crying_count"] = daily_counts.get("crying_count", 0)
+        summary_dict["cough_count"] = daily_counts.get("cough_count", 0)
+        summary_dict["apnea_count"] = daily_counts.get("apnea_count", 0)
+
+        vis_st = vision_tracker.get_status() if vision_tracker else {}
+        summary_dict["avg_bpm"] = vis_st.get("breathing_bpm", 36.0)
+        return summary_dict
 
     def _trigger_morning_ai_sleep_report(summary_snapshot: dict):
         if _ai_sleep_State["generating"] or gemini_verifier is None or not gemini_verifier.is_ready():
@@ -283,10 +313,15 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
         def _bg():
             try:
-                res = gemini_verifier.generate_daily_sleep_report(summary_snapshot)
+                enriched = _enrich_summary_with_health_metrics(summary_snapshot.copy())
+                res = gemini_verifier.generate_daily_sleep_report(enriched)
                 if res.get("success") and res.get("report"):
                     sleep_tracker.save_daily_ai_report(res["report"])
                     _ai_sleep_State["last_auto_date"] = summary_snapshot.get("today_date", "")
+                    tele_text = res["report"].get("telegram_text")
+                    if tele_text and alert_manager is not None:
+                        alert_manager.send_telegram_text(tele_text, pin=True, tag_recipients=True)
+                        print("[WebServer] 📌 Đã gửi và ghim Báo cáo Sức khỏe Buổi sáng lên Telegram!")
             finally:
                 _ai_sleep_State["generating"] = False
 
@@ -300,7 +335,13 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             adult_holding=vis_st.get("adult_holding", False),
             is_crying=aud_st.get("is_crying", False)
         )
-        # Tự động tổng hợp Bảng Phân Tích Giấc Ngủ Đêm Qua & 24h vào 07:00 sáng hôm sau (hoặc lần đầu mở trong ngày)
+        # Bổ sung thông tin độ tuổi chi tiết từ Ngày Sinh
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        summary["age_info"] = calculate_exact_age(b_date)
+        summary["baby_name"] = cfg.get("baby_name", "Bé")
+
+        # Tự động tổng hợp Bảng Phân Tích Giấc Ngủ Đêm Qua & 24h vào 07:00 sáng hôm sau
         now_dt = datetime.now()
         today_str = summary.get("today_date", "")
         has_gemini_report = (
@@ -321,9 +362,13 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             adult_holding=vis_st.get("adult_holding", False),
             is_crying=aud_st.get("is_crying", False)
         )
-        res = gemini_verifier.generate_daily_sleep_report(summary)
+        enriched = _enrich_summary_with_health_metrics(summary)
+        res = gemini_verifier.generate_daily_sleep_report(enriched)
         if res.get("success") and res.get("report"):
             sleep_tracker.save_daily_ai_report(res["report"])
+            tele_text = res["report"].get("telegram_text")
+            if tele_text and alert_manager is not None:
+                alert_manager.send_telegram_text(tele_text, pin=True, tag_recipients=True)
             return {
                 "success": True,
                 "report": res["report"],
@@ -333,6 +378,34 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                 )
             }
         return {"success": False, "error": res.get("error", "Không thể tạo báo cáo AI")}
+
+    @app.post("/api/sleep/pin-telegram")
+    def pin_sleep_report_to_telegram():
+        if alert_manager is None:
+            return {"success": False, "error": "Chưa khởi tạo Alert Manager"}
+        report = sleep_tracker.daily_ai_report
+        tele_text = report.get("telegram_text") if report else None
+        if not tele_text:
+            if gemini_verifier is None or not gemini_verifier.is_ready():
+                return {"success": False, "error": "Chưa có báo cáo và chưa cấu hình Gemini API Key"}
+            vis_st = vision_tracker.get_status()
+            aud_st = audio_detector.get_status()
+            summary = sleep_tracker.get_summary(
+                adult_holding=vis_st.get("adult_holding", False),
+                is_crying=aud_st.get("is_crying", False)
+            )
+            enriched = _enrich_summary_with_health_metrics(summary)
+            res = gemini_verifier.generate_daily_sleep_report(enriched)
+            if res.get("success") and res.get("report"):
+                sleep_tracker.save_daily_ai_report(res["report"])
+                tele_text = res["report"].get("telegram_text")
+            else:
+                return {"success": False, "error": res.get("error", "Không thể tạo báo cáo")}
+
+        ok = alert_manager.send_telegram_text(tele_text, pin=True, tag_recipients=True)
+        if ok:
+            return {"success": True, "message": "Đã gửi và ghim Báo cáo Giấc ngủ Nhi khoa lên Telegram!"}
+        return {"success": False, "error": "Không gửi được qua Telegram. Vui lòng kiểm tra lại Bot Token và Chat ID trong Cài đặt."}
 
     # --- CUTE MOMENTS ALBUM APIS (CÓ GIÁM KHẢO THẨM MỸ & KIỂM DUYỆT NGƯỜI ĐI CÙNG QUA GEMINI) ---
     moments_dir = os.path.join(BASE_DIR, "moments")
@@ -525,9 +598,55 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         print(f"[BabyGuard AI] Toggle updated: {payload.key} = {payload.value}")
         return {"success": True, "key": payload.key, "value": payload.value, "config": cfg}
 
+    # --- PEDIATRIC GROWTH TRACKING & MONTHLY REMINDER APIS ---
+    @app.get("/api/growth")
+    def get_growth_api():
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        gender = cfg.get("baby_gender", "boy")
+        return {
+            "success": True,
+            "baby_name": cfg.get("baby_name", "Bé"),
+            "baby_birth_date": b_date,
+            "baby_gender": gender,
+            "age_info": calculate_exact_age(b_date),
+            "growth_evaluation": growth_tracker.evaluate_growth(b_date, gender),
+            "monthly_reminder": growth_tracker.should_trigger_monthly_reminder()
+        }
+
+    class GrowthRecordPayload(BaseModel):
+        weight_kg: float
+        height_cm: float
+        head_circ_cm: float = None
+        date: str = None
+        note: str = ""
+
+    @app.post("/api/growth")
+    def add_growth_api(payload: GrowthRecordPayload):
+        rec = growth_tracker.add_record(
+            weight_kg=payload.weight_kg,
+            height_cm=payload.height_cm,
+            head_circ_cm=payload.head_circ_cm,
+            record_date_str=payload.date,
+            note=payload.note
+        )
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        gender = cfg.get("baby_gender", "boy")
+        return {
+            "success": True,
+            "record": rec,
+            "growth_evaluation": growth_tracker.evaluate_growth(b_date, gender),
+            "monthly_reminder": growth_tracker.should_trigger_monthly_reminder()
+        }
+
     class ConfigUpdate(BaseModel):
         baby_name: str = None
         baby_age_months: int = None
+        baby_birth_date: str = None
+        baby_gender: str = None
+        remote_access_url: str = None
+        safe_zone_polygon: list = None
         gemini_api_key: str = None
         gemini_enabled: bool = None
         gemini_verify_alerts: bool = None
@@ -619,17 +738,31 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         for k in ["cry_alert_enabled", "cough_alert_enabled"]:
             if k in update_data and hasattr(audio_detector, k):
                 setattr(audio_detector, k, update_data[k])
-                
-        if "safe_zone_top" in update_data:
-            vision_tracker.safe_zone_top = cfg.get("safe_zone_top", 0.08)
-        if "safe_zone_bottom" in update_data:
-            vision_tracker.safe_zone_bottom = cfg.get("safe_zone_bottom", 0.98)
-            vision_tracker.danger_zone_y_percent = vision_tracker.safe_zone_bottom
-        if "safe_zone_left" in update_data:
-            vision_tracker.safe_zone_left = cfg.get("safe_zone_left", 0.01)
-        if "safe_zone_right" in update_data:
-            vision_tracker.safe_zone_right = cfg.get("safe_zone_right", 0.99)
-            vision_tracker.danger_zone_x_percent = vision_tracker.safe_zone_right
+
+        if "safe_zone_polygon" in update_data and isinstance(update_data["safe_zone_polygon"], list) and len(update_data["safe_zone_polygon"]) == 4:
+            vision_tracker.safe_zone_polygon = update_data["safe_zone_polygon"]
+            xs = [p[0] for p in vision_tracker.safe_zone_polygon]
+            ys = [p[1] for p in vision_tracker.safe_zone_polygon]
+            vision_tracker.safe_zone_left = min(xs)
+            vision_tracker.safe_zone_right = max(xs)
+            vision_tracker.safe_zone_top = min(ys)
+            vision_tracker.safe_zone_bottom = max(ys)
+            cfg["safe_zone_left"] = vision_tracker.safe_zone_left
+            cfg["safe_zone_right"] = vision_tracker.safe_zone_right
+            cfg["safe_zone_top"] = vision_tracker.safe_zone_top
+            cfg["safe_zone_bottom"] = vision_tracker.safe_zone_bottom
+            save_config(cfg)
+        else:
+            if "safe_zone_top" in update_data:
+                vision_tracker.safe_zone_top = cfg.get("safe_zone_top", 0.08)
+            if "safe_zone_bottom" in update_data:
+                vision_tracker.safe_zone_bottom = cfg.get("safe_zone_bottom", 0.98)
+                vision_tracker.danger_zone_y_percent = vision_tracker.safe_zone_bottom
+            if "safe_zone_left" in update_data:
+                vision_tracker.safe_zone_left = cfg.get("safe_zone_left", 0.01)
+            if "safe_zone_right" in update_data:
+                vision_tracker.safe_zone_right = cfg.get("safe_zone_right", 0.99)
+                vision_tracker.danger_zone_x_percent = vision_tracker.safe_zone_right
         return {"success": True, "config": cfg}
 
     # --- HARDWARE DISCOVERY (USB UVC CHIP DESCRIPTOR + AVFOUNDATION), WIFI RTSP/OUI SCANNER & LIVE PREVIEW ---
@@ -1226,10 +1359,14 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             cfg["safe_zone_bottom"] = sz["bottom"]
             cfg["safe_zone_left"] = sz["left"]
             cfg["safe_zone_right"] = sz["right"]
+            if "polygon" in sz and isinstance(sz["polygon"], list) and len(sz["polygon"]) == 4:
+                cfg["safe_zone_polygon"] = sz["polygon"]
+                vision_tracker.safe_zone_polygon = sz["polygon"]
             save_config(cfg)
             vision_tracker.safe_zone_top = sz["top"]
             vision_tracker.safe_zone_bottom = sz["bottom"]
             vision_tracker.safe_zone_left = sz["left"]
+            vision_tracker.safe_zone_right = sz["right"]
         return res
 
     @app.post("/api/gemini/audit-tracking")

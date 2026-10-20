@@ -32,7 +32,8 @@ class VisionTracker:
                  cute_moments_enabled: bool = True,
                  moments_dir: str = None,
                  danger_zone_y_percent: float = None,
-                 danger_zone_x_percent: float = None):
+                 danger_zone_x_percent: float = None,
+                 safe_zone_polygon: list = None):
         self.camera_index = camera_index
         self.width = width
         self.height = height
@@ -52,10 +53,25 @@ class VisionTracker:
         
         self.prone_alert_enabled = prone_alert_enabled
         self.danger_zone_enabled = danger_zone_enabled
-        self.safe_zone_top = float(safe_zone_top)
-        self.safe_zone_bottom = float(danger_zone_y_percent if danger_zone_y_percent is not None else safe_zone_bottom)
-        self.safe_zone_left = float(safe_zone_left)
-        self.safe_zone_right = float(danger_zone_x_percent if danger_zone_x_percent is not None else safe_zone_right)
+        if safe_zone_polygon and isinstance(safe_zone_polygon, list) and len(safe_zone_polygon) == 4:
+            self.safe_zone_polygon = [[float(p[0]), float(p[1])] for p in safe_zone_polygon]
+            xs = [p[0] for p in self.safe_zone_polygon]
+            ys = [p[1] for p in self.safe_zone_polygon]
+            self.safe_zone_left = float(min(xs))
+            self.safe_zone_right = float(max(xs))
+            self.safe_zone_top = float(min(ys))
+            self.safe_zone_bottom = float(max(ys))
+        else:
+            self.safe_zone_top = float(safe_zone_top)
+            self.safe_zone_bottom = float(danger_zone_y_percent if danger_zone_y_percent is not None else safe_zone_bottom)
+            self.safe_zone_left = float(safe_zone_left)
+            self.safe_zone_right = float(danger_zone_x_percent if danger_zone_x_percent is not None else safe_zone_right)
+            self.safe_zone_polygon = [
+                [self.safe_zone_left, self.safe_zone_top],
+                [self.safe_zone_right, self.safe_zone_top],
+                [self.safe_zone_right, self.safe_zone_bottom],
+                [self.safe_zone_left, self.safe_zone_bottom]
+            ]
         self.danger_zone_y_percent = self.safe_zone_bottom
         self.danger_zone_x_percent = self.safe_zone_right
         self.covered_face_alert = covered_face_alert
@@ -183,7 +199,10 @@ class VisionTracker:
         return "Nằm ngủ ngoan", "safe"
 
     def _get_safe_zone_polygon(self, w: int, h: int) -> np.ndarray:
-        """Trả về mảng đa giác 4 đỉnh của vùng an toàn (Safe Zone) do người dùng thiết lập."""
+        """Trả về mảng đa giác 4 đỉnh của vùng an toàn (Safe Zone) theo góc phối cảnh 3D."""
+        if getattr(self, "safe_zone_polygon", None) and len(self.safe_zone_polygon) >= 3:
+            pts = [[int(float(p[0]) * w), int(float(p[1]) * h)] for p in self.safe_zone_polygon]
+            return np.array(pts, dtype=np.int32)
         x1 = int(self.safe_zone_left * w)
         x2 = int(self.safe_zone_right * w)
         y1 = int(self.safe_zone_top * h)
@@ -858,21 +877,33 @@ class VisionTracker:
                 if not res.get("audited", False):
                     return
 
-                # 1. Tự động căn chỉnh Khung Bảo Vệ Nôi / Tấm Đệm (Safe Zone) nếu chưa khớp hoặc mới bật máy
+                # 1. Tự động căn chỉnh Khung Bảo Vệ Nôi / Tấm Đệm (Safe Zone 3D) nếu chưa khớp hoặc mới bật máy
+                tsz_poly = res.get("true_safe_zone_polygon")
                 tsz = res.get("true_safe_zone")
                 crib_acc = res.get("crib_zone_accurate", True)
-                if (need_init_crib or not crib_acc) and isinstance(tsz, list) and len(tsz) == 4:
+                if (need_init_crib or not crib_acc) and ((isinstance(tsz_poly, list) and len(tsz_poly) == 4) or (isinstance(tsz, list) and len(tsz) == 4)):
                     try:
-                        s_left, s_top, s_right, s_bottom = [float(v) for v in tsz]
-                        nl = float(np.clip(min(s_left, s_right), 0.03, 0.45))
-                        nr = float(np.clip(max(s_left, s_right), 0.55, 0.97))
-                        nt = float(np.clip(min(s_top, s_bottom), 0.03, 0.45))
-                        nb = float(np.clip(max(s_top, s_bottom), 0.55, 0.97))
                         with self.lock:
-                            self.safe_zone_left = round(nl, 3)
-                            self.safe_zone_right = round(nr, 3)
-                            self.safe_zone_top = round(nt, 3)
-                            self.safe_zone_bottom = round(nb, 3)
+                            if isinstance(tsz_poly, list) and len(tsz_poly) == 4:
+                                self.safe_zone_polygon = [[round(float(p[0]), 3), round(float(p[1]), 3)] for p in tsz_poly]
+                                xs = [p[0] for p in self.safe_zone_polygon]
+                                ys = [p[1] for p in self.safe_zone_polygon]
+                                self.safe_zone_left = round(min(xs), 3)
+                                self.safe_zone_right = round(max(xs), 3)
+                                self.safe_zone_top = round(min(ys), 3)
+                                self.safe_zone_bottom = round(max(ys), 3)
+                            elif isinstance(tsz, list) and len(tsz) == 4:
+                                s_left, s_top, s_right, s_bottom = [float(v) for v in tsz]
+                                self.safe_zone_left = round(float(np.clip(min(s_left, s_right), 0.03, 0.45)), 3)
+                                self.safe_zone_right = round(float(np.clip(max(s_left, s_right), 0.55, 0.97)), 3)
+                                self.safe_zone_top = round(float(np.clip(min(s_top, s_bottom), 0.03, 0.45)), 3)
+                                self.safe_zone_bottom = round(float(np.clip(max(s_top, s_bottom), 0.55, 0.97)), 3)
+                                self.safe_zone_polygon = [
+                                    [self.safe_zone_left, self.safe_zone_top],
+                                    [self.safe_zone_right, self.safe_zone_top],
+                                    [self.safe_zone_right, self.safe_zone_bottom],
+                                    [self.safe_zone_left, self.safe_zone_bottom]
+                                ]
                             self.initial_crib_calibrated = True
                         # Lưu luôn vào config.json để đồng bộ giao diện
                         cfg_path = os.path.join(BASE_DIR, "config.json")
@@ -883,9 +914,10 @@ class VisionTracker:
                             cfg_data["safe_zone_right"] = self.safe_zone_right
                             cfg_data["safe_zone_top"] = self.safe_zone_top
                             cfg_data["safe_zone_bottom"] = self.safe_zone_bottom
+                            cfg_data["safe_zone_polygon"] = self.safe_zone_polygon
                             with open(cfg_path, "w", encoding="utf-8") as fp:
                                 json.dump(cfg_data, fp, ensure_ascii=False, indent=4)
-                        print(f"[VisionTracker] ✨ Đã tự động căn chỉnh Khung Nôi (Safe Zone): L={self.safe_zone_left}, T={self.safe_zone_top}, R={self.safe_zone_right}, B={self.safe_zone_bottom}")
+                        print(f"[VisionTracker] ✨ Đã tự động căn chỉnh Khung Nôi 3D (Safe Zone): {self.safe_zone_polygon}")
                     except Exception as ce:
                         print(f"[VisionTracker] Lỗi lưu Safe Zone tự động: {ce}")
                 else:
@@ -1289,10 +1321,15 @@ class VisionTracker:
             # Giữ nguyên video trong trẻo, không vẽ khung tracking đè lên người bé (Chỉ để lại viền nôi Safe Zone)
             pass
         elif has_adult:
-            # Kiểm tra xem người lớn có đang bế bé trên tay thật không
-            is_touching_baby = False
+            # Phân biệt chính xác: Người lớn ngồi cạnh giường vs Người lớn thực sự bế bé ra khỏi nôi
             baby_ref_box = getattr(self, "last_baby_box", None)
+            is_in_safe_zone = False
+            if baby_ref_box is not None:
+                bcx = (baby_ref_box[0] + baby_ref_box[2]) / 2.0
+                bcy = (baby_ref_box[1] + baby_ref_box[3]) / 2.0
+                is_in_safe_zone = self._is_point_in_safe_zone(bcx, bcy, w, h, margin_px=30.0)
 
+            is_touching_baby = False
             if baby_ref_box is not None and adult_box is not None:
                 ax1, ay1, ax2, ay2 = adult_box
                 bx1, by1, bx2, by2 = baby_ref_box
@@ -1306,7 +1343,20 @@ class VisionTracker:
                     if inter_area / baby_area > 0.25:
                         is_touching_baby = True
 
-            if is_touching_baby:
+            # NẾU BÉ VẪN NẰM TRONG SAFE ZONE: Bé đang nằm nôi, người lớn chỉ ngồi bên cạnh!
+            if is_in_safe_zone:
+                self.baby_detected = True
+                self.adult_holding_baby = False
+                self.baby_stable_detected = True
+                self.covered_face_active = False
+                self.covered_face_frame_count = 0
+                if self.sleep_pose in ("Ngoài giường", "Người lớn trong phòng", "Đang được bế trên tay"):
+                    self.sleep_pose = "Nằm ngủ ngoan"
+                self.baby_status = "Bé đang nằm nôi • Bố mẹ ở cạnh"
+                if self.breathing_status in ("Ngoài giường", "Bố mẹ đang bế"):
+                    self.breathing_status = "Đang theo dõi nhịp thở"
+            elif is_touching_baby:
+                # Bé ở ngoài Safe Zone VÀ người lớn tiếp xúc bế bé
                 self.baby_detected = True
                 self.adult_holding_baby = True
                 self.baby_stable_detected = False
@@ -1317,7 +1367,7 @@ class VisionTracker:
                 self.baby_status = "Bố mẹ đang bế / chăm sóc bé"
                 self.breathing_status = "Bố mẹ đang bế"
                 if self.breathing_bpm <= 5.0:
-                    self.breathing_bpm = 52.0
+                    self.breathing_bpm = 48.0
             else:
                 self.baby_detected = False
                 self.adult_holding_baby = False
@@ -1400,13 +1450,9 @@ class VisionTracker:
                 self.smoothed_motion
             )
 
-        # Draw Virtual Crib / Safe Zone on video (CHỈ GIỮ LẠI VIỀN NÔI DUY NHẤT)
+        # Draw Virtual Crib / Safe Zone on video (VIỀN NÔI 3D PERSPECTIVE QUADRILATERAL)
         if self.danger_zone_enabled:
-            z_top = int(h * self.safe_zone_top)
-            z_bottom = int(h * self.safe_zone_bottom)
-            z_left = int(w * self.safe_zone_left)
-            z_right = int(w * self.safe_zone_right)
-
+            pts = self._get_safe_zone_polygon(w, h)
             is_alert = (getattr(self, "is_near_edge", False) and self.baby_detected) or getattr(self, "covered_face_active", False)
             if is_alert:
                 box_color = (0, 0, 240) # Bright red
@@ -1417,24 +1463,33 @@ class VisionTracker:
                 corner_color = (110, 250, 130)
                 box_thickness = 1
 
-            # Viền nôi chính (Safe Zone boundary)
-            cv2.rectangle(annotated, (z_left, z_top), (z_right, z_bottom), box_color, box_thickness, cv2.LINE_AA)
+            # 1. Vẽ viền đa giác Safe Zone 3D bẻ theo đúng góc phối cảnh tấm đệm / nôi
+            cv2.polylines(annotated, [pts], isClosed=True, color=box_color, thickness=box_thickness, lineType=cv2.LINE_AA)
 
-            # 4 góc định vị nôi phát sáng
-            c_len = 32
+            # 2. Vẽ 4 góc định vị phát sáng bẻ theo đúng góc xiên phối cảnh của từng cạnh
+            c_len = 28.0
             c_thick = 3
-            # Top-Left
-            cv2.line(annotated, (z_left, z_top), (z_left + c_len, z_top), corner_color, c_thick, cv2.LINE_AA)
-            cv2.line(annotated, (z_left, z_top), (z_left, z_top + c_len), corner_color, c_thick, cv2.LINE_AA)
-            # Top-Right
-            cv2.line(annotated, (z_right, z_top), (z_right - c_len, z_top), corner_color, c_thick, cv2.LINE_AA)
-            cv2.line(annotated, (z_right, z_top), (z_right, z_top + c_len), corner_color, c_thick, cv2.LINE_AA)
-            # Bottom-Left
-            cv2.line(annotated, (z_left, z_bottom), (z_left + c_len, z_bottom), corner_color, c_thick, cv2.LINE_AA)
-            cv2.line(annotated, (z_left, z_bottom), (z_left, z_bottom - c_len), corner_color, c_thick, cv2.LINE_AA)
-            # Bottom-Right
-            cv2.line(annotated, (z_right, z_bottom), (z_right - c_len, z_bottom), corner_color, c_thick, cv2.LINE_AA)
-            cv2.line(annotated, (z_right, z_bottom), (z_right, z_bottom - c_len), corner_color, c_thick, cv2.LINE_AA)
+            n_pts = len(pts)
+            for i in range(n_pts):
+                p_curr = pts[i].astype(np.float32)
+                p_prev = pts[(i - 1) % n_pts].astype(np.float32)
+                p_next = pts[(i + 1) % n_pts].astype(np.float32)
+
+                v_prev = p_prev - p_curr
+                len_prev = np.linalg.norm(v_prev)
+                if len_prev > 1e-4:
+                    u_prev = v_prev / len_prev
+                    arm_len_prev = min(c_len, len_prev * 0.4)
+                    pt_arm_prev = (p_curr + u_prev * arm_len_prev).astype(np.int32)
+                    cv2.line(annotated, (int(p_curr[0]), int(p_curr[1])), (int(pt_arm_prev[0]), int(pt_arm_prev[1])), corner_color, c_thick, cv2.LINE_AA)
+
+                v_next = p_next - p_curr
+                len_next = np.linalg.norm(v_next)
+                if len_next > 1e-4:
+                    u_next = v_next / len_next
+                    arm_len_next = min(c_len, len_next * 0.4)
+                    pt_arm_next = (p_curr + u_next * arm_len_next).astype(np.int32)
+                    cv2.line(annotated, (int(p_curr[0]), int(p_curr[1])), (int(pt_arm_next[0]), int(pt_arm_next[1])), corner_color, c_thick, cv2.LINE_AA)
 
         # Chủ động tận dụng Quota Free dư thừa để gửi hình kiểm tra chéo & hiệu chỉnh Tracking AI Local
         self._maybe_trigger_tracking_audit(frame, annotated, h, w)
@@ -1623,6 +1678,7 @@ class VisionTracker:
                 "top": self.safe_zone_top,
                 "bottom": self.safe_zone_bottom,
                 "left": self.safe_zone_left,
-                "right": self.safe_zone_right
+                "right": self.safe_zone_right,
+                "polygon": getattr(self, "safe_zone_polygon", None)
             }
         }

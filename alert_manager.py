@@ -201,7 +201,23 @@ class AlertManager:
 
         threading.Thread(target=_send, daemon=True).start()
 
-    def send_telegram_text(self, text: str):
+    def _get_compact_view_link(self) -> str:
+        """Tạo link rút gọn siêu đẹp, hiển thị chữ bấm được '👉 Mở Camera Xem Bé Ngay' trên Telegram."""
+        url = str(self.config.get("remote_access_url", "")).strip()
+        if not url:
+            import socket
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(("8.8.8.8", 80))
+                ip = s.getsockname()[0]
+                s.close()
+                port = self.config.get("web_port", 8080)
+                url = f"http://{ip}:{port}"
+            except Exception:
+                url = "http://localhost:8080"
+        return f'\n🔗 <b><a href="{url}">👉 Mở Camera Xem Bé Ngay</a></b>'
+
+    def send_telegram_text(self, text: str, pin: bool = False, tag_recipients: bool = False):
         bot_token = self.config.get("telegram_bot_token", "").strip()
         enabled = self.config.get("telegram_enabled", False)
         recipients = self._get_recipient_list()
@@ -209,12 +225,29 @@ class AlertManager:
         if not enabled or not bot_token or not recipients:
             return
 
+        if "👉 Mở Camera" not in text:
+            text += self._get_compact_view_link()
+
         def _send():
-            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            url_send = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            url_pin = f"https://api.telegram.org/bot{bot_token}/pinChatMessage"
             for r in recipients:
                 try:
-                    data = {"chat_id": r["chat_id"], "text": text, "parse_mode": "HTML", "disable_web_page_preview": False}
-                    requests.post(url, json=data, timeout=10)
+                    send_text = text
+                    if tag_recipients:
+                        tag = f"🔔 <b>[GỬI TỚI {r.get('name', 'BỐ MẸ').upper()}]</b>"
+                        send_text = f"{tag}\n{send_text}"
+
+                    data = {"chat_id": r["chat_id"], "text": send_text, "parse_mode": "HTML", "disable_web_page_preview": False}
+                    resp = requests.post(url_send, json=data, timeout=12)
+                    if resp.status_code == 200:
+                        mid = resp.json().get("result", {}).get("message_id")
+                        if pin and mid:
+                            try:
+                                requests.post(url_pin, json={"chat_id": r["chat_id"], "message_id": mid, "disable_notification": False}, timeout=8)
+                                print(f"[AlertManager] 📌 Đã ghim tin nhắn Báo cáo #{mid} trên Telegram của {r['name']}")
+                            except Exception as pe:
+                                print(f"[AlertManager] Không thể ghim tin nhắn: {pe}")
                 except Exception as e:
                     print(f"[AlertManager] Failed to send Telegram text to {r['name']}: {e}")
 
@@ -290,6 +323,9 @@ class AlertManager:
             for k, v in extra_info.items():
                 caption += f"• {k}: {v}\n"
 
+        # Gắn link xem trực tiếp rút gọn
+        caption += self._get_compact_view_link()
+
         # Record event in log
         event_record = {
             "id": len(self.events) + 1,
@@ -297,6 +333,7 @@ class AlertManager:
             "title": title.replace("<b>", "").replace("</b>", ""),
             "message": message,
             "timestamp": display_time,
+            "epoch": time.time(),
             "snapshot_url": f"/api/snapshots/{snapshot_filename}" if snapshot_filename else None,
             "extra": extra_info or {}
         }
@@ -315,6 +352,33 @@ class AlertManager:
 
         print(f"[AlertManager] Event triggered: [{event_type.upper()}] {message}")
         return True
+
+    def get_daily_event_counts(self) -> dict:
+        """Đếm chính xác số sự kiện ho/sặc sữa, khóc, ngạt... trong vòng 24 giờ qua."""
+        now = time.time()
+        day_sec = 86400
+        counts = {
+            "crying_count": 0,
+            "cough_count": 0,
+            "apnea_count": 0,
+            "prone_count": 0,
+            "covered_face_count": 0
+        }
+        with self.lock:
+            for ev in self.events:
+                if (now - ev.get("epoch", now)) <= day_sec:
+                    t = ev.get("type", "")
+                    if t == "cry":
+                        counts["crying_count"] += 1
+                    elif t == "cough":
+                        counts["cough_count"] += 1
+                    elif t == "apnea":
+                        counts["apnea_count"] += 1
+                    elif t == "prone":
+                        counts["prone_count"] += 1
+                    elif t == "covered_face":
+                        counts["covered_face_count"] += 1
+        return counts
 
     def get_events(self, limit: int = 30):
         with self.lock:
