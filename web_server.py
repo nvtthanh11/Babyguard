@@ -304,6 +304,11 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
         vis_st = vision_tracker.get_status() if vision_tracker else {}
         summary_dict["avg_bpm"] = vis_st.get("breathing_bpm", 36.0)
+
+        hist = summary_dict.get("daily_history", [])
+        if hist and len(hist) > 0:
+            summary_dict["yesterday_sleep"] = hist[0]
+
         return summary_dict
 
     def _trigger_morning_ai_sleep_report(summary_snapshot: dict):
@@ -341,14 +346,14 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         summary["age_info"] = calculate_exact_age(b_date)
         summary["baby_name"] = cfg.get("baby_name", "Bé")
 
-        # Tự động tổng hợp Bảng Phân Tích Giấc Ngủ Đêm Qua & 24h vào 07:00 sáng hôm sau
+        # Tự động tổng hợp Bảng Phân Tích Giấc Ngủ Đêm Qua & 24h vào mỗi sáng (từ 05:00 sáng trở đi)
         now_dt = datetime.now()
         today_str = summary.get("today_date", "")
         has_gemini_report = (
             sleep_tracker.daily_ai_report is not None
             and sleep_tracker.daily_ai_report.get("date") == today_str
         )
-        if not has_gemini_report and now_dt.hour >= 7 and _ai_sleep_State["last_auto_date"] != today_str:
+        if not has_gemini_report and now_dt.hour >= 5 and _ai_sleep_State["last_auto_date"] != today_str:
             _trigger_morning_ai_sleep_report(summary)
         return summary
 

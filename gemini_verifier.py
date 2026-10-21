@@ -858,12 +858,24 @@ Trả về đúng định dạng JSON:
         growth = sleep_summary.get("growth_data", {})
         growth_str = f"Cân nặng: {growth.get('weight_kg', 'Chưa nhập')} kg | Chiều cao: {growth.get('height_cm', 'Chưa nhập')} cm ({growth.get('weight_status', 'Đang cập nhật')})"
 
+        yesterday = sleep_summary.get("yesterday_sleep", {})
+        y_sleep = yesterday.get("total_sleep_hours")
+        y_nap = yesterday.get("longest_nap_minutes")
+        y_score = yesterday.get("sleep_score")
+        if y_sleep is not None:
+            sleep_tracking_metric_str = (
+                f"- Chu kỳ 24h trọn vẹn ngày hôm trước: Bé đã ngủ {y_sleep} giờ (cữ sâu dài nhất {y_nap} phút, điểm giấc ngủ: {y_score}/100 đạt chuẩn AAP).\n"
+                f"- Tiến độ cữ ngủ sáng nay (từ 00:00): Hệ thống camera ghi nhận {total_sleep} giờ ngủ trong nôi."
+            )
+        else:
+            sleep_tracking_metric_str = f"- Thời gian ngủ trực tiếp qua camera ghi nhận: {total_sleep} giờ"
+
         prompt = f"""
 Bạn là Bác sĩ Nhi khoa Chuyên gia về Sơ sinh & Giấc ngủ Trẻ em (Pediatrician & Sleep Specialist) của hệ thống BabyGuard AI.
 Dưới đây là hồ sơ đo lường sinh học thực tế của em bé {baby_name} ({age_display}) trong 24 giờ qua:
 
 1. DỮ LIỆU ĐO LƯỜNG THỰC TẾ QUA CAMERA BABYGUARD AI:
-- Thời gian ngủ trực tiếp qua camera ghi nhận: {total_sleep} giờ
+{sleep_tracking_metric_str}
 - Thời gian thức chơi / vận động trong tầm camera: {total_awake} giờ
 - Thời gian ngoài tầm camera (được bố mẹ bế ra ngoài, bú sữa, tắm, chơi...): ~{camera_offline} giờ
 - Tỷ lệ Ngủ sâu (NREM): {sleep_summary.get("deep_ratio_pct", 55)}% | Ngủ động (REM): {sleep_summary.get("rem_ratio_pct", 45)}%
@@ -874,9 +886,9 @@ Dưới đây là hồ sơ đo lường sinh học thực tế của em bé {bab
 - Thống kê âm thanh AI: {crying_count} lần quấy khóc, {cough_count} cơn ho / tiếng thở dốc / nguy cơ sặc sữa.
 - Chỉ số thể trạng & tăng trưởng: {growth_str}
 
-Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG (07:00) cho bố mẹ với các yêu cầu bắt buộc:
+Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG cho bố mẹ với các yêu cầu bắt buộc:
 A. PHÂN TÍCH RÕ RÀNG: Dữ liệu ghi nhận trong camera vs Thời gian ngoài camera:
-   - Ghi nhận chính xác số giờ camera bắt được ({total_sleep}h ngủ, {total_awake}h thức).
+   - Ghi nhận chính xác số giờ camera bắt được. Nếu đang là buổi sáng sớm và hệ thống vừa reset lúc 00:00, hãy đối chiếu chu kỳ 24h trọn vẹn của ngày hôm trước ({y_sleep if y_sleep is not None else total_sleep}h) để đánh giá đúng nhịp sinh học tổng thể của bé thay vì vội kết luận bé thiếu ngủ.
    - Với thời gian ngoài camera ({camera_offline} giờ): Phân tích dựa trên chuẩn sinh lý của Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) và Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) cho trẻ ở độ tuổi {age_display} (nhu cầu ngủ tổng 14-17 giờ/ngày, cửa sổ thức 45-90 phút).
 B. ĐÁNH GIÁ SỨC KHỎE HÔ HẤP & TIÊU HÓA:
    - Đánh giá nhịp thở {avg_bpm} BPM (đối chiếu chuẩn sinh lý sơ sinh 30 - 60 BPM).

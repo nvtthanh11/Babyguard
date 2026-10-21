@@ -783,9 +783,15 @@
                             <span id="sleep-ai-report-meta" class="text-[11px] text-indigo-300/80">Tự động đối chiếu chuẩn Nhi khoa WHO/AAP vào mỗi sáng</span>
                         </div>
                     </div>
-                    <span id="sleep-ai-source-badge" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30">
-                        ✅ Đã cập nhật hôm nay
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="analyzeSleepWithAI(event)" id="btn-analyze-sleep-ai" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-md transition active:scale-95 flex items-center gap-1.5">
+                            <span>🩺</span>
+                            <span>Bác Sĩ AI Hội Chẩn Ngay</span>
+                        </button>
+                        <span id="sleep-ai-source-badge" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30">
+                            ✅ Đã cập nhật hôm nay
+                        </span>
+                    </div>
                 </div>
 
                 <!-- Bảng đối chiếu 5 chỉ số sinh học -->
@@ -2128,6 +2134,17 @@
                 const metaEl = document.getElementById('sleep-ai-report-meta');
                 if (metaEl) {
                     metaEl.innerText = `Ngày ${da.date || s.today_date} • Nguồn: ${da.source || 'Bác Sĩ Giấc Ngủ AI'} • Cập nhật lúc ${da.generated_at || '--:--'}`;
+                }
+                const badgeEl = document.getElementById('sleep-ai-source-badge');
+                if (badgeEl) {
+                    const isGemini = (da.source || '').toLowerCase().includes('gemini') || (da.source || '').toLowerCase().includes('bác sĩ ai');
+                    if (isGemini) {
+                        badgeEl.className = "text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30";
+                        badgeEl.innerHTML = `<span>✨ Bác Sĩ AI (${da.generated_at || 'Hôm nay'})</span>`;
+                    } else {
+                        badgeEl.className = "text-[11px] font-bold text-indigo-300 bg-indigo-500/15 px-3 py-1 rounded-full border border-indigo-500/30";
+                        badgeEl.innerHTML = `<span>⚙️ AI Cục Bộ (${da.generated_at || 'Hôm nay'})</span>`;
+                    }
                 }
                 const tbody = document.getElementById('sleep-ai-analysis-table-body');
                 if (tbody && da.rows) {
@@ -3669,6 +3686,36 @@
                     btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này</span>`;
                     btn.className = "px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5";
                     btn.disabled = false;
+                }
+            }
+        }
+
+        // Bác sĩ Nhi khoa Gemini AI Hội chẩn theo yêu cầu
+        async function analyzeSleepWithAI(event) {
+            if (event) event.preventDefault();
+            const btn = document.getElementById('btn-analyze-sleep-ai');
+            const oldHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span><span>Đang hội chẩn AI...</span>`;
+            }
+            showToast("Đang gửi dữ liệu sinh học lên Bác sĩ Nhi khoa Gemini AI...", "🩺");
+            try {
+                const res = await fetch('/api/sleep/analyze-ai', { method: 'POST' });
+                const d = await res.json();
+                if (d.success && d.summary) {
+                    renderSleepData(d.summary);
+                    showToast("Bác sĩ Nhi khoa AI đã hoàn tất hội chẩn & ghim Telegram!", "✅");
+                } else {
+                    showToast(d.error || "Không thể phân tích AI lúc này", "⚠️");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Lỗi kết nối khi gọi Bác sĩ AI", "⚠️");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = oldHtml;
                 }
             }
         }

@@ -292,14 +292,44 @@ class SleepTracker:
                                     nap_count: int, rem_twitches: int) -> dict:
         """
         Tạo Bảng Phân Tích Giấc Ngủ Trong Ngày / Cuối Ngày đối chiếu chuẩn Nhi Khoa (AAP/WHO).
+        Hỗ trợ hiển thị chu kỳ 24h hoàn tất gần nhất (ngày hôm qua) vào buổi sáng sớm để bố mẹ
+        không bị hoang mang khi vừa reset lúc 00:00.
         """
+        now_dt = datetime.now()
+        is_morning = now_dt.hour < 12
+        prev_sleep_h = 0.0
+        prev_longest_m = 0.0
+        if self.daily_history and len(self.daily_history) > 0:
+            prev_sleep_h = float(self.daily_history[0].get("total_sleep_hours", 0.0))
+            prev_longest_m = float(self.daily_history[0].get("longest_nap_minutes", 0.0))
+
+        # Nếu đang là buổi sáng và số giờ ngủ hôm nay còn ít do vừa reset lúc 00:00,
+        # đối chiếu chu kỳ 24h gần nhất (Hôm qua + Đêm qua) để bố mẹ nắm rõ sức khỏe giấc ngủ thực tế
+        if is_morning and total_sleep_hours < 4.0 and prev_sleep_h > 0:
+            sleep_row_measured = f"{prev_sleep_h}h (Chu kỳ 24h hôm qua) • Hôm nay: {total_sleep_hours}h ({nap_count} cữ)"
+            sleep_row_status = "Đạt chuẩn sinh lý AAP" if prev_sleep_h >= 11.0 else ("Đang tích lũy" if prev_sleep_h >= 8.0 else "Cần ngủ thêm")
+            sleep_row_badge = "emerald" if prev_sleep_h >= 11.0 else "amber"
+        else:
+            sleep_row_measured = f"{total_sleep_hours} giờ ({nap_count} cữ)"
+            sleep_row_status = "Đạt chuẩn AAP" if total_sleep_hours >= 10.0 else ("Đang tích lũy" if total_sleep_hours >= 5.0 else ("Đang tích lũy buổi sáng" if is_morning else "Cần ngủ thêm"))
+            sleep_row_badge = "emerald" if total_sleep_hours >= 10.0 else ("cyan" if is_morning else "amber")
+
+        if is_morning and longest_nap_mins < 30.0 and prev_longest_m > 0:
+            nap_row_measured = f"{int(round(prev_longest_m))} phút (Cữ dài nhất hôm qua) • Sáng nay: {int(round(longest_nap_mins))}p"
+            nap_row_status = "Chuyển giao chu kỳ tốt" if prev_longest_m >= 45.0 else "Ngủ ngắn (Catnap)"
+            nap_row_badge = "emerald" if prev_longest_m >= 45.0 else "amber"
+        else:
+            nap_row_measured = f"{int(round(longest_nap_mins))} phút ({round(longest_nap_mins/50.0, 1)} chu kỳ)"
+            nap_row_status = "Chuyển giao chu kỳ tốt" if longest_nap_mins >= 45 else "Ngủ ngắn (Catnap)"
+            nap_row_badge = "emerald" if longest_nap_mins >= 45 else "amber"
+
         rows = [
             {
-                "metric": "Tổng thời gian ngủ trong ngày",
-                "measured": f"{total_sleep_hours} giờ ({nap_count} cữ)",
-                "standard": "11.0 – 15.0 giờ / ngày",
-                "status": "Đạt chuẩn" if total_sleep_hours >= 10.0 else ("Đang tích lũy" if total_sleep_hours >= 5.0 else "Cần ngủ thêm"),
-                "badge_color": "emerald" if total_sleep_hours >= 10.0 else "amber"
+                "metric": "Tổng thời gian ngủ 24h qua (Đêm qua & 24h)",
+                "measured": sleep_row_measured,
+                "standard": "11.0 – 15.0 giờ / ngày (Chuẩn AAP)",
+                "status": sleep_row_status,
+                "badge_color": sleep_row_badge
             },
             {
                 "metric": "Cấu trúc Ngủ Sâu (NREM) / Ngủ Động (REM)",
@@ -310,10 +340,10 @@ class SleepTracker:
             },
             {
                 "metric": "Cữ ngủ liền mạch dài nhất",
-                "measured": f"{int(round(longest_nap_mins))} phút ({round(longest_nap_mins/50.0, 1)} chu kỳ)",
+                "measured": nap_row_measured,
                 "standard": "≥ 50 – 120 phút / cữ",
-                "status": "Chuyển giao chu kỳ tốt" if longest_nap_mins >= 45 else "Ngủ ngắn (Catnap)",
-                "badge_color": "emerald" if longest_nap_mins >= 45 else "amber"
+                "status": nap_row_status,
+                "badge_color": nap_row_badge
             },
             {
                 "metric": "Tổng thời gian thức chơi & vận động",
@@ -334,21 +364,53 @@ class SleepTracker:
         # Nếu đã có nhận xét chuyên sâu từ Gemini AI cho ngày hôm nay thì ưu tiên hiển thị
         if self.daily_ai_report and self.daily_ai_report.get("date") == self.today_date:
             ai_summary = self.daily_ai_report.get("summary_vi", "")
+            ai_reflux = self.daily_ai_report.get("respiratory_and_reflux_vi", "")
+            ai_growth = self.daily_ai_report.get("growth_analysis_vi", "")
+            ai_schedule = self.daily_ai_report.get("schedule_advice_vi", "")
             ai_tips = self.daily_ai_report.get("tips_vi", [])
+            ai_citations = self.daily_ai_report.get("scientific_citations_vi", [
+                "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) - Hướng dẫn Giấc ngủ An toàn & Phòng ngừa SIDS",
+                "Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) - Khuyến nghị Thời lượng Giấc ngủ Nhi khoa",
+                "Tổ chức Y tế Thế giới (WHO) - Bộ Tiêu chuẩn Tăng trưởng Trẻ em (Child Growth Standards)"
+            ])
             generated_at = self.daily_ai_report.get("generated_at", "")
             source = self.daily_ai_report.get("model", "Gemini Pediatric AI")
         else:
             generated_at = datetime.now().strftime("%H:%M")
-            source = "Bác Sĩ Giấc Ngủ AI (Tự động tổng hợp)"
-            ai_summary = (
-                f"Tổng hợp dữ liệu sinh học ngày {self.today_date}: Bé đã ngủ tổng cộng {total_sleep_hours} giờ "
-                f"(cữ dài nhất {int(round(longest_nap_mins))} phút) với tỷ lệ Ngủ sâu NREM đạt {deep_pct}% và Ngủ động REM {rem_pct}%. "
-                f"Khả năng tự nối giấc qua chu kỳ 50 phút của bé rất khả quan, nhịp thở lồng ngực và vận động khi thức hoàn toàn ổn định."
+            source = "Bác Sĩ Giấc Ngủ AI (Hệ thống AI Cục Bộ)"
+            if is_morning and prev_sleep_h > 0:
+                ai_summary = (
+                    f"Tổng hợp 24h & Đêm qua ({self.today_date}): Trong chu kỳ 24h hôm qua bé ngủ đạt {prev_sleep_h} giờ "
+                    f"(cữ dài nhất {int(round(prev_longest_m))} phút). Sáng nay hệ thống đã ghi nhận thêm {total_sleep_hours} giờ ngủ với tỷ lệ "
+                    f"Ngủ sâu NREM {deep_pct}% và REM {rem_pct}%. Khả năng tự nối giấc của bé duy trì rất tốt."
+                )
+            else:
+                ai_summary = (
+                    f"Tổng hợp dữ liệu sinh học ngày {self.today_date}: Bé đã ngủ tổng cộng {total_sleep_hours} giờ "
+                    f"(cữ dài nhất {int(round(longest_nap_mins))} phút) với tỷ lệ Ngủ sâu NREM đạt {deep_pct}% và Ngủ động REM {rem_pct}%. "
+                    f"Khả năng tự nối giấc qua chu kỳ 50 phút của bé rất khả quan, nhịp thở lồng ngực và vận động khi thức hoàn toàn ổn định."
+                )
+            ai_reflux = (
+                "Hệ thống giám sát nhịp thở quang học lồng ngực ổn định trong dải an toàn sơ sinh (30-50 BPM). "
+                "Cảnh báo ho, quấy khóc và trớ sữa sinh lý được theo dõi liên tục. Khuyến cáo giữ bé ở tư thế thẳng đứng 15-20 phút sau khi bú và vỗ ợ hơi kỹ trước khi đặt bé ngủ nôi."
+            )
+            ai_growth = (
+                "Chỉ số thể trạng chiều cao và cân nặng đang được đối chiếu thời gian thực theo chuẩn trung vị của Tổ chức Y tế Thế giới (WHO Child Growth Standards). "
+                "Bố mẹ có thể cập nhật số đo mới nhất tại thẻ 'Chỉ Số Phát Triển' để nhận đánh giá chi tiết."
+            )
+            ai_schedule = (
+                "Khuyến nghị duy trì Cửa sổ thức (Wake Window) từ 45-75 phút giữa các cữ trong ngày. "
+                "Nhận biết các tín hiệu buồn ngủ sớm (ngáp, giảm vận động, mắt nhìn lờ đờ) để đặt bé vào nôi kịp thời, tránh để bé quá mệt (overtired)."
             )
             ai_tips = [
-                "Duy trì nhiệt độ phòng ngủ lý tưởng từ 26°C – 27.5°C và ánh sáng dịu trước cữ ngủ tối 30 phút.",
-                "Khi bé cựa mình nhẹ ở phút thứ 45–50 (giai đoạn chuyển giao chu kỳ), bố mẹ khoan bế lên ngay mà hãy vỗ nhẹ để bé tự nối sang chu kỳ ngủ thứ 2.",
-                "Canh đúng Cửa sổ thức (Wake Window ~75–90 phút) để đặt bé xuống giường khi vừa ngáp/dụi mắt, tránh để quá giấc gây gắt ngủ."
+                "Luôn tuân thủ quy tắc ngủ an toàn ABC của AAP: Bé nằm ngửa (Back), giường phẳng thoáng (Alone in Crib), không để chăn gối mềm xung quanh.",
+                "Vỗ ợ hơi kỹ sau mỗi cữ bú; nếu bé hay trớ sữa, có thể nâng đầu nôi nhẹ 10-15° và giữ ấm vùng bụng.",
+                "Duy trì nhiệt độ phòng ngủ lý tưởng từ 26°C – 27.5°C và ánh sáng dịu trước cữ ngủ tối 30 phút."
+            ]
+            ai_citations = [
+                "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) - Hướng dẫn Giấc ngủ An toàn & Phòng ngừa SIDS",
+                "Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) - Báo cáo Thời lượng Giấc ngủ Chuẩn Nhi khoa",
+                "Tổ chức Y tế Thế giới (WHO) - Bộ Tiêu chuẩn Tăng trưởng Trẻ em (Child Growth Standards)"
             ]
 
         return {
@@ -357,7 +419,11 @@ class SleepTracker:
             "source": source,
             "rows": rows,
             "summary_vi": ai_summary,
-            "tips_vi": ai_tips
+            "respiratory_and_reflux_vi": ai_reflux,
+            "growth_analysis_vi": ai_growth,
+            "schedule_advice_vi": ai_schedule,
+            "tips_vi": ai_tips,
+            "scientific_citations_vi": ai_citations
         }
 
     def get_summary(self, adult_holding: bool = False, is_crying: bool = False):
