@@ -1221,10 +1221,11 @@
                     </div>
                 </div>
 
-                <div class="flex justify-end pt-1">
-                    <button type="submit" id="btn-save-growth" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5">
+                <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3 flex-wrap">
+                    <span class="text-[11px] text-slate-400">💡 Sau khi bấm lưu, Gemini AI sẽ tự động phân tích đà tăng trưởng so với lần đo trước.</span>
+                    <button type="submit" id="btn-save-growth" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
                         <span>💾</span>
-                        <span>Lưu Số Đo Tháng Này</span>
+                        <span>Lưu Số Đo Tháng Này & Hội Chẩn AI</span>
                     </button>
                 </div>
             </form>
@@ -3643,19 +3644,22 @@
                 btn.className = "px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-lg flex items-center gap-1.5 cursor-wait";
             }
             try {
+                const payload = {
+                    weight_kg: wt,
+                    height_cm: ht,
+                    date: dt,
+                    note: note
+                };
+                if (head !== null && !isNaN(head)) {
+                    payload.head_circ_cm = head;
+                }
                 const res = await fetch('/api/growth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        weight_kg: wt,
-                        height_cm: ht,
-                        head_circ_cm: head,
-                        date: dt,
-                        note: note
-                    })
+                    body: JSON.stringify(payload)
                 });
                 const d = await res.json();
-                if (d.success) {
+                if (res.ok && d.success) {
                     showToast("Đã lưu số đo tháng này và Bác sĩ AI đã phân tích!", "📏");
                     document.getElementById('input-growth-weight').value = '';
                     document.getElementById('input-growth-height').value = '';
@@ -3663,28 +3667,30 @@
                     document.getElementById('input-growth-note').value = '';
                     if (btn) {
                         btn.innerHTML = `<span>✅</span><span>Đã Lưu & AI Đánh Giá Xong!</span>`;
-                        btn.className = "px-5 py-2.5 rounded-xl bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg flex items-center gap-1.5";
+                        btn.className = "w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-lg flex items-center justify-center gap-2";
                         setTimeout(() => {
-                            btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này</span>`;
-                            btn.className = "px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5";
+                            btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này & Hội Chẩn AI</span>`;
+                            btn.className = "w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-lg transition active:scale-95 flex items-center justify-center gap-2";
                             btn.disabled = false;
                         }, 2500);
                     }
                     await fetchGrowthData();
                     dismissGrowthReminder();
                 } else {
-                    showToast(d.error || "Lỗi khi lưu số đo", "⚠️");
+                    const errMsg = d.error || (d.detail && d.detail[0] ? d.detail[0].msg : "Lỗi khi lưu số đo");
+                    showToast(errMsg, "⚠️");
                     if (btn) {
-                        btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này</span>`;
-                        btn.className = "px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5";
+                        btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này & Hội Chẩn AI</span>`;
+                        btn.className = "w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-lg transition active:scale-95 flex items-center justify-center gap-2";
                         btn.disabled = false;
                     }
                 }
             } catch (e) {
+                console.error(e);
                 showToast("Lỗi kết nối khi lưu số đo", "⚠️");
                 if (btn) {
-                    btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này</span>`;
-                    btn.className = "px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5";
+                    btn.innerHTML = `<span>💾</span><span>Lưu Số Đo Tháng Này & Hội Chẩn AI</span>`;
+                    btn.className = "w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-lg transition active:scale-95 flex items-center justify-center gap-2";
                     btn.disabled = false;
                 }
             }

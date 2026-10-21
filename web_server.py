@@ -641,9 +641,9 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     class GrowthRecordPayload(BaseModel):
         weight_kg: float
         height_cm: float
-        head_circ_cm: float = None
-        date: str = None
-        note: str = ""
+        head_circ_cm: float | None = None
+        date: str | None = None
+        note: str | None = ""
 
     @app.post("/api/growth")
     def add_growth_api(payload: GrowthRecordPayload):
