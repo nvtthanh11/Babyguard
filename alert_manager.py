@@ -217,13 +217,13 @@ class AlertManager:
                 url = "http://localhost:8080"
         return f'\n🔗 <b><a href="{url}">👉 Mở Camera Xem Bé Ngay</a></b>'
 
-    def send_telegram_text(self, text: str, pin: bool = False, tag_recipients: bool = False):
+    def send_telegram_text(self, text: str, pin: bool = False, tag_recipients: bool = False) -> bool:
         bot_token = self.config.get("telegram_bot_token", "").strip()
         enabled = self.config.get("telegram_enabled", False)
         recipients = self._get_recipient_list()
 
         if not enabled or not bot_token or not recipients:
-            return
+            return False
 
         if "👉 Mở Camera" not in text:
             text += self._get_compact_view_link()
@@ -252,6 +252,7 @@ class AlertManager:
                     print(f"[AlertManager] Failed to send Telegram text to {r['name']}: {e}")
 
         threading.Thread(target=_send, daemon=True).start()
+        return True
 
     def send_telegram_video(self, video_path: str, caption: str, event_type: str = "danger"):
         bot_token = self.config.get("telegram_bot_token", "").strip()

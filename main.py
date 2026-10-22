@@ -13,6 +13,7 @@ from video_recorder import VideoRecorder
 from music_player import MusicPlayer
 from sleep_tracker import SleepTracker
 from gemini_verifier import GeminiHybridVerifier
+from tunnel_manager import TunnelManager
 from web_server import create_app
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -234,38 +235,30 @@ def main():
     vision_tracker.start()
     audio_detector.start()
 
-    # 4. Web Application
-    app = create_app(vision_tracker, audio_detector, alert_manager, video_recorder, music_player, sleep_tracker, CONFIG_PATH, gemini_verifier=gemini_verifier)
-
     port = config.get("web_port", 8080)
     host = config.get("web_host", "0.0.0.0")
 
-    def notify_startup_links():
-        time.sleep(4)
-        tunnel_url = None
-        log_file = os.path.join(LOGS_DIR, "tunnel.log")
-        if not os.path.exists(log_file):
-            log_file = os.path.join(BASE_DIR, "tunnel.log")
-        if os.path.exists(log_file):
-            try:
-                with open(log_file, "r") as f:
-                    for line in f:
-                        if ".trycloudflare.com" in line:
-                            parts = line.strip().split()
-                            for p in parts:
-                                if "trycloudflare.com" in p and p.startswith("http"):
-                                    tunnel_url = p
-            except Exception:
-                pass
-        
-        msg = "🍼 <b>BABYGUARD AI ĐÃ KHỞI ĐỘNG!</b>\n\n"
-        if tunnel_url:
-            msg += f"📱 <b>Link xem từ xa trên điện thoại:</b>\n👉 <a href='{tunnel_url}'>{tunnel_url}</a>\n\n"
-        msg += f"🏠 <b>Link xem tại nhà:</b>\n👉 http://localhost:{port}\n\n"
-        msg += "<i>Bố mẹ bấm vào link trên để xem trực tiếp bé nhé. Vệ sĩ AI đang túc trực!</i>"
+    # 4. Remote Access Tunnel Manager (Cloudflare Quick Tunnel)
+    def on_tunnel_ready(url):
+        alert_manager.update_config({"remote_access_url": url})
+        print(f"[BabyGuard AI] 🌐 Link xem từ xa (4G/5G) đã sẵn sàng: {url}")
+        msg = (
+            "🍼 <b>BABYGUARD AI — KẾT NỐI TỪ XA ĐÃ SẴN SÀNG!</b>\n\n"
+            f"📱 <b>Link xem camera từ xa trên 4G/5G:</b>\n👉 <a href='{url}'>{url}</a>\n\n"
+            f"🏠 <b>Link xem tại nhà (WiFi):</b>\n👉 http://localhost:{port}\n\n"
+            "<i>Bố mẹ có thể bấm trực tiếp vào link trên điện thoại khi ở ngoài để xem bé mọi lúc mọi nơi!</i>"
+        )
         alert_manager.send_telegram_text(msg)
 
-    threading.Thread(target=notify_startup_links, daemon=True).start()
+    tunnel_manager = TunnelManager(CONFIG_PATH, port=port, on_tunnel_ready=on_tunnel_ready)
+    tunnel_manager.start()
+
+    # 5. Web Application
+    app = create_app(
+        vision_tracker, audio_detector, alert_manager, video_recorder,
+        music_player, sleep_tracker, CONFIG_PATH,
+        gemini_verifier=gemini_verifier, tunnel_manager=tunnel_manager
+    )
 
     print(f"\n[BabyGuard AI] Dashboard running at: http://localhost:{port}")
     print(f"[BabyGuard AI] Local network IP access: http://0.0.0.0:{port}")
@@ -275,6 +268,7 @@ def main():
 
     def shutdown_handler(sig, frame):
         print("\n[BabyGuard AI] Đang tắt các tiến trình...")
+        tunnel_manager.stop()
         vision_tracker.stop()
         audio_detector.stop()
         music_player.stop()
@@ -286,6 +280,7 @@ def main():
     try:
         uvicorn.run(app, host=host, port=port, log_level="warning")
     finally:
+        tunnel_manager.stop()
         vision_tracker.stop()
         audio_detector.stop()
         music_player.stop()

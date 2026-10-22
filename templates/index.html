@@ -131,6 +131,10 @@
 
         <!-- Right Quick Controls -->
         <div class="flex items-center gap-2">
+            <a id="header-remote-link" href="#" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-cyan-500/30 text-xs font-semibold text-cyan-300 transition" title="Link xem camera từ xa trên 4G/5G">
+                <span>🌐</span>
+                <span id="header-remote-link-text">Xem Từ Xa 4G</span>
+            </a>
             <button onclick="openGrowthModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-emerald-500/30 text-xs font-semibold text-emerald-300 transition" title="Sổ Đo Chiều Cao & Cân Nặng (Chuẩn Tăng Trưởng WHO)">
                 <span>📏</span>
                 <span class="hidden sm:inline">Sổ Đo WHO</span>
@@ -1492,10 +1496,23 @@
                 </div>
 
                 <!-- Remote Access URL for Compact Telegram Link -->
-                <div>
-                    <label class="block text-slate-300 mb-1 font-semibold">🌐 Link xem từ xa (Tailscale / IP / Tên miền riêng):</label>
-                    <input type="text" id="cfg-remote-url" placeholder="vd: http://100.85.24.12:8080 hoặc https://my-baby.domain.com" class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 outline-none rounded-xl px-3 py-2 text-slate-200 font-mono text-[11px]">
-                    <p class="text-[10px] text-slate-400 mt-0.5">Dùng để đính kèm link rút gọn <code>👉 Mở Camera Xem Bé Ngay</code> trong các thông báo Telegram.</p>
+                <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-cyan-500/30 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-slate-200 font-bold flex items-center gap-1.5 text-xs">
+                            <span>🌐</span>
+                            <span>Đường truyền xem camera từ xa trên điện thoại (4G / 5G / Cloudflare):</span>
+                        </label>
+                        <button type="button" onclick="restartTunnel()" id="btn-restart-tunnel" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 font-bold text-[10px] transition flex items-center gap-1">
+                            <span>🔄</span><span>Làm mới link</span>
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="cfg-remote-url" placeholder="Đang kết nối Cloudflare Tunnel..." class="flex-1 bg-slate-800 border border-slate-700 focus:border-cyan-500 outline-none rounded-xl px-3 py-2 text-cyan-300 font-mono text-[11px] select-all">
+                        <button type="button" onclick="copyRemoteUrl()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold transition flex items-center gap-1">
+                            <span>📋</span><span>Sao chép</span>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-400">Hệ thống tự động kích hoạt Cloudflare Tunnel HTTPS và gắn link này vào tin nhắn Telegram (<code>👉 Mở Camera Xem Bé Ngay</code>) để bố mẹ mở xem ở bất kỳ đâu ngoài mạng WiFi nhà.</p>
                 </div>
 
                 <!-- Bảng Nhập Trực Tiếp Chat ID Người Nhà -->
@@ -1786,6 +1803,20 @@
                 const m = data.music || {};
                 const s = data.sleep || {};
                 const g = data.gemini || {};
+                const t = data.tunnel || {};
+
+                // Update Live Remote Access URL
+                if (t && t.url) {
+                    const remoteInput = document.getElementById('cfg-remote-url');
+                    if (remoteInput && (!remoteInput.value || remoteInput.value.includes('trycloudflare.com') || remoteInput.value === '')) {
+                        remoteInput.value = t.url;
+                    }
+                    const headerRemote = document.getElementById('header-remote-link');
+                    if (headerRemote) {
+                        headerRemote.href = t.url;
+                        headerRemote.classList.remove('hidden');
+                    }
+                }
 
                 // Update Header Pill & Vitals
                 // Fix Bug 1: Do NOT require breathing_bpm > 0 to consider the baby in the crib!
@@ -3722,6 +3753,54 @@
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = oldHtml;
+                }
+            }
+        }
+
+        // Remote Access Tunnel Actions
+        function copyRemoteUrl() {
+            const input = document.getElementById('cfg-remote-url');
+            if (!input || !input.value) {
+                showToast("Chưa có link từ xa để sao chép", "⚠️");
+                return;
+            }
+            navigator.clipboard.writeText(input.value).then(() => {
+                showToast("Đã sao chép link xem từ xa trên điện thoại!", "📋");
+            }).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                showToast("Đã sao chép link xem từ xa!", "📋");
+            });
+        }
+
+        async function restartTunnel() {
+            const btn = document.getElementById('btn-restart-tunnel');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span><span>Đang tạo link mới...</span>`;
+            }
+            showToast("Đang yêu cầu Cloudflare cấp link xem từ xa mới...", "🌐");
+            try {
+                const res = await fetch('/api/tunnel/restart', { method: 'POST' });
+                const d = await res.json();
+                if (d.success && d.url) {
+                    const input = document.getElementById('cfg-remote-url');
+                    if (input) input.value = d.url;
+                    const headerLink = document.getElementById('header-remote-link');
+                    if (headerLink) {
+                        headerLink.href = d.url;
+                        headerLink.classList.remove('hidden');
+                    }
+                    showToast("Đã kích hoạt link Cloudflare Tunnel mới thành công!", "✅");
+                } else {
+                    showToast(d.error || "Không thể làm mới tunnel lúc này", "⚠️");
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối khi làm mới tunnel", "⚠️");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>🔄</span><span>Làm mới link</span>`;
                 }
             }
         }

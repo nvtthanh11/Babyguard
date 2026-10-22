@@ -21,7 +21,7 @@ from pydantic import BaseModel
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, music_player, sleep_tracker, config_path: str, gemini_verifier=None):
+def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, music_player, sleep_tracker, config_path: str, gemini_verifier=None, tunnel_manager=None):
     app = FastAPI(title="BabyGuard AI")
     templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
     snapshots_dir = os.path.join(BASE_DIR, "snapshots")
@@ -124,18 +124,47 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             is_crying=aud_st.get("is_crying", False)
         )
         cfg = load_config()
+        t_url = cfg.get("remote_access_url", "")
+        tunnel_info = tunnel_manager.get_status() if tunnel_manager else {"active": bool(t_url), "url": t_url, "type": "config"}
+        if not tunnel_info.get("url") and t_url:
+            tunnel_info["url"] = t_url
+            tunnel_info["active"] = True
+
         return {
             "vision": vis_st,
             "audio": aud_st,
             "music": music_player.get_status(),
             "sleep": sleep_st,
             "gemini": gemini_verifier.get_status() if gemini_verifier else {},
+            "tunnel": tunnel_info,
             "baby_profile": {
                 "name": cfg.get("baby_name", "Bé Siu"),
                 "age_months": cfg.get("baby_age_months", 3),
                 "setup_completed": cfg.get("setup_completed", False)
             }
         }
+
+    @app.get("/api/tunnel-status")
+    def get_tunnel_status():
+        cfg = load_config()
+        t_url = cfg.get("remote_access_url", "")
+        if tunnel_manager is not None:
+            st = tunnel_manager.get_status()
+            if not st.get("url") and t_url:
+                st["url"] = t_url
+                st["active"] = True
+            return st
+        return {"active": bool(t_url), "url": t_url, "type": "config"}
+
+    @app.post("/api/tunnel/restart")
+    def restart_tunnel():
+        if tunnel_manager is None:
+            return {"success": False, "error": "Chưa kích hoạt Tunnel Manager"}
+        new_url = tunnel_manager.restart()
+        if new_url:
+            alert_manager.update_config({"remote_access_url": new_url})
+            return {"success": True, "url": new_url}
+        return {"success": False, "error": "Không thể lấy link mới lúc này"}
 
     @app.get("/api/events")
     def api_events():
