@@ -726,6 +726,20 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "monthly_reminder": growth_tracker.should_trigger_monthly_reminder()
         }
 
+    @app.delete("/api/growth/{date_str}")
+    def delete_growth_api(date_str: str):
+        success = growth_tracker.delete_record(date_str)
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        gender = cfg.get("baby_gender", "boy")
+        growth_eval = growth_tracker.evaluate_growth(b_date, gender)
+        return {
+            "success": success,
+            "growth_evaluation": growth_eval,
+            "ai_analysis": growth_tracker.get_latest_ai_analysis(),
+            "monthly_reminder": growth_tracker.should_trigger_monthly_reminder()
+        }
+
     class ConfigUpdate(BaseModel):
         baby_name: str = None
         baby_age_months: int = None

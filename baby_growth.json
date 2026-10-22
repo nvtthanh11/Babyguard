@@ -19,19 +19,5 @@
     "height_cm": 55.5,
     "head_circ_cm": 37.5,
     "note": "Kỳ cân đo ngày 20/10"
-  },
-  {
-    "date": "2026-10-21",
-    "weight_kg": 3.2,
-    "height_cm": 52.0,
-    "head_circ_cm": null,
-    "note": ""
-  },
-  {
-    "date": "2026-10-22",
-    "weight_kg": 4.9,
-    "height_cm": 56.0,
-    "head_circ_cm": null,
-    "note": "Test save null head"
   }
 ]

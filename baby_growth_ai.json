@@ -1,17 +1,17 @@
 {
-  "analyzed_at": "08:50 - 22/10/2026",
-  "days_gap": 1,
-  "weight_gain_g": -1650,
-  "height_gain_cm": -3.5,
-  "velocity_str": "+-1650g (-1650.0g/ngày), +-3.5cm trong 1 ngày",
-  "status_badge": "Cần theo dõi thêm",
-  "velocity_evaluation_vi": "Kết quả ghi nhận giảm 1650g và 3.5cm chỉ trong vòng 1 ngày là hiện tượng bất thường, nhiều khả năng do sai số thiết bị hoặc thao tác cân đo. Ở lứa tuổi này, trẻ sơ sinh bình thường tăng trưởng từ 25-35g/ngày, do đó ba mẹ cần tiến hành cân đo lại để có số liệu chính xác nhất.",
-  "who_percentile_comparison_vi": "Theo chỉ số mới ghi nhận (3.2kg và 52.0cm), bé A Siu đang ở mức tiệm cận kênh dưới so với chuẩn trung vị WHO (4.5kg và 54.7cm), đòi hỏi cần được kiểm tra lại cân nặng thực tế để đánh giá đúng thể trạng.",
+  "analyzed_at": "09:11 - 22/10/2026",
+  "days_gap": 2,
+  "weight_gain_g": 100,
+  "height_gain_cm": 0.5,
+  "velocity_str": "+100g (50.0g/ngày), +0.5cm trong 2 ngày",
+  "status_badge": "Tăng trưởng rất tốt",
+  "velocity_evaluation_vi": "Tốc độ tăng trưởng trong 2 ngày qua là 50g/ngày, vượt trội hơn so với mức trung bình sinh lý của trẻ sơ sinh (25-35g/ngày). Cả cân nặng và chiều cao của bé đều có sự bứt phá tích cực, phản ánh chế độ dinh dưỡng và hấp thu đang cực kỳ hiệu quả.",
+  "who_percentile_comparison_vi": "Các chỉ số hiện tại của bé đều nằm trong khoảng bình thường và cao hơn mức trung vị của Tổ chức Y tế Thế giới (WHO), cho thấy bé phát triển thể chất toàn diện, cứng cáp và đạt chuẩn.",
   "recommendations_vi": [
-    "Đảm bảo tổng lượng sữa cho bé đạt khoảng 480 - 500ml/ngày (chia đều 7-8 cữ, khoảng 60-70ml/cữ) phù hợp với mức cân nặng 3.2kg và theo dõi sát phản xạ bú của bé.",
-    "Khuyến khích bé tập Tummy Time (nằm sấp) 2-3 lần/ngày khi bé thức, kết hợp massage toàn thân nhẹ nhàng để kích thích hệ tuần hoàn và tiêu hóa.",
-    "Bổ sung Vitamin D3 đều đặn 400 IU/ngày cho bé, đồng thời đưa bé đến cơ sở y tế cân lại bằng cân chuẩn để xác minh chính xác tốc độ phát triển."
+    "Duy trì cho bé bú mẹ hoàn toàn theo nhu cầu hoặc sữa công thức phù hợp với cân nặng 4.95kg (khoảng 700-750ml/ngày), chia đều từ 7-8 cữ bú/ngày.",
+    "Khuyến khích duy trì tập Tummy Time ngắn (1-2 phút/lần, vài lần mỗi ngày) khi bé thức để phát triển cơ cổ và vai, kết hợp massage dịu nhẹ giúp bé thư giãn.",
+    "Bổ sung đều đặn Vitamin D3 liều 400 IU/ngày để hỗ trợ hấp thu canxi và phát triển hệ xương tối ưu, đồng thời theo dõi lịch tiêm chủng đầy đủ cho bé."
   ],
-  "doctor_quote_vi": "Ba mẹ hãy giữ tinh thần thoải mái, kiểm tra lại cân nặng cho bé A Siu và tiếp tục chăm sóc con chu đáo trong từng cữ sữa nhé!",
-  "model_used": "gemini-3.6-flash"
+  "doctor_quote_vi": "Bé A Siu đang phát triển rất tuyệt vời, ba mẹ hãy cứ tiếp tục duy trì chế độ chăm sóc khoa học này nhé!",
+  "model_used": "gemini-3.5-flash-lite"
 }

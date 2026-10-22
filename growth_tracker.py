@@ -202,6 +202,7 @@ class GrowthTracker:
     def add_record(self, weight_kg: float, height_cm: float, head_circ_cm: float = None,
                    record_date_str: str = None, note: str = "") -> dict:
         """Thêm bản ghi cân nặng, chiều cao định kỳ mới."""
+        self._load()
         d = parse_date(record_date_str) or date.today()
         d_str = d.strftime("%Y-%m-%d")
 
@@ -225,7 +226,19 @@ class GrowthTracker:
         self._save()
         return new_entry
 
+    def delete_record(self, record_date_str: str) -> bool:
+        """Xóa bản ghi số đo theo ngày."""
+        self._load()
+        d_str = str(record_date_str).strip()
+        initial_count = len(self.records)
+        self.records = [r for r in self.records if r.get("date") != d_str]
+        if len(self.records) < initial_count:
+            self._save()
+            return True
+        return False
+
     def get_latest_record(self) -> dict:
+        self._load()
         if not self.records:
             return None
         return self.records[-1]
