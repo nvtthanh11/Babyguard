@@ -357,11 +357,11 @@ class GeminiHybridVerifier:
     # =========================================================================
     # 0. TẬN DỤNG QUOTA FREE ĐỂ GIÁM SÁT & HIỆU CHỈNH TRACKING AI LOCAL
     # =========================================================================
-    def should_run_tracking_audit(self, local_uncertain: bool = False, need_initial_crib_calib: bool = False) -> bool:
+    def should_run_tracking_audit(self, local_uncertain: bool = False, need_initial_crib_calib: bool = False, pose_changed: bool = False) -> bool:
         """
         Kiểm tra xem trong khoảng thời gian vừa rồi đã gọi API bao nhiêu lần.
-        Nếu mới khởi động (cần tự động căn chỉnh khung nôi lần đầu) hoặc đang rảnh (còn dư nhiều request Free)
-        -> Chủ động gửi hình lên Gemini để tự động căn chỉnh Khung Giường/Nôi VÀ kiểm tra khung Tracking Em Bé!
+        Nếu mới khởi động (cần tự động căn chỉnh khung nôi lần đầu), hoặc vừa giữ tư thế mới đủ 10 giây (pose_changed),
+        hoặc đang rảnh (còn dư nhiều request Free) -> Chủ động gửi hình lên Gemini để kiểm tra & hiệu chỉnh!
         """
         if not self.is_ready():
             return False
@@ -370,6 +370,8 @@ class GeminiHybridVerifier:
         elapsed = now - self.last_tracking_audit_time
         if need_initial_crib_calib:
             min_interval = 6.0
+        elif pose_changed:
+            min_interval = 10.0  # Sau khi tư thế mới giữ ổn định 10s, kích hoạt audit
         elif local_uncertain:
             min_interval = 20.0
         else:
@@ -962,12 +964,41 @@ Trả về đúng định dạng JSON:
             for idx, tip in enumerate(tips_vi, 1):
                 tele_msg += f" {idx}. {tip}\n"
 
+            story = sleep_summary.get("daily_story")
+            if story and story.get("title") and story.get("content"):
+                st_title = story.get("title")
+                st_src = story.get("source") or story.get("category") or "Bài học cuộc sống"
+                st_cnt = story.get("content")
+                st_lesson = story.get("parenting_lesson", "")
+                st_prompt = story.get("baby_talk_prompt", "")
+                tele_msg += (
+                    f"\n📖 <b>5. 1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA CHO CON:</b>\n"
+                    f"✨ <b>{st_title}</b> <i>({st_src})</i>\n"
+                    f"\"{st_cnt}\"\n"
+                    f"🌱 <b>Bài học dạy con:</b> <i>{st_lesson}</i>\n"
+                )
+                if st_prompt:
+                    tele_msg += f"💬 <b>Thủ thỉ cùng con:</b> <i>\"{st_prompt}\"</i>\n"
+
             tele_msg += (
                 f"\n📚 <b>TRÍCH NGUỒN NGHIÊN CỨU Y KHOA:</b>\n"
                 f"<i>• {citations[0]}\n"
                 f"• {citations[1]}\n"
                 f"• {citations[2]}</i>\n"
             )
+
+            # Cảnh báo Lịch tiêm chủng đến hạn (nếu có mũi tiêm cần tiêm hoặc quá hạn)
+            v_alert = sleep_summary.get("vaccine_alert_text", "")
+            if v_alert:
+                tele_msg = f"{v_alert}\n━━━━━━━━━━━━━━━━━━━\n\n" + tele_msg
+
+            # Khuyến cáo y tế bắt buộc theo chỉ thị
+            medical_disclaimer = (
+                "⚠️ <b>LƯU Ý Y KHOA:</b>\n"
+                "<i>Các nhận định trên chỉ là gợi ý tham khảo dành cho bố mẹ dựa trên các thông số mà hệ thống đo đạc được. "
+                "Để biết thêm thông tin chi tiết hoặc khi bé có biểu hiện bất thường, bố mẹ cần liên hệ với bác sĩ chuyên ngành Nhi.</i>"
+            )
+            tele_msg += f"\n{medical_disclaimer}\n"
 
             report = {
                 "date": sleep_summary.get("today_date"),
@@ -979,7 +1010,9 @@ Trả về đúng định dạng JSON:
                 "growth_analysis_vi": growth_vi,
                 "schedule_advice_vi": schedule_vi,
                 "tips_vi": tips_vi,
+                "daily_story": story,
                 "scientific_citations_vi": citations,
+                "medical_disclaimer_vi": "Các nhận định trên chỉ là gợi ý tham khảo dành cho bố mẹ dựa trên các thông số mà hệ thống đo đạc được. Để biết thêm thông tin chi tiết hoặc khi bé có biểu hiện bất thường, bố mẹ cần liên hệ với bác sĩ chuyên ngành Nhi.",
                 "telegram_text": tele_msg
             }
             return {"success": True, "report": report}
@@ -1084,6 +1117,7 @@ Hãy phân tích y khoa sâu sắc và đưa ra ĐỀ XUẤT CHO BA MẸ theo đ
                     "who_percentile_comparison_vi": data.get("who_percentile_comparison_vi", ""),
                     "recommendations_vi": data.get("recommendations_vi", []),
                     "doctor_quote_vi": data.get("doctor_quote_vi", "Chúc bé luôn mau ăn chóng lớn!"),
+                    "medical_disclaimer_vi": "Đây chỉ là gợi ý tham khảo dành cho bố mẹ dựa trên các thông số mà hệ thống đo đạc được. Để biết thêm thông tin chi tiết, bố mẹ cần liên hệ với bác sĩ chuyên ngành Nhi.",
                     "model_used": self.active_model
                 }
             }

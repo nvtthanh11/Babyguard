@@ -239,16 +239,19 @@ def main():
     host = config.get("web_host", "0.0.0.0")
 
     # 4. Remote Access Tunnel Manager (Cloudflare Quick Tunnel)
+    _last_notified_tunnel_url = [None]
     def on_tunnel_ready(url):
         alert_manager.update_config({"remote_access_url": url})
         print(f"[BabyGuard AI] 🌐 Link xem từ xa (4G/5G) đã sẵn sàng: {url}")
-        msg = (
-            "🍼 <b>BABYGUARD AI — KẾT NỐI TỪ XA ĐÃ SẴN SÀNG!</b>\n\n"
-            f"📱 <b>Link xem camera từ xa trên 4G/5G:</b>\n👉 <a href='{url}'>{url}</a>\n\n"
-            f"🏠 <b>Link xem tại nhà (WiFi):</b>\n👉 http://localhost:{port}\n\n"
-            "<i>Bố mẹ có thể bấm trực tiếp vào link trên điện thoại khi ở ngoài để xem bé mọi lúc mọi nơi!</i>"
-        )
-        alert_manager.send_telegram_text(msg)
+        if _last_notified_tunnel_url[0] != url:
+            _last_notified_tunnel_url[0] = url
+            msg = (
+                "🍼 <b>BABYGUARD AI — KẾT NỐI TỪ XA ĐÃ SẴN SÀNG!</b>\n\n"
+                f"📱 <b>Link xem camera từ xa trên 4G/5G:</b>\n👉 <a href='{url}'>{url}</a>\n\n"
+                f"🏠 <b>Link xem tại nhà (WiFi):</b>\n👉 http://localhost:{port}\n\n"
+                "<i>Bố mẹ có thể bấm trực tiếp vào link trên điện thoại khi ở ngoài để xem bé mọi lúc mọi nơi!</i>"
+            )
+            alert_manager.send_telegram_text(msg)
 
     tunnel_manager = TunnelManager(CONFIG_PATH, port=port, on_tunnel_ready=on_tunnel_ready)
     tunnel_manager.start()

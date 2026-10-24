@@ -1,23 +1,16 @@
 [
   {
-    "date": "2026-09-05",
-    "weight_kg": 3.35,
+    "date": "2026-09-29",
+    "weight_kg": 2.7,
     "height_cm": 50.0,
-    "head_circ_cm": 34.5,
-    "note": "Lúc chào đời"
+    "head_circ_cm": null,
+    "note": ""
   },
   {
-    "date": "2026-10-05",
-    "weight_kg": 4.6,
-    "height_cm": 54.8,
-    "head_circ_cm": 37.0,
-    "note": "Cữ đầy tháng (1 tháng tuổi)"
-  },
-  {
-    "date": "2026-10-20",
-    "weight_kg": 4.85,
-    "height_cm": 55.5,
-    "head_circ_cm": 37.5,
-    "note": "Kỳ cân đo ngày 20/10"
+    "date": "2026-10-23",
+    "weight_kg": 3.2,
+    "height_cm": 55.0,
+    "head_circ_cm": null,
+    "note": ""
   }
 ]

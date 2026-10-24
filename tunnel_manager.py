@@ -35,20 +35,21 @@ class TunnelManager:
         self.running = True
         threading.Thread(target=self._monitor_loop, daemon=True).start()
 
-    def stop(self):
+    def stop(self, kill_process: bool = False):
         self.running = False
-        with self.lock:
-            if self.tunnel_process:
-                try:
-                    self.tunnel_process.terminate()
-                    self.tunnel_process.wait(timeout=3)
-                except Exception:
+        if kill_process:
+            with self.lock:
+                if self.tunnel_process:
                     try:
-                        self.tunnel_process.kill()
+                        self.tunnel_process.terminate()
+                        self.tunnel_process.wait(timeout=3)
                     except Exception:
-                        pass
-                self.tunnel_process = None
-        self.current_url = None
+                        try:
+                            self.tunnel_process.kill()
+                        except Exception:
+                            pass
+                    self.tunnel_process = None
+            self.current_url = None
 
     def restart(self) -> str:
         with self.lock:
@@ -93,6 +94,16 @@ class TunnelManager:
             except Exception as e:
                 print(f"[TunnelManager] Lỗi lưu remote_access_url: {e}")
 
+    def _is_url_reachable(self, url: str) -> bool:
+        if not url or not (url.startswith("http://") or url.startswith("https://")):
+            return False
+        import requests
+        try:
+            r = requests.get(f"{url}/api/tunnel-status", timeout=4)
+            return r.status_code == 200
+        except Exception:
+            return False
+
     def _monitor_loop(self):
         while self.running:
             if not self.cloudflared_bin:
@@ -101,8 +112,21 @@ class TunnelManager:
                 continue
 
             custom_url = self._get_custom_url()
+            # 1. Kiểm tra nếu URL hiện tại trong config vẫn đang hoạt động tốt (tránh đổi link liên tục)
+            if custom_url and self._is_url_reachable(custom_url):
+                if self.current_url != custom_url:
+                    self.current_url = custom_url
+                    print(f"[TunnelManager] ♻️ Tái sử dụng link xem từ xa hiện có: {custom_url}")
+                    if self.on_tunnel_ready:
+                        try:
+                            self.on_tunnel_ready(custom_url)
+                        except Exception as e:
+                            print(f"[TunnelManager] Lỗi gọi on_tunnel_ready: {e}")
+                time.sleep(15)
+                continue
+
+            # 2. Nếu người dùng cấu hình domain riêng tĩnh (không phải trycloudflare)
             if custom_url and "trycloudflare.com" not in custom_url and ("http://" in custom_url or "https://" in custom_url):
-                # Người dùng tự cấu hình tên miền riêng hoặc VPN cố định (như Tailscale)
                 self.current_url = custom_url
                 if self.on_tunnel_ready:
                     try:

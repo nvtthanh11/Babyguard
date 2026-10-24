@@ -1,17 +1,17 @@
 {
-  "analyzed_at": "09:11 - 22/10/2026",
-  "days_gap": 2,
-  "weight_gain_g": 100,
-  "height_gain_cm": 0.5,
-  "velocity_str": "+100g (50.0g/ngày), +0.5cm trong 2 ngày",
-  "status_badge": "Tăng trưởng rất tốt",
-  "velocity_evaluation_vi": "Tốc độ tăng trưởng trong 2 ngày qua là 50g/ngày, vượt trội hơn so với mức trung bình sinh lý của trẻ sơ sinh (25-35g/ngày). Cả cân nặng và chiều cao của bé đều có sự bứt phá tích cực, phản ánh chế độ dinh dưỡng và hấp thu đang cực kỳ hiệu quả.",
-  "who_percentile_comparison_vi": "Các chỉ số hiện tại của bé đều nằm trong khoảng bình thường và cao hơn mức trung vị của Tổ chức Y tế Thế giới (WHO), cho thấy bé phát triển thể chất toàn diện, cứng cáp và đạt chuẩn.",
+  "analyzed_at": "15:22 - 24/10/2026",
+  "days_gap": 1,
+  "weight_gain_g": 0,
+  "height_gain_cm": 0.0,
+  "velocity_str": "+0g (0.0g/ngày), +0.0cm trong 1 ngày",
+  "status_badge": "Đạt chuẩn WHO",
+  "velocity_evaluation_vi": "Trong 1 ngày qua, cân nặng của bé duy trì ổn định ở mức 2.7 kg và chiều cao 50.0 cm. Do khoảng thời gian đo quá ngắn (1 ngày), sự thay đổi trọng lượng chưa rõ rệt, tuy nhiên trẻ sơ sinh trong tháng đầu thường cần đạt mức tăng trung bình 25-35g/ngày để phát triển tối ưu.",
+  "who_percentile_comparison_vi": "Cân nặng 2.7 kg và chiều cao 50.0 cm của bé nằm trong khoảng bình thường theo chuẩn WHO cho bé trai 25 ngày tuổi (Cân nặng từ 2.5 - 4.3 kg, Chiều cao từ 46.3 - 53.4 cm), cho thấy bé đang phát triển tiệm cận mức chuẩn.",
   "recommendations_vi": [
-    "Duy trì cho bé bú mẹ hoàn toàn theo nhu cầu hoặc sữa công thức phù hợp với cân nặng 4.95kg (khoảng 700-750ml/ngày), chia đều từ 7-8 cữ bú/ngày.",
-    "Khuyến khích duy trì tập Tummy Time ngắn (1-2 phút/lần, vài lần mỗi ngày) khi bé thức để phát triển cơ cổ và vai, kết hợp massage dịu nhẹ giúp bé thư giãn.",
-    "Bổ sung đều đặn Vitamin D3 liều 400 IU/ngày để hỗ trợ hấp thu canxi và phát triển hệ xương tối ưu, đồng thời theo dõi lịch tiêm chủng đầy đủ cho bé."
+    "Duy trì cho bé bú mẹ hoàn toàn theo nhu cầu hoặc bú sữa công thức với lượng khoảng 120-150 ml/kg/ngày (tương đương khoảng 350-400 ml/ngày chia thành 8-10 cữ nhỏ), đảm bảo bé bú đủ 8-12 cữ mỗi ngày và có số lượng tã ướt đạt ít nhất 6-8 cái/ngày.",
+    "Khuyến khích cho bé thực hiện Tummy Time (nằm sấp có kiểm soát) ngắn vài phút mỗi ngày khi thức để phát triển cơ cổ, kết hợp massage nhẹ nhàng giúp bé thư giãn và ngủ ngon giấc.",
+    "Bổ sung đều đặn Vitamin D3 với liều 400 IU/ngày để hỗ trợ hấp thu canxi tối ưu, đồng thời theo dõi sát sao biểu hiện bú, ngủ và lịch tái khám định kỳ của bé."
   ],
-  "doctor_quote_vi": "Bé A Siu đang phát triển rất tuyệt vời, ba mẹ hãy cứ tiếp tục duy trì chế độ chăm sóc khoa học này nhé!",
+  "doctor_quote_vi": "Ba mẹ hãy kiên nhẫn đồng hành cùng con mỗi ngày, chú trọng cung cấp đủ dinh dưỡng và yêu thương để bé A Siu phát triển khỏe mạnh và toàn diện nhất nhé!",
   "model_used": "gemini-3.5-flash-lite"
 }

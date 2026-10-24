@@ -190,6 +190,11 @@
                 <span>📏</span>
                 <span>Sổ Đo Tăng Trưởng WHO</span>
             </button>
+            <button onclick="switchTab('vaccine')" id="tab-btn-vaccine" class="tab-btn px-4 py-2 rounded-xl bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent flex items-center gap-2 whitespace-nowrap transition">
+                <span>💉</span>
+                <span>Sổ Tiêm Chủng</span>
+                <span id="nav-vaccine-badge" class="hidden px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full animate-pulse">!</span>
+            </button>
             <button onclick="switchTab('moments')" id="tab-btn-moments" class="tab-btn px-4 py-2 rounded-xl bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent flex items-center gap-2 whitespace-nowrap transition">
                 <span>📸</span>
                 <span>Khoảnh Khắc Đáng Yêu</span>
@@ -1087,6 +1092,158 @@
 
         </section>
 
+        <!-- ================= TAB: NATIONAL & PRIVATE VACCINATION TRACKER ================= -->
+        <section id="tab-vaccine" class="tab-content space-y-6 hidden">
+            
+            <!-- Header Section -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-bordercol">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">💉</span>
+                        <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Sổ Tiêm Chủng Quốc Gia & Vắc-xin Thiết Yếu</h2>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Đối chiếu Thông tư 52/2025/TT-BYT (Bộ Y Tế) & Phác đồ Vắc-xin Dịch vụ (VNVC / Pasteur) theo ngày sinh của bé.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <button onclick="openAddVaccineModal()" class="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                        <span>➕</span>
+                        <span>Thêm Mũi Ngoài Lịch / Kết Hợp</span>
+                    </button>
+                    <button onclick="fetchVaccines(true)" class="p-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs transition" title="Tải lại sổ tiêm">
+                        🔄
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Overview Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div class="p-4 rounded-3xl bg-cardbg border border-bordercol space-y-1">
+                    <span class="text-[11px] font-semibold text-slate-400">Tiến Độ Toàn Phác Đồ</span>
+                    <div class="flex items-baseline gap-2 pt-1">
+                        <span id="vac-stat-completed" class="text-2xl font-black text-emerald-400">--</span>
+                        <span id="vac-stat-total" class="text-xs text-slate-500">/ -- mũi</span>
+                    </div>
+                    <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden mt-2">
+                        <div id="vac-stat-pct-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-[0%] transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-3xl bg-cardbg border border-bordercol space-y-1">
+                    <span class="text-[11px] font-semibold text-slate-400">Trạng Thái Đến Hạn</span>
+                    <div class="flex items-baseline gap-2 pt-1">
+                        <span id="vac-stat-due" class="text-2xl font-black text-amber-400">0</span>
+                        <span class="text-xs text-slate-500">mũi cần chuẩn bị</span>
+                    </div>
+                    <p class="text-[10px] text-amber-400/80 pt-1">Trong 14 ngày tới</p>
+                </div>
+
+                <div class="p-4 rounded-3xl bg-cardbg border border-bordercol space-y-1">
+                    <span class="text-[11px] font-semibold text-slate-400">Mũi Tiêm Quá Hạn</span>
+                    <div class="flex items-baseline gap-2 pt-1">
+                        <span id="vac-stat-overdue" class="text-2xl font-black text-rose-400">0</span>
+                        <span class="text-xs text-slate-500">mũi trễ lịch</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 pt-1">Cần tiêm bù sớm nhất</p>
+                </div>
+
+                <div class="p-4 rounded-3xl bg-cardbg border border-bordercol space-y-1">
+                    <span class="text-[11px] font-semibold text-slate-400">Mốc Tiêm Kế Tiếp</span>
+                    <div class="pt-1 truncate">
+                        <span id="vac-stat-next-name" class="text-sm font-bold text-cyan-300 block truncate">Đang tải...</span>
+                        <span id="vac-stat-next-date" class="text-[11px] text-slate-400 font-medium">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Milestone Banner (Cảnh Báo Nổi Bật) -->
+            <div id="vac-next-milestone-banner" class="p-5 rounded-3xl bg-gradient-to-r from-amber-950/40 via-cardbg to-slate-900 border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-2xl flex-shrink-0">
+                        ⏰
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40" id="vac-banner-badge">SẮP ĐẾN HẠN TIÊM</span>
+                            <span class="text-xs text-slate-400" id="vac-banner-days-left">Còn 12 ngày</span>
+                        </div>
+                        <h3 class="text-base font-extrabold text-slate-100 mt-0.5" id="vac-banner-title">Mốc 2: Đủ 2 tháng tuổi (Dự kiến: 05/11/2026)</h3>
+                        <p class="text-xs text-slate-300 mt-1" id="vac-banner-desc">
+                            Giai đoạn then chốt: Vắc-xin 6 trong 1 (hoặc 5 trong 1) Mũi 1, Rota Virus Liều 1, Phế cầu khuẩn Mũi 1.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 text-right">
+                    <span class="text-[11px] text-slate-400 block">Khuyến nghị:</span>
+                    <span class="text-xs font-semibold text-amber-300">Đặt lịch hẹn VNVC / Trạm Y Tế trước 3-5 ngày</span>
+                </div>
+            </div>
+
+            <!-- Milestones List Container -->
+            <div id="vac-milestones-container" class="space-y-6">
+                <div class="p-8 text-center text-slate-500 text-xs">
+                    Đang tải danh mục lịch tiêm chủng của bé...
+                </div>
+            </div>
+
+            <!-- 1 Ngày 1 Câu Chuyện Ý Nghĩa & Dạy Con Card -->
+            <div class="p-6 rounded-3xl bg-gradient-to-r from-indigo-950/40 via-cardbg to-slate-900 border border-indigo-500/30 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl">📖</span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-extrabold text-base text-slate-100">1 Ngày 1 Câu Chuyện Ý Nghĩa Cho Con</h3>
+                                <span id="story-category-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">Triết lý sống & Dạy con</span>
+                            </div>
+                            <span id="story-source-text" class="text-[11px] text-indigo-300/80">Trích nguồn cổ tích, Kinh Thánh, Phật giáo và sách giáo dục sớm</span>
+                        </div>
+                    </div>
+                    <button onclick="refreshDailyStory()" id="btn-refresh-story" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95">
+                        <span>🔄</span>
+                        <span class="hidden sm:inline">Đổi Truyện Khác (AI)</span>
+                    </button>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                    <div class="flex items-baseline justify-between border-b border-slate-800/80 pb-2">
+                        <h4 id="story-title" class="text-sm font-bold text-slate-100">Đang tải câu chuyện hôm nay...</h4>
+                        <span id="story-quote" class="text-xs text-amber-300/90 italic hidden sm:inline">"Gieo hạt mầm yêu thương..."</span>
+                    </div>
+                    <p id="story-content" class="text-xs text-slate-300 leading-relaxed font-serif">
+                        Đang kết nối thư viện câu chuyện ý nghĩa...
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
+                        <div class="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/20">
+                            <span class="font-bold text-indigo-300 block mb-1">🌱 Bài học dạy con hôm nay:</span>
+                            <p id="story-parenting-lesson" class="text-[11px] text-slate-300 leading-relaxed">
+                                Đang cập nhật...
+                            </p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/20">
+                            <span class="font-bold text-emerald-300 block mb-1">💬 Lời thủ thỉ cùng con bên nôi:</span>
+                            <p id="story-baby-talk" class="text-[11px] text-slate-300 italic leading-relaxed">
+                                Đang cập nhật...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical Disclaimer Box -->
+            <div class="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/20 flex gap-3 items-start">
+                <span class="text-lg">⚠️</span>
+                <div class="text-[11px] text-slate-300 leading-relaxed space-y-1">
+                    <p class="font-bold text-rose-300">KHUYẾN CÁO Y KHOA DÀNH CHO BỐ MẸ:</p>
+                    <p>
+                        Lịch tiêm chủng và các gợi ý trên được thiết kế nhằm mục đích hỗ trợ phụ huynh quản lý và nhắc nhở lịch tiêm cho bé theo quy chuẩn Thông tư Bộ Y Tế Việt Nam và Viện Pasteur / VNVC. Đây chỉ là thông tin tham khảo, không thay thế cho quyết định khám sàng lọc trực tiếp của Bác sĩ Nhi khoa trước mỗi mũi tiêm. Khi bé có dấu hiệu sốt cao kéo dài hoặc phản ứng bất thường, bố mẹ cần liên hệ hoặc đưa bé đến cơ sở y tế gần nhất ngay lập tức.
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
         <!-- ================= TAB 4: CUTE MOMENTS ALBUM ================= -->
         <section id="tab-moments" class="tab-content space-y-6 hidden">
             
@@ -1601,6 +1758,108 @@
         </div>
     </div>
 
+    <!-- ================= POP-UP MODAL: CẢNH BÁO TIÊM CHỦNG ĐẾN HẠN (MỞ CAMERA LÊN LÀ HIỆN) ================= -->
+    <div id="vaccine-urgent-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-cardbg border border-amber-500/50 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div class="p-5 bg-gradient-to-r from-amber-950/90 to-slate-900 border-b border-amber-500/30 flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-2xl flex-shrink-0 animate-bounce">
+                    💉
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40">CẢNH BÁO CHỐNG QUÊN</span>
+                        <span class="text-xs text-amber-400 font-semibold" id="vac-modal-due-date"></span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-100 truncate mt-0.5" id="vac-modal-title">Bé Có Lịch Tiêm Chủng Đến Hạn!</h3>
+                </div>
+                <button onclick="dismissVaccineModal()" class="text-slate-400 hover:text-white text-lg font-bold p-1">✕</button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Hệ thống BabyGuard AI nhận diện <b id="vac-modal-baby-name">Bé A Siu</b> đang đến mốc tiêm chủng quan trọng. Để tránh trường hợp ba mẹ bận rộn quên lịch, hệ thống sẽ nhắc nhở mỗi khi mở Camera cho đến khi ba mẹ vào tích <b>"Đã chích"</b>:
+                </p>
+
+                <div id="vac-modal-items-list" class="space-y-2 bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800">
+                    <!-- Injected dynamically -->
+                </div>
+
+                <div class="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 flex gap-2.5 items-start">
+                    <span class="text-sm">💡</span>
+                    <p class="text-[11px] text-amber-200/90 leading-relaxed">
+                        <b>Lưu ý:</b> Bố mẹ kiểm tra bé không sốt, không bú quá no trước khi tiêm. Sau khi tiêm xong, nhớ bấm vào <b>"Mở Sổ Tiêm Chủng"</b> và tích chọn <b>"Đã tiêm"</b> để hệ thống tắt thông báo nổi này nhé!
+                    </p>
+                </div>
+
+                <div class="pt-2 flex flex-col sm:flex-row gap-2.5">
+                    <button onclick="openVaccineTabFromModal()" class="flex-1 py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                        <span>💉</span>
+                        <span>Mở Sổ Tiêm Chủng (Đã Tiêm Xong)</span>
+                    </button>
+                    <button onclick="dismissVaccineModal()" class="py-3 px-4 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition text-center">
+                        ⏰ Đã biết (Tắt thông báo lần này)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= POP-UP MODAL: THÊM MŨI TIÊM NGOÀI LỊCH / KẾT HỢP ================= -->
+    <div id="add-vaccine-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-cardbg border border-bordercol rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div class="p-4 bg-slate-950 border-b border-bordercol flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="text-emerald-400 text-base">💉</span>
+                    <h3 class="text-sm font-bold text-slate-100">Thêm Mũi Tiêm Ngoài Lịch / Kết Hợp</h3>
+                </div>
+                <button onclick="closeAddVaccineModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+            </div>
+            <form onsubmit="submitCustomVaccine(event)" class="p-5 space-y-4 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Mốc tuổi gắn kèm:</label>
+                    <select id="custom-vac-milestone" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                        <option value="milestone_birth">Mốc 1: Sơ sinh (0 - 30 ngày)</option>
+                        <option value="milestone_2m" selected>Mốc 2: Đủ 2 tháng tuổi</option>
+                        <option value="milestone_3m">Mốc 3: Đủ 3 tháng tuổi</option>
+                        <option value="milestone_4m">Mốc 4: Đủ 4 tháng tuổi</option>
+                        <option value="milestone_5_6m">Mốc 5: Đủ 5 - 6 tháng tuổi</option>
+                        <option value="milestone_9m">Mốc 6: Đủ 9 tháng tuổi</option>
+                        <option value="milestone_12m">Mốc 7: Đủ 12 tháng tuổi</option>
+                        <option value="milestone_18m">Mốc 8: Đủ 18 tháng tuổi</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Tên Vắc-xin <span class="text-rose-400">*</span>:</label>
+                    <input type="text" id="custom-vac-name" required placeholder="Ví dụ: Rota Rotateq liều 1, Não mô cầu ACYW..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Bệnh phòng ngừa:</label>
+                    <input type="text" id="custom-vac-disease" placeholder="Ví dụ: Tiêu chảy cấp, Viêm màng não mủ..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Ngày tiêm:</label>
+                        <input type="date" id="custom-vac-date" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="flex items-center pt-5">
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                            <input type="checkbox" id="custom-vac-completed" class="w-4 h-4 rounded text-emerald-500 focus:ring-0 bg-slate-900 border-slate-700">
+                            <span class="font-bold">Đã tiêm xong</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Ghi chú (Bác sĩ, cơ sở y tế, phản ứng sau tiêm...):</label>
+                    <textarea id="custom-vac-note" rows="2" placeholder="Ví dụ: Tiêm tại VNVC Hoàng Văn Thụ, bé sốt nhẹ 37.8°C sau tiêm..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeAddVaccineModal()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700">Hủy</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold">Lưu Mũi Tiêm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Core App Logic -->
     <script>
         let currentConfig = {};
@@ -1610,9 +1869,13 @@
         let hasCheckedOnboarding = false;
         let selectedCameraSourceType = 'usb';
         let lastPreviewResolvedSource = null;
+        let activeTab = 'live';
+        let currentVaccineAlert = null;
+        let hasDismissedVaccineModalForCamera = false;
 
         // Tab Switching
         function switchTab(tabId) {
+            activeTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.classList.remove('bg-cardbg', 'text-emerald-400', 'border-emerald-500/30');
@@ -1634,6 +1897,12 @@
                 setGrowthDefaultDate();
                 fetchGrowthData();
             }
+            if (tabId === 'vaccine') {
+                fetchVaccines();
+            }
+            if (tabId === 'live') {
+                checkTriggerCameraVaccineModal();
+            }
         }
 
         // Toast Notification
@@ -1647,6 +1916,441 @@
                 toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
                 toast.classList.remove('opacity-100', 'translate-y-0');
             }, 3000);
+        }
+
+        // =========================================================================
+        // PERSISTENT POP-UP MODAL: CẢNH BÁO TIÊM CHỦNG KHI MỞ CAMERA
+        // =========================================================================
+        function checkTriggerCameraVaccineModal() {
+            if (!currentVaccineAlert || !currentVaccineAlert.has_urgent_due) return;
+            if (activeTab !== 'live') return;
+            if (hasDismissedVaccineModalForCamera) return;
+
+            const modal = document.getElementById('vaccine-urgent-modal');
+            if (!modal) return;
+
+            const babyName = (currentConfig && currentConfig.baby_name) || 'Bé A Siu';
+            const bNameEl = document.getElementById('vac-modal-baby-name');
+            if (bNameEl) bNameEl.innerText = babyName;
+
+            const dueDateEl = document.getElementById('vac-modal-due-date');
+            if (dueDateEl) dueDateEl.innerText = currentVaccineAlert.next_due_date ? `Mốc: ${currentVaccineAlert.next_due_date}` : '';
+
+            const listEl = document.getElementById('vac-modal-items-list');
+            if (listEl && Array.isArray(currentVaccineAlert.items)) {
+                listEl.innerHTML = currentVaccineAlert.items.map(it => {
+                    const isOverdue = it.status === 'overdue';
+                    const badgeClass = isOverdue ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                    const badgeText = isOverdue ? `Quá hạn ${it.days_overdue || ''} ngày` : 'Đang đến hạn';
+                    return `
+                        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
+                            <div class="flex items-center gap-2 truncate pr-2">
+                                <span class="text-emerald-400">💉</span>
+                                <div class="truncate">
+                                    <b class="text-slate-100 block truncate">${it.name}</b>
+                                    <span class="text-[10px] text-slate-400 truncate block">${it.disease || ''}</span>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${badgeClass}">
+                                ${badgeText}
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function dismissVaccineModal() {
+            hasDismissedVaccineModalForCamera = true;
+            const modal = document.getElementById('vaccine-urgent-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function openVaccineTabFromModal() {
+            dismissVaccineModal();
+            switchTab('vaccine');
+        }
+
+        // =========================================================================
+        // SỔ TIÊM CHỦNG QUỐC GIA & VẮC-XIN THIẾT YẾU (VIETNAM VACCINE TRACKER)
+        // =========================================================================
+        let currentVaccineSchedule = null;
+
+        async function fetchVaccines(showToastMsg = false) {
+            try {
+                const res = await fetch('/api/vaccines');
+                const data = await res.json();
+                currentVaccineSchedule = data;
+
+                // Update Stats
+                const statComp = document.getElementById('vac-stat-completed');
+                const statTot = document.getElementById('vac-stat-total');
+                const statBar = document.getElementById('vac-stat-pct-bar');
+                const statDue = document.getElementById('vac-stat-due');
+                const statOverdue = document.getElementById('vac-stat-overdue');
+                const statNextName = document.getElementById('vac-stat-next-name');
+                const statNextDate = document.getElementById('vac-stat-next-date');
+
+                if (statComp) statComp.innerText = data.total_completed ?? '--';
+                if (statTot) statTot.innerText = `/ ${data.total_vaccines ?? '--'} mũi`;
+                if (statBar) statBar.style.width = `${data.completion_pct || 0}%`;
+
+                const dueCount = (data.due_or_overdue_vaccines || []).filter(v => v.status === 'due').length;
+                const overdueCount = (data.due_or_overdue_vaccines || []).filter(v => v.status === 'overdue').length;
+                if (statDue) statDue.innerText = dueCount;
+                if (statOverdue) statOverdue.innerText = overdueCount;
+
+                const nextMs = data.next_due_milestone;
+                if (statNextName) statNextName.innerText = nextMs ? nextMs.name : 'Đã hoàn thành các mốc';
+                if (statNextDate) statNextDate.innerText = nextMs ? `Dự kiến: ${nextMs.due_date}` : 'Rất tốt';
+
+                // Update Banner
+                const banner = document.getElementById('vac-next-milestone-banner');
+                if (banner && nextMs) {
+                    const badge = document.getElementById('vac-banner-badge');
+                    const daysLeft = document.getElementById('vac-banner-days-left');
+                    const title = document.getElementById('vac-banner-title');
+                    const desc = document.getElementById('vac-banner-desc');
+
+                    if (nextMs.status === 'overdue') {
+                        if (badge) {
+                            badge.innerText = 'CÓ MŨI QUÁ HẠN';
+                            badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                        }
+                    } else if (nextMs.status === 'due') {
+                        if (badge) {
+                            badge.innerText = 'ĐẾN HẠN TIÊM CHỦNG';
+                            badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+                        }
+                    } else {
+                        if (badge) {
+                            badge.innerText = 'MỐC TIÊM SẮP TỚI';
+                            badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40';
+                        }
+                    }
+
+                    if (daysLeft) {
+                        if (nextMs.days_diff < 0) daysLeft.innerText = `Trễ ${Math.abs(nextMs.days_diff)} ngày`;
+                        else if (nextMs.days_diff === 0) daysLeft.innerText = 'Đến hạn hôm nay';
+                        else daysLeft.innerText = `Còn ${nextMs.days_diff} ngày`;
+                    }
+                    if (title) title.innerText = `${nextMs.name} (Dự kiến: ${nextMs.due_date})`;
+                    if (desc) desc.innerText = nextMs.description || '';
+                    banner.classList.remove('hidden');
+                }
+
+                // Render Milestones List
+                renderMilestonesList(data.milestones || []);
+
+                // Load Daily Story
+                fetchDailyStory();
+
+                if (showToastMsg) showToast("Đã tải lại sổ tiêm chủng", "💉");
+            } catch (e) {
+                console.error("[Vaccines] Lỗi tải sổ tiêm:", e);
+                if (showToastMsg) showToast("Lỗi kết nối sổ tiêm", "⚠️");
+            }
+        }
+
+        function renderMilestonesList(milestones) {
+            const container = document.getElementById('vac-milestones-container');
+            if (!container) return;
+
+            if (!milestones.length) {
+                container.innerHTML = '<div class="p-8 text-center text-slate-500 text-xs">Không có dữ liệu mốc tiêm</div>';
+                return;
+            }
+
+            container.innerHTML = milestones.map((ms, msIdx) => {
+                const isCompleted = ms.status === 'completed';
+                const isOverdue = ms.status === 'overdue';
+                const isDue = ms.status === 'due';
+
+                let badgeClass = 'bg-slate-800 text-slate-400 border-slate-700';
+                if (isCompleted) badgeClass = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+                else if (isOverdue) badgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse';
+                else if (isDue) badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+
+                const totalInMs = (ms.vaccines || []).length;
+                const doneInMs = (ms.vaccines || []).filter(v => v.completed).length;
+
+                const vacRows = (ms.vaccines || []).map(v => {
+                    const checkedAttr = v.completed ? 'checked' : '';
+                    const dateVal = v.injected_date || '';
+                    const noteVal = (v.note || '').replace(/"/g, '&quot;');
+                    const isCustom = Boolean(v.is_custom);
+
+                    let statusPill = '';
+                    if (v.completed) {
+                        statusPill = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">Đã tiêm</span>';
+                    } else if (v.status === 'overdue') {
+                        statusPill = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 whitespace-nowrap">${v.status_text}</span>`;
+                    } else if (v.status === 'due') {
+                        statusPill = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 whitespace-nowrap">${v.status_text}</span>`;
+                    } else {
+                        statusPill = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 whitespace-nowrap">${v.status_text}</span>`;
+                    }
+
+                    return `
+                        <div class="p-3.5 sm:p-4 rounded-2xl ${v.completed ? 'bg-slate-950/30 border-slate-800/60' : 'bg-slate-950/70 border-slate-800'} border transition space-y-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                <div class="flex items-start gap-3">
+                                    <label class="flex items-center pt-0.5 cursor-pointer">
+                                        <input type="checkbox" ${checkedAttr} onchange="toggleVaccineCompleted('${v.id}', this.checked)" class="w-5 h-5 rounded-lg text-emerald-500 focus:ring-0 bg-slate-900 border-slate-700 cursor-pointer">
+                                    </label>
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-bold text-xs ${v.completed ? 'text-slate-300 line-through' : 'text-slate-100'}">${v.name}</span>
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">${v.category || ''}</span>
+                                            ${isCustom ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">Mũi ngoài lịch</span>' : ''}
+                                        </div>
+                                        <p class="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                                            🛡️ <b>Phòng bệnh:</b> ${v.disease || ''} • <i>${v.type || ''}</i>
+                                        </p>
+                                        <p class="text-[10px] text-slate-500 mt-0.5">
+                                            📅 <b>Lưu ý:</b> ${v.schedule_hint || ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 self-end sm:self-center">
+                                    ${statusPill}
+                                    ${isCustom ? `<button onclick="deleteCustomVaccine('${v.id}')" class="p-1 text-slate-500 hover:text-rose-400 text-xs transition" title="Xóa mũi này">🗑️</button>` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Injection Date & Note Edit Section -->
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-2 border-t border-slate-900 text-xs">
+                                <div class="sm:col-span-4 flex items-center gap-2">
+                                    <span class="text-[10px] text-slate-400 font-semibold whitespace-nowrap">Ngày tiêm:</span>
+                                    <input type="date" id="vac-date-${v.id}" value="${dateVal}" onchange="saveVaccineField('${v.id}')" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 text-slate-200 text-xs focus:outline-none focus:border-emerald-500">
+                                </div>
+                                <div class="sm:col-span-7 flex items-center gap-2">
+                                    <span class="text-[10px] text-slate-400 font-semibold whitespace-nowrap">Ghi chú:</span>
+                                    <input type="text" id="vac-note-${v.id}" value="${noteVal}" placeholder="Ví dụ: Bé sốt nhẹ, đã uống hạ sốt, tiêm tại VNVC..." onblur="saveVaccineField('${v.id}')" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 text-slate-200 text-xs focus:outline-none focus:border-emerald-500">
+                                </div>
+                                <div class="sm:col-span-1 flex justify-end items-center">
+                                    <button onclick="saveVaccineField('${v.id}', true)" class="w-full sm:w-auto p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs text-center transition" title="Lưu ghi chú">
+                                        💾
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-bordercol">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-extrabold text-sm sm:text-base text-slate-100">${ms.name}</h3>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${badgeClass}">
+                                        ${ms.status_text}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-0.5">
+                                    📅 <b>Dự kiến:</b> ${ms.due_date} • ${ms.description || ''}
+                                </p>
+                            </div>
+                            <div class="text-right flex items-center gap-3">
+                                <span class="text-xs font-semibold text-slate-300">
+                                    Tiến độ: <b class="text-emerald-400">${doneInMs}/${totalInMs} mũi</b>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            ${vacRows}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function toggleVaccineCompleted(vaccineId, completed) {
+            const dateInput = document.getElementById(`vac-date-${vaccineId}`);
+            const noteInput = document.getElementById(`vac-note-${vaccineId}`);
+            const injectedDate = dateInput ? dateInput.value : '';
+            const note = noteInput ? noteInput.value : '';
+
+            try {
+                const res = await fetch('/api/vaccines/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vaccine_id: vaccineId,
+                        completed: Boolean(completed),
+                        injected_date: injectedDate,
+                        note: note
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(completed ? "Đã đánh dấu Đã Tiêm!" : "Đã hủy đánh dấu tiêm", completed ? "✅" : "ℹ️");
+                    fetchVaccines();
+                    pollStatus();
+                } else {
+                    showToast("Lỗi lưu trạng thái tiêm", "⚠️");
+                }
+            } catch (e) {
+                console.error("Lỗi toggle tiêm:", e);
+                showToast("Lỗi kết nối", "⚠️");
+            }
+        }
+
+        async function saveVaccineField(vaccineId, showFeedback = false) {
+            const dateInput = document.getElementById(`vac-date-${vaccineId}`);
+            const noteInput = document.getElementById(`vac-note-${vaccineId}`);
+            const injectedDate = dateInput ? dateInput.value : '';
+            const note = noteInput ? noteInput.value : '';
+
+            let completed = false;
+            if (currentVaccineSchedule && Array.isArray(currentVaccineSchedule.milestones)) {
+                for (const ms of currentVaccineSchedule.milestones) {
+                    for (const v of ms.vaccines) {
+                        if (v.id === vaccineId) {
+                            completed = v.completed;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            try {
+                const res = await fetch('/api/vaccines/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vaccine_id: vaccineId,
+                        completed: completed,
+                        injected_date: injectedDate,
+                        note: note
+                    })
+                });
+                const data = await res.json();
+                if (data.success && showFeedback) {
+                    showToast("Đã lưu ghi chú mũi tiêm!", "💾");
+                }
+            } catch (e) {
+                console.error("Lỗi lưu ghi chú:", e);
+            }
+        }
+
+        function openAddVaccineModal() {
+            const modal = document.getElementById('add-vaccine-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeAddVaccineModal() {
+            const modal = document.getElementById('add-vaccine-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function submitCustomVaccine(e) {
+            e.preventDefault();
+            const milestoneId = document.getElementById('custom-vac-milestone').value;
+            const name = document.getElementById('custom-vac-name').value;
+            const disease = document.getElementById('custom-vac-disease').value;
+            const injectedDate = document.getElementById('custom-vac-date').value;
+            const completed = document.getElementById('custom-vac-completed').checked;
+            const note = document.getElementById('custom-vac-note').value;
+
+            try {
+                const res = await fetch('/api/vaccines/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        milestone_id: milestoneId,
+                        name: name,
+                        disease: disease,
+                        injected_date: injectedDate,
+                        note: note,
+                        completed: completed
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeAddVaccineModal();
+                    showToast("Đã thêm mũi tiêm ngoài lịch!", "💉");
+                    document.getElementById('custom-vac-name').value = '';
+                    document.getElementById('custom-vac-disease').value = '';
+                    document.getElementById('custom-vac-note').value = '';
+                    fetchVaccines();
+                    pollStatus();
+                } else {
+                    showToast("Không thể thêm mũi tiêm", "⚠️");
+                }
+            } catch (err) {
+                console.error("Lỗi thêm custom vaccine:", err);
+                showToast("Lỗi kết nối", "⚠️");
+            }
+        }
+
+        async function deleteCustomVaccine(vaccineId) {
+            if (!confirm("Bố mẹ có chắc chắn muốn xóa mũi tiêm này khỏi danh sách?")) return;
+            try {
+                const res = await fetch(`/api/vaccines/${vaccineId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Đã xóa mũi tiêm ngoài lịch", "🗑️");
+                    fetchVaccines();
+                    pollStatus();
+                }
+            } catch (e) {
+                showToast("Lỗi khi xóa", "⚠️");
+            }
+        }
+
+        // =========================================================================
+        // 1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA & BÀI HỌC DẠY CON
+        // =========================================================================
+        async function fetchDailyStory() {
+            try {
+                const res = await fetch('/api/daily-story');
+                const data = await res.json();
+                if (data.success && data.story) {
+                    renderDailyStory(data.story);
+                }
+            } catch (e) {
+                console.error("Lỗi lấy câu chuyện ngày:", e);
+            }
+        }
+
+        async function refreshDailyStory() {
+            const btn = document.getElementById('btn-refresh-story');
+            if (btn) btn.innerText = "⏳ Đang sáng tác...";
+            try {
+                const res = await fetch('/api/daily-story/refresh', { method: 'POST' });
+                const data = await res.json();
+                if (data.success && data.story) {
+                    renderDailyStory(data.story);
+                    showToast("Đã cập nhật câu chuyện ý nghĩa mới!", "✨");
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối AI", "⚠️");
+            } finally {
+                if (btn) btn.innerHTML = '<span>🔄</span><span class="hidden sm:inline">Đổi Truyện Khác (AI)</span>';
+            }
+        }
+
+        function renderDailyStory(story) {
+            const titleEl = document.getElementById('story-title');
+            const quoteEl = document.getElementById('story-quote');
+            const contentEl = document.getElementById('story-content');
+            const catBadge = document.getElementById('story-category-badge');
+            const srcText = document.getElementById('story-source-text');
+            const lessonEl = document.getElementById('story-parenting-lesson');
+            const babyTalkEl = document.getElementById('story-baby-talk');
+
+            if (titleEl) titleEl.innerText = story.title || 'Câu Chuyện Hôm Nay';
+            if (quoteEl) quoteEl.innerText = story.quote ? `"${story.quote}"` : '';
+            if (contentEl) contentEl.innerText = story.content || '';
+            if (catBadge) catBadge.innerText = story.category || 'Bài học cuộc sống';
+            if (srcText) srcText.innerText = story.source ? `Trích từ: ${story.source}` : '';
+            if (lessonEl) lessonEl.innerText = story.parenting_lesson || '';
+            if (babyTalkEl) babyTalkEl.innerText = story.baby_talk_prompt ? `"${story.baby_talk_prompt}"` : '';
         }
 
         function updateHeaderBabyProfile() {
@@ -1830,6 +2534,21 @@
                 const s = data.sleep || {};
                 const g = data.gemini || {};
                 const t = data.tunnel || {};
+
+                // Vaccine Alert Check
+                const vacAlert = data.vaccine_alert || {};
+                currentVaccineAlert = vacAlert;
+                const vacBadge = document.getElementById('nav-vaccine-badge');
+                if (vacAlert.has_urgent_due) {
+                    if (vacBadge) vacBadge.classList.remove('hidden');
+                    checkTriggerCameraVaccineModal();
+                } else {
+                    if (vacBadge) vacBadge.classList.add('hidden');
+                    const modal = document.getElementById('vaccine-urgent-modal');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        modal.classList.add('hidden');
+                    }
+                }
 
                 // Update Live Remote Access URL
                 if (t && t.url) {
@@ -4147,6 +4866,8 @@
             fetchConfig();
             fetchEvents();
             fetchGrowthData();
+            fetchVaccines();
+            pollStatus();
             setInterval(pollStatus, 1000);
             setInterval(fetchEvents, 5000);
         });

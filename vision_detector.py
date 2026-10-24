@@ -170,6 +170,13 @@ class VisionTracker:
         self.prev_keypoints_conf = None
         self.fps_actual = 0.0
         
+        # Tầng 1: Debounce thời gian theo dõi thay đổi tư thế ngủ (Bé phải giữ tư thế mới >= 10 giây mới gửi Gemini)
+        self.last_confirmed_pose = "Đang quét..."
+        self.pose_candidate = None
+        self.pose_candidate_start_time = 0.0
+        self.pose_debounce_sec = 10.0
+        self.pose_changed_and_stabilized = False
+
         self.prone_frame_count = 0
         self.worker_thread = None
 
@@ -975,8 +982,15 @@ class VisionTracker:
 
         need_init_crib = not getattr(self, "initial_crib_calibrated", False)
         local_uncertain = (not self.baby_detected) or (getattr(self, "lost_frames", 0) > 3)
-        if not self.gemini_verifier.should_run_tracking_audit(local_uncertain=local_uncertain, need_initial_crib_calib=need_init_crib):
+        pose_stabilized = getattr(self, "pose_changed_and_stabilized", False)
+        if not self.gemini_verifier.should_run_tracking_audit(
+            local_uncertain=local_uncertain, 
+            need_initial_crib_calib=need_init_crib,
+            pose_changed=pose_stabilized
+        ):
             return
+
+        self.pose_changed_and_stabilized = False
 
         self.pending_tracking_audit = True
         raw_copy = raw_frame.copy()
@@ -1005,11 +1019,11 @@ class VisionTracker:
                 if not res.get("audited", False):
                     return
 
-                # 1. Tự động căn chỉnh Khung Bảo Vệ Nôi / Tấm Đệm (Safe Zone 3D) nếu chưa khớp hoặc mới bật máy
+                # 1. Chỉ tự động căn chỉnh Khung Bảo Vệ Nôi / Tấm Đệm (Safe Zone 3D) lần đầu nếu chưa có cấu hình (need_init_crib)
+                # Tuyệt đối không tự ý ghi đè làm mất khung 3D phối cảnh đã được bố mẹ hiệu chuẩn chính xác
                 tsz_poly = res.get("true_safe_zone_polygon")
                 tsz = res.get("true_safe_zone")
-                crib_acc = res.get("crib_zone_accurate", True)
-                if (need_init_crib or not crib_acc) and (isinstance(tsz_poly, list) and len(tsz_poly) == 4):
+                if need_init_crib and (isinstance(tsz_poly, list) and len(tsz_poly) == 4):
                     try:
                         with self.lock:
                             self.safe_zone_polygon = [[round(float(p[0]), 3), round(float(p[1]), 3)] for p in tsz_poly]
@@ -1195,6 +1209,19 @@ class VisionTracker:
                 pose_text = "Nằm ngủ ngoan (Quấn chăn)"
             self.sleep_pose = pose_text
 
+            # Theo dõi thay đổi tư thế ngủ với Debounce 10 giây (Bé phải giữ tư thế mới >= 10s mới kích hoạt Gemini Audit)
+            now_t = time.time()
+            if pose_text != getattr(self, "last_confirmed_pose", None):
+                if getattr(self, "pose_candidate", None) != pose_text:
+                    self.pose_candidate = pose_text
+                    self.pose_candidate_start_time = now_t
+                elif (now_t - self.pose_candidate_start_time) >= getattr(self, "pose_debounce_sec", 10.0):
+                    self.last_confirmed_pose = pose_text
+                    self.pose_changed_and_stabilized = True
+            else:
+                self.pose_candidate = None
+                self.pose_candidate_start_time = now_t
+
             if self.prone_alert_enabled and pose_level == "danger":
                 self.prone_frame_count += 1
                 if self.prone_frame_count >= 35 and self.on_prone_callback: # ~3.0 seconds
@@ -1319,12 +1346,21 @@ class VisionTracker:
                     self._trigger_cute_moment_capture(frame, baby_face_info)
 
             if not getattr(self, "covered_face_active", False):
+                is_awake_mode = (self.sleep_tracker is not None and self.sleep_tracker.current_state == "AWAKE")
                 if self.smoothed_motion > self.motion_threshold:
-                    self.baby_status = "Cựa quậy / Thức giấc"
+                    self.baby_status = "Đang thức chơi / Vận động" if is_awake_mode else "Cựa quậy / Thức giấc"
                     if self.on_motion_callback:
                         self.on_motion_callback(self.smoothed_motion)
                 else:
-                    self.baby_status = "Đang ngủ ngoan"
+                    if is_awake_mode:
+                        if self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
+                            self.baby_status = "Nằm yên tĩnh (Vào giấc ngủ)"
+                        elif self.smoothed_motion < 2.5:
+                            self.baby_status = "Nằm yên tĩnh / Thư giãn"
+                        else:
+                            self.baby_status = "Đang thức tỉnh táo (Quan sát)"
+                    else:
+                        self.baby_status = "Đang ngủ ngoan"
 
             if baby_face_info is not None:
                 bfx, bfy, bfw, bfh = baby_face_info["bbox"]
@@ -1333,6 +1369,7 @@ class VisionTracker:
 
             self.last_baby_box = box_xyxy
             self.lost_frames = 0
+            self._draw_baby_skeleton(annotated, box_xyxy, kpts_xy, kpts_conf)
         elif baby_face_info is not None:
             # === DUAL-ENGINE FACE-FIRST TRACKING (ĐỊNH VỊ TỪ ĐẦU SANG CƠ THỂ BÉ XOAY THEO TRỤC SỐNG LƯNG) ===
             self.baby_detected = True
@@ -1431,7 +1468,15 @@ class VisionTracker:
                     if self.on_motion_callback:
                         self.on_motion_callback(self.smoothed_motion)
                 else:
-                    self.baby_status = "Đang thức tỉnh táo (Quan sát)" if is_awake_mode else "Đang ngủ ngoan"
+                    if is_awake_mode:
+                        if self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
+                            self.baby_status = "Nằm yên tĩnh (Vào giấc ngủ)"
+                        elif self.smoothed_motion < 2.5:
+                            self.baby_status = "Nằm yên tĩnh / Thư giãn"
+                        else:
+                            self.baby_status = "Đang thức tỉnh táo (Quan sát)"
+                    else:
+                        self.baby_status = "Đang ngủ ngoan"
 
             # Giữ nguyên video trong trẻo, không vẽ khung tracking đè lên người bé (Chỉ để lại viền nôi Safe Zone)
             pass
@@ -1612,7 +1657,52 @@ class VisionTracker:
         return annotated
 
     def _draw_baby_skeleton(self, img, box, kpts_xy, kpts_conf):
-        return
+        """
+        Vẽ trực quan cấu trúc khung xương bé phân chia màu sắc theo từng bộ phận cơ thể:
+        - Đầu & Khuôn mặt (Mũi, mắt, tai): Vàng hổ phách (0, 215, 255)
+        - Cột sống & Thân trên (2 vai -> 2 hông): Xanh ngọc lục bảo (80, 240, 120)
+        - Tay trái: Tím hoa cà (220, 120, 200)
+        - Tay phải: Xanh da trời (255, 190, 80)
+        - Chân trái: Hồng thắm (120, 80, 255)
+        - Chân phải: Cam rực rỡ (50, 140, 255)
+        - Đa giác ROI Lồng ngực / Bụng đo nhịp thở: Cyan phát sáng
+        """
+        if kpts_xy is None or kpts_conf is None or len(kpts_xy) < 17:
+            return
+
+        limbs = [
+            # Đầu & Mặt (Vàng hổ phách)
+            ((0, 1), (0, 215, 255)), ((0, 2), (0, 215, 255)), ((1, 3), (0, 215, 255)), ((2, 4), (0, 215, 255)),
+            # Thân mình & Cột sống (Xanh ngọc lục bảo)
+            ((5, 6), (80, 240, 120)), ((5, 11), (80, 240, 120)), ((6, 12), (80, 240, 120)), ((11, 12), (80, 240, 120)),
+            # Tay trái (Tím hoa cà)
+            ((5, 7), (220, 120, 200)), ((7, 9), (220, 120, 200)),
+            # Tay phải (Xanh da trời)
+            ((6, 8), (255, 190, 80)), ((8, 10), (255, 190, 80)),
+            # Chân trái (Hồng thắm)
+            ((11, 13), (120, 80, 255)), ((13, 15), (120, 80, 255)),
+            # Chân phải (Cam rực rỡ)
+            ((12, 14), (50, 140, 255)), ((14, 16), (50, 140, 255))
+        ]
+
+        # 1. Vẽ các đoạn xương nối nếu 2 đầu mút có độ tin cậy > 0.20
+        for (i1, i2), col in limbs:
+            if kpts_conf[i1] > 0.20 and kpts_conf[i2] > 0.20:
+                p1 = (int(kpts_xy[i1][0]), int(kpts_xy[i1][1]))
+                p2 = (int(kpts_xy[i2][0]), int(kpts_xy[i2][1]))
+                cv2.line(img, p1, p2, col, 2, cv2.LINE_AA)
+
+        # 2. Vẽ các khớp xương (Joints / Keypoints)
+        for i in range(17):
+            if kpts_conf[i] > 0.20:
+                px = int(kpts_xy[i][0])
+                py = int(kpts_xy[i][1])
+                cv2.circle(img, (px, py), 4, (255, 255, 255), -1, cv2.LINE_AA)
+                cv2.circle(img, (px, py), 2, (0, 0, 0), -1, cv2.LINE_AA)
+
+        # 3. Vẽ hộp xoay ROI Lồng ngực / Bụng (nếu có)
+        if getattr(self, "last_chest_poly", None) is not None:
+            cv2.polylines(img, [self.last_chest_poly], isClosed=True, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
 
     def _draw_hud(self, img):
         # Commercial Clean Feed: Không vẽ hộp đen đè lên góc video.

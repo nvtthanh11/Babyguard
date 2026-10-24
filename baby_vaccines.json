@@ -1,0 +1,30 @@
+{
+  "records": {
+    "hepb_birth": {
+      "completed": true,
+      "injected_date": "2026-09-29",
+      "note": "Đã tiêm tại BV Phụ Sản trong 24h sau sinh"
+    },
+    "bcg_birth": {
+      "completed": true,
+      "injected_date": "2026-09-15",
+      "note": "Đã tiêm BCG sơ sinh (vết mủ tốt)"
+    },
+    "6in1_m1": {
+      "completed": false,
+      "injected_date": "",
+      "note": "Tiêm tại VNVC"
+    },
+    "rota_m1": {
+      "completed": false,
+      "injected_date": "",
+      "note": "Uống Rotavin"
+    },
+    "pneumo_m1": {
+      "completed": false,
+      "injected_date": "",
+      "note": "Tiêm Synflorix"
+    }
+  },
+  "custom_vaccines": []
+}

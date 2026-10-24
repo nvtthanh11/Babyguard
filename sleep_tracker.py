@@ -137,7 +137,7 @@ class SleepTracker:
         now = time.time()
         with self.lock:
             self.gemini_awake_hint = bool(is_awake)
-            self.gemini_hint_until = now + 90.0
+            self.gemini_hint_until = now + 45.0
             if is_awake and self.current_state == "ASLEEP":
                 duration = int(now - self.state_since)
                 if duration >= 180:
@@ -155,6 +155,15 @@ class SleepTracker:
                 self.pending_state = None
                 self._save_data()
                 print("[SleepTracker] ☀️ Gemini xác nhận bé đang THỨC TỈNH TÁO -> Bắt đầu đo Cửa Sổ Thức (Wake Window).")
+            elif not is_awake and self.current_state != "ASLEEP":
+                self.current_state = "ASLEEP"
+                self.state_since = now
+                self.pending_state = None
+                self.rem_twitch_count = 0
+                self.current_rem_seconds = 0.0
+                self.current_deep_seconds = 0.0
+                self._save_data()
+                print("[SleepTracker] 😴 Gemini xác nhận bé đang NGỦ NGOAN -> Chuyển sang cữ ngủ (ASLEEP).")
 
     def update_state(self, baby_detected: bool, is_moving: bool, motion_score: float = 0.0):
         now = time.time()
@@ -198,18 +207,20 @@ class SleepTracker:
             else:
                 self.activity_level_pct = 0
 
-            # Xác định trạng thái mục tiêu dựa trên Mật độ vận động 60s + Gợi ý từ Gemini
+            # Xác định trạng thái mục tiêu dựa trên Mật độ vận động & Tiêu chí Bất Động Sinh Học
+            is_still = (motion_score < 4.0 and not is_moving and self.activity_level_pct < 12)
+
             if not baby_detected:
                 raw_target = "OUT"
             else:
                 if now < self.gemini_hint_until and self.gemini_awake_hint is True:
-                    raw_target = "AWAKE"
+                    raw_target = "AWAKE" if not is_still else "ASLEEP"
                 elif self.current_state == "ASLEEP":
-                    raw_target = "AWAKE" if (self.activity_level_pct >= 28 or is_moving) else "ASLEEP"
+                    raw_target = "AWAKE" if (self.activity_level_pct >= 28 or (is_moving and motion_score > 12.0)) else "ASLEEP"
                 elif self.current_state == "AWAKE":
-                    raw_target = "ASLEEP" if (self.activity_level_pct < 8 and not is_moving) else "AWAKE"
+                    raw_target = "ASLEEP" if is_still else "AWAKE"
                 else:
-                    raw_target = "AWAKE" if is_moving else "ASLEEP"
+                    raw_target = "ASLEEP" if is_still else "AWAKE"
 
             # Cập nhật thời lượng pha REM / Deep Sleep khi bé đang trong trạng thái ASLEEP
             if self.current_state == "ASLEEP" and baby_detected:
@@ -241,13 +252,14 @@ class SleepTracker:
                 else:
                     pending_dur = now - self.pending_since
                     if self.current_state == "ASLEEP" and raw_target == "AWAKE":
-                        required_wait = 35.0
+                        required_wait = 25.0
                     elif self.current_state == "ASLEEP" and raw_target == "OUT":
-                        required_wait = 30.0
-                    elif self.current_state == "AWAKE" and raw_target == "ASLEEP":
-                        required_wait = 60.0
+                        required_wait = 25.0
+                    elif self.current_state in ("AWAKE", "OUT") and raw_target == "ASLEEP":
+                        # Bé nằm bất động trong nôi: Chỉ cần 12-18s bất động là nhận diện đang ngủ
+                        required_wait = 12.0 if motion_score < 2.5 else 18.0
                     else:
-                        required_wait = 8.0
+                        required_wait = 6.0
 
                     if pending_dur >= required_wait:
                         duration = int(now - self.state_since)

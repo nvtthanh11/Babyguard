@@ -36,6 +36,13 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         with open(config_path, "w") as f:
             json.dump(cfg, f, indent=2, ensure_ascii=False)
 
+    from growth_tracker import GrowthTracker, calculate_exact_age
+    from vaccine_tracker import VaccineTracker
+    from daily_story_tracker import DailyStoryTracker
+    growth_tracker = GrowthTracker()
+    vaccine_tracker = VaccineTracker()
+    daily_story_tracker = DailyStoryTracker()
+
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
         return templates.TemplateResponse(request=request, name="index.html")
@@ -130,6 +137,18 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             tunnel_info["url"] = t_url
             tunnel_info["active"] = True
 
+        vaccine_summary = {}
+        if vaccine_tracker:
+            b_date = cfg.get("baby_birth_date", "2026-09-05")
+            v_sched = vaccine_tracker.get_schedule(b_date)
+            vaccine_summary = {
+                "has_urgent_due": v_sched.get("has_urgent_due", False),
+                "due_count": len(v_sched.get("due_or_overdue_vaccines", [])),
+                "items": v_sched.get("due_or_overdue_vaccines", [])[:3],
+                "next_milestone_name": v_sched.get("next_due_milestone", {}).get("name", "") if v_sched.get("next_due_milestone") else "",
+                "next_due_date": v_sched.get("next_due_milestone", {}).get("due_date", "") if v_sched.get("next_due_milestone") else ""
+            }
+
         return {
             "vision": vis_st,
             "audio": aud_st,
@@ -137,6 +156,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "sleep": sleep_st,
             "gemini": gemini_verifier.get_status() if gemini_verifier else {},
             "tunnel": tunnel_info,
+            "vaccine_alert": vaccine_summary,
             "baby_profile": {
                 "name": cfg.get("baby_name", "Bé Siu"),
                 "age_months": cfg.get("baby_age_months", 3),
@@ -303,8 +323,6 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         return {"success": success, "playlist": music_player.get_playlist()}
 
     # --- SLEEP ANALYTICS & MORNING 07:00 PEDIATRIC AI REPORT APIS ---
-    from growth_tracker import GrowthTracker, calculate_exact_age
-    growth_tracker = GrowthTracker()
     _ai_sleep_State = {"generating": False, "last_auto_date": ""}
 
     def _enrich_summary_with_health_metrics(summary_dict: dict) -> dict:
@@ -337,6 +355,25 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         hist = summary_dict.get("daily_history", [])
         if hist and len(hist) > 0:
             summary_dict["yesterday_sleep"] = hist[0]
+
+        # Bổ sung cảnh báo Lịch Tiêm Chủng Quốc Gia & Dịch Vụ
+        if vaccine_tracker:
+            v_alert = vaccine_tracker.format_telegram_alert(b_date, cfg.get("baby_name", "Bé"))
+            if v_alert:
+                summary_dict["vaccine_alert_text"] = v_alert
+
+        # Bổ sung 1 Ngày 1 Câu Chuyện Ý Nghĩa & Dạy Con
+        if daily_story_tracker:
+            try:
+                story = daily_story_tracker.get_today_story(
+                    gemini_verifier=gemini_verifier,
+                    baby_name=cfg.get("baby_name", "Bé"),
+                    age_display=age_info.get("age_display", "")
+                )
+                if story:
+                    summary_dict["daily_story"] = story
+            except Exception as e:
+                print(f"[WebServer] Lỗi lấy câu chuyện ngày: {e}")
 
         return summary_dict
 
@@ -739,6 +776,102 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "ai_analysis": growth_tracker.get_latest_ai_analysis(),
             "monthly_reminder": growth_tracker.should_trigger_monthly_reminder()
         }
+
+    # =========================================================================
+    # VACCINE TRACKER REST APIS (LỊCH TIÊM CHỦNG QUỐC GIA & DỊCH VỤ)
+    # =========================================================================
+    class VaccineUpdateRequest(BaseModel):
+        vaccine_id: str
+        completed: bool
+        injected_date: str = ""
+        note: str = ""
+
+    class VaccineAddRequest(BaseModel):
+        milestone_id: str = "milestone_2m"
+        name: str
+        disease: str = ""
+        injected_date: str = ""
+        note: str = ""
+        completed: bool = False
+
+    @app.get("/api/vaccines")
+    def get_vaccines():
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        sched = vaccine_tracker.get_schedule(b_date)
+        sched["baby_name"] = cfg.get("baby_name", "Bé A Siu")
+        return sched
+
+    @app.post("/api/vaccines/update")
+    def update_vaccine_status(req: VaccineUpdateRequest):
+        success = vaccine_tracker.update_record(
+            vaccine_id=req.vaccine_id,
+            completed=req.completed,
+            injected_date=req.injected_date,
+            note=req.note
+        )
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        return {
+            "success": success,
+            "schedule": vaccine_tracker.get_schedule(b_date)
+        }
+
+    @app.post("/api/vaccines/add")
+    def add_custom_vaccine(req: VaccineAddRequest):
+        new_item = vaccine_tracker.add_custom_vaccine(
+            milestone_id=req.milestone_id,
+            name=req.name,
+            disease=req.disease,
+            injected_date=req.injected_date,
+            note=req.note,
+            completed=req.completed
+        )
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        return {
+            "success": True,
+            "item": new_item,
+            "schedule": vaccine_tracker.get_schedule(b_date)
+        }
+
+    @app.delete("/api/vaccines/{vaccine_id}")
+    def delete_custom_vaccine(vaccine_id: str):
+        success = vaccine_tracker.delete_custom_vaccine(vaccine_id)
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        return {
+            "success": success,
+            "schedule": vaccine_tracker.get_schedule(b_date)
+        }
+
+    # =========================================================================
+    # DAILY STORY REST APIS (1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA & DẠY CON)
+    # =========================================================================
+    @app.get("/api/daily-story")
+    def get_daily_story():
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        age_info = calculate_exact_age(b_date)
+        story = daily_story_tracker.get_today_story(
+            gemini_verifier=gemini_verifier,
+            baby_name=cfg.get("baby_name", "Bé"),
+            age_display=age_info.get("age_display", "")
+        )
+        return {"success": True, "story": story}
+
+    @app.post("/api/daily-story/refresh")
+    def refresh_daily_story():
+        cfg = load_config()
+        b_date = cfg.get("baby_birth_date", "2026-09-05")
+        age_info = calculate_exact_age(b_date)
+        story = daily_story_tracker.get_today_story(
+            gemini_verifier=gemini_verifier,
+            baby_name=cfg.get("baby_name", "Bé"),
+            age_display=age_info.get("age_display", ""),
+            force_refresh=True
+        )
+        return {"success": True, "story": story}
 
     class ConfigUpdate(BaseModel):
         baby_name: str = None
