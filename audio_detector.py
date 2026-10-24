@@ -48,6 +48,7 @@ class AudioCryDetector:
         self.raw_cry_probability = 0.0
         self.cry_probability = 0.0
         self.cough_probability = 0.0
+        self.cry_consecutive_frames = 0
         self.top_sound_label = "Yên tĩnh"
         self.is_running = False
         self.stream = None
@@ -129,26 +130,26 @@ class AudioCryDetector:
     @staticmethod
     def _calibrate_cry(raw_score: float) -> float:
         """Chuẩn hóa xác suất khóc của trẻ từ đầu ra sigmoid của YAMNet:
-        - raw <= 0.06: Nhiễu nền phòng / im lặng -> Khóa cứng 0% (triệt tiêu lỗi báo 9% ảo)
-        - 0.06 -> 0.14: Bé bắt đầu e e, mếu máo, khóc thút thít (10% -> 45%)
-        - 0.14 -> 0.28: Bé khóc rõ rệt (45% -> 80%)
-        - >= 0.28: Bé khóc to, gào thét (80% -> 100%)
+        - raw <= 0.10: Nhiễu nền phòng / tiếng nói chuyện nhẹ / tiếng thở dài -> Khóa cứng 0%
+        - 0.10 -> 0.20: Bé cựa mình / rên nhẹ -> 5% -> 25% (dưới ngưỡng báo động 30%)
+        - 0.20 -> 0.35: Bé bắt đầu khóc / khóc rõ -> 30% -> 75%
+        - >= 0.35: Bé khóc to / gào thét -> 75% -> 100%
         """
-        if raw_score <= 0.06:
+        if raw_score <= 0.10:
             return 0.0
-        elif raw_score <= 0.14:
-            return 0.10 + (raw_score - 0.06) / (0.14 - 0.06) * 0.35
-        elif raw_score <= 0.28:
-            return 0.45 + (raw_score - 0.14) / (0.28 - 0.14) * 0.35
+        elif raw_score <= 0.20:
+            return 0.05 + (raw_score - 0.10) / 0.10 * 0.20
+        elif raw_score <= 0.35:
+            return 0.30 + (raw_score - 0.20) / 0.15 * 0.45
         else:
-            return min(1.0, 0.80 + (raw_score - 0.28) * 0.8)
+            return min(1.0, 0.75 + (raw_score - 0.35) * 0.8)
 
     @staticmethod
     def _calibrate_cough(raw_score: float) -> float:
-        if raw_score <= 0.06:
+        if raw_score <= 0.08:
             return 0.0
         elif raw_score <= 0.25:
-            return (raw_score - 0.06) / 0.19 * 0.70
+            return (raw_score - 0.08) / 0.17 * 0.70
         else:
             return min(1.0, 0.70 + (raw_score - 0.25) * 1.0)
 
@@ -178,20 +179,37 @@ class AudioCryDetector:
 
                     # Điểm số thô của các nhóm âm thanh trong phòng ngủ
                     raw_cry = float(max(scores[c] for c in self.target_classes))
+                    infant_cry = float(scores[20])  # YAMNet class 20: Baby cry, infant cry
                     raw_cough = float(max(scores[c] for c in self.cough_classes))
                     raw_speech = float(max(scores[c] for c in self.speech_classes))
                     raw_laugh = float(max(scores[c] for c in self.laughter_classes))
                     raw_music = float(max(scores[c] for c in self.music_classes))
 
                     self.raw_cry_probability = raw_cry
-                    cal_cry = self._calibrate_cry(raw_cry)
+
+                    # BỘ LỌC CHỐNG BÁO ĐỘNG GIẢ TIẾNG NGƯỜI LỚN NÓI CHUYỆN:
+                    # Khi người lớn trò chuyện, YAMNet thường rò rỉ nhẹ sang class 21 (Whimper) hoặc 22 (Wail) ~ 0.12 - 0.16.
+                    # Nếu tiếng nói rõ ràng (raw_speech >= 0.20) và lớn hơn hoặc xấp xỉ tiếng khóc, đồng thời không có infant_cry đặc hiệu:
+                    is_adult_speech = (raw_speech >= 0.20) and (raw_speech >= raw_cry * 0.90) and (infant_cry < 0.12)
+
+                    if is_adult_speech:
+                        cal_cry = 0.0
+                        self.cry_consecutive_frames = 0
+                        self.cry_probability = max(0.0, self.cry_probability - 0.08)
+                    else:
+                        cal_cry = self._calibrate_cry(raw_cry)
+                        if cal_cry >= self.cry_threshold or infant_cry >= 0.12:
+                            self.cry_consecutive_frames += 1
+                        else:
+                            self.cry_consecutive_frames = max(0, self.cry_consecutive_frames - 1)
+
                     cal_cough = self._calibrate_cough(raw_cough)
 
-                    # --- PEAK-HOLD ENVELOPE FOLLOWER (FAST ATTACK, SLOW DECAY) ---
+                    # --- PEAK-HOLD ENVELOPE FOLLOWER ---
                     if cal_cry > self.cry_probability:
-                        self.cry_probability = 0.85 * cal_cry + 0.15 * self.cry_probability
+                        self.cry_probability = 0.80 * cal_cry + 0.20 * self.cry_probability
                     else:
-                        self.cry_probability = max(0.0, self.cry_probability - 0.05)
+                        self.cry_probability = max(0.0, self.cry_probability - 0.06)
                         if self.cry_probability < 0.05:
                             self.cry_probability = 0.0
 
@@ -202,22 +220,16 @@ class AudioCryDetector:
                         if self.cough_probability < 0.05:
                             self.cough_probability = 0.0
 
-                    # --- WHITELIST NHÃN ÂM THANH PHÒNG NGỦ (TRIỆT TIÊU 100% NHÃN RÁC "ANIMAL", "VEHICLE"...) ---
-                    if self.cry_probability >= 0.35 or raw_cry >= 0.14:
-                        if raw_speech >= 0.25:
-                            top_label = "Bé khóc (Bố mẹ đang dỗ)"
-                        elif scores[21] >= 0.12:
-                            top_label = "Bé khóc thút thít"
-                        else:
-                            top_label = "Bé đang khóc"
-                    elif self.cough_probability >= 0.30 or raw_cough >= 0.18:
-                        if scores[39] >= 0.18:
-                            top_label = "Tiếng thở gấp"
-                        else:
-                            top_label = "Tiếng ho / sặc"
+                    # --- GÁN NHÃN ÂM THANH PHÒNG NGỦ CHÍNH XÁC ---
+                    if is_adult_speech:
+                        top_label = "Tiếng trò chuyện"
+                    elif self.cry_probability >= self.cry_threshold and self.cry_consecutive_frames >= 2:
+                        top_label = "Bé đang khóc" if (raw_cry >= 0.25 or infant_cry >= 0.15) else "Bé khóc thút thít"
+                    elif self.cough_probability >= 0.30 or raw_cough >= 0.20:
+                        top_label = "Tiếng thở gấp" if scores[39] >= 0.20 else "Tiếng ho / sặc"
                     elif raw_laugh >= 0.25:
                         top_label = "Tiếng bé cười"
-                    elif raw_speech >= 0.25:
+                    elif raw_speech >= 0.22:
                         top_label = "Tiếng trò chuyện"
                     elif raw_music >= 0.25:
                         top_label = "Nhạc ru ngủ"
@@ -228,8 +240,8 @@ class AudioCryDetector:
 
                     self.top_sound_label = top_label
 
-                    # Kích hoạt callback cảnh báo khi vượt ngưỡng
-                    if self.cry_alert_enabled and self.cry_probability >= self.cry_threshold and self.on_cry_callback:
+                    # Kích hoạt callback cảnh báo khi tiếng khóc DUY TRÌ LIÊN TỤC >= 2 FRAME (>= 1.0 giây)
+                    if self.cry_alert_enabled and self.cry_probability >= self.cry_threshold and self.cry_consecutive_frames >= 2 and self.on_cry_callback:
                         self.on_cry_callback(self.cry_probability, vol, top_label)
 
                     if self.cough_alert_enabled and self.cough_probability >= self.cough_threshold and self.on_cough_callback:
@@ -238,8 +250,9 @@ class AudioCryDetector:
                 except Exception as e:
                     print(f"[AudioDetector] Inference error: {e}")
             else:
-                self.cry_probability = max(0.0, self.cry_probability - 0.04)
-                self.cough_probability = max(0.0, self.cough_probability - 0.04)
+                self.cry_consecutive_frames = 0
+                self.cry_probability = max(0.0, self.cry_probability - 0.05)
+                self.cough_probability = max(0.0, self.cough_probability - 0.05)
                 self.top_sound_label = "Yên tĩnh"
 
             # Sleep remaining time to maintain ~2Hz frequency
@@ -310,7 +323,7 @@ class AudioCryDetector:
         return {
             "volume": round(self.current_volume * 100, 1),
             "cry_probability": round(self.cry_probability * 100, 1),
-            "is_crying": self.cry_probability >= self.cry_threshold,
+            "is_crying": bool(self.cry_probability >= self.cry_threshold and getattr(self, "cry_consecutive_frames", 0) >= 2),
             "cough_probability": round(self.cough_probability * 100, 1),
             "is_coughing": self.cough_probability >= self.cough_threshold,
             "top_sound": self.top_sound_label

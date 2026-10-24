@@ -247,25 +247,27 @@ class VisionTracker:
         bcx = (xyxy[0] + xyxy[2]) / 2.0
         bcy = (xyxy[1] + xyxy[3]) / 2.0
 
-        # Kiểm tra trực tiếp trọng tâm cơ thể với đa giác Safe Zone do người dùng cài đặt (loại bỏ hoàn toàn trục Y cố định cũ)
+        # Kiểm tra trực tiếp trọng tâm cơ thể với đa giác Safe Zone do người dùng cài đặt
         in_crib_zone = self._is_point_in_safe_zone(bcx, bcy, frame_w, frame_h, margin_px=35.0)
         touches_border = (xyxy[0] < 20 or xyxy[1] < 20 or xyxy[2] > (frame_w - 20) or xyxy[3] > (frame_h - 20))
 
         # Tiêu chuẩn Người Lớn (Adult):
         # 1. Thân hình to lớn vượt kích thước trẻ sơ sinh:
-        #    - shoulder_w > 125.0px (người lớn thường > 180px, bé sơ sinh < 100px)
-        #    - area_ratio > 0.15 (diện tích người lớn > 15-35% khung hình, bé chỉ 5-11%)
-        #    - h_ratio > 0.62 (người lớn cao lớn trùm gần hết khung hình)
-        #    - h_ratio > 0.50 kết hợp shoulder_w > 105.0px
-        # 2. Hoặc người lớn từ ngoài mép màn hình thò vào (touches_border và box_w > 320 hoặc box_h > 420)
+        #    - shoulder_w > 120.0px (người lớn thường > 170px, bé sơ sinh < 95px)
+        #    - area_ratio > 0.14 (diện tích người lớn > 14-35% khung hình, bé chỉ 5-11%)
+        #    - h_ratio > 0.58 (người lớn cao lớn trùm gần hết khung hình)
+        #    - h_ratio > 0.48 kết hợp shoulder_w > 100.0px
+        # 2. Hoặc người lớn từ ngoài mép màn hình thò vào / ngồi bên mép:
+        #    - touches_border và (box_w > 180 hoặc box_h > 220 hoặc shoulder_w > 90.0 hoặc not in_crib_zone)
         # 3. Hoặc nằm hoàn toàn ngoài vùng Safe Zone của bé
-        is_adult = (shoulder_w > 125.0) or (area_ratio > 0.15) or (h_ratio > 0.62) or \
-                   (h_ratio > 0.50 and shoulder_w > 105.0) or \
-                   (touches_border and (box_w > 320 or box_h > 420)) or (not in_crib_zone)
+        is_adult = (shoulder_w > 120.0) or (area_ratio > 0.14) or (h_ratio > 0.58) or \
+                   (h_ratio > 0.48 and shoulder_w > 100.0) or \
+                   (touches_border and (box_w > 180 or box_h > 220 or shoulder_w > 90.0 or not in_crib_zone)) or (not in_crib_zone)
 
         return {
             "is_adult": is_adult,
             "in_crib_zone": in_crib_zone,
+            "touches_border": touches_border,
             "h_ratio": h_ratio,
             "shoulder_w": shoulder_w,
             "area_ratio": area_ratio,
@@ -577,13 +579,20 @@ class VisionTracker:
             torso_conf = float(np.mean(kpts[5:7, 2]))
             valid_kpts = int(np.sum(kpts[:, 2] > 0.25))
 
-            is_real_human = (face_conf >= 0.15 or torso_conf >= 0.15) and valid_kpts >= 3
+            is_real_human = (face_conf >= 0.15 or torso_conf >= 0.18) and valid_kpts >= 3
             if not is_real_human:
                 continue
 
             human_score = conf + (face_conf * 1.5) + (torso_conf * 1.2)
 
-            if person_info["is_adult"]:
+            # Tiêu chuẩn nghiêm ngặt của EM BÉ (Baby Candidate):
+            # Bé sơ sinh trong nôi PHẢI có khuôn mặt (face_conf >= 0.15) HOẶC đầy đủ 2 vai (torso_conf >= 0.20 & shoulder_w >= 28px).
+            # Nếu không có mặt và không có vai rõ rệt -> Đây là tay/chân lẻ loi của người lớn hoặc đồ vật!
+            sh_w = person_info.get("shoulder_w", 0.0)
+            has_baby_anatomy = (face_conf >= 0.15) or (torso_conf >= 0.20 and sh_w >= 28.0)
+            is_border_touch = person_info.get("touches_border", False) and (face_conf < 0.20)
+
+            if person_info["is_adult"] or is_border_touch or (not has_baby_anatomy):
                 adult_candidates.append((idx, human_score, xyxy.astype(int), person_info))
             else:
                 if person_info["in_crib_zone"]:
@@ -1113,6 +1122,18 @@ class VisionTracker:
                     self.initial_crib_calibrated = True
 
                 if not res.get("baby_present", True):
+                    with self.lock:
+                        self.baby_detected = False
+                        self.adult_holding_baby = False
+                        self.baby_stable_detected = False
+                        self.last_baby_box = None
+                        self.gemini_anchor_box = None
+                        self.gemini_anchor_until = 0.0
+                        self.is_near_edge = False
+                        self.danger_zone_frame_count = 0
+                        if self.sleep_pose not in ("Người lớn trong phòng", "Ngoài giường"):
+                            self.sleep_pose = "Ngoài giường"
+                            self.baby_status = "Không có em bé trong nôi"
                     return
 
                 if self.sleep_tracker is not None and "is_baby_awake" in res:
@@ -1126,29 +1147,34 @@ class VisionTracker:
                 # 2. Nếu AI Local đang đóng khung lệch (hoặc chưa bắt được bé), hiệu chỉnh ngay theo tọa độ của Gemini!
                 if (not acc or score < 78 or not self.baby_detected) and isinstance(tbox, list) and len(tbox) == 4:
                     xmin, ymin, xmax, ymax = [float(v) for v in tbox]
-                    gx1 = int(np.clip(min(xmin, xmax) * w, 0, w - 20))
-                    gy1 = int(np.clip(min(ymin, ymax) * h, 0, h - 20))
-                    gx2 = int(np.clip(max(xmin, xmax) * w, gx1 + 40, w))
-                    gy2 = int(np.clip(max(ymin, ymax) * h, gy1 + 40, h))
-                    g_box = np.array([gx1, gy1, gx2, gy2], dtype=int)
+                    # BẢO VỆ CHỐNG HALLUCINATION:
+                    # Nếu Gemini đề xuất khung chữ nhật dính sát mép trên màn hình (ymin < 0.02 và ymax < 0.22) hoặc mép dưới (ymax > 0.98),
+                    # đây là người lớn thò tay/chân vào, tuyệt đối không gán làm anchor em bé!
+                    is_border_strip = (ymin < 0.02 and (ymax - ymin) < 0.25) or (ymax > 0.98 and (ymax - ymin) < 0.25)
+                    if not is_border_strip:
+                        gx1 = int(np.clip(min(xmin, xmax) * w, 0, w - 20))
+                        gy1 = int(np.clip(min(ymin, ymax) * h, 0, h - 20))
+                        gx2 = int(np.clip(max(xmin, xmax) * w, gx1 + 40, w))
+                        gy2 = int(np.clip(max(ymin, ymax) * h, gy1 + 40, h))
+                        g_box = np.array([gx1, gy1, gx2, gy2], dtype=int)
 
-                    dir_map = {
-                        "right": np.array([-1.0, 0.0], dtype=float),
-                        "left": np.array([1.0, 0.0], dtype=float),
-                        "up": np.array([0.0, 1.0], dtype=float),
-                        "down": np.array([0.0, -1.0], dtype=float),
-                    }
-                    new_u = dir_map.get(str(hdir).lower(), np.array([-1.0, 0.0], dtype=float))
+                        dir_map = {
+                            "right": np.array([-1.0, 0.0], dtype=float),
+                            "left": np.array([1.0, 0.0], dtype=float),
+                            "up": np.array([0.0, 1.0], dtype=float),
+                            "down": np.array([0.0, -1.0], dtype=float),
+                        }
+                        new_u = dir_map.get(str(hdir).lower(), np.array([-1.0, 0.0], dtype=float))
 
-                    with self.lock:
-                        self.smoothed_box = g_box.astype(float)
-                        self.last_baby_box = g_box
-                        self.smoothed_spine_u = new_u
-                        self.gemini_anchor_box = g_box
-                        self.gemini_anchor_u = new_u
-                        self.gemini_anchor_pose = res.get("sleep_pose_vi", "Đang ngủ ngoan")
-                        self.gemini_anchor_until = time.time() + 55.0
-                    print(f"[VisionTracker] 🔧 Đã hiệu chỉnh nóng khung Tracking theo Gemini: box={g_box.tolist()}, head_dir={hdir}")
+                        with self.lock:
+                            self.smoothed_box = g_box.astype(float)
+                            self.last_baby_box = g_box
+                            self.smoothed_spine_u = new_u
+                            self.gemini_anchor_box = g_box
+                            self.gemini_anchor_u = new_u
+                            self.gemini_anchor_pose = res.get("sleep_pose_vi", "Đang ngủ ngoan")
+                            self.gemini_anchor_until = time.time() + 55.0
+                        print(f"[VisionTracker] 🔧 Đã hiệu chỉnh nóng khung Tracking theo Gemini: box={g_box.tolist()}, head_dir={hdir}")
             except Exception as e:
                 print(f"[VisionTracker] Lỗi _audit_worker: {e}")
             finally:
@@ -1543,8 +1569,10 @@ class VisionTracker:
             # Giữ nguyên video trong trẻo, không vẽ khung tracking đè lên người bé (Chỉ để lại viền nôi Safe Zone)
             pass
         elif has_adult:
-            # Phân biệt chính xác: Người lớn ngồi cạnh giường vs Người lớn thực sự bế bé ra khỏi nôi
-            baby_ref_box = getattr(self, "last_baby_box", None)
+            # Phân biệt chính xác: Người lớn ngồi cạnh giường vs Bé đã được bế ra ngoài
+            now_t = time.time()
+            baby_recently_seen = (now_t - getattr(self, "baby_last_seen_time", 0.0)) < 4.0
+            baby_ref_box = getattr(self, "last_baby_box", None) if baby_recently_seen else None
             is_in_safe_zone = False
             if baby_ref_box is not None:
                 bcx = (baby_ref_box[0] + baby_ref_box[2]) / 2.0
@@ -1565,19 +1593,19 @@ class VisionTracker:
                     if inter_area / baby_area > 0.25:
                         is_touching_baby = True
 
-            # NẾU BÉ VẪN NẰM TRONG SAFE ZONE: Bé đang nằm nôi, người lớn chỉ ngồi bên cạnh!
-            if is_in_safe_zone:
+            # NẾU BÉ VỪA ĐƯỢC PHÁT HIỆN GẦN ĐÂY (< 4.0s) VÀ ĐANG Ở TRONG SAFE ZONE: Bé đang nằm nôi, người lớn chỉ ngồi bên cạnh!
+            if is_in_safe_zone and baby_recently_seen:
                 self.baby_detected = True
                 self.adult_holding_baby = False
                 self.baby_stable_detected = True
                 self.covered_face_active = False
                 self.covered_face_frame_count = 0
-                if self.sleep_pose in ("Ngoài giường", "Người lớn trong phòng", "Đang được bế trên tay"):
+                if self.sleep_pose in ("Ngoài giường", "Người lớn trong phòng", "Đang được bế trên tay", "Không phát hiện bé"):
                     self.sleep_pose = "Nằm ngủ ngoan"
                 self.baby_status = "Bé đang nằm nôi • Bố mẹ ở cạnh"
                 if self.breathing_status in ("Ngoài giường", "Bố mẹ đang bế"):
                     self.breathing_status = "Đang theo dõi nhịp thở"
-            elif is_touching_baby:
+            elif is_touching_baby and baby_recently_seen:
                 # Bé ở ngoài Safe Zone VÀ người lớn tiếp xúc bế bé
                 self.baby_detected = True
                 self.adult_holding_baby = True
@@ -1591,12 +1619,20 @@ class VisionTracker:
                 if self.breathing_bpm <= 5.0:
                     self.breathing_bpm = 48.0
             else:
+                # BÉ KHÔNG CÓ TRONG NÔI HOẶC ĐÃ RỜI ĐI > 4 GIÂY: Chỉ có người lớn trong phòng!
                 self.baby_detected = False
                 self.adult_holding_baby = False
+                self.baby_stable_detected = False
+                self.baby_stable_frames = 0
                 self.sleep_pose = "Người lớn trong phòng"
-                self.baby_status = "Người lớn đang ở gần nôi"
+                self.baby_status = "Bé đã rời nôi • Người lớn trong phòng"
                 self.breathing_bpm = 0.0
                 self.breathing_status = "Ngoài giường"
+                self.last_baby_box = None
+                self.gemini_anchor_box = None
+                self.gemini_anchor_until = 0.0
+                self.is_near_edge = False
+                self.danger_zone_frame_count = 0
 
             self.motion_score = 0.0
             self.smoothed_motion = 0.0

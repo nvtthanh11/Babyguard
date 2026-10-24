@@ -187,6 +187,12 @@ def main():
 
         if not cur_cfg.get("cry_alert_enabled", True):
             return
+
+        # Multi-modal gate: Nếu camera xác định nôi trống và không có bé (Bé đã rời nôi / Ngoài giường),
+        # triệt tiêu cảnh báo khóc giả lập tức để không làm phiền phụ huynh
+        if (not vision_tracker.baby_detected) and (not getattr(vision_tracker, "adult_holding_baby", False)):
+            return
+
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = f"Phát hiện tiếng khóc / la hét em bé ({top_label})"
         if alert_manager.trigger_event(

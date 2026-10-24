@@ -75,7 +75,7 @@ class GeminiHybridVerifier:
 
         # Giám sát & Hiệu chỉnh Tracking AI Local bằng Quota Free dư thừa
         self.last_tracking_audit_time = 0.0
-        self.tracking_audit_interval_sec = 50.0  # Khi rảnh không gọi API trong 50s -> Gửi hình kiểm tra Tracking Local
+        self.tracking_audit_interval_sec = 120.0  # Giãn cách 120s (2 phút) giữa các lần tự động audit để chống tràn quota Free
         self.last_tracking_audit = {
             "timestamp": None,
             "tracking_accurate": True,
@@ -369,11 +369,11 @@ class GeminiHybridVerifier:
         now = time.time()
         elapsed = now - self.last_tracking_audit_time
         if need_initial_crib_calib:
-            min_interval = 6.0
+            min_interval = 15.0
         elif pose_changed:
-            min_interval = 10.0  # Sau khi tư thế mới giữ ổn định 10s, kích hoạt audit
+            min_interval = 30.0  # Sau khi tư thế mới giữ ổn định 10s, kích hoạt audit với giãn cách >= 30s
         elif local_uncertain:
-            min_interval = 20.0
+            min_interval = 90.0  # Khi nôi trống / không bắt được bé, chỉ audit sau mỗi 90s để chống spam quota
         else:
             min_interval = self.tracking_audit_interval_sec
 
@@ -381,7 +381,7 @@ class GeminiHybridVerifier:
             return False
 
         stats = self.get_usage_stats()
-        if stats["calls_last_1m"] >= 4 or stats["healthy_models_count"] == 0:
+        if stats["calls_last_1m"] >= 2 or stats["healthy_models_count"] == 0:
             return False
 
         return True
@@ -409,14 +409,23 @@ Trên bức ảnh đính kèm, hệ thống AI Local đang vẽ:
 2. Khung chữ nhật màu xanh dương (nhãn "EM BE"): tọa độ hiện tại = {local_box} (phát hiện = {local_detected}, tư thế = "{local_pose}").
 3. Vùng đa giác màu xanh lơ: vùng đo nhịp thở lồng ngực.
 
+QUY TẮC CỐT LÕI (CHỐNG NHẬN NHẦM NGƯỜI LỚN & VẬT DỤNG):
+- NẾU TRONG ẢNH KHÔNG CÓ EM BÉ (chỉ có người lớn ngồi/nằm trên giường, hoặc nôi/thảm trống chỉ có tay/chân/thân người lớn thò vào, hoặc người lớn bế bé đi ra ngoài khung hình):
+  -> BẮT BUỘC ĐẶT baby_present = false!
+  -> BẮT BUỘC ĐẶT true_baby_box = null!
+  -> BẮT BUỘC ĐẶT true_head_box = null!
+  -> TUYỆT ĐỐI KHÔNG ĐƯỢC NHẬM TAY, ĐÙI, BÀN CHÂN, ĐẦU GỐI CỦA NGƯỜI LỚN THÀNH EM BÉ!
+  -> TUYỆT ĐỐI KHÔNG ĐƯỢC NHẬM GỐI ÔM, GẤU BÔNG, CHĂN DỒN HOẶC HỌA TIẾT THẢM THÀNH EM BÉ!
+- Chỉ khi thực sự nhìn thấy em bé sơ sinh (đầu bé sơ sinh, thân bé sơ sinh trên đệm): mới đặt baby_present = true.
+
 Hãy quan sát bức ảnh và tự động kiểm tra + căn chỉnh cả 2 khung này, đồng thời phân biệt bé đang NGỦ hay đang THỨC:
 A. KIỂM TRA TRACKING CƠ THỂ & TRẠNG THÁI THỨC/NGỦ CỦA EM BÉ:
-- baby_present (boolean): Thực tế có em bé đang nằm trong ảnh không?
+- baby_present (boolean): Thực tế có em bé sơ sinh đang nằm trong ảnh không?
 - is_baby_awake (boolean): Em bé đang THỨC (mở mắt nhìn, mút tay, đạp chân tay, ngóc đầu, chơi đùa -> true) hay đang NGỦ (nhắm mắt nằm yên -> false)?
 - tracking_accurate (boolean): Khung xanh dương "EM BE" đã bao quanh ĐÚNG cơ thể thực tế của em bé VÀ vùng đo nhịp thở nằm đúng trên thân/ngực bé chưa?
 - accuracy_score (integer 0-100): Điểm chính xác của khung Tracking em bé.
-- true_baby_box ([xmin, ymin, xmax, ymax] từ 0.0 đến 1.0): Tọa độ khung chữ nhật bao quanh TOÀN BỘ CƠ THỂ thực tế của em bé.
-- true_head_box ([xmin, ymin, xmax, ymax] từ 0.0 đến 1.0): Tọa độ phần đầu thực tế của em bé.
+- true_baby_box ([xmin, ymin, xmax, ymax] từ 0.0 đến 1.0): Tọa độ khung chữ nhật bao quanh TOÀN BỘ CƠ THỂ thực tế của em bé (trả về null nếu không có em bé).
+- true_head_box ([xmin, ymin, xmax, ymax] từ 0.0 đến 1.0): Tọa độ phần đầu thực tế của em bé (trả về null nếu không có em bé).
 - head_direction ("right" | "left" | "up" | "down"): Đỉnh đầu của em bé đang hướng về phía nào?
 
 B. KIỂM TRA & TỰ ĐỘNG CĂN CHỈNH KHUNG NÔI / TẤM ĐỆM EM BÉ (SAFE ZONE 3D):
@@ -430,8 +439,8 @@ Trả về đúng JSON:
   "is_baby_awake": boolean,
   "tracking_accurate": boolean,
   "accuracy_score": integer,
-  "true_baby_box": [float, float, float, float],
-  "true_head_box": [float, float, float, float],
+  "true_baby_box": [float, float, float, float] | null,
+  "true_head_box": [float, float, float, float] | null,
   "head_direction": "right" | "left" | "up" | "down",
   "crib_zone_accurate": boolean,
   "true_safe_zone_polygon": [[float, float], [float, float], [float, float], [float, float]],
