@@ -1,8 +1,8 @@
 {
   "records": {
     "hepb_birth": {
-      "completed": true,
-      "injected_date": "2026-09-29",
+      "completed": false,
+      "injected_date": "",
       "note": "Đã tiêm tại BV Phụ Sản trong 24h sau sinh"
     },
     "bcg_birth": {

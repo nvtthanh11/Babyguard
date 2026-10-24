@@ -1067,11 +1067,23 @@ class VisionTracker:
                 if not res.get("audited", False):
                     return
 
-                # 1. Chỉ tự động căn chỉnh Khung Bảo Vệ Nôi / Tấm Đệm (Safe Zone 3D) lần đầu nếu chưa có cấu hình (need_init_crib)
-                # Tuyệt đối không tự ý ghi đè làm mất khung 3D phối cảnh đã được bố mẹ hiệu chuẩn chính xác
+                # 1. Tự động căn chỉnh Khung Bảo Vệ Nôi / Tấm Đệm (Safe Zone 3D)
+                # Cho phép cập nhật khi:
+                # - Chưa có cấu hình nôi (need_init_crib)
+                # - Hoặc Gemini phát hiện khung nôi hiện tại chưa chính xác/bị hẹp/cắt qua đầu bé (not crib_acc)
+                # - Hoặc vị trí bé đang nằm lọt ra ngoài mép khung nôi hiện tại
                 tsz_poly = res.get("true_safe_zone_polygon")
                 tsz = res.get("true_safe_zone")
-                if need_init_crib and (isinstance(tsz_poly, list) and len(tsz_poly) == 4):
+                crib_acc = res.get("crib_zone_accurate", True)
+
+                baby_outside_crib = False
+                if self.last_baby_box is not None and getattr(self, "safe_zone_polygon", None) is not None:
+                    bcx = (self.last_baby_box[0] + self.last_baby_box[2]) / 2.0
+                    bcy = (self.last_baby_box[1] + self.last_baby_box[3]) / 2.0
+                    if not self._is_point_in_safe_zone(bcx, bcy, w, h, margin_px=20.0):
+                        baby_outside_crib = True
+
+                if (need_init_crib or not crib_acc or baby_outside_crib) and (isinstance(tsz_poly, list) and len(tsz_poly) == 4):
                     try:
                         with self.lock:
                             self.safe_zone_polygon = [[round(float(p[0]), 3), round(float(p[1]), 3)] for p in tsz_poly]
@@ -1094,7 +1106,7 @@ class VisionTracker:
                             cfg_data["safe_zone_polygon"] = self.safe_zone_polygon
                             with open(cfg_path, "w", encoding="utf-8") as fp:
                                 json.dump(cfg_data, fp, ensure_ascii=False, indent=4)
-                        print(f"[VisionTracker] ✨ Đã tự động căn chỉnh Khung Nôi 3D (Safe Zone): {self.safe_zone_polygon}")
+                        print(f"[VisionTracker] ✨ Đã tự động căn chỉnh Khung Nôi 3D (Safe Zone) theo Gemini: {self.safe_zone_polygon}")
                     except Exception as ce:
                         print(f"[VisionTracker] Lỗi lưu Safe Zone tự động: {ce}")
                 else:
