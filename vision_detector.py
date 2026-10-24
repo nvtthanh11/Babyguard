@@ -252,11 +252,16 @@ class VisionTracker:
         touches_border = (xyxy[0] < 20 or xyxy[1] < 20 or xyxy[2] > (frame_w - 20) or xyxy[3] > (frame_h - 20))
 
         # Tiêu chuẩn Người Lớn (Adult):
-        # 1. Thân hình to lớn vượt kích thước trẻ sơ sinh (h_ratio > 0.42, shoulder_w > 125px hoặc diện tích > 12% khung hình)
-        # 2. Hoặc người lớn từ ngoài mép màn hình thò vào (touches_border và kích thước > 240px)
-        # 3. Hoặc nằm ngoài vùng Safe Zone của bé
-        is_adult = (h_ratio > 0.42) or (shoulder_w > 125.0) or (area_ratio > 0.12) or \
-                   (touches_border and (box_w > 240 or box_h > 240)) or (not in_crib_zone)
+        # 1. Thân hình to lớn vượt kích thước trẻ sơ sinh:
+        #    - shoulder_w > 125.0px (người lớn thường > 180px, bé sơ sinh < 100px)
+        #    - area_ratio > 0.15 (diện tích người lớn > 15-35% khung hình, bé chỉ 5-11%)
+        #    - h_ratio > 0.62 (người lớn cao lớn trùm gần hết khung hình)
+        #    - h_ratio > 0.50 kết hợp shoulder_w > 105.0px
+        # 2. Hoặc người lớn từ ngoài mép màn hình thò vào (touches_border và box_w > 320 hoặc box_h > 420)
+        # 3. Hoặc nằm hoàn toàn ngoài vùng Safe Zone của bé
+        is_adult = (shoulder_w > 125.0) or (area_ratio > 0.15) or (h_ratio > 0.62) or \
+                   (h_ratio > 0.50 and shoulder_w > 105.0) or \
+                   (touches_border and (box_w > 320 or box_h > 420)) or (not in_crib_zone)
 
         return {
             "is_adult": is_adult,
@@ -596,38 +601,75 @@ class VisionTracker:
         return None, False, None, False
 
     def _extract_breathing_roi(self, kpts_xy, kpts_conf, h, w):
-        """Xác định tọa độ ROI lồng ngực xoay theo trục 2 vai - hông của bé (YOLOv8-Pose)."""
+        """
+        Xác định tọa độ ROI lồng ngực / lưng thông minh cho TẤT CẢ tư thế ngủ:
+        - Nằm ngửa (Supine): Vùng ngực và bụng trước.
+        - Nằm nghiêng (Lateral) / Nằm sấp (Prone): Vùng lưng, mạn sườn (vùng áo nâng lên hạ xuống theo nhịp thở).
+        - Tuyệt đối né vùng đầu / tóc đen và chân, cố định chính xác trên thân mình (Torso).
+        """
         if kpts_xy is not None and kpts_conf is not None and kpts_conf[5] > 0.20 and kpts_conf[6] > 0.20:
             l_sh = kpts_xy[5]
             r_sh = kpts_xy[6]
             s_mid = (l_sh + r_sh) / 2.0
-            sw = float(np.clip(np.linalg.norm(l_sh - r_sh), 32.0, 110.0))
+            sw = float(np.clip(np.linalg.norm(l_sh - r_sh), 28.0, 120.0))
 
-            # Tính vector trục cơ thể từ vai xuống hông (hoặc vuông góc với trục 2 vai)
-            if kpts_conf[11] > 0.20 and kpts_conf[12] > 0.20:
+            has_hips = (kpts_conf[11] > 0.20 and kpts_conf[12] > 0.20)
+            if has_hips:
                 h_mid = (kpts_xy[11] + kpts_xy[12]) / 2.0
                 spine_v = h_mid - s_mid
                 norm_v = float(np.linalg.norm(spine_v))
-                u = (spine_v / max(1e-4, norm_v)).astype(np.float32)
-                chest_c = s_mid + 0.42 * spine_v
             else:
+                norm_v = 0.0
+
+            if has_hips and norm_v > 20.0:
+                u = (spine_v / norm_v).astype(np.float32)
+                n_vec = np.array([-u[1], u[0]], dtype=np.float32)
+
+                face_conf = float(np.mean(kpts_conf[:3]))
+                is_prone_or_lateral = (face_conf < 0.22) or (abs(float(kpts_conf[1]) - float(kpts_conf[2])) > 0.35)
+
+                if is_prone_or_lateral:
+                    # Nằm nghiêng / Nằm sấp:
+                    # Bé thở bằng cơ hoành, vùng thắt lưng, mạn sườn và lưng dưới (quanh hông) dao động mạnh nhất.
+                    # Dịch tâm ROI về phía thắt lưng / lưng dưới (d1=0.35, d2=1.10) để né 100% gáy và tóc đen
+                    d1 = 0.35 * norm_v
+                    d2 = 1.10 * norm_v
+                    half_w = np.clip(0.26 * sw, 14.0, 30.0)
+                else:
+                    # Nằm ngửa: Tâm vùng ngực / bụng trước
+                    d1 = 0.20 * norm_v
+                    d2 = 0.85 * norm_v
+                    half_w = np.clip(0.28 * sw, 14.0, 32.0)
+
+                d_center = (d1 + d2) / 2.0
+                half_h = (d2 - d1) / 2.0
+                torso_c = s_mid + u * d_center
+
+            else:
+                # Nếu không bắt được hông, ước lượng trục cơ thể từ trục 2 vai
                 sh_vec = r_sh - l_sh
                 sh_norm = float(np.linalg.norm(sh_vec))
                 n_vec = (sh_vec / max(1e-4, sh_norm)).astype(np.float32)
                 u = np.array([-n_vec[1], n_vec[0]], dtype=np.float32)
-                if kpts_conf[0] > 0.20:
-                    # Đảm bảo vector u hướng từ đầu xuống ngực
-                    if np.dot(u, s_mid - kpts_xy[0]) < 0:
-                        u = -u
-                chest_c = s_mid + u * (0.50 * sw)
 
-            n_vec = np.array([-u[1], u[0]], dtype=np.float32)
-            half_w = max(16.0, 0.38 * sw)
-            half_h = max(16.0, 0.35 * sw)
-            p1 = chest_c - n_vec * half_w - u * half_h
-            p2 = chest_c + n_vec * half_w - u * half_h
-            p3 = chest_c + n_vec * half_w + u * half_h
-            p4 = chest_c - n_vec * half_w + u * half_h
+                # Định hướng vector u từ đầu xuống ngực/thân
+                head_pts = [kpts_xy[k] for k in [0, 1, 2, 3, 4] if kpts_conf[k] > 0.20]
+                if head_pts:
+                    head_mid = np.mean(head_pts, axis=0)
+                    if np.dot(u, s_mid - head_mid) < 0:
+                        u = -u
+                elif getattr(self, "gemini_head_dir", None) == "down":
+                    if u[1] > 0:
+                        u = -u
+
+                torso_c = s_mid + u * (0.50 * sw)
+                half_w = np.clip(0.28 * sw, 14.0, 32.0)
+                half_h = np.clip(0.30 * sw, 14.0, 32.0)
+
+            p1 = torso_c - n_vec * half_w - u * half_h
+            p2 = torso_c + n_vec * half_w - u * half_h
+            p3 = torso_c + n_vec * half_w + u * half_h
+            p4 = torso_c - n_vec * half_w + u * half_h
             self.last_chest_poly = np.array([p1, p2, p3, p4], dtype=np.int32)
 
             rx1 = max(0, int(np.min(self.last_chest_poly[:, 0])))
@@ -639,8 +681,8 @@ class VisionTracker:
             lbox = self.last_baby_box
             bx = int((lbox[0] + lbox[2]) / 2.0)
             by = int((lbox[1] + lbox[3]) / 2.0)
-            rw = max(40, int((lbox[2] - lbox[0]) * 0.42))
-            rh = max(40, int((lbox[3] - lbox[1]) * 0.42))
+            rw = max(36, int((lbox[2] - lbox[0]) * 0.38))
+            rh = max(36, int((lbox[3] - lbox[1]) * 0.38))
             self.last_chest_poly = None
             return max(0, bx - rw // 2), max(0, by - rh // 2), min(w, bx + rw // 2), min(h, by + rh // 2)
         else:
@@ -674,10 +716,10 @@ class VisionTracker:
             center_patch = roi_blur[32:64, 32:64]
             center_color = np.median(center_patch.reshape(-1, 3), axis=0)
             color_dist = np.linalg.norm(roi_blur.astype(np.float32) - center_color, axis=2)
-            valid_mask = color_dist < 45.0
+            valid_mask = color_dist < 55.0
 
             gray_roi = cv2.cvtColor(roi_blur, cv2.COLOR_BGR2GRAY).astype(np.float32)
-            if np.sum(valid_mask) > 200:
+            if np.sum(valid_mask) > 150:
                 # Cường độ sáng trung bình có hướng trên vùng ngực đồng nhất (không dùng absdiff để tránh nhân đôi tần số)
                 sig_val = float(np.mean(gray_roi[valid_mask]))
             else:
@@ -688,8 +730,8 @@ class VisionTracker:
         # Giữ cửa sổ trượt 8 giây để đủ độ phân giải tần số cho bộ lọc Butterworth
         self.chest_history = [(t, v) for t, v in self.chest_history if (now_t - t) <= 8.0]
 
-        if self.smoothed_motion < 15.0:
-            if len(self.chest_history) >= 32:
+        if self.smoothed_motion < 18.0:
+            if len(self.chest_history) >= 28:
                 ts = np.array([t for t, v in self.chest_history], dtype=np.float64)
                 vals = np.array([v for t, v in self.chest_history], dtype=np.float64)
                 duration = ts[-1] - ts[0]
@@ -700,7 +742,7 @@ class VisionTracker:
                 raw_std = float(np.std(sig))
 
                 # Nếu biên độ biến thiên quang học quá nhỏ (nhiễu tĩnh trên gối/nệm) -> Không có nhịp thở!
-                if raw_std < 0.045 or fps_est < 4.0:
+                if raw_std < 0.035 or fps_est < 4.0:
                     self.breathing_status = "Đang phân tích..."
                     return False
 
@@ -715,7 +757,7 @@ class VisionTracker:
                     filtered_sig = sig
 
                 filt_std = float(np.std(filtered_sig))
-                if filt_std < 0.025:
+                if filt_std < 0.020:
                     self.breathing_status = "Đang phân tích..."
                     return False
 
@@ -733,7 +775,7 @@ class VisionTracker:
                     best_offset = int(np.argmax(search_region))
                     peak_val = float(search_region[best_offset])
 
-                    if peak_val >= 0.26:
+                    if peak_val >= 0.22:
                         best_lag = min_lag + best_offset
                         period_s = best_lag / fps_est
                         instant_bpm = 60.0 / period_s
@@ -746,11 +788,17 @@ class VisionTracker:
                         self.last_breath_peak_time = now_t
                         return True
                     else:
-                        self.breathing_bpm = 0.0
-                        self.breathing_status = "Thở êm dịu (Dưới chăn)"
+                        if (now_t - getattr(self, "last_breath_peak_time", 0.0)) > 5.0:
+                            self.breathing_bpm = 0.0
+                            self.breathing_status = "Thở êm dịu (Dưới chăn)"
                 else:
                     self.breathing_bpm = 0.0
                     self.breathing_status = "Đang phân tích..."
+            else:
+                # Đang tích lũy chuỗi dữ liệu (khoảng 2-3s đầu khi bé nằm yên)
+                self.breathing_status = "Đang hội tụ tín hiệu..."
+                if (now_t - getattr(self, "last_breath_peak_time", 0.0)) > 5.0:
+                    self.breathing_bpm = 0.0
 
             # Cảnh báo ngưng thở khi bé nằm yên > 25s mà không có bất kỳ chuyển động thở nào
             still_time = now_t - getattr(self, "last_breath_peak_time", now_t)
@@ -1272,26 +1320,28 @@ class VisionTracker:
             else:
                 self.danger_zone_frame_count = max(0, self.danger_zone_frame_count - 1)
 
-            # 4. Robust Infant Motion Velocity
+            # 4. Robust Infant Motion Velocity (với Deadband lọc rung tự nhiên của YOLO detector)
             if self.prev_keypoints is not None:
                 valid_mask = (kpts_conf > 0.25) & (self.prev_keypoints_conf > 0.25)
                 if np.sum(valid_mask) >= 3:
                     diffs = np.linalg.norm(kpts_xy - self.prev_keypoints, axis=1)
-                    diffs = np.where((diffs < 4.0) | (~valid_mask), 0.0, diffs)
-                    diffs = np.clip(diffs, 0.0, 60.0)
 
+                    # Deadband: Lọc bỏ rung lắc micro-jitter của mô hình Pose khi bé nằm yên
+                    # (5.5px cho các điểm trọng yếu như đầu, vai, hông; 7.5px cho tứ chi)
                     core_indices = [0, 1, 2, 5, 6, 11, 12]
-                    core_valid = [k for k in core_indices if valid_mask[k]]
-                    core_m = float(np.median([diffs[k] for k in core_valid])) if core_valid else 0.0
+                    limb_indices = [k for k in range(17) if k not in core_indices]
 
-                    limb_indices = [k for k in range(17) if k not in core_indices and valid_mask[k]]
-                    limb_m = float(np.median([diffs[k] for k in limb_indices])) if limb_indices else 0.0
+                    core_diffs = [diffs[k] for k in core_indices if valid_mask[k] and diffs[k] >= 5.5]
+                    core_m = float(np.median(core_diffs)) if core_diffs else 0.0
+
+                    limb_diffs = [diffs[k] for k in limb_indices if valid_mask[k] and diffs[k] >= 7.5]
+                    limb_m = float(np.median(limb_diffs)) if limb_diffs else 0.0
 
                     bcx = (box_xyxy[0] + box_xyxy[2]) / 2.0
                     bcy = (box_xyxy[1] + box_xyxy[3]) / 2.0
                     if getattr(self, "prev_bc", None) is not None:
                         center_shift = float(np.hypot(bcx - self.prev_bc[0], bcy - self.prev_bc[1]))
-                        center_shift = 0.0 if center_shift < 2.5 else center_shift
+                        center_shift = 0.0 if center_shift < 3.5 else center_shift
                     else:
                         center_shift = 0.0
                     self.prev_bc = (bcx, bcy)
@@ -1703,6 +1753,8 @@ class VisionTracker:
         # 3. Vẽ hộp xoay ROI Lồng ngực / Bụng (nếu có)
         if getattr(self, "last_chest_poly", None) is not None:
             cv2.polylines(img, [self.last_chest_poly], isClosed=True, color=(255, 255, 0), thickness=2, lineType=cv2.LINE_AA)
+            pt = self.last_chest_poly[0]
+            cv2.putText(img, "ROI Tho", (int(pt[0]), max(15, int(pt[1]) - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1, cv2.LINE_AA)
 
     def _draw_hud(self, img):
         # Commercial Clean Feed: Không vẽ hộp đen đè lên góc video.
