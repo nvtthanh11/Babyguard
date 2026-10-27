@@ -53,19 +53,34 @@ class VisionTracker:
         
         self.prone_alert_enabled = prone_alert_enabled
         self.danger_zone_enabled = danger_zone_enabled
+        def _clean_coord(val, default_val, max_d):
+            try:
+                v = float(val) if val is not None else default_val
+                if v > 1.0:
+                    v = v / 1000.0 if v <= 1000.0 else v / max_d
+                return round(max(0.01, min(0.99, v)), 3)
+            except Exception:
+                return default_val
+
         if safe_zone_polygon and isinstance(safe_zone_polygon, list) and len(safe_zone_polygon) == 4:
-            self.safe_zone_polygon = [[float(p[0]), float(p[1])] for p in safe_zone_polygon]
+            clean_poly = []
+            for p in safe_zone_polygon:
+                clean_poly.append([
+                    _clean_coord(p[0], 0.15, 1280.0),
+                    _clean_coord(p[1], 0.18, 720.0)
+                ])
+            self.safe_zone_polygon = clean_poly
             xs = [p[0] for p in self.safe_zone_polygon]
             ys = [p[1] for p in self.safe_zone_polygon]
-            self.safe_zone_left = float(min(xs))
-            self.safe_zone_right = float(max(xs))
-            self.safe_zone_top = float(min(ys))
-            self.safe_zone_bottom = float(max(ys))
+            self.safe_zone_left = round(min(xs), 3)
+            self.safe_zone_right = round(max(xs), 3)
+            self.safe_zone_top = round(min(ys), 3)
+            self.safe_zone_bottom = round(max(ys), 3)
         else:
-            self.safe_zone_top = float(safe_zone_top)
-            self.safe_zone_bottom = float(danger_zone_y_percent if danger_zone_y_percent is not None else safe_zone_bottom)
-            self.safe_zone_left = float(safe_zone_left)
-            self.safe_zone_right = float(danger_zone_x_percent if danger_zone_x_percent is not None else safe_zone_right)
+            self.safe_zone_top = _clean_coord(safe_zone_top, 0.18, 720.0)
+            self.safe_zone_bottom = _clean_coord(danger_zone_y_percent if danger_zone_y_percent is not None else safe_zone_bottom, 0.95, 720.0)
+            self.safe_zone_left = _clean_coord(safe_zone_left, 0.15, 1280.0)
+            self.safe_zone_right = _clean_coord(danger_zone_x_percent if danger_zone_x_percent is not None else safe_zone_right, 0.92, 1280.0)
             self.safe_zone_polygon = [
                 [self.safe_zone_left, self.safe_zone_top],
                 [self.safe_zone_right, self.safe_zone_top],
@@ -212,12 +227,32 @@ class VisionTracker:
     def _get_safe_zone_polygon(self, w: int, h: int) -> np.ndarray:
         """Trả về mảng đa giác 4 đỉnh của vùng an toàn (Safe Zone) theo góc phối cảnh 3D."""
         if getattr(self, "safe_zone_polygon", None) and len(self.safe_zone_polygon) >= 3:
-            pts = [[int(float(p[0]) * w), int(float(p[1]) * h)] for p in self.safe_zone_polygon]
+            pts = []
+            for p in self.safe_zone_polygon:
+                px = float(p[0])
+                py = float(p[1])
+                if px > 1.0:
+                    px = px / 1000.0 if px <= 1000.0 else px / float(w)
+                if py > 1.0:
+                    py = py / 1000.0 if py <= 1000.0 else py / float(h)
+                px = max(0.01, min(0.99, px))
+                py = max(0.01, min(0.99, py))
+                pts.append([int(px * w), int(py * h)])
             return np.array(pts, dtype=np.int32)
-        x1 = int(self.safe_zone_left * w)
-        x2 = int(self.safe_zone_right * w)
-        y1 = int(self.safe_zone_top * h)
-        y2 = int(self.safe_zone_bottom * h)
+        
+        def _clamp(v, default_v, max_d):
+            try:
+                val = float(v)
+                if val > 1.0:
+                    val = val / 1000.0 if val <= 1000.0 else val / max_d
+                return max(0.01, min(0.99, val))
+            except Exception:
+                return default_v
+
+        x1 = int(_clamp(self.safe_zone_left, 0.15, float(w)) * w)
+        x2 = int(_clamp(self.safe_zone_right, 0.92, float(w)) * w)
+        y1 = int(_clamp(self.safe_zone_top, 0.18, float(h)) * h)
+        y2 = int(_clamp(self.safe_zone_bottom, 0.95, float(h)) * h)
         return np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], dtype=np.int32)
 
     def _is_point_in_safe_zone(self, px: float, py: float, w: int, h: int, margin_px: float = 0.0) -> bool:
@@ -258,11 +293,10 @@ class VisionTracker:
         #    - h_ratio > 0.58 (người lớn cao lớn trùm gần hết khung hình)
         #    - h_ratio > 0.48 kết hợp shoulder_w > 100.0px
         # 2. Hoặc người lớn từ ngoài mép màn hình thò vào / ngồi bên mép:
-        #    - touches_border và (box_w > 180 hoặc box_h > 220 hoặc shoulder_w > 90.0 hoặc not in_crib_zone)
-        # 3. Hoặc nằm hoàn toàn ngoài vùng Safe Zone của bé
+        #    - touches_border và (box_w > 180 hoặc box_h > 220 hoặc shoulder_w > 90.0)
         is_adult = (shoulder_w > 120.0) or (area_ratio > 0.14) or (h_ratio > 0.58) or \
                    (h_ratio > 0.48 and shoulder_w > 100.0) or \
-                   (touches_border and (box_w > 180 or box_h > 220 or shoulder_w > 90.0 or not in_crib_zone)) or (not in_crib_zone)
+                   (touches_border and (box_w > 180 or box_h > 220 or shoulder_w > 90.0))
 
         return {
             "is_adult": is_adult,
@@ -1062,10 +1096,10 @@ class VisionTracker:
             "baby_detected": self.baby_detected,
             "norm_box": norm_box,
             "safe_zone": [
-                round(self.safe_zone_left, 3),
-                round(self.safe_zone_top, 3),
-                round(self.safe_zone_right, 3),
-                round(self.safe_zone_bottom, 3)
+                round(max(0.01, min(0.99, float(self.safe_zone_left))), 3),
+                round(max(0.01, min(0.99, float(self.safe_zone_top))), 3),
+                round(max(0.01, min(0.99, float(self.safe_zone_right))), 3),
+                round(max(0.01, min(0.99, float(self.safe_zone_bottom))), 3)
             ],
             "sleep_pose": self.sleep_pose
         }
@@ -1094,8 +1128,20 @@ class VisionTracker:
 
                 if (need_init_crib or not crib_acc or baby_outside_crib) and (isinstance(tsz_poly, list) and len(tsz_poly) == 4):
                     try:
+                        clean_pts = []
+                        for p in tsz_poly:
+                            px = float(p[0])
+                            py = float(p[1])
+                            if px > 1.0:
+                                px = px / 1000.0 if px <= 1000.0 else px / float(w)
+                            if py > 1.0:
+                                py = py / 1000.0 if py <= 1000.0 else py / float(h)
+                            px = max(0.01, min(0.99, px))
+                            py = max(0.01, min(0.99, py))
+                            clean_pts.append([round(px, 3), round(py, 3)])
+
                         with self.lock:
-                            self.safe_zone_polygon = [[round(float(p[0]), 3), round(float(p[1]), 3)] for p in tsz_poly]
+                            self.safe_zone_polygon = clean_pts
                             xs = [p[0] for p in self.safe_zone_polygon]
                             ys = [p[1] for p in self.safe_zone_polygon]
                             self.safe_zone_left = round(min(xs), 3)
@@ -1118,6 +1164,40 @@ class VisionTracker:
                         print(f"[VisionTracker] ✨ Đã tự động căn chỉnh Khung Nôi 3D (Safe Zone) theo Gemini: {self.safe_zone_polygon}")
                     except Exception as ce:
                         print(f"[VisionTracker] Lỗi lưu Safe Zone tự động: {ce}")
+                elif (need_init_crib or not crib_acc or baby_outside_crib) and (isinstance(tsz, list) and len(tsz) == 4):
+                    try:
+                        clean_sz = []
+                        for i, val in enumerate(tsz):
+                            v = float(val)
+                            dim = float(w) if i in (0, 2) else float(h)
+                            if v > 1.0:
+                                v = v / 1000.0 if v <= 1000.0 else v / dim
+                            clean_sz.append(round(max(0.01, min(0.99, v)), 3))
+                        l, t, r, b = clean_sz
+                        if r > l and b > t:
+                            with self.lock:
+                                self.safe_zone_left = l
+                                self.safe_zone_top = t
+                                self.safe_zone_right = r
+                                self.safe_zone_bottom = b
+                                self.safe_zone_polygon = [
+                                    [l, t], [r, t], [r, b], [l, b]
+                                ]
+                                self.initial_crib_calibrated = True
+                            cfg_path = os.path.join(BASE_DIR, "config.json")
+                            if os.path.exists(cfg_path):
+                                with open(cfg_path, "r", encoding="utf-8") as fp:
+                                    cfg_data = json.load(fp)
+                                cfg_data["safe_zone_left"] = self.safe_zone_left
+                                cfg_data["safe_zone_right"] = self.safe_zone_right
+                                cfg_data["safe_zone_top"] = self.safe_zone_top
+                                cfg_data["safe_zone_bottom"] = self.safe_zone_bottom
+                                cfg_data["safe_zone_polygon"] = self.safe_zone_polygon
+                                with open(cfg_path, "w", encoding="utf-8") as fp:
+                                    json.dump(cfg_data, fp, ensure_ascii=False, indent=4)
+                            print(f"[VisionTracker] ✨ Đã tự động căn chỉnh Khung Nôi chữ nhật theo Gemini: {clean_sz}")
+                    except Exception as ce:
+                        print(f"[VisionTracker] Lỗi lưu Safe Zone chữ nhật tự động: {ce}")
                 else:
                     self.initial_crib_calibrated = True
 

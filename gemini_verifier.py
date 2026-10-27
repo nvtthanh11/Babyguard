@@ -398,7 +398,17 @@ class GeminiHybridVerifier:
             return {"audited": False}
 
         local_box = local_info.get("norm_box", [0, 0, 0, 0])
-        local_sz = local_info.get("safe_zone", [0.05, 0.08, 0.95, 0.95])
+        raw_sz = local_info.get("safe_zone", [0.05, 0.08, 0.95, 0.95])
+        local_sz = []
+        for i, val in enumerate(raw_sz):
+            try:
+                fv = float(val)
+                dim = 1280.0 if i in (0, 2) else 720.0
+                if fv > 1.0:
+                    fv = fv / 1000.0 if fv <= 1000.0 else fv / dim
+                local_sz.append(round(max(0.01, min(0.99, fv)), 3))
+            except Exception:
+                local_sz.append(0.5)
         local_detected = local_info.get("baby_detected", False)
         local_pose = local_info.get("sleep_pose", "Chưa rõ")
 
@@ -432,6 +442,10 @@ B. KIỂM TRA & TỰ ĐỘNG CĂN CHỈNH KHUNG NÔI / TẤM ĐỆM EM BÉ (SAFE
 - crib_zone_accurate (boolean): Khung viền xanh lá cây hiện tại đã bao quanh hợp lý vùng tấm đệm/nôi nơi em bé nằm chưa? (Nếu khung xanh lá đang cắt ngang qua đầu/cổ bé, quá hẹp hoặc bị lệch khỏi tấm đệm trắng của bé -> false).
 - true_safe_zone_polygon ([[x, y], [x, y], [x, y], [x, y]] từ 0.03 đến 0.97): Tọa độ 4 đỉnh đa giác tứ giác theo thứ tự [Top-Left, Top-Right, Bottom-Right, Bottom-Left] bao quanh TRỌN VẸN tấm đệm nơi em bé nằm theo đúng góc phối cảnh 3D xiên. TUYỆT ĐỐI KHÔNG ĐƯỢC để cạnh cắt ngang đầu/thân bé; cạnh trên phải chạy phía trên đỉnh đầu và gối bé để đảm bảo an toàn. Không bao gồm người lớn nằm cạnh.
 - true_safe_zone ([left, top, right, bottom] từ 0.03 đến 0.97): Tọa độ khung chữ nhật bao ngoài tấm đệm của em bé.
+
+QUY ĐỊNH BẮT BUỘC VỀ ĐỊNH DẠNG TỌA ĐỘ:
+- TẤT CẢ các giá trị tọa độ x, y, left, top, right, bottom PHẢI LÀ SỐ THẬP PHÂN CHUẨN HÓA (FLOAT) TRONG KHOẢNG 0.03 ĐẾN 0.97 (ví dụ 0.25, 0.75).
+- TUYỆT ĐỐI KHÔNG DÙNG TỌA ĐỘ PIXEL LỚN HƠN 1.0 (ví dụ 270, 750, 1000) vì sẽ làm sai lệch hiển thị!
 
 Trả về đúng JSON:
 {{
@@ -488,6 +502,32 @@ Trả về đúng JSON:
             }
             self.status_text = f"Đã tự căn chuẩn ({score}%)" if (acc and crib_acc) else "Đã tự động hiệu chỉnh Nôi & Tracking"
             print(f"[GeminiVerifier] 🎯 Tự động Căn Nôi & Tracking ({self.active_model}): baby_acc={acc}, crib_acc={crib_acc}, awake={is_awake} ({score}%) -> {feedback}")
+            # Sanitize true_safe_zone_polygon
+            raw_tsz_poly = data.get("true_safe_zone_polygon")
+            clean_tsz_poly = None
+            if isinstance(raw_tsz_poly, list) and len(raw_tsz_poly) == 4:
+                clean_tsz_poly = []
+                for p in raw_tsz_poly:
+                    px = float(p[0])
+                    py = float(p[1])
+                    if px > 1.0:
+                        px = px / 1000.0 if px <= 1000.0 else px / 1280.0
+                    if py > 1.0:
+                        py = py / 1000.0 if py <= 1000.0 else py / 720.0
+                    clean_tsz_poly.append([round(max(0.01, min(0.99, px)), 3), round(max(0.01, min(0.99, py)), 3)])
+
+            # Sanitize true_safe_zone
+            raw_tsz = data.get("true_safe_zone")
+            clean_tsz = None
+            if isinstance(raw_tsz, list) and len(raw_tsz) == 4:
+                clean_tsz = []
+                for i, v in enumerate(raw_tsz):
+                    fv = float(v)
+                    dim = 1280.0 if i in (0, 2) else 720.0
+                    if fv > 1.0:
+                        fv = fv / 1000.0 if fv <= 1000.0 else fv / dim
+                    clean_tsz.append(round(max(0.01, min(0.99, fv)), 3))
+
             return {
                 "audited": True,
                 "baby_present": baby_present,
@@ -498,8 +538,8 @@ Trả về đúng JSON:
                 "true_baby_box": data.get("true_baby_box"),
                 "true_head_box": data.get("true_head_box"),
                 "head_direction": data.get("head_direction", "up"),
-                "true_safe_zone": data.get("true_safe_zone"),
-                "true_safe_zone_polygon": data.get("true_safe_zone_polygon"),
+                "true_safe_zone": clean_tsz,
+                "true_safe_zone_polygon": clean_tsz_poly,
                 "sleep_pose_vi": data.get("sleep_pose_vi", "Nằm ngửa"),
                 "feedback_vi": feedback
             }
@@ -805,8 +845,15 @@ Trả về đúng định dạng JSON:
             data = json.loads(resp.text)
             poly = data.get("safe_zone_polygon")
             if isinstance(poly, list) and len(poly) == 4:
-                valid_poly = [[round(float(np.clip(p[0], 0.01, 0.99)), 3),
-                               round(float(np.clip(p[1], 0.01, 0.99)), 3)] for p in poly]
+                valid_poly = []
+                for p in poly:
+                    px = float(p[0])
+                    py = float(p[1])
+                    if px > 1.0:
+                        px = px / 1000.0 if px <= 1000.0 else px / 1280.0
+                    if py > 1.0:
+                        py = py / 1000.0 if py <= 1000.0 else py / 720.0
+                    valid_poly.append([round(max(0.01, min(0.99, px)), 3), round(max(0.01, min(0.99, py)), 3)])
                 xs = [p[0] for p in valid_poly]
                 ys = [p[1] for p in valid_poly]
                 left = min(xs)
@@ -814,10 +861,18 @@ Trả về đúng định dạng JSON:
                 top = min(ys)
                 bottom = max(ys)
             else:
-                top = float(np.clip(data.get("safe_zone_top", 0.08), 0.02, 0.45))
-                bottom = float(np.clip(data.get("safe_zone_bottom", 0.95), 0.55, 0.98))
-                left = float(np.clip(data.get("safe_zone_left", 0.05), 0.02, 0.45))
-                right = float(np.clip(data.get("safe_zone_right", 0.95), 0.55, 0.98))
+                def _clean_s(v, def_v, max_d):
+                    try:
+                        fv = float(v)
+                        if fv > 1.0:
+                            fv = fv / 1000.0 if fv <= 1000.0 else fv / max_d
+                        return max(0.01, min(0.99, fv))
+                    except Exception:
+                        return def_v
+                top = _clean_s(data.get("safe_zone_top"), 0.18, 720.0)
+                bottom = _clean_s(data.get("safe_zone_bottom"), 0.95, 720.0)
+                left = _clean_s(data.get("safe_zone_left"), 0.15, 1280.0)
+                right = _clean_s(data.get("safe_zone_right"), 0.92, 1280.0)
                 valid_poly = [[left, top], [right, top], [right, bottom], [left, bottom]]
 
             self.status_text = "Đã căn chỉnh nôi thành công"

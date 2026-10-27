@@ -972,14 +972,29 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             if k in update_data and hasattr(audio_detector, k):
                 setattr(audio_detector, k, update_data[k])
 
+        def _clean_coord_val(val, default_val, max_d):
+            try:
+                v = float(val) if val is not None else default_val
+                if v > 1.0:
+                    v = v / 1000.0 if v <= 1000.0 else v / max_d
+                return round(max(0.01, min(0.99, v)), 3)
+            except Exception:
+                return default_val
+
         if "safe_zone_polygon" in update_data and isinstance(update_data["safe_zone_polygon"], list) and len(update_data["safe_zone_polygon"]) == 4:
-            vision_tracker.safe_zone_polygon = update_data["safe_zone_polygon"]
+            clean_poly = []
+            for p in update_data["safe_zone_polygon"]:
+                clean_poly.append([
+                    _clean_coord_val(p[0], 0.15, 1280.0),
+                    _clean_coord_val(p[1], 0.18, 720.0)
+                ])
+            vision_tracker.safe_zone_polygon = clean_poly
             xs = [p[0] for p in vision_tracker.safe_zone_polygon]
             ys = [p[1] for p in vision_tracker.safe_zone_polygon]
-            vision_tracker.safe_zone_left = min(xs)
-            vision_tracker.safe_zone_right = max(xs)
-            vision_tracker.safe_zone_top = min(ys)
-            vision_tracker.safe_zone_bottom = max(ys)
+            vision_tracker.safe_zone_left = round(min(xs), 3)
+            vision_tracker.safe_zone_right = round(max(xs), 3)
+            vision_tracker.safe_zone_top = round(min(ys), 3)
+            vision_tracker.safe_zone_bottom = round(max(ys), 3)
             cfg["safe_zone_left"] = vision_tracker.safe_zone_left
             cfg["safe_zone_right"] = vision_tracker.safe_zone_right
             cfg["safe_zone_top"] = vision_tracker.safe_zone_top
@@ -988,15 +1003,20 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             save_config(cfg)
         else:
             if "safe_zone_top" in update_data:
-                vision_tracker.safe_zone_top = cfg.get("safe_zone_top", 0.08)
+                vision_tracker.safe_zone_top = _clean_coord_val(cfg.get("safe_zone_top"), 0.18, 720.0)
+                cfg["safe_zone_top"] = vision_tracker.safe_zone_top
             if "safe_zone_bottom" in update_data:
-                vision_tracker.safe_zone_bottom = cfg.get("safe_zone_bottom", 0.98)
+                vision_tracker.safe_zone_bottom = _clean_coord_val(cfg.get("safe_zone_bottom"), 0.95, 720.0)
+                cfg["safe_zone_bottom"] = vision_tracker.safe_zone_bottom
                 vision_tracker.danger_zone_y_percent = vision_tracker.safe_zone_bottom
             if "safe_zone_left" in update_data:
-                vision_tracker.safe_zone_left = cfg.get("safe_zone_left", 0.01)
+                vision_tracker.safe_zone_left = _clean_coord_val(cfg.get("safe_zone_left"), 0.15, 1280.0)
+                cfg["safe_zone_left"] = vision_tracker.safe_zone_left
             if "safe_zone_right" in update_data:
-                vision_tracker.safe_zone_right = cfg.get("safe_zone_right", 0.99)
+                vision_tracker.safe_zone_right = _clean_coord_val(cfg.get("safe_zone_right"), 0.92, 1280.0)
+                cfg["safe_zone_right"] = vision_tracker.safe_zone_right
                 vision_tracker.danger_zone_x_percent = vision_tracker.safe_zone_right
+            save_config(cfg)
         return {"success": True, "config": cfg}
 
     # --- HARDWARE DISCOVERY (USB UVC CHIP DESCRIPTOR + AVFOUNDATION), WIFI RTSP/OUI SCANNER & LIVE PREVIEW ---
@@ -1589,18 +1609,20 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         if res.get("success") and "safe_zone" in res:
             sz = res["safe_zone"]
             cfg = load_config()
-            cfg["safe_zone_top"] = sz["top"]
-            cfg["safe_zone_bottom"] = sz["bottom"]
-            cfg["safe_zone_left"] = sz["left"]
-            cfg["safe_zone_right"] = sz["right"]
+            cfg["safe_zone_top"] = round(max(0.01, min(0.99, float(sz["top"]))), 3)
+            cfg["safe_zone_bottom"] = round(max(0.01, min(0.99, float(sz["bottom"]))), 3)
+            cfg["safe_zone_left"] = round(max(0.01, min(0.99, float(sz["left"]))), 3)
+            cfg["safe_zone_right"] = round(max(0.01, min(0.99, float(sz["right"]))), 3)
             if "polygon" in sz and isinstance(sz["polygon"], list) and len(sz["polygon"]) == 4:
-                cfg["safe_zone_polygon"] = sz["polygon"]
-                vision_tracker.safe_zone_polygon = sz["polygon"]
+                clean_poly = [[round(max(0.01, min(0.99, float(p[0]))), 3),
+                               round(max(0.01, min(0.99, float(p[1]))), 3)] for p in sz["polygon"]]
+                cfg["safe_zone_polygon"] = clean_poly
+                vision_tracker.safe_zone_polygon = clean_poly
             save_config(cfg)
-            vision_tracker.safe_zone_top = sz["top"]
-            vision_tracker.safe_zone_bottom = sz["bottom"]
-            vision_tracker.safe_zone_left = sz["left"]
-            vision_tracker.safe_zone_right = sz["right"]
+            vision_tracker.safe_zone_top = cfg["safe_zone_top"]
+            vision_tracker.safe_zone_bottom = cfg["safe_zone_bottom"]
+            vision_tracker.safe_zone_left = cfg["safe_zone_left"]
+            vision_tracker.safe_zone_right = cfg["safe_zone_right"]
         return res
 
     @app.post("/api/gemini/audit-tracking")
