@@ -1602,27 +1602,41 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     def auto_calibrate_crib():
         if gemini_verifier is None:
             return {"success": False, "error": "Module Gemini chưa được khởi tạo."}
-        frame = vision_tracker.get_latest_frame(annotated=False)
+        frame = vision_tracker.get_enhanced_low_light_frame() if hasattr(vision_tracker, "get_enhanced_low_light_frame") else None
+        if frame is None:
+            frame = vision_tracker.get_latest_frame(annotated=False)
         if frame is None:
             return {"success": False, "error": "Chưa nhận được khung hình từ camera."}
         res = gemini_verifier.auto_calibrate_crib(frame)
         if res.get("success") and "safe_zone" in res:
             sz = res["safe_zone"]
-            cfg = load_config()
-            cfg["safe_zone_top"] = round(max(0.01, min(0.99, float(sz["top"]))), 3)
-            cfg["safe_zone_bottom"] = round(max(0.01, min(0.99, float(sz["bottom"]))), 3)
-            cfg["safe_zone_left"] = round(max(0.01, min(0.99, float(sz["left"]))), 3)
-            cfg["safe_zone_right"] = round(max(0.01, min(0.99, float(sz["right"]))), 3)
             if "polygon" in sz and isinstance(sz["polygon"], list) and len(sz["polygon"]) == 4:
                 clean_poly = [[round(max(0.01, min(0.99, float(p[0]))), 3),
                                round(max(0.01, min(0.99, float(p[1]))), 3)] for p in sz["polygon"]]
-                cfg["safe_zone_polygon"] = clean_poly
-                vision_tracker.safe_zone_polygon = clean_poly
-            save_config(cfg)
-            vision_tracker.safe_zone_top = cfg["safe_zone_top"]
-            vision_tracker.safe_zone_bottom = cfg["safe_zone_bottom"]
-            vision_tracker.safe_zone_left = cfg["safe_zone_left"]
-            vision_tracker.safe_zone_right = cfg["safe_zone_right"]
+                h, w = frame.shape[:2]
+                if hasattr(vision_tracker, "_validate_crib_polygon") and not vision_tracker._validate_crib_polygon(clean_poly, w=w, h=h, check_baby=False):
+                    return {"success": False, "error": "Khung nôi AI đề xuất không đạt tiêu chuẩn diện tích/hình học. Giữ nguyên an toàn."}
+                if hasattr(vision_tracker, "_commit_safe_zone"):
+                    vision_tracker._commit_safe_zone(clean_poly)
+                else:
+                    cfg = load_config()
+                    cfg["safe_zone_polygon"] = clean_poly
+                    cfg["safe_zone_top"] = round(min(p[1] for p in clean_poly), 3)
+                    cfg["safe_zone_bottom"] = round(max(p[1] for p in clean_poly), 3)
+                    cfg["safe_zone_left"] = round(min(p[0] for p in clean_poly), 3)
+                    cfg["safe_zone_right"] = round(max(p[0] for p in clean_poly), 3)
+                    save_config(cfg)
+            else:
+                cfg = load_config()
+                cfg["safe_zone_top"] = round(max(0.01, min(0.99, float(sz["top"]))), 3)
+                cfg["safe_zone_bottom"] = round(max(0.01, min(0.99, float(sz["bottom"]))), 3)
+                cfg["safe_zone_left"] = round(max(0.01, min(0.99, float(sz["left"]))), 3)
+                cfg["safe_zone_right"] = round(max(0.01, min(0.99, float(sz["right"]))), 3)
+                save_config(cfg)
+                vision_tracker.safe_zone_top = cfg["safe_zone_top"]
+                vision_tracker.safe_zone_bottom = cfg["safe_zone_bottom"]
+                vision_tracker.safe_zone_left = cfg["safe_zone_left"]
+                vision_tracker.safe_zone_right = cfg["safe_zone_right"]
         return res
 
     @app.post("/api/gemini/audit-tracking")
@@ -1630,7 +1644,9 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         """Kiểm tra chéo & hiệu chỉnh nóng khung Tracking của AI Local ngay lập tức bằng Gemini."""
         if gemini_verifier is None or not gemini_verifier.is_ready():
             return {"success": False, "error": "Vui lòng cấu hình Gemini API Key còn hạn trước."}
-        raw_frame = vision_tracker.get_latest_frame(annotated=False)
+        raw_frame = vision_tracker.get_enhanced_low_light_frame() if hasattr(vision_tracker, "get_enhanced_low_light_frame") else None
+        if raw_frame is None:
+            raw_frame = vision_tracker.get_latest_frame(annotated=False)
         ann_frame = vision_tracker.get_latest_frame(annotated=True)
         if raw_frame is None or ann_frame is None:
             return {"success": False, "error": "Chưa lấy được khung hình từ camera."}
@@ -1644,6 +1660,12 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         local_info = {
             "baby_detected": vision_tracker.baby_detected,
             "norm_box": norm_box,
+            "safe_zone": [
+                round(max(0.01, min(0.99, float(vision_tracker.safe_zone_left))), 3),
+                round(max(0.01, min(0.99, float(vision_tracker.safe_zone_top))), 3),
+                round(max(0.01, min(0.99, float(vision_tracker.safe_zone_right))), 3),
+                round(max(0.01, min(0.99, float(vision_tracker.safe_zone_bottom))), 3)
+            ],
             "sleep_pose": vision_tracker.sleep_pose
         }
         res = gemini_verifier.audit_local_tracking(raw_frame, ann_frame, local_info)

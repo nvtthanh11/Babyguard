@@ -31,6 +31,51 @@ FREE_MODEL_POOL = [
 ]
 
 
+def enhance_low_light_image(frame_or_burst, clip_limit=2.8):
+    """
+    Công nghệ bù sáng thông minh & khử nhiễu đa khung hình ban đêm (Night Sight / CLAHE Fusion):
+    - Khử nhiễu cảm biến ISO bằng cách chập trung bình đa khung hình (Temporal Stacking).
+    - Tự động bù sáng vùng tối & lòng nôi bằng CLAHE và Gamma động trên kênh L (LAB color space).
+    - Giữ nguyên màu sắc tự nhiên và không gây cháy/lóa đèn ngủ.
+    """
+    if frame_or_burst is None:
+        return None
+    if isinstance(frame_or_burst, (list, tuple)) and len(frame_or_burst) > 1:
+        base = np.mean([f.astype(np.float32) for f in frame_or_burst], axis=0).astype(np.uint8)
+    elif isinstance(frame_or_burst, (list, tuple)) and len(frame_or_burst) == 1:
+        base = frame_or_burst[0].copy()
+    else:
+        base = frame_or_burst.copy()
+
+    gray = cv2.cvtColor(base, cv2.COLOR_BGR2GRAY)
+    mean_b = float(np.mean(gray))
+
+    # Nếu ảnh đã đủ sáng ban ngày (> 140), giữ nguyên
+    if mean_b >= 140.0:
+        return base
+
+    lab = cv2.cvtColor(base, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    if mean_b < 50.0:
+        gamma = 0.55
+        clip = 3.5
+    elif mean_b < 100.0:
+        gamma = 0.65
+        clip = clip_limit
+    else:
+        gamma = 0.80
+        clip = 2.0
+
+    clahe = cv2.createCLAHE(clipLimit=clip, tileGridSize=(8, 8))
+    cl = clahe.apply(l)
+
+    table = np.array([((i / 255.0) ** gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+    cl_gamma = cv2.LUT(cl, table)
+
+    return cv2.cvtColor(cv2.merge((cl_gamma, a, b)), cv2.COLOR_LAB2BGR)
+
+
 class GeminiHybridVerifier:
     """
     Chuyên gia Hội chẩn, Giám sát Tracking & Giám khảo Thẩm mỹ AI (Hybrid Cloud-Edge).
@@ -310,7 +355,11 @@ class GeminiHybridVerifier:
         return genai.Client(api_key=key)
 
     @staticmethod
-    def _encode_frame_jpeg(frame_bgr, max_dim: int = 768) -> bytes:
+    def _encode_frame_jpeg(frame_bgr, max_dim: int = 768, enhance_night: bool = True) -> bytes:
+        if frame_bgr is None:
+            return b""
+        if enhance_night:
+            frame_bgr = enhance_low_light_image(frame_bgr)
         h, w = frame_bgr.shape[:2]
         if max(h, w) > max_dim:
             scale = max_dim / float(max(h, w))

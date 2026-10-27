@@ -101,6 +101,15 @@ class VisionTracker:
         self.recent_moment_crops = [] # Lưu các thumbnail 64x64 để chống chụp trùng lặp >= 78%
         self.last_moment_landmarks = None # (mouth_ratio, open_ratio)
         self.initial_crib_calibrated = bool(safe_zone_polygon and len(safe_zone_polygon) == 4)
+
+        # Tọa Độ Vàng (Snapshot Rollback an toàn) & Xác thực 2 bước (Two-Phase Commit)
+        import copy, collections
+        self.last_verified_safe_zone = copy.deepcopy(self.safe_zone_polygon)
+        self.pending_crib_candidate = None
+        self.pending_crib_hits = 0
+
+        # Buffer lưu trữ 5 khung hình thô gần nhất để khử nhiễu đa khung hình ban đêm (Night Stacking)
+        self.raw_frame_burst = collections.deque(maxlen=5)
         
         # Breathing metrics (Đo quang học nhịp thở thật từ bụng & lồng ngực với Butterworth DSP)
         self.breathing_bpm = 42.0
@@ -260,6 +269,113 @@ class VisionTracker:
         poly = self._get_safe_zone_polygon(w, h)
         dist = cv2.pointPolygonTest(poly, (float(px), float(py)), True)
         return dist >= -float(margin_px)
+
+    def _validate_crib_polygon(self, pts: list, w: int = 1280, h: int = 720, check_baby: bool = True) -> bool:
+        """
+        Kiểm định tính hợp lệ vật lý của khung nôi 3D (Sanity Check):
+        1. Đúng 4 đỉnh tọa độ tỷ lệ float chuẩn hóa [0.01, 0.99].
+        2. Tứ giác lồi hợp lệ (không xoắn chéo hình đồng hồ cát).
+        3. Diện tích hợp lý: Chiếm từ 10% đến 88% diện tích màn hình.
+        4. Nếu bé đang nằm nôi: Trọng tâm của bé phải nằm lọt bên trong khung nôi đề xuất.
+        """
+        if not isinstance(pts, list) or len(pts) != 4:
+            return False
+        try:
+            np_pts = np.array(pts, dtype=np.float32)
+            for p in np_pts:
+                if p[0] < 0.01 or p[0] > 0.99 or p[1] < 0.01 or p[1] > 0.99:
+                    return False
+
+            # Kiểm tra tính lồi (chống xoắn mép)
+            if not cv2.isContourConvex(np_pts.reshape(-1, 1, 2)):
+                return False
+
+            # Kiểm tra diện tích theo công thức Shoelace
+            area = float(cv2.contourArea(np_pts))
+            if area < 0.10 or area > 0.88:
+                return False
+
+            # Kiểm tra xem có chứa em bé không nếu bé đang được định vị
+            if check_baby and getattr(self, "last_baby_box", None) is not None and getattr(self, "baby_detected", False):
+                bcx = (self.last_baby_box[0] + self.last_baby_box[2]) / 2.0 / float(w)
+                bcy = (self.last_baby_box[1] + self.last_baby_box[3]) / 2.0 / float(h)
+                dist = cv2.pointPolygonTest(np_pts, (float(bcx), float(bcy)), False)
+                if dist < 0:  # Trọng tâm bé nằm ngoài khung nôi đề xuất
+                    return False
+
+            return True
+        except Exception:
+            return False
+
+    def _commit_safe_zone(self, pts: list):
+        """Chính thức xác thực và lưu Khung Nôi 3D vào cấu hình và mốc Rollback."""
+        import copy
+        with self.lock:
+            self.safe_zone_polygon = copy.deepcopy(pts)
+            xs = [p[0] for p in self.safe_zone_polygon]
+            ys = [p[1] for p in self.safe_zone_polygon]
+            self.safe_zone_left = round(min(xs), 3)
+            self.safe_zone_right = round(max(xs), 3)
+            self.safe_zone_top = round(min(ys), 3)
+            self.safe_zone_bottom = round(max(ys), 3)
+            self.last_verified_safe_zone = copy.deepcopy(self.safe_zone_polygon)
+            self.initial_crib_calibrated = True
+
+        cfg_path = os.path.join(BASE_DIR, "config.json")
+        if os.path.exists(cfg_path):
+            try:
+                with open(cfg_path, "r", encoding="utf-8") as fp:
+                    cfg_data = json.load(fp)
+                cfg_data["safe_zone_left"] = self.safe_zone_left
+                cfg_data["safe_zone_right"] = self.safe_zone_right
+                cfg_data["safe_zone_top"] = self.safe_zone_top
+                cfg_data["safe_zone_bottom"] = self.safe_zone_bottom
+                cfg_data["safe_zone_polygon"] = self.safe_zone_polygon
+                with open(cfg_path, "w", encoding="utf-8") as fp:
+                    json.dump(cfg_data, fp, ensure_ascii=False, indent=4)
+            except Exception as ce:
+                print(f"[VisionTracker] Lỗi lưu Safe Zone vào config.json: {ce}")
+
+    def get_enhanced_low_light_frame(self, burst_frames=None) -> np.ndarray:
+        """
+        Bù sáng đa khung hình thích ứng (Multi-frame Exposure Stacking & CLAHE):
+        - Chập trung bình 3-5 frame để triệt tiêu nhiễu hạt cảm biến ISO ban đêm.
+        - Tự động nâng sáng vùng bóng tối và lòng nôi bằng CLAHE + Gamma động trên kênh L.
+        """
+        frames = burst_frames or list(self.raw_frame_burst)
+        if not frames:
+            return None
+        if len(frames) == 1:
+            base = frames[0].copy()
+        else:
+            base = np.mean([f.astype(np.float32) for f in frames], axis=0).astype(np.uint8)
+
+        gray = cv2.cvtColor(base, cv2.COLOR_BGR2GRAY)
+        mean_b = float(np.mean(gray))
+
+        if mean_b >= 140.0:
+            return base
+
+        lab = cv2.cvtColor(base, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+
+        if mean_b < 50.0:
+            gamma = 0.55
+            clip = 3.5
+        elif mean_b < 100.0:
+            gamma = 0.65
+            clip = 2.8
+        else:
+            gamma = 0.80
+            clip = 2.0
+
+        clahe = cv2.createCLAHE(clipLimit=clip, tileGridSize=(8, 8))
+        cl = clahe.apply(l)
+
+        table = np.array([((i / 255.0) ** gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+        cl_gamma = cv2.LUT(cl, table)
+
+        return cv2.cvtColor(cv2.merge((cl_gamma, a, b)), cv2.COLOR_LAB2BGR)
 
     def _classify_person(self, xyxy, kpts, frame_h, frame_w):
         """
@@ -962,9 +1078,15 @@ class VisionTracker:
         try:
             gray_crop = cv2.cvtColor(portrait_crop, cv2.COLOR_BGR2GRAY)
             mean_brightness = float(np.mean(gray_crop))
+            # Tự động bù sáng ban đêm (Night Sight Enhancement) nếu phòng tối
+            if mean_brightness < 95.0:
+                portrait_crop = self.get_enhanced_low_light_frame([portrait_crop])
+                gray_crop = cv2.cvtColor(portrait_crop, cv2.COLOR_BGR2GRAY)
+                mean_brightness = float(np.mean(gray_crop))
+
             laplacian_var = float(cv2.Laplacian(gray_crop, cv2.CV_64F).var())
-            # Bỏ qua nếu ảnh quá tối (< 28) hoặc bị mờ nhòe do rung lắc (< 32)
-            if mean_brightness < 28.0 or laplacian_var < 32.0:
+            # Bỏ qua nếu sau khi bù sáng vẫn quá tối (< 25) hoặc bị mờ nhòe do rung lắc (< 30)
+            if mean_brightness < 25.0 or laplacian_var < 30.0:
                 return
             thumb_gray = cv2.resize(gray_crop, (64, 64))
         except Exception:
@@ -1084,7 +1206,8 @@ class VisionTracker:
         self.pose_changed_and_stabilized = False
 
         self.pending_tracking_audit = True
-        raw_copy = raw_frame.copy()
+        enhanced_raw = self.get_enhanced_low_light_frame()
+        raw_copy = enhanced_raw.copy() if enhanced_raw is not None else raw_frame.copy()
         ann_copy = annotated_frame.copy()
 
         norm_box = [0.0, 0.0, 0.0, 0.0]
@@ -1110,11 +1233,7 @@ class VisionTracker:
                 if not res.get("audited", False):
                     return
 
-                # 1. Tự động căn chỉnh Khung Bảo Vệ Nôi / Tấm Đệm (Safe Zone 3D)
-                # Cho phép cập nhật khi:
-                # - Chưa có cấu hình nôi (need_init_crib)
-                # - Hoặc Gemini phát hiện khung nôi hiện tại chưa chính xác/bị hẹp/cắt qua đầu bé (not crib_acc)
-                # - Hoặc vị trí bé đang nằm lọt ra ngoài mép khung nôi hiện tại
+                # 1. CƠ CHẾ XÁC THỰC 2 BƯỚC + BẢO VỆ VẬT LÝ + ROLLBACK AN TOÀN CHO KHUNG NÔI 3D
                 tsz_poly = res.get("true_safe_zone_polygon")
                 tsz = res.get("true_safe_zone")
                 crib_acc = res.get("crib_zone_accurate", True)
@@ -1126,78 +1245,86 @@ class VisionTracker:
                     if not self._is_point_in_safe_zone(bcx, bcy, w, h, margin_px=20.0):
                         baby_outside_crib = True
 
-                if (need_init_crib or not crib_acc or baby_outside_crib) and (isinstance(tsz_poly, list) and len(tsz_poly) == 4):
-                    try:
-                        clean_pts = []
-                        for p in tsz_poly:
-                            px = float(p[0])
-                            py = float(p[1])
-                            if px > 1.0:
-                                px = px / 1000.0 if px <= 1000.0 else px / float(w)
-                            if py > 1.0:
-                                py = py / 1000.0 if py <= 1000.0 else py / float(h)
-                            px = max(0.01, min(0.99, px))
-                            py = max(0.01, min(0.99, py))
-                            clean_pts.append([round(px, 3), round(py, 3)])
+                # TRƯỜNG HỢP 1: GEMINI XÁC NHẬN KHUNG NÔI HIỆN TẠI ĐÃ CHUẨN XÁC
+                if crib_acc and not baby_outside_crib:
+                    with self.lock:
+                        import copy
+                        self.last_verified_safe_zone = copy.deepcopy(self.safe_zone_polygon)
+                        self.pending_crib_candidate = None
+                        self.pending_crib_hits = 0
+                        self.initial_crib_calibrated = True
+                    # Khung nôi đang rất chuẩn, giữ nguyên không cần thay đổi
 
-                        with self.lock:
-                            self.safe_zone_polygon = clean_pts
-                            xs = [p[0] for p in self.safe_zone_polygon]
-                            ys = [p[1] for p in self.safe_zone_polygon]
-                            self.safe_zone_left = round(min(xs), 3)
-                            self.safe_zone_right = round(max(xs), 3)
-                            self.safe_zone_top = round(min(ys), 3)
-                            self.safe_zone_bottom = round(max(ys), 3)
-                            self.initial_crib_calibrated = True
-                        # Lưu luôn vào config.json để đồng bộ giao diện
-                        cfg_path = os.path.join(BASE_DIR, "config.json")
-                        if os.path.exists(cfg_path):
-                            with open(cfg_path, "r", encoding="utf-8") as fp:
-                                cfg_data = json.load(fp)
-                            cfg_data["safe_zone_left"] = self.safe_zone_left
-                            cfg_data["safe_zone_right"] = self.safe_zone_right
-                            cfg_data["safe_zone_top"] = self.safe_zone_top
-                            cfg_data["safe_zone_bottom"] = self.safe_zone_bottom
-                            cfg_data["safe_zone_polygon"] = self.safe_zone_polygon
-                            with open(cfg_path, "w", encoding="utf-8") as fp:
-                                json.dump(cfg_data, fp, ensure_ascii=False, indent=4)
-                        print(f"[VisionTracker] ✨ Đã tự động căn chỉnh Khung Nôi 3D (Safe Zone) theo Gemini: {self.safe_zone_polygon}")
-                    except Exception as ce:
-                        print(f"[VisionTracker] Lỗi lưu Safe Zone tự động: {ce}")
-                elif (need_init_crib or not crib_acc or baby_outside_crib) and (isinstance(tsz, list) and len(tsz) == 4):
-                    try:
-                        clean_sz = []
-                        for i, val in enumerate(tsz):
-                            v = float(val)
-                            dim = float(w) if i in (0, 2) else float(h)
-                            if v > 1.0:
-                                v = v / 1000.0 if v <= 1000.0 else v / dim
-                            clean_sz.append(round(max(0.01, min(0.99, v)), 3))
-                        l, t, r, b = clean_sz
-                        if r > l and b > t:
+                # TRƯỜNG HỢP 2: CẦN CĂN CHỈNH (KHỞI TẠO HOẶC LỆCH VỊ TRÍ)
+                elif isinstance(tsz_poly, list) and len(tsz_poly) == 4:
+                    clean_pts = []
+                    for p in tsz_poly:
+                        px = float(p[0])
+                        py = float(p[1])
+                        if px > 1.0:
+                            px = px / 1000.0 if px <= 1000.0 else px / float(w)
+                        if py > 1.0:
+                            py = py / 1000.0 if py <= 1000.0 else py / float(h)
+                        clean_pts.append([round(max(0.01, min(0.99, px)), 3), round(max(0.01, min(0.99, py)), 3)])
+
+                    # LỚP BẢO VỆ 1: KIỂM ĐỊNH HÌNH HỌC VẬT LÝ (SANITY CHECK)
+                    is_valid = self._validate_crib_polygon(clean_pts, w, h, check_baby=self.baby_detected)
+                    if not is_valid:
+                        print(f"[VisionTracker] ⚠️ Khung nôi đề xuất {clean_pts} không đạt tiêu chuẩn hình học (diện tích/độ lồi/chứa bé). Bác bỏ đề xuất!")
+                        # Nếu khung hiện tại bị lỗi hình học, tự động rollback về Tọa Độ Vàng
+                        if not self._validate_crib_polygon(self.safe_zone_polygon, w, h, check_baby=False):
+                            import copy
                             with self.lock:
-                                self.safe_zone_left = l
-                                self.safe_zone_top = t
-                                self.safe_zone_right = r
-                                self.safe_zone_bottom = b
-                                self.safe_zone_polygon = [
-                                    [l, t], [r, t], [r, b], [l, b]
-                                ]
-                                self.initial_crib_calibrated = True
-                            cfg_path = os.path.join(BASE_DIR, "config.json")
-                            if os.path.exists(cfg_path):
-                                with open(cfg_path, "r", encoding="utf-8") as fp:
-                                    cfg_data = json.load(fp)
-                                cfg_data["safe_zone_left"] = self.safe_zone_left
-                                cfg_data["safe_zone_right"] = self.safe_zone_right
-                                cfg_data["safe_zone_top"] = self.safe_zone_top
-                                cfg_data["safe_zone_bottom"] = self.safe_zone_bottom
-                                cfg_data["safe_zone_polygon"] = self.safe_zone_polygon
-                                with open(cfg_path, "w", encoding="utf-8") as fp:
-                                    json.dump(cfg_data, fp, ensure_ascii=False, indent=4)
-                            print(f"[VisionTracker] ✨ Đã tự động căn chỉnh Khung Nôi chữ nhật theo Gemini: {clean_sz}")
-                    except Exception as ce:
-                        print(f"[VisionTracker] Lỗi lưu Safe Zone chữ nhật tự động: {ce}")
+                                self.safe_zone_polygon = copy.deepcopy(self.last_verified_safe_zone)
+                            print(f"[VisionTracker] 🔄 Đã tự động Rollback về Tọa Độ Vàng gần nhất: {self.last_verified_safe_zone}")
+                    else:
+                        # LỚP BẢO VỆ 2: CƠ CHẾ 2 BƯỚC XÁC THỰC (TWO-PHASE COMMIT)
+                        if need_init_crib:
+                            # Khởi động lần đầu chưa có nôi: Chấp nhận ngay để thiết lập ban đầu
+                            self._commit_safe_zone(clean_pts)
+                            print(f"[VisionTracker] ✨ [Khởi tạo ban đầu] Đã thiết lập Khung Nôi 3D: {clean_pts}")
+                        elif self.pending_crib_candidate is not None:
+                            # BƯỚC 2: Đã có đề xuất ở lần gọi trước, tiến hành đối chiếu xác thực chéo giữa 2 lần AI liên tiếp!
+                            diff = max(
+                                abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+                                for p1, p2 in zip(clean_pts, self.pending_crib_candidate)
+                            )
+                            if diff < 0.18:
+                                # Cả 2 lần gọi AI liên tiếp đồng thuận trí về vị trí nôi mới! -> CHỐT HẠ & LƯU CẤU HÌNH
+                                self._commit_safe_zone(clean_pts)
+                                self.pending_crib_candidate = None
+                                self.pending_crib_hits = 0
+                                print(f"[VisionTracker] 🎯 [Bước 2/2: Xác thực & Chốt hạ] Khung nôi mới đã được xác thực 2 lần AI liên tiếp đồng thuận (độ lệch {round(diff, 3)} < 0.18)! Đã lưu an toàn.")
+                            else:
+                                # Hai lần gọi AI đưa tọa độ chênh lệch nhau -> AI đang dao động, cập nhật ứng viên và chờ thêm
+                                print(f"[VisionTracker] ⏳ [Đối chiếu] 2 lần gọi AI trả về tọa độ còn chênh lệch ({round(diff, 3)} >= 0.18). Giữ nguyên khung cũ và theo dõi tiếp.")
+                                self.pending_crib_candidate = clean_pts
+                        else:
+                            # BƯỚC 1: Ghi nhận đề xuất ứng viên lần đầu, chưa ghi đè config ngay!
+                            self.pending_crib_candidate = clean_pts
+                            self.pending_crib_hits = 1
+                            print(f"[VisionTracker] 🔍 [Bước 1/2: Đề xuất] Gemini đề xuất vị trí nôi mới: {clean_pts}. Đang giữ ở hàng đợi xác thực chéo lần kế tiếp...")
+
+                elif isinstance(tsz, list) and len(tsz) == 4:
+                    clean_sz = []
+                    for i, val in enumerate(tsz):
+                        v = float(val)
+                        dim = float(w) if i in (0, 2) else float(h)
+                        if v > 1.0:
+                            v = v / 1000.0 if v <= 1000.0 else v / dim
+                        clean_sz.append(round(max(0.01, min(0.99, v)), 3))
+                    l, t, r, b = clean_sz
+                    if r > l and b > t:
+                        rect_poly = [[l, t], [r, t], [r, b], [l, b]]
+                        if self._validate_crib_polygon(rect_poly, w, h, check_baby=self.baby_detected):
+                            if need_init_crib or self.pending_crib_candidate is not None:
+                                self._commit_safe_zone(rect_poly)
+                                self.pending_crib_candidate = None
+                                self.pending_crib_hits = 0
+                                print(f"[VisionTracker] 🎯 Đã xác thực Khung Nôi chữ nhật theo Gemini: {rect_poly}")
+                            else:
+                                self.pending_crib_candidate = rect_poly
+                                self.pending_crib_hits = 1
                 else:
                     self.initial_crib_calibrated = True
 
@@ -1264,6 +1391,7 @@ class VisionTracker:
 
     def _process_frame(self, frame):
         h, w = frame.shape[:2]
+        self.raw_frame_burst.append(frame.copy())
         annotated = frame.copy()
 
         # 0. Kiểm tra trực quan xem nôi/giường có bé hay trống rỗng (Crib Occupancy Check)
