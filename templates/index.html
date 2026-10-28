@@ -4044,20 +4044,20 @@
             }
         }
 
-        // Manual Snapshot (with Gemini Privacy & Co-Presence Aesthetic Check if enabled)
+        // Manual Snapshot (Fast Non-blocking & Always Saved)
         async function takeManualSnapshot() {
-            showToast("Đang chụp & kiểm duyệt thẩm mỹ...", "⏳");
+            showToast(currentLang === 'en' ? "Taking snapshot..." : "Đang chụp ảnh...", "📸");
             try {
                 const res = await fetch('/api/take-snapshot', { method: 'POST' });
                 const d = await res.json();
                 if (d.success) {
-                    showToast(d.caption_vi ? `Đã lưu: "${d.caption_vi}"` : "Đã lưu khoảnh khắc mới vào Album!", "📸");
-                    await fetchMoments(false);
+                    showToast(d.caption_vi || (currentLang === 'en' ? "Snapshot saved to Album & Drive!" : "Đã lưu ảnh kỷ niệm vào Album!"), "📸");
+                    if (activeTab === 'moments') fetchMoments(false);
                 } else {
-                    showToast(d.error || "Không lưu được ảnh", "🛡️");
+                    showToast(d.error || (currentLang === 'en' ? "Failed to take photo" : "Không chụp được ảnh"), "⚠️");
                 }
             } catch (e) {
-                showToast("Lỗi khi chụp ảnh", "⚠️");
+                showToast(currentLang === 'en' ? "Error taking snapshot" : "Lỗi khi chụp ảnh", "⚠️");
             }
         }
 

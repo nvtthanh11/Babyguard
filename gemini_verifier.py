@@ -749,11 +749,35 @@ Trả về đúng định dạng JSON:
 
         img_bytes = self._encode_frame_jpeg(frame_bgr, max_dim=800)
         if not img_bytes:
-            return {"checked_by_gemini": False, "approved": False, "reason_vi": "Lỗi mã hóa ảnh."}
+            return {"checked_by_gemini": False, "approved": True if is_manual else False, "reason_vi": "Lỗi mã hóa ảnh."}
 
-        prompt = f"""
+        if is_manual:
+            prompt = f"""
+Bạn là Trợ lý Nhiếp ảnh Gia Đình của BabyGuard AI cho bé {self.baby_name}.
+Bức ảnh này do chính BỐ MẸ / NGƯỜI THÂN CHỦ ĐỘNG BẤM CHỤP để lưu lại khoảnh khắc đáng nhớ của gia đình và bé bên nôi.
+
+YÊU CẦU:
+1. TÔN TRỌNG VÀ DUYỆT ẢNH (approved = true, privacy_safe = true) để lưu giữ kỷ niệm cho gia đình (kể cả khi có bố mẹ/người thân đang chăm sóc, ngắm nhìn bé hoặc bé đang ngủ nghiêng).
+2. Tạo một câu chú thích (caption_vi) thật ngọt ngào, ấm áp, ghi nhận khoảnh khắc gia đình và bé (ví dụ: "Mẹ âu yếm ngắm nhìn bé yêu", "Khoảnh khắc bình yên bên nôi", "Bé ngủ say giấc trong vòng tay gia đình").
+
+Trả về đúng định dạng JSON:
+{{
+  "baby_present": boolean,
+  "is_baby_central_subject": true,
+  "baby_face_clear": true,
+  "no_dominant_adults": true,
+  "privacy_safe": true,
+  "approved": true,
+  "aesthetic_score": 9,
+  "clean_crop_box": null,
+  "caption_vi": "Một câu chú thích ngắn ấm áp, xúc động về khoảnh khắc này",
+  "reason_vi": "Ảnh kỷ niệm do gia đình chủ động chụp"
+}}
+"""
+        else:
+            prompt = f"""
 Bạn là Giám khảo Nhiếp ảnh Nghệ thuật Trẻ Sơ Sinh & Giám sát Quyền Riêng Tư (Strict Baby Photo Critic & Privacy Inspector) của BabyGuard AI.
-Bức ảnh này được hệ thống chụp để lưu vào Album Kỷ Niệm của bé {self.baby_name}.
+Bức ảnh này được hệ thống chụp TỰ ĐỘNG để lưu vào Album Kỷ Niệm của bé {self.baby_name}.
 
 TIÊU CHUẨN ĐÁNH GIÁ ẢNH ĐẸP & AN TOÀN BẮT BUỘC (TUYỆT ĐỐI TUÂN THỦ):
 
@@ -803,15 +827,21 @@ Trả về đúng định dạng JSON:
             privacy_safe = bool(data.get("privacy_safe", False))
             score = int(data.get("aesthetic_score", 0))
 
-            approved = (
-                baby_present
-                and is_central
-                and baby_face_clear
-                and no_adults
-                and privacy_safe
-                and bool(data.get("approved", False))
-                and score >= 7
-            )
+            if is_manual:
+                approved = True
+                privacy_safe = True
+                baby_face_clear = True
+                score = max(8, score)
+            else:
+                approved = (
+                    baby_present
+                    and is_central
+                    and baby_face_clear
+                    and no_adults
+                    and privacy_safe
+                    and bool(data.get("approved", False))
+                    and score >= 7
+                )
 
             result = {
                 "checked_by_gemini": True,

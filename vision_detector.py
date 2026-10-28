@@ -175,6 +175,7 @@ class VisionTracker:
         self.lock = threading.Lock()
         self.raw_frame = None
         self.annotated_frame = None
+        self.last_baby_face_info = None
         
         # Tracking metrics
         self.baby_detected = False
@@ -1193,7 +1194,9 @@ class VisionTracker:
                 # Đồng bộ lưu trữ Google Drive theo cấu trúc Năm > Tháng > Ngày > Giờ-Phút-Giây.jpg
                 try:
                     from google_drive_sync import save_moment_to_google_drive
-                    drive_file = save_moment_to_google_drive(frame_to_save, self.config, now_dt)
+                    from main import load_config
+                    drive_cfg = load_config()
+                    drive_file = save_moment_to_google_drive(frame_to_save, drive_cfg, now_dt)
                     if drive_file:
                         res["google_drive_path"] = drive_file
                 except Exception as de:
@@ -1462,6 +1465,7 @@ class VisionTracker:
 
         # 1. Quét nhận diện khuôn mặt chuyên dụng bằng YuNet (Face-First Detector)
         baby_face_info, has_adult_face, adult_face_box = self._detect_baby_face(frame)
+        self.last_baby_face_info = baby_face_info
 
         # 2. Run YOLO inference với conf=0.18 chuẩn xác, lọc nhiễu bóng mờ
         results = self.model(frame, device=self.device, verbose=False, conf=0.18)
@@ -2197,6 +2201,13 @@ class VisionTracker:
     def stop(self):
         self.is_running = False
         print("[VisionTracker] Stopping vision tracker...")
+
+    def get_snapshot_frame(self):
+        """Lấy an toàn khung hình gốc và thông tin khuôn mặt mới nhất mà không gây xung đột khóa / deadlock OpenCV."""
+        with self.lock:
+            frame = self.raw_frame.copy() if self.raw_frame is not None else (self.annotated_frame.copy() if self.annotated_frame is not None else None)
+            face = self.last_baby_face_info.copy() if getattr(self, "last_baby_face_info", None) is not None else None
+            return frame, face
 
     def get_latest_frame(self, annotated: bool = True):
         with self.lock:
