@@ -965,7 +965,7 @@ class VisionTracker:
             if still_time > 25.0 and len(self.chest_history) >= 35:
                 vals = [v for t, v in self.chest_history]
                 if float(np.std(vals)) < 0.015 and self.on_apnea_callback:
-                    self.on_apnea_callback()
+                    self._safe_dispatch_callback(self.on_apnea_callback)
                     self.breathing_status = "Cảnh báo ngưng thở"
         else:
             self.last_motion_time = now_t
@@ -974,6 +974,14 @@ class VisionTracker:
             return True
 
         return (now_t - getattr(self, "last_breath_peak_time", 0.0)) < 4.0 and self.breathing_bpm > 0
+
+    def _safe_dispatch_callback(self, cb, *args, **kwargs):
+        """Gọi callback an toàn với bọc ngoại lệ, ngăn chặn việc callback làm gián đoạn luồng video."""
+        if cb:
+            try:
+                cb(*args, **kwargs)
+            except Exception as e:
+                print(f"[VisionTracker] ⚠️ Ngoại lệ an toàn từ callback {getattr(cb, '__name__', str(cb))}: {e}")
 
     def _trigger_gemini_alert_verify(self, frame, alert_type: str, local_reason: str):
         """Kích hoạt cảnh báo khẩn cấp cục bộ ngay lập tức và thẩm định chi tiết song song qua Gemini API."""
@@ -985,7 +993,7 @@ class VisionTracker:
         self.sleep_pose = "Mặt bị che khuất (Nguy cơ ngạt)"
         self.baby_status = "CẢNH BÁO: MẶT BÉ BỊ CHE KHUẤT!"
         if self.on_covered_face_callback:
-            self.on_covered_face_callback()
+            self._safe_dispatch_callback(self.on_covered_face_callback)
 
         if self.gemini_verifier is None or not self.gemini_verifier.is_ready() or not self.gemini_verifier.verify_alerts_enabled:
             return
@@ -1556,7 +1564,7 @@ class VisionTracker:
             if self.prone_alert_enabled and pose_level == "danger":
                 self.prone_frame_count += 1
                 if self.prone_frame_count >= 35 and self.on_prone_callback: # ~3.0 seconds
-                    self.on_prone_callback()
+                    self._safe_dispatch_callback(self.on_prone_callback)
             else:
                 self.prone_frame_count = max(0, self.prone_frame_count - 1)
 
@@ -1599,7 +1607,7 @@ class VisionTracker:
             if self.danger_zone_enabled and self.is_near_edge:
                 self.danger_zone_frame_count += 1
                 if self.danger_zone_frame_count >= 15 and self.on_danger_zone_callback:
-                    self.on_danger_zone_callback()
+                    self._safe_dispatch_callback(self.on_danger_zone_callback)
             else:
                 self.danger_zone_frame_count = max(0, self.danger_zone_frame_count - 1)
 
@@ -1683,7 +1691,7 @@ class VisionTracker:
                 if self.smoothed_motion > self.motion_threshold:
                     self.baby_status = "Đang thức chơi / Vận động" if is_awake_mode else "Cựa quậy / Thức giấc"
                     if self.on_motion_callback:
-                        self.on_motion_callback(self.smoothed_motion)
+                        self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
                 else:
                     if is_awake_mode:
                         if self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
@@ -1755,7 +1763,7 @@ class VisionTracker:
             if self.danger_zone_enabled and self.is_near_edge:
                 self.danger_zone_frame_count += 1
                 if self.danger_zone_frame_count >= 15 and self.on_danger_zone_callback:
-                    self.on_danger_zone_callback()
+                    self._safe_dispatch_callback(self.on_danger_zone_callback)
             else:
                 self.danger_zone_frame_count = max(0, self.danger_zone_frame_count - 1)
 
@@ -1799,7 +1807,7 @@ class VisionTracker:
                 if self.smoothed_motion > self.motion_threshold:
                     self.baby_status = "Đang thức chơi / Vận động" if is_awake_mode else "Cựa quậy / Thức giấc"
                     if self.on_motion_callback:
-                        self.on_motion_callback(self.smoothed_motion)
+                        self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
                 else:
                     if is_awake_mode:
                         if self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
@@ -2168,13 +2176,18 @@ class VisionTracker:
             if frame.shape[1] != self.width or frame.shape[0] != self.height:
                 frame = cv2.resize(frame, (self.width, self.height))
 
-            annotated = self._process_frame(frame)
+            try:
+                annotated = self._process_frame(frame)
+            except Exception as e:
+                print(f"[VisionTracker] ⚠️ Lỗi trong _process_frame (đã bảo vệ an toàn): {e}")
+                annotated = frame
+
             with self.lock:
                 self.raw_frame = frame
                 self.annotated_frame = annotated
 
             if self.frame_callback:
-                self.frame_callback(annotated)
+                self._safe_dispatch_callback(self.frame_callback, annotated)
 
             fps_counter += 1
             if time.time() - fps_start >= 1.0:

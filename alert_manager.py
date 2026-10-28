@@ -56,7 +56,15 @@ class AlertManager:
         if not proto_entry:
             return ""
 
-        cur_lang = (lang or self.config.get("language", "vi")).lower()
+        raw_lang = lang if lang else self.config.get("language", "vi")
+        if isinstance(raw_lang, bool):
+            cur_lang = "en" if raw_lang else "vi"
+        elif isinstance(raw_lang, str):
+            cur_lang = raw_lang.lower().strip()
+        else:
+            cur_lang = "vi"
+        if cur_lang not in ["vi", "en"]:
+            cur_lang = "vi"
         if cur_lang in proto_entry:
             proto = proto_entry[cur_lang]
         elif "vi" in proto_entry:

@@ -851,7 +851,11 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.post("/api/config/toggle")
     def toggle_config(payload: ConfigToggle):
         cfg = load_config()
-        cfg[payload.key] = payload.value
+        if payload.key == "language":
+            val = "en" if payload.value is True else ("vi" if payload.value is False else str(payload.value))
+            cfg["language"] = val
+        else:
+            cfg[payload.key] = payload.value
         save_config(cfg)
         
         alert_manager.update_config(cfg)
