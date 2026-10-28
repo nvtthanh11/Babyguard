@@ -39,9 +39,11 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     from growth_tracker import GrowthTracker, calculate_exact_age
     from vaccine_tracker import VaccineTracker
     from daily_story_tracker import DailyStoryTracker
+    from license_manager import LicenseManager, get_machine_fingerprint
     growth_tracker = GrowthTracker()
     vaccine_tracker = VaccineTracker()
     daily_story_tracker = DailyStoryTracker()
+    license_manager = LicenseManager(load_config())
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
@@ -734,6 +736,63 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         return {
             "success": True,
             "status": get_google_drive_status(cfg)
+        }
+
+    @app.get("/api/license/status")
+    def get_license_status():
+        cfg = load_config()
+        lm = LicenseManager(cfg)
+        return lm.get_status()
+
+    @app.post("/api/license/activate")
+    def activate_license(payload: dict):
+        key = str(payload.get("license_key", "")).strip()
+        cfg = load_config()
+        lm = LicenseManager(cfg)
+        res = lm.activate_key(key)
+        return res
+
+    @app.get("/api/system/audit")
+    def run_system_audit():
+        cfg = load_config()
+        lm = LicenseManager(cfg)
+        lic_stat = lm.get_status()
+
+        # 1. Camera check
+        cam_ok = vision_tracker is not None and getattr(vision_tracker, "is_running", False)
+        # 2. Audio check
+        audio_ok = audio_detector is not None and getattr(audio_detector, "is_running", False)
+        # 3. Models check
+        yolo_path = os.path.join(BASE_DIR, "models", "yolov8n-pose.pt")
+        yamnet_path = os.path.join(BASE_DIR, "models", "yamnet.tflite")
+        models_ok = os.path.exists(yolo_path) and os.path.exists(yamnet_path)
+        # 4. Gemini check
+        gemini_key = str(cfg.get("gemini_api_key", "")).strip()
+        gemini_ok = bool(gemini_key and len(gemini_key) > 10)
+        # 5. Telegram check
+        tg_token = str(cfg.get("telegram_bot_token", "")).strip()
+        tg_chat = str(cfg.get("telegram_chat_id", "")).strip()
+        tg_ok = bool(tg_token and tg_chat)
+        # 6. Medical RAG check
+        proto_path = os.path.join(BASE_DIR, "medical_knowledge", "infant_first_aid_protocols.json")
+        rag_ok = os.path.exists(proto_path)
+        # 7. Drive check
+        from google_drive_sync import get_google_drive_status
+        drive_stat = get_google_drive_status(cfg)
+
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "overall_healthy": cam_ok and audio_ok and models_ok and lic_stat.get("valid", False),
+            "license": lic_stat,
+            "subsystems": {
+                "camera_stream": {"status": "online" if cam_ok else "offline", "healthy": cam_ok},
+                "audio_detector": {"status": "online" if audio_ok else "offline", "healthy": audio_ok},
+                "ai_models": {"status": "loaded" if models_ok else "missing", "healthy": models_ok},
+                "gemini_hybrid_cloud": {"status": "configured" if gemini_ok else "not_configured", "healthy": gemini_ok},
+                "telegram_alerts": {"status": "configured" if tg_ok else "unpaired", "healthy": tg_ok},
+                "medical_rag_protocols": {"status": "ready" if rag_ok else "missing", "healthy": rag_ok},
+                "google_drive_sync": drive_stat
+            }
         }
 
     class ConfigToggle(BaseModel):

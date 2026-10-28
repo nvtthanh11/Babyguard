@@ -143,6 +143,14 @@
                 <span id="header-gemini-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
                 <span id="header-gemini-text">Thiết lập AI</span>
             </button>
+            <button onclick="openLicenseModal()" id="header-license-btn" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition" title="Bản quyền phần mềm BabyGuard AI">
+                <span id="header-license-icon">🔑</span>
+                <span id="header-license-text">Bản quyền</span>
+            </button>
+            <button onclick="toggleAppLanguage()" id="header-lang-btn" class="px-2.5 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-xs font-bold text-slate-200 transition flex items-center gap-1.5" title="Chuyển đổi Ngôn ngữ / Switch Language (VI / EN)">
+                <span id="header-lang-flag">🇻🇳</span>
+                <span id="header-lang-label">VI</span>
+            </button>
             <button onclick="toggleMusicModal()" class="p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-amber-400 hover:text-amber-300 transition" title="Nhạc ru & Tiếng ồn trắng">
                 🎵
             </button>
@@ -2065,6 +2073,69 @@
         </div>
     </div>
 
+    <!-- ================= POP-UP MODAL: QUẢN LÝ BẢN QUYỀN THƯƠNG MẠI ================= -->
+    <div id="license-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden" onclick="closeLicenseModal()">
+        <div class="bg-cardbg rounded-3xl border border-indigo-500/40 max-w-lg w-full p-6 space-y-5 shadow-2xl" onclick="event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-bordercol">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-xl">
+                        🔑
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-base text-slate-100" id="lic-modal-title">Bản Quyền BabyGuard AI</h3>
+                        <p class="text-[11px] text-slate-400" id="lic-modal-subtitle">Xác thực bản quyền thương mại & bảo vệ phần cứng</p>
+                    </div>
+                </div>
+                <button onclick="closeLicenseModal()" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
+            </div>
+
+            <!-- Current License Status Card -->
+            <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400 font-medium" id="lic-label-status">Trạng thái bản quyền:</span>
+                    <span id="lic-badge-status" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        Đang kiểm tra...
+                    </span>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
+                    <span class="text-slate-400 font-medium" id="lic-label-machine">Mã máy tính (Hardware ID):</span>
+                    <div class="flex items-center gap-1.5 font-mono text-emerald-400 font-bold">
+                        <span id="lic-machine-id">...</span>
+                        <button onclick="copyMachineId()" class="p-1 hover:text-emerald-300 text-slate-400" title="Sao chép mã máy">📋</button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
+                    <span class="text-slate-400 font-medium" id="lic-label-expires">Thời hạn sử dụng:</span>
+                    <span id="lic-expires-text" class="text-slate-200 font-semibold">--</span>
+                </div>
+            </div>
+
+            <!-- Activation Input Form -->
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1.5" id="lic-label-input">Nhập Mã Kích Hoạt Bản Quyền (License Key):</label>
+                    <input type="text" id="lic-input-key" placeholder="BG-LFT-99999999-XXXX-XXXXXXXX" class="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 outline-none rounded-xl px-3.5 py-2.5 text-slate-100 font-mono font-bold tracking-wide">
+                </div>
+                <p id="lic-result-msg" class="text-[11px] hidden"></p>
+                <div class="flex gap-2 pt-1">
+                    <button onclick="activateLicenseKey()" id="lic-btn-activate" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/20 transition active:scale-95">
+                        ⚡ Kích Hoạt Bản Quyền
+                    </button>
+                    <button onclick="closeLicenseModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+
+            <!-- Commercial Support & Buy Link -->
+            <div class="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-[11px] text-slate-300 flex items-center justify-between">
+                <span id="lic-support-text">Chưa có mã bản quyền? Mua trực tuyến để ủng hộ tác giả.</span>
+                <a href="https://babyguard.ai" target="_blank" class="px-3 py-1 bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-bold transition">Mua Key</a>
+            </div>
+        </div>
+    </div>
+
     <!-- Core App Logic -->
     <script>
         let currentConfig = {};
@@ -2077,6 +2148,305 @@
         let activeTab = 'live';
         let currentVaccineAlert = null;
         let hasDismissedVaccineModalForCamera = false;
+
+        // =========================================================================
+        // BILINGUAL LOCALIZATION (VIETNAMESE 🇻🇳 / ENGLISH 🇬🇧)
+        // =========================================================================
+        const I18N = {
+            vi: {
+                flag: '🇻🇳',
+                label: 'VI',
+                tab_live: 'Camera & Vệ sĩ AI',
+                tab_toggles: 'Bật / Tắt Tính Năng AI',
+                tab_sleep: 'Giấc Ngủ & Nhi Khoa',
+                tab_growth: 'Sổ Đo WHO',
+                tab_vaccine: 'Lịch Tiêm Chủng',
+                tab_moments: 'Khoảnh Khắc Đáng Yêu',
+                tab_recordings: 'Video Ghi Hình',
+                header_subtitle: 'Bảo bọc giấc ngủ bé 24/7',
+                header_scanning: 'Đang quét phòng bé...',
+                header_sleep: 'Giấc ngủ:',
+                header_breathing: '🫁 -- RPM',
+                header_remote: 'Xem Từ Xa 4G',
+                header_who: 'Sổ Đo WHO',
+                header_ai: 'Thiết lập AI',
+                header_license: 'Bản quyền AI',
+                story_badge: '1 Ngày 1 Câu Chuyện Cho Bé',
+                story_read_btn: '🔊 Đọc Cho Bé Nghe',
+                story_pause_btn: '⏸️ Tạm Dừng',
+                story_moral_title: '💡 Ý Nghĩa & Bài Học Cuộc Sống',
+                story_desc: 'Câu chuyện kinh điển nuôi dưỡng tâm hồn và nhân cách bé',
+                btn_snapshot: '📸 Chụp Ảnh',
+                btn_talkback: '🎙️ Nói Với Bé',
+                btn_lullaby: '🎵 Nhạc Ru',
+                btn_calibrate: '📐 Căn Chỉnh Nôi',
+                sleep_heading: 'Theo Dõi & Phân Tích Giấc Ngủ Nhi Khoa 24h',
+                sleep_subheading: 'Tính từ mốc 07:00 sáng hàng ngày theo chuẩn Viện Hàn Lâm Nhi Khoa Hoa Kỳ (AAP & AASM)',
+                sleep_today_title: 'Thời Gian Ngủ Hôm Nay',
+                sleep_wake_title: 'Cữ Thức Tiếp Theo',
+                sleep_score_title: 'Chất Lượng Giấc Ngủ',
+                sleep_chart_title: 'Biểu Đồ Giấc Ngủ 24h Theo Giờ (Mốc 07:00 Sáng)',
+                sleep_report_title: 'Bác Sĩ Giấc Ngủ Nhi Khoa (AI Clinical Sleep Summary)',
+                sleep_report_btn: '✨ Gemini Hội Chẩn Lại Toàn Diện',
+                lic_title: 'Bản Quyền BabyGuard AI',
+                lic_subtitle: 'Xác thực bản quyền thương mại & bảo vệ phần cứng',
+                lic_label_status: 'Trạng thái bản quyền:',
+                lic_label_machine: 'Mã máy tính (Hardware ID):',
+                lic_label_expires: 'Thời hạn sử dụng:',
+                lic_label_input: 'Nhập Mã Kích Hoạt Bản Quyền (License Key):',
+                lic_btn_activate: '⚡ Kích Hoạt Bản Quyền',
+                lic_support_text: 'Chưa có mã bản quyền? Mua trực tuyến để ủng hộ tác giả.',
+                lic_trial: 'Bản Dùng Thử Miễn Phí',
+                lic_lifetime: 'Bản Quyền Vĩnh Viễn (Lifetime)',
+                lic_pro: 'Gói Chuyên Nghiệp (Pro)',
+                lic_clinic: 'Bản Quyền Nhà Trẻ / Phòng Khám',
+                lic_expired: 'Hết hạn bản quyền'
+            },
+            en: {
+                flag: '🇬🇧',
+                label: 'EN',
+                tab_live: 'Camera & AI Sentry',
+                tab_toggles: 'AI Features & Sensors',
+                tab_sleep: 'Sleep & Pediatrics',
+                tab_growth: 'WHO Growth',
+                tab_vaccine: 'Vaccinations',
+                tab_moments: 'Cute Moments',
+                tab_recordings: 'Recordings',
+                header_subtitle: 'Guarding baby\'s sleep 24/7',
+                header_scanning: 'Scanning nursery room...',
+                header_sleep: 'Sleep:',
+                header_breathing: '🫁 -- RPM',
+                header_remote: 'Remote 4G View',
+                header_who: 'WHO Growth',
+                header_ai: 'AI Setup',
+                header_license: 'AI License',
+                story_badge: 'Daily Bedtime Story for Baby',
+                story_read_btn: '🔊 Read to Baby',
+                story_pause_btn: '⏸️ Pause',
+                story_moral_title: '💡 Moral Lesson & Life Values',
+                story_desc: 'Classic world stories nurturing emotional & moral development',
+                btn_snapshot: '📸 Snapshot',
+                btn_talkback: '🎙️ Talkback',
+                btn_lullaby: '🎵 Lullaby',
+                btn_calibrate: '📐 Calibrate Crib',
+                sleep_heading: '24h Pediatric Sleep Analytics',
+                sleep_subheading: 'Anchored at 07:00 AM daily per AAP & AASM clinical standards',
+                sleep_today_title: 'Today\'s Total Sleep',
+                sleep_wake_title: 'Next Wake Window',
+                sleep_score_title: 'Sleep Quality Score',
+                sleep_chart_title: '24h Hourly Sleep Distribution (Anchored at 07:00 AM)',
+                sleep_report_title: 'Pediatric Sleep Doctor Report (AI Clinical Summary)',
+                sleep_report_btn: '✨ Re-generate Clinical Diagnosis',
+                lic_title: 'BabyGuard AI Commercial License',
+                lic_subtitle: 'Machine node-locked license verification & protection',
+                lic_label_status: 'License Status:',
+                lic_label_machine: 'Hardware Machine ID:',
+                lic_label_expires: 'Validity / Expiration:',
+                lic_label_input: 'Enter Commercial License Key:',
+                lic_btn_activate: '⚡ Activate License',
+                lic_support_text: 'Need a license key? Buy online for instant activation.',
+                lic_trial: 'Free Trial Edition',
+                lic_lifetime: 'Commercial Lifetime License',
+                lic_pro: 'Pro Subscription',
+                lic_clinic: 'Clinic / Daycare License',
+                lic_expired: 'License Expired'
+            }
+        };
+
+        let currentLang = localStorage.getItem('babyguard_lang') || 'vi';
+
+        function t(key) {
+            const dict = I18N[currentLang] || I18N.vi;
+            return dict[key] || I18N.vi[key] || key;
+        }
+
+        function applyAppLanguage(lang) {
+            currentLang = (lang === 'en') ? 'en' : 'vi';
+            localStorage.setItem('babyguard_lang', currentLang);
+            document.documentElement.lang = currentLang;
+
+            // Update Header Switcher Button
+            const flagEl = document.getElementById('header-lang-flag');
+            const labelEl = document.getElementById('header-lang-label');
+            if (flagEl) flagEl.innerText = (currentLang === 'en') ? '🇬🇧' : '🇻🇳';
+            if (labelEl) labelEl.innerText = (currentLang === 'en') ? 'EN' : 'VI';
+
+            // Update Tabs
+            const tabMap = {
+                'tab-btn-live': 'tab_live',
+                'tab-btn-toggles': 'tab_toggles',
+                'tab-btn-sleep': 'tab_sleep',
+                'tab-btn-growth': 'tab_growth',
+                'tab-btn-vaccine': 'tab_vaccine',
+                'tab-btn-moments': 'tab_moments',
+                'tab-btn-recordings': 'tab_recordings'
+            };
+            for (const [btnId, key] of Object.entries(tabMap)) {
+                const el = document.getElementById(btnId);
+                if (el) {
+                    const span = el.querySelector('span:last-child');
+                    if (span) span.innerText = t(key);
+                }
+            }
+
+            // Update Header Texts
+            const subTitle = document.getElementById('header-baby-subtitle');
+            if (subTitle && subTitle.innerText.includes('Bảo bọc') || (subTitle && subTitle.innerText.includes('Guarding'))) {
+                subTitle.innerText = t('header_subtitle');
+            }
+            const remoteText = document.getElementById('header-remote-link-text');
+            if (remoteText) remoteText.innerText = t('header_remote');
+            const licHeader = document.getElementById('header-license-text');
+            if (licHeader) licHeader.innerText = t('header_license');
+
+            // Update Story Card
+            const storyBadge = document.getElementById('story-card-badge');
+            if (storyBadge) storyBadge.innerText = t('story_badge');
+            const moralTitle = document.getElementById('story-moral-title');
+            if (moralTitle) moralTitle.innerText = t('story_moral_title');
+            const storyReadBtn = document.getElementById('story-btn-read');
+            if (storyReadBtn) storyReadBtn.innerText = t('story_read_btn');
+
+            // Update License Modal Labels
+            const licTitle = document.getElementById('lic-modal-title');
+            if (licTitle) licTitle.innerText = t('lic_title');
+            const licSub = document.getElementById('lic-modal-subtitle');
+            if (licSub) licSub.innerText = t('lic_subtitle');
+            const lblStatus = document.getElementById('lic-label-status');
+            if (lblStatus) lblStatus.innerText = t('lic_label_status');
+            const lblMach = document.getElementById('lic-label-machine');
+            if (lblMach) lblMach.innerText = t('lic_label_machine');
+            const lblExp = document.getElementById('lic-label-expires');
+            if (lblExp) lblExp.innerText = t('lic_label_expires');
+            const lblInp = document.getElementById('lic-label-input');
+            if (lblInp) lblInp.innerText = t('lic_label_input');
+            const btnAct = document.getElementById('lic-btn-activate');
+            if (btnAct) btnAct.innerText = t('lic_btn_activate');
+            const supText = document.getElementById('lic-support-text');
+            if (supText) supText.innerText = t('lic_support_text');
+
+            // Sync with backend config if needed
+            fetch('/api/config/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: 'language', value: currentLang === 'en' })
+            }).catch(() => {});
+        }
+
+        function toggleAppLanguage() {
+            const nextLang = (currentLang === 'vi') ? 'en' : 'vi';
+            applyAppLanguage(nextLang);
+            showToast(nextLang === 'en' ? 'Switched to English' : 'Đã chuyển sang Tiếng Việt', '🌐');
+        }
+
+        // =========================================================================
+        // COMMERCIAL LICENSE MANAGEMENT
+        // =========================================================================
+        let currentLicenseInfo = null;
+
+        function openLicenseModal() {
+            const modal = document.getElementById('license-modal');
+            if (modal) modal.classList.remove('hidden');
+            fetchLicenseStatus();
+        }
+
+        function closeLicenseModal() {
+            const modal = document.getElementById('license-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function copyMachineId() {
+            const mId = document.getElementById('lic-machine-id').innerText;
+            if (mId && mId !== '...') {
+                navigator.clipboard.writeText(mId).then(() => {
+                    showToast(currentLang === 'en' ? 'Hardware ID copied to clipboard' : 'Đã sao chép mã máy vào clipboard', '📋');
+                });
+            }
+        }
+
+        async function fetchLicenseStatus() {
+            try {
+                const res = await fetch('/api/license/status');
+                const data = await res.json();
+                currentLicenseInfo = data;
+                updateLicenseUI(data);
+            } catch (e) {
+                console.warn('Lỗi kiểm tra bản quyền:', e);
+            }
+        }
+
+        function updateLicenseUI(data) {
+            const mIdEl = document.getElementById('lic-machine-id');
+            if (mIdEl) mIdEl.innerText = data.machine_id || 'N/A';
+
+            const badgeEl = document.getElementById('lic-badge-status');
+            const expEl = document.getElementById('lic-expires-text');
+            const headerBtn = document.getElementById('header-license-text');
+
+            if (data.status === 'activated' || data.is_lifetime) {
+                if (badgeEl) {
+                    badgeEl.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                    badgeEl.innerText = (currentLang === 'en') ? 'Commercial Lifetime' : 'Bản Quyền Vĩnh Viễn';
+                }
+                if (expEl) expEl.innerText = (currentLang === 'en') ? 'Lifetime (Permanent)' : 'Vĩnh viễn';
+                if (headerBtn) headerBtn.innerText = (currentLang === 'en') ? 'Licensed' : 'Đã kích hoạt';
+            } else if (data.status === 'trial') {
+                if (badgeEl) {
+                    badgeEl.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                    badgeEl.innerText = (currentLang === 'en') ? `Trial (${data.days_left}d left)` : `Dùng Thử (${data.days_left} ngày)`;
+                }
+                if (expEl) expEl.innerText = (currentLang === 'en') ? `${data.days_left} days remaining` : `Còn ${data.days_left} ngày dùng thử`;
+                if (headerBtn) headerBtn.innerText = (currentLang === 'en') ? `Trial: ${data.days_left}d` : `Thử: ${data.days_left}N`;
+            } else {
+                if (badgeEl) {
+                    badgeEl.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                    badgeEl.innerText = (currentLang === 'en') ? 'Expired' : 'Hết Hạn';
+                }
+                if (expEl) expEl.innerText = (currentLang === 'en') ? 'Please enter license key' : 'Vui lòng kích hoạt';
+                if (headerBtn) headerBtn.innerText = (currentLang === 'en') ? 'Unlicensed' : 'Chưa kích hoạt';
+            }
+        }
+
+        async function activateLicenseKey() {
+            const inputEl = document.getElementById('lic-input-key');
+            const resEl = document.getElementById('lic-result-msg');
+            const key = inputEl ? inputEl.value.trim() : '';
+
+            if (!key) {
+                if (resEl) {
+                    resEl.className = 'text-[11px] text-rose-400 block';
+                    resEl.innerText = (currentLang === 'en') ? 'Please enter a valid license key.' : 'Vui lòng nhập mã bản quyền.';
+                }
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/license/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ license_key: key })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (resEl) {
+                        resEl.className = 'text-[11px] text-emerald-400 block font-bold';
+                        resEl.innerText = (currentLang === 'en') ? 'License activated successfully! Thank you!' : 'Kích hoạt bản quyền thành công! Cảm ơn bạn!';
+                    }
+                    fetchLicenseStatus();
+                    showToast(currentLang === 'en' ? 'License activated!' : 'Đã kích hoạt bản quyền!', '🎉');
+                } else {
+                    if (resEl) {
+                        resEl.className = 'text-[11px] text-rose-400 block';
+                        resEl.innerText = data.message || ((currentLang === 'en') ? 'Invalid license key for this machine.' : 'Mã không hợp lệ cho máy này.');
+                    }
+                }
+            } catch (e) {
+                if (resEl) {
+                    resEl.className = 'text-[11px] text-rose-400 block';
+                    resEl.innerText = 'Lỗi kết nối máy chủ.';
+                }
+            }
+        }
 
         // Tab Switching
         function switchTab(tabId) {
@@ -5178,6 +5548,8 @@
 
         // Initialize App on DOM Ready
         window.addEventListener('DOMContentLoaded', () => {
+            applyAppLanguage(currentLang);
+            fetchLicenseStatus();
             fetchConfig();
             fetchEvents();
             fetchGrowthData();

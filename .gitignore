@@ -23,6 +23,8 @@ sleep_data.json
 # Sensitive personal configurations (Keep config.example.json)
 config.json
 !config.example.json
+.babyguard_license_state
+dist/
 
 # Test and debug fixtures
 tests/samples/

@@ -36,7 +36,7 @@ class AlertManager:
             print(f"[AlertManager] Lỗi tải tài liệu sơ cứu y khoa: {e}")
         return {}
 
-    def get_first_aid_guidance(self, event_type: str) -> str:
+    def get_first_aid_guidance(self, event_type: str, lang: str = None) -> str:
         """Truy xuất nguyên văn phác đồ sơ cứu y tế (RAG cục bộ - tốc độ 0.001s, 0% CPU, không hallucinate)."""
         if not self.first_aid_data or "protocols" not in self.first_aid_data:
             return ""
@@ -52,14 +52,24 @@ class AlertManager:
         if not proto_key:
             return ""
         
-        proto = self.first_aid_data.get("protocols", {}).get(proto_key)
-        if not proto:
+        proto_entry = self.first_aid_data.get("protocols", {}).get(proto_key)
+        if not proto_entry:
             return ""
 
-        title = proto.get("title", "HƯỚNG DẪN SƠ CỨU")
+        cur_lang = (lang or self.config.get("language", "vi")).lower()
+        if cur_lang in proto_entry:
+            proto = proto_entry[cur_lang]
+        elif "vi" in proto_entry:
+            proto = proto_entry["vi"]
+        else:
+            proto = proto_entry
+
+        title = proto.get("title", "HƯỚNG DẪN SƠ CỨU" if cur_lang == "vi" else "FIRST AID GUIDANCE")
         steps = proto.get("steps", [])
         do_nots = proto.get("do_not", [])
-        disclaimer = self.first_aid_data.get("disclaimer", "")
+        
+        disclaimer_key = f"disclaimer_{cur_lang}"
+        disclaimer = self.first_aid_data.get(disclaimer_key, self.first_aid_data.get("disclaimer_vi", self.first_aid_data.get("disclaimer", "")))
 
         out = f"\n\n🏥 <b>{title}</b>\n"
         for s in steps[:3]:
