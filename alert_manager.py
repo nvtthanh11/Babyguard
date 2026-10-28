@@ -242,17 +242,27 @@ class AlertManager:
             return
 
         def _send():
-            url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+            photo_url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+            msg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             for r in recipients:
                 try:
-                    with open(photo_path, "rb") as f:
-                        files = {"photo": f}
-                        data = {"chat_id": r["chat_id"], "caption": caption, "parse_mode": "HTML"}
-                        resp = requests.post(url, files=files, data=data, timeout=10)
-                        if resp.status_code == 200:
-                            print(f"[AlertManager] Telegram alert sent to {r['name']} ({r['chat_id']})")
-                        else:
-                            print(f"[AlertManager] Telegram error for {r['name']} ({resp.status_code}): {resp.text}")
+                    chat_id = r["chat_id"]
+                    if len(caption) > 1000:
+                        short_cap = caption[:900] + "\n<i>(Xem tiếp hướng dẫn sơ cứu bên dưới...)</i>"
+                        with open(photo_path, "rb") as f:
+                            resp = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": short_cap, "parse_mode": "HTML"}, timeout=10)
+                        if resp.status_code != 200:
+                            with open(photo_path, "rb") as f:
+                                requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": short_cap.replace("<i>", "").replace("</i>", "")}, timeout=10)
+                        # Gửi toàn văn hướng dẫn sơ cứu đầy đủ qua sendMessage (cho phép tới 4096 ký tự)
+                        requests.post(msg_url, data={"chat_id": chat_id, "text": caption, "parse_mode": "HTML"}, timeout=10)
+                    else:
+                        with open(photo_path, "rb") as f:
+                            resp = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"}, timeout=10)
+                        if resp.status_code != 200:
+                            with open(photo_path, "rb") as f:
+                                requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": caption}, timeout=10)
+                    print(f"[AlertManager] Telegram alert sent to {r['name']} ({chat_id})")
                 except Exception as e:
                     print(f"[AlertManager] Failed to send Telegram to {r['name']}: {e}")
 
