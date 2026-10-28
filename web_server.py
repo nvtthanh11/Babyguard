@@ -28,18 +28,36 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     recordings_dir = os.path.join(BASE_DIR, "recordings")
     music_dir = os.path.join(BASE_DIR, "music")
 
+    config_file_lock = threading.Lock()
+
     def load_config():
-        with open(config_path, "r") as f:
-            return json.load(f)
+        with config_file_lock:
+            for _ in range(3):
+                try:
+                    if os.path.exists(config_path):
+                        with open(config_path, "r", encoding="utf-8") as f:
+                            content = f.read().strip()
+                            if content:
+                                return json.loads(content)
+                    time.sleep(0.05)
+                except Exception:
+                    time.sleep(0.05)
+            return {}
 
     def save_config(cfg):
-        with open(config_path, "w") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        with config_file_lock:
+            try:
+                tmp_path = config_path + ".tmp"
+                with open(tmp_path, "w", encoding="utf-8") as f:
+                    json.dump(cfg, f, indent=2, ensure_ascii=False)
+                os.replace(tmp_path, config_path)
+            except Exception as e:
+                print(f"[Config] Lỗi lưu cấu hình: {e}")
 
     from growth_tracker import GrowthTracker, calculate_exact_age
     from vaccine_tracker import VaccineTracker
     from daily_story_tracker import DailyStoryTracker
-    from license_manager import LicenseManager, get_machine_fingerprint
+    from license_manager import LicenseManager, get_machine_fingerprint, generate_license_key
     growth_tracker = GrowthTracker()
     vaccine_tracker = VaccineTracker()
     daily_story_tracker = DailyStoryTracker()
@@ -765,6 +783,23 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         lm = LicenseManager(cfg)
         res = lm.activate_key(key)
         return res
+
+    @app.post("/api/license/self-activate")
+    def self_activate_license():
+        """Dành riêng cho tác giả/nhà phát triển: tự sinh và kích hoạt Master Lifetime Key cho máy hiện tại."""
+        mid = get_machine_fingerprint()
+        key = generate_license_key(mid, tier="LIFETIME")
+        cfg = load_config()
+        cfg["license_key"] = key
+        cfg["developer_mode"] = True
+        save_config(cfg)
+        lm = LicenseManager(cfg)
+        return {
+            "success": True,
+            "message": "Đã tự kích hoạt quyền Tác Giả (Developer Master Lifetime) thành công!",
+            "license_key": key,
+            "status": lm.get_status()
+        }
 
     @app.get("/api/system/audit")
     def run_system_audit():

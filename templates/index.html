@@ -292,6 +292,11 @@
                                     <span>📐</span>
                                     <span class="hidden sm:inline">Chỉnh Tay</span>
                                 </button>
+                                <!-- Refresh Stream Button -->
+                                <button onclick="reconnectStream()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium" title="Làm mới luồng video khi bị đứng">
+                                    <span>🔄</span>
+                                    <span class="hidden sm:inline" id="btn-reconnect-cam">Làm Mới Cam</span>
+                                </button>
                                 <!-- Fullscreen Button -->
                                 <button onclick="toggleFullscreen()" class="p-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Toàn màn hình">
                                     ⛶
@@ -2118,9 +2123,13 @@
                     <input type="text" id="lic-input-key" placeholder="BG-LFT-99999999-XXXX-XXXXXXXX" class="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 outline-none rounded-xl px-3.5 py-2.5 text-slate-100 font-mono font-bold tracking-wide">
                 </div>
                 <p id="lic-result-msg" class="text-[11px] hidden"></p>
-                <div class="flex gap-2 pt-1">
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
                     <button onclick="activateLicenseKey()" id="lic-btn-activate" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg shadow-indigo-500/20 transition active:scale-95">
-                        ⚡ Kích Hoạt Bản Quyền
+                        ⚡ Kích Hoạt Bằng Key
+                    </button>
+                    <button onclick="selfActivateAuthorLicense()" id="lic-btn-self-activate" class="py-2.5 px-4 rounded-xl font-bold text-xs bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 transition active:scale-95 flex items-center justify-center gap-1.5" title="Dành cho tác giả: Tự mở khóa bản quyền vĩnh viễn miễn phí cho máy này">
+                        <span>👑</span>
+                        <span>Kích Hoạt Tác Giả (Free)</span>
                     </button>
                     <button onclick="closeLicenseModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
                         Đóng
@@ -2130,8 +2139,11 @@
 
             <!-- Commercial Support & Buy Link -->
             <div class="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-[11px] text-slate-300 flex items-center justify-between">
-                <span id="lic-support-text">Chưa có mã bản quyền? Mua trực tuyến để ủng hộ tác giả.</span>
-                <a href="https://babyguard.ai" target="_blank" class="px-3 py-1 bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-bold transition">Mua Key</a>
+                <div>
+                    <span id="lic-support-text" class="block font-medium">Bạn là Tác Giả / Nhà Phát Triển?</span>
+                    <span class="text-[10px] text-slate-400 block">Dùng nút màu vàng ở trên để tự mở khóa vĩnh viễn miễn phí 100%.</span>
+                </div>
+                <span class="px-2.5 py-1 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-lg font-bold text-[10px]">Tác Giả: Miễn Phí</span>
             </div>
         </div>
     </div>
@@ -2438,6 +2450,37 @@
                     if (resEl) {
                         resEl.className = 'text-[11px] text-rose-400 block';
                         resEl.innerText = data.message || ((currentLang === 'en') ? 'Invalid license key for this machine.' : 'Mã không hợp lệ cho máy này.');
+                    }
+                }
+            } catch (e) {
+                if (resEl) {
+                    resEl.className = 'text-[11px] text-rose-400 block';
+                    resEl.innerText = 'Lỗi kết nối máy chủ.';
+                }
+            }
+        }
+
+        async function selfActivateAuthorLicense() {
+            const resEl = document.getElementById('lic-result-msg');
+            const inputEl = document.getElementById('lic-input-key');
+            try {
+                const res = await fetch('/api/license/self-activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (inputEl) inputEl.value = data.license_key || '';
+                    if (resEl) {
+                        resEl.className = 'text-[11px] text-emerald-400 block font-bold';
+                        resEl.innerText = (currentLang === 'en') ? 'Author Lifetime License Activated!' : 'Đã kích hoạt Bản quyền Vĩnh viễn Tác giả (Free)!';
+                    }
+                    fetchLicenseStatus();
+                    showToast(currentLang === 'en' ? 'Lifetime Master Unlocked!' : 'Đã mở khóa Quyền Tác Giả Vĩnh Viễn!', '👑');
+                } else {
+                    if (resEl) {
+                        resEl.className = 'text-[11px] text-rose-400 block';
+                        resEl.innerText = data.message || 'Lỗi kích hoạt';
                     }
                 }
             } catch (e) {
@@ -4918,6 +4961,46 @@
                 if (document.exitFullscreen) document.exitFullscreen();
             }
         }
+
+        // Camera Live Stream Watchdog & Reconnection
+        function reconnectStream() {
+            const img = document.getElementById('live-stream-img');
+            if (img) {
+                const ts = Date.now();
+                img.src = '/video_feed?t=' + ts;
+                console.log('[Camera Stream] Reconnecting video feed:', ts);
+                showToast(currentLang === 'en' ? 'Camera stream refreshed' : 'Đang làm mới camera...', '🔄');
+            }
+        }
+
+        // Auto-reconnect camera on error or when waking from sleep/tab focus
+        window.addEventListener('DOMContentLoaded', () => {
+            const img = document.getElementById('live-stream-img');
+            if (img) {
+                img.onerror = () => {
+                    console.warn('[Camera] Luồng video bị gián đoạn, tự động kết nối lại sau 1.5s...');
+                    setTimeout(() => {
+                        if (img) img.src = '/video_feed?t=' + Date.now();
+                    }, 1500);
+                };
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                const img = document.getElementById('live-stream-img');
+                if (img) {
+                    img.src = '/video_feed?t=' + Date.now();
+                }
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            const img = document.getElementById('live-stream-img');
+            if (img) {
+                img.src = '/video_feed?t=' + Date.now();
+            }
+        });
 
         // Pediatric Growth Tracking & Monthly Reminder Handlers
         function updateAgePreviewFromDate() {
