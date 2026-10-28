@@ -3,24 +3,261 @@ import json
 import time
 import threading
 from collections import deque
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def get_pediatric_standards(age_months: int = 1) -> dict:
+    """
+    Chuẩn Y học Giấc ngủ Nhi khoa Đồng thuận (AAP - American Academy of Pediatrics & AASM).
+    Mọi độ tuổi đều đo chu kỳ 24h từ mốc 07:00 sáng.
+    """
+    if age_months < 4:
+        return {
+            "age_group": "Sơ sinh (0 - 3 tháng)",
+            "age_months": age_months,
+            "sleep_min_hours": 14.0,
+            "sleep_max_hours": 17.0,
+            "wake_window_min_minutes": 35,
+            "wake_window_max_minutes": 90,
+            "naps_per_day": "4 - 5 cữ",
+            "cycle_anchor": "07:00",
+            "clinical_notes": "Chu kỳ Ultradian (thức-ngủ ngắn theo cữ bú). Chưa phân biệt rõ ngày đêm. Cần tránh thức quá 90 phút (overtired)."
+        }
+    elif age_months < 12:
+        return {
+            "age_group": "Nhũ nhi (4 - 11 tháng)",
+            "age_months": age_months,
+            "sleep_min_hours": 12.0,
+            "sleep_max_hours": 16.0,
+            "wake_window_min_minutes": 120,
+            "wake_window_max_minutes": 210,
+            "naps_per_day": "2 - 3 cữ",
+            "cycle_anchor": "07:00",
+            "clinical_notes": "Chu kỳ Circadian hoàn thiện. Giấc đêm kéo dài 10-12 tiếng liên tục kết hợp 2-3 cữ ngày."
+        }
+    elif age_months < 36:
+        return {
+            "age_group": "Trẻ chập chững (1 - 2 tuổi)",
+            "age_months": age_months,
+            "sleep_min_hours": 11.0,
+            "sleep_max_hours": 14.0,
+            "wake_window_min_minutes": 240,
+            "wake_window_max_minutes": 360,
+            "naps_per_day": "1 cữ trưa",
+            "cycle_anchor": "07:00",
+            "clinical_notes": "Gộp cữ ngày thành 1 cữ trưa duy nhất (1.5 - 2.5h). Giấc đêm 10-11 tiếng."
+        }
+    else:
+        return {
+            "age_group": "Mẫu giáo (3 - 5 tuổi)",
+            "age_months": age_months,
+            "sleep_min_hours": 10.0,
+            "sleep_max_hours": 13.0,
+            "wake_window_min_minutes": 360,
+            "wake_window_max_minutes": 480,
+            "naps_per_day": "0 - 1 cữ",
+            "cycle_anchor": "07:00",
+            "clinical_notes": "Giấc ngủ đêm chiếm chủ đạo 10-12 tiếng. Trẻ có thể tự bỏ cữ nap trưa."
+        }
+
+
+class DailyDeltaTracker:
+    """
+    Bộ giám sát Cụm biến động ban ngày (Hourly Cluster Analytics & Daytime Delta Log):
+    Ghi nhận các biến cố theo từng khung giờ (01:00 - 02:00, 02:00 - 03:00,...)
+    thay vì chia đều ra 24h, giúp phát hiện sớm các cụm ho dồn dập, nguy cơ sặc sữa,
+    hoặc khó thở ban đêm.
+    """
+    def __init__(self, log_path: str = None):
+        self.log_path = log_path or os.path.join(BASE_DIR, "daily_delta_log.json")
+        self.lock = threading.Lock()
+        self.data = self._load()
+
+    def _load(self) -> dict:
+        cycle_date = SleepTracker.get_sleep_cycle_date()
+        if os.path.exists(self.log_path):
+            try:
+                with open(self.log_path, "r", encoding="utf-8") as f:
+                    d = json.load(f)
+                if d.get("cycle_date") == cycle_date:
+                    return d
+            except Exception:
+                pass
+        return {
+            "cycle_date": cycle_date,
+            "anchor": "07:00",
+            "hourly_clusters": {},
+            "recent_events": [],
+            "daily_totals": {
+                "cough_count": 0,
+                "choke_risk_count": 0,
+                "crying_minutes": 0.0,
+                "apnea_count": 0,
+                "covered_face_count": 0
+            }
+        }
+
+    def _save(self):
+        try:
+            with open(self.log_path, "w", encoding="utf-8") as f:
+                json.dump(self.data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    def check_rollover(self, current_cycle_date: str):
+        with self.lock:
+            if self.data.get("cycle_date") != current_cycle_date:
+                self.data = {
+                    "cycle_date": current_cycle_date,
+                    "anchor": "07:00",
+                    "hourly_clusters": {},
+                    "recent_events": [],
+                    "daily_totals": {
+                        "cough_count": 0,
+                        "choke_risk_count": 0,
+                        "crying_minutes": 0.0,
+                        "apnea_count": 0,
+                        "covered_face_count": 0
+                    }
+                }
+                self._save()
+
+    def record_event(self, event_type: str, details: str = "", extra: dict = None, severity: str = "INFO"):
+        now = time.time()
+        dt = datetime.fromtimestamp(now)
+        bucket_key = f"{dt.hour:02d}:00"
+        with self.lock:
+            cur_cycle = SleepTracker.get_sleep_cycle_date(now)
+            if self.data.get("cycle_date") != cur_cycle:
+                self.data["cycle_date"] = cur_cycle
+                self.data["hourly_clusters"] = {}
+                self.data["recent_events"] = []
+                self.data["daily_totals"] = {k: 0 for k in ["cough_count", "choke_risk_count", "crying_minutes", "apnea_count", "covered_face_count"]}
+
+            clusters = self.data.setdefault("hourly_clusters", {})
+            if bucket_key not in clusters:
+                clusters[bucket_key] = {
+                    "hour": dt.hour,
+                    "time_range": f"{dt.hour:02d}:00 - {(dt.hour+1)%24:02d}:00",
+                    "cough_count": 0,
+                    "choke_risk_count": 0,
+                    "crying_minutes": 0.0,
+                    "apnea_count": 0,
+                    "covered_face_count": 0,
+                    "event_notes": []
+                }
+            bucket = clusters[bucket_key]
+            totals = self.data.setdefault("daily_totals", {})
+
+            ev = event_type.lower()
+            if "cough" in ev:
+                bucket["cough_count"] += 1
+                totals["cough_count"] = totals.get("cough_count", 0) + 1
+            elif "choke" in ev:
+                bucket["choke_risk_count"] += 1
+                totals["choke_risk_count"] = totals.get("choke_risk_count", 0) + 1
+            elif "cry" in ev:
+                dur = float(extra.get("duration_minutes", 1.0)) if extra else 1.0
+                bucket["crying_minutes"] = round(bucket["crying_minutes"] + dur, 1)
+                totals["crying_minutes"] = round(totals.get("crying_minutes", 0.0) + dur, 1)
+            elif "apnea" in ev:
+                bucket["apnea_count"] += 1
+                totals["apnea_count"] = totals.get("apnea_count", 0) + 1
+            elif "covered_face" in ev or "prone" in ev:
+                bucket["covered_face_count"] += 1
+                totals["covered_face_count"] = totals.get("covered_face_count", 0) + 1
+
+            note = f"[{dt.strftime('%H:%M:%S')}] {details or event_type}"
+            if len(bucket.get("event_notes", [])) < 10:
+                bucket["event_notes"].append(note)
+
+            recent = self.data.setdefault("recent_events", [])
+            recent.insert(0, {
+                "ts": now,
+                "time": dt.strftime("%H:%M:%S"),
+                "type": event_type,
+                "severity": severity,
+                "details": details
+            })
+            self.data["recent_events"] = recent[:30]
+            self._save()
+
+    def check_recent_cluster_anomaly(self, window_minutes: int = 30) -> dict:
+        """Phát hiện cụm bất thường trong 30 phút qua (Cluster Anomaly Detection)."""
+        now = time.time()
+        cutoff = now - (window_minutes * 60)
+        with self.lock:
+            recent = [e for e in self.data.get("recent_events", []) if e.get("ts", 0) >= cutoff]
+            coughs = sum(1 for e in recent if "cough" in e.get("type", "").lower())
+            chokes = sum(1 for e in recent if "choke" in e.get("type", "").lower())
+            apneas = sum(1 for e in recent if "apnea" in e.get("type", "").lower())
+            cries = sum(1 for e in recent if "cry" in e.get("type", "").lower())
+
+            if chokes >= 2 or apneas >= 1:
+                return {
+                    "has_anomaly": True,
+                    "severity": "CRITICAL",
+                    "reason": f"CẢNH BÁO CẤP TÍNH: Phát hiện {chokes} dấu hiệu sặc sữa, {apneas} ngưng thở trong {window_minutes} phút qua!",
+                    "counts": {"cough": coughs, "choke": chokes, "apnea": apneas, "cry": cries}
+                }
+            if coughs >= 3:
+                return {
+                    "has_anomaly": True,
+                    "severity": "HIGH",
+                    "reason": f"Cụm ho dồn dập ({coughs} lần) trong {window_minutes} phút qua. Nghi ngờ trào ngược dạ dày thực quản hoặc kích ứng đường thở.",
+                    "counts": {"cough": coughs, "choke": chokes, "apnea": apneas, "cry": cries}
+                }
+            if cries >= 4:
+                return {
+                    "has_anomaly": True,
+                    "severity": "MEDIUM",
+                    "reason": f"Cụm quấy khóc kéo dài ({cries} đợt) trong {window_minutes} phút qua.",
+                    "counts": {"cough": coughs, "choke": chokes, "apnea": apneas, "cry": cries}
+                }
+            return {
+                "has_anomaly": False,
+                "severity": "NORMAL",
+                "counts": {"cough": coughs, "choke": chokes, "apnea": apneas, "cry": cries}
+            }
+
+    def get_cluster_summary(self) -> dict:
+        with self.lock:
+            return {
+                "cycle_date": self.data.get("cycle_date", ""),
+                "anchor": "07:00",
+                "daily_totals": self.data.get("daily_totals", {}),
+                "hourly_clusters": self.data.get("hourly_clusters", {})
+            }
+
+
 class SleepTracker:
     """
-    Bộ theo dõi & Đo lường Chu Kỳ Sinh Học 24/7 (Theo Ngày + Bảng Phân Tích Cuối Ngày Của AI):
-    1. ĐẾM THEO TỪNG NGÀY (00:00 -> 23:59):
-       - Tự động cộng dồn Tổng thời gian ngủ, Tổng thời gian thức chơi, Số cữ ngủ, Cữ ngủ dài nhất,
-         Tỷ lệ Ngủ Sâu (NREM) vs Ngủ Động (REM), và Số lần giật mình sinh lý trong ngày.
-       - Khi bước sang ngày mới (00:00), toàn bộ thống kê của ngày hôm trước được lưu vào `daily_history`
-         (lưu trữ 14 ngày gần nhất) rồi mới bắt đầu đếm ngày mới.
-    2. BẢNG PHÂN TÍCH CUỐI NGÀY CỦA BÁC SĨ AI (Daily Pediatric AI Sleep Report):
-       - Đối chiếu 5 chỉ số sinh học trong ngày của bé với chuẩn Nhi khoa (WHO / AAP).
-       - Kết hợp cùng Gemini AI phân tích sâu chất lượng giấc ngủ và đưa ra khuyến nghị cho bố mẹ.
+    Bộ theo dõi & Đo lường Chu Kỳ Sinh Học 24/7 (Neo Chu Kỳ 07:00 Sáng Chuẩn AAP/AASM):
+    1. ĐẾM THEO CHU KỲ 24H LÂM SÀNG (07:00 Sáng hôm trước -> 07:00 Sáng hôm nay):
+       - Không bị cưa đôi giấc ngủ đêm giữa chừng lúc 00:00 nửa đêm.
+       - Tích lũy trọn vẹn cả cữ ngủ đêm dài và toàn bộ các cữ nap ban ngày.
+       - Khi kim đồng hồ điểm 07:00 sáng, chốt chu kỳ 24h vào `daily_history` (14 ngày).
+    2. BÁC SĨ NHI KHOA AI & PHÂN TÍCH CỤM BIẾN ĐỘNG (Hourly Cluster Analytics):
+       - Ghi nhận cụm ho, sặc sữa, nhịp thở vào `daily_delta_log.json`.
+       - Đúng 07:00 sáng, Gemini tổng hợp bệnh án lâm sàng 24h gửi Telegram.
     """
+
+    @staticmethod
+    def get_sleep_cycle_date(ts: float = None) -> str:
+        """
+        Chu kỳ đo 24h chuẩn Y học Nhi khoa (AAP & AASM): Neo cố định vào mốc 07:00 sáng!
+        Nếu trước 07:00 sáng -> thuộc về chu kỳ ngày hôm trước (07:00 hôm qua đến 07:00 hôm nay).
+        Nếu từ 07:00 sáng trở đi -> thuộc về chu kỳ ngày hôm nay (07:00 hôm nay đến 07:00 ngày mai).
+        """
+        if ts is None:
+            ts = time.time()
+        dt = datetime.fromtimestamp(ts)
+        if dt.hour < 7:
+            return (dt.date() - timedelta(days=1)).isoformat()
+        return dt.date().isoformat()
 
     def __init__(self, data_path: str = None):
         self.data_path = data_path or os.path.join(BASE_DIR, "sleep_data.json")
@@ -47,7 +284,7 @@ class SleepTracker:
         self.current_deep_seconds = 0.0
         self.last_update_ts = time.time()
 
-        self.today_date = date.today().isoformat()
+        self.today_date = self.get_sleep_cycle_date()
         self.total_sleep_today = 0  # in seconds (các cữ đã kết thúc)
         self.total_awake_today = 0  # in seconds (tổng thời gian thức trong ngày)
         self.wake_count_today = 0
@@ -55,7 +292,20 @@ class SleepTracker:
         self.daily_history = []  # Lịch sử tổng kết các ngày trước
         self.daily_ai_report = None  # Báo cáo phân tích chuyên sâu cuối ngày của Gemini AI
 
+        self.delta_tracker = DailyDeltaTracker()
         self._load_data()
+
+    def record_health_event(self, event_type: str, details: str = "", extra: dict = None, severity: str = "INFO"):
+        """Ghi nhận biến cố sức khỏe vào Cụm Biến Động Ban Ngày (Hourly Cluster Analytics)."""
+        self.delta_tracker.record_event(event_type, details, extra, severity)
+
+    def check_health_cluster_anomaly(self, window_minutes: int = 30) -> dict:
+        """Kiểm tra cụm bất thường trong 30 phút qua."""
+        return self.delta_tracker.check_recent_cluster_anomaly(window_minutes)
+
+    def get_health_cluster_summary(self) -> dict:
+        """Lấy toàn bộ dữ liệu cụm 24h phục vụ Gemini tổng hợp bệnh án."""
+        return self.delta_tracker.get_cluster_summary()
 
     def _load_data(self):
         if os.path.exists(self.data_path):
@@ -64,10 +314,12 @@ class SleepTracker:
                     data = json.load(f)
                 saved_date = data.get("today_date", "")
                 now = time.time()
+                cur_cycle_date = self.get_sleep_cycle_date(now)
                 self.daily_history = data.get("daily_history", [])[:14]
                 self.daily_ai_report = data.get("daily_ai_report", None)
 
-                if saved_date == date.today().isoformat():
+                if saved_date == cur_cycle_date:
+                    self.today_date = cur_cycle_date
                     self.total_sleep_today = int(data.get("total_sleep_today", 0))
                     self.total_awake_today = int(data.get("total_awake_today", 0))
                     self.wake_count_today = int(data.get("wake_count_today", 0))
@@ -87,7 +339,8 @@ class SleepTracker:
                         self.current_state = "ASLEEP"
                         self.state_since = now - 1680.0
                 elif saved_date:
-                    # Nếu file lưu từ ngày hôm trước, đóng gói lưu vào daily_history trước khi qua ngày mới
+                    # Nếu file lưu từ chu kỳ trước, đóng gói lưu vào daily_history trước khi qua chu kỳ 24h mới (07:00)
+                    self.today_date = cur_cycle_date
                     prev_sleep_h = round(float(data.get("total_sleep_today", 0)) / 3600.0, 1)
                     prev_awake_h = round(float(data.get("total_awake_today", 0)) / 3600.0, 1)
                     prev_sessions = [s for s in data.get("sessions", []) if float(s.get("duration_minutes", 0)) >= 3.0]
@@ -106,7 +359,7 @@ class SleepTracker:
 
     def _save_data(self):
         data = {
-            "today_date": date.today().isoformat(),
+            "today_date": self.today_date,
             "total_sleep_today": int(self.total_sleep_today),
             "total_awake_today": int(self.total_awake_today),
             "wake_count_today": int(self.wake_count_today),
@@ -171,9 +424,9 @@ class SleepTracker:
             dt = max(0.0, min(2.0, now - self.last_update_ts))
             self.last_update_ts = now
 
-            # Check for day rollover (midnight 00:00) -> Archive yesterday's summary!
-            cur_date = date.today().isoformat()
-            if cur_date != self.today_date:
+            # Chu kỳ đo 24h lâm sàng neo cố định vào mốc 07:00 sáng (Chuẩn Nhi khoa AAP/AASM)
+            cur_cycle_date = self.get_sleep_cycle_date(now)
+            if cur_cycle_date != self.today_date:
                 prev_sleep_h = round(self.total_sleep_today / 3600.0, 1)
                 prev_awake_h = round(self.total_awake_today / 3600.0, 1)
                 longest_m = max([float(s.get("duration_minutes", 0)) for s in self.sessions], default=0.0)
@@ -186,12 +439,13 @@ class SleepTracker:
                     "sleep_score": 92 if prev_sleep_h >= 10 else 85
                 })
                 self.daily_history = self.daily_history[:14]
-                self.today_date = cur_date
+                self.today_date = cur_cycle_date
                 self.total_sleep_today = 0
                 self.total_awake_today = 0
                 self.wake_count_today = 0
                 self.sessions = []
                 self.daily_ai_report = None
+                self.delta_tracker.check_rollover(cur_cycle_date)
                 self._save_data()
 
             # Cập nhật cửa sổ trượt 60 giây để tính mật độ vận động (Activity Density)
@@ -301,12 +555,21 @@ class SleepTracker:
 
     def _build_daily_analysis_table(self, total_sleep_hours: float, total_awake_hours: float,
                                     deep_pct: int, rem_pct: int, longest_nap_mins: float,
-                                    nap_count: int, rem_twitches: int) -> dict:
+                                    nap_count: int, rem_twitches: int,
+                                    standards: dict = None) -> dict:
         """
-        Tạo Bảng Phân Tích Giấc Ngủ Trong Ngày / Cuối Ngày đối chiếu chuẩn Nhi Khoa (AAP/WHO).
-        Hỗ trợ hiển thị chu kỳ 24h hoàn tất gần nhất (ngày hôm qua) vào buổi sáng sớm để bố mẹ
-        không bị hoang mang khi vừa reset lúc 00:00.
+        Tạo Bảng Phân Tích Giấc Ngủ Trong Ngày / Cuối Ngày đối chiếu chuẩn Nhi Khoa Đồng Thuận (AAP & AASM).
+        Chu kỳ 24h lâm sàng neo cố định vào mốc 07:00 sáng.
         """
+        if standards is None:
+            standards = get_pediatric_standards(1)
+
+        sleep_min = float(standards.get("sleep_min_hours", 14.0))
+        sleep_max = float(standards.get("sleep_max_hours", 17.0))
+        age_grp = standards.get("age_group", "Sơ sinh (0 - 3 tháng)")
+        wake_min = int(standards.get("wake_window_min_minutes", 35))
+        wake_max = int(standards.get("wake_window_max_minutes", 90))
+
         now_dt = datetime.now()
         is_morning = now_dt.hour < 12
         prev_sleep_h = 0.0
@@ -315,31 +578,30 @@ class SleepTracker:
             prev_sleep_h = float(self.daily_history[0].get("total_sleep_hours", 0.0))
             prev_longest_m = float(self.daily_history[0].get("longest_nap_minutes", 0.0))
 
-        # Nếu đang là buổi sáng và số giờ ngủ hôm nay còn ít do vừa reset lúc 00:00,
-        # đối chiếu chu kỳ 24h gần nhất (Hôm qua + Đêm qua) để bố mẹ nắm rõ sức khỏe giấc ngủ thực tế
-        if is_morning and total_sleep_hours < 4.0 and prev_sleep_h > 0:
-            sleep_row_measured = f"{prev_sleep_h}h (Chu kỳ 24h hôm qua) • Hôm nay: {total_sleep_hours}h ({nap_count} cữ)"
-            sleep_row_status = "Đạt chuẩn sinh lý AAP" if prev_sleep_h >= 11.0 else ("Đang tích lũy" if prev_sleep_h >= 8.0 else "Cần ngủ thêm")
-            sleep_row_badge = "emerald" if prev_sleep_h >= 11.0 else "amber"
+        # Hiển thị số liệu chu kỳ 24h hiện tại (đang đo từ 07:00 sáng)
+        if total_sleep_hours >= sleep_min:
+            sleep_row_status = "Đạt chuẩn sinh lý AAP"
+            sleep_row_badge = "emerald"
+        elif total_sleep_hours >= (sleep_min - 3.0):
+            sleep_row_status = "Đang tích lũy chu kỳ 24h"
+            sleep_row_badge = "cyan"
         else:
-            sleep_row_measured = f"{total_sleep_hours} giờ ({nap_count} cữ)"
-            sleep_row_status = "Đạt chuẩn AAP" if total_sleep_hours >= 10.0 else ("Đang tích lũy" if total_sleep_hours >= 5.0 else ("Đang tích lũy buổi sáng" if is_morning else "Cần ngủ thêm"))
-            sleep_row_badge = "emerald" if total_sleep_hours >= 10.0 else ("cyan" if is_morning else "amber")
+            sleep_row_status = "Đang tích lũy buổi sáng" if is_morning else "Cần ngủ thêm"
+            sleep_row_badge = "amber"
 
-        if is_morning and longest_nap_mins < 30.0 and prev_longest_m > 0:
-            nap_row_measured = f"{int(round(prev_longest_m))} phút (Cữ dài nhất hôm qua) • Sáng nay: {int(round(longest_nap_mins))}p"
-            nap_row_status = "Chuyển giao chu kỳ tốt" if prev_longest_m >= 45.0 else "Ngủ ngắn (Catnap)"
-            nap_row_badge = "emerald" if prev_longest_m >= 45.0 else "amber"
-        else:
-            nap_row_measured = f"{int(round(longest_nap_mins))} phút ({round(longest_nap_mins/50.0, 1)} chu kỳ)"
-            nap_row_status = "Chuyển giao chu kỳ tốt" if longest_nap_mins >= 45 else "Ngủ ngắn (Catnap)"
-            nap_row_badge = "emerald" if longest_nap_mins >= 45 else "amber"
+        sleep_row_measured = f"{total_sleep_hours} giờ ({nap_count} cữ)"
+        if prev_sleep_h > 0 and total_sleep_hours < 4.0 and is_morning:
+            sleep_row_measured = f"{total_sleep_hours}h (chu kỳ mới từ 07:00) • 24h trước: {prev_sleep_h}h"
+
+        nap_row_measured = f"{int(round(longest_nap_mins))} phút ({round(longest_nap_mins/50.0, 1)} chu kỳ)"
+        nap_row_status = "Chuyển giao chu kỳ tốt" if longest_nap_mins >= 45 else "Ngủ ngắn (Catnap)"
+        nap_row_badge = "emerald" if longest_nap_mins >= 45 else "amber"
 
         rows = [
             {
-                "metric": "Tổng thời gian ngủ 24h qua (Đêm qua & 24h)",
+                "metric": "Tổng thời gian ngủ chu kỳ 24h (Đo từ 07:00 Sáng)",
                 "measured": sleep_row_measured,
-                "standard": "11.0 – 15.0 giờ / ngày (Chuẩn AAP)",
+                "standard": f"{sleep_min} – {sleep_max} giờ / 24h ({age_grp} - Chuẩn AAP/AASM)",
                 "status": sleep_row_status,
                 "badge_color": sleep_row_badge
             },
@@ -358,9 +620,9 @@ class SleepTracker:
                 "badge_color": nap_row_badge
             },
             {
-                "metric": "Tổng thời gian thức chơi & vận động",
-                "measured": f"{total_awake_hours} giờ (Cửa sổ thức ~90p)",
-                "standard": "Thức 60–95 phút giữa các cữ",
+                "metric": f"Tổng thời gian thức chơi & vận động (Cửa sổ thức ~{wake_max}p)",
+                "measured": f"{total_awake_hours} giờ (Wake Window: ~{wake_max}p)",
+                "standard": f"Thức {wake_min}–{wake_max} phút giữa các cữ",
                 "status": "Nhịp sinh học cân bằng",
                 "badge_color": "cyan"
             },
@@ -438,8 +700,11 @@ class SleepTracker:
             "scientific_citations_vi": ai_citations
         }
 
-    def get_summary(self, adult_holding: bool = False, is_crying: bool = False):
+    def get_summary(self, adult_holding: bool = False, is_crying: bool = False, age_months: int = 1):
         now = time.time()
+        standards = get_pediatric_standards(age_months)
+        wake_window_optimal = int(standards["wake_window_max_minutes"])
+
         with self.lock:
             cur_duration = max(0, int(now - self.state_since))
             cur_duration_mins = round(cur_duration / 60.0, 1)
@@ -458,7 +723,6 @@ class SleepTracker:
             cycle_progress_pct = 0
             deep_ratio_pct = 55
             rem_ratio_pct = 45
-            wake_window_optimal = 90
 
             if self.current_state == "ASLEEP":
                 current_nap = cur_duration_mins
@@ -493,7 +757,7 @@ class SleepTracker:
                     sleep_stage = "☀️ Đang thức (Quấy khóc)"
                 elif self.activity_level_pct >= 35:
                     sleep_stage = "☀️ Đang thức chơi (Vận động mạnh)"
-                elif cur_duration_mins >= 75:
+                elif cur_duration_mins >= (wake_window_optimal - 15):
                     sleep_stage = "🥱 Đang thức (Sắp buồn ngủ)"
                 else:
                     sleep_stage = "☀️ Đang thức tỉnh táo (Quan sát)"
@@ -503,26 +767,27 @@ class SleepTracker:
 
             # Sleep Quality Score (0 - 100)
             score = 88
-            if total_sleep_hours >= 10:
+            target_min_h = float(standards.get("sleep_min_hours", 14.0))
+            if total_sleep_hours >= target_min_h:
                 score += 9
-            elif total_sleep_hours >= 6:
+            elif total_sleep_hours >= (target_min_h - 3.0):
                 score += 5
-            elif total_sleep_hours < 3:
+            elif total_sleep_hours < (target_min_h / 2.0):
                 score -= 8
 
-            if self.wake_count_today > 5:
-                score -= (self.wake_count_today - 5) * 3
+            if self.wake_count_today > 6:
+                score -= (self.wake_count_today - 6) * 3
             score = max(65, min(99, score))
 
-            # Wake window prediction (~90 mins for infant)
+            # Wake window prediction
             if self.current_state in ["AWAKE", "OUT"]:
                 remaining_mins = max(0, wake_window_optimal - int(cur_duration_mins))
                 pred_timestamp = now + (remaining_mins * 60)
                 pred_nap_time = datetime.fromtimestamp(pred_timestamp).strftime("%H:%M")
-                is_overtired = cur_duration_mins > 100
+                is_overtired = cur_duration_mins > (wake_window_optimal + 15)
                 wake_status_text = f"Bé đã thức {current_awake_formatted}"
                 if is_overtired:
-                    wake_hint = f"⚠️ Bé đã thức {int(cur_duration_mins)} phút (quá Cửa sổ thức 90p)! Hãy ru bé ngủ ngay tránh gắt ngủ."
+                    wake_hint = f"⚠️ Bé đã thức {int(cur_duration_mins)} phút (quá Cửa sổ thức {wake_window_optimal}p)! Hãy ru bé ngủ ngay tránh gắt ngủ (overtired)."
                 elif remaining_mins <= 20:
                     wake_hint = f"⏰ Đã thức {int(cur_duration_mins)}/{wake_window_optimal}p — Sắp đến cữ ngủ (dự kiến {pred_nap_time})."
                 elif is_crying:
@@ -558,7 +823,8 @@ class SleepTracker:
                 rem_pct=rem_ratio_pct,
                 longest_nap_mins=longest_nap_mins,
                 nap_count=max(1, nap_count),
-                rem_twitches=self.rem_twitch_count
+                rem_twitches=self.rem_twitch_count,
+                standards=standards
             )
 
             return {
@@ -584,6 +850,10 @@ class SleepTracker:
                 "wake_count_today": self.wake_count_today,
                 "sleep_stage": sleep_stage,
                 "sleep_score": score,
+                "cycle_anchor": "07:00",
+                "cycle_anchor_display": "07:00 AM (Chuẩn AAP/AASM)",
+                "pediatric_standards": standards,
+                "delta_summary": self.delta_tracker.get_cluster_summary(),
                 "wake_window": {
                     "optimal_minutes": wake_window_optimal,
                     "remaining_minutes": remaining_mins,

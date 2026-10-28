@@ -134,27 +134,27 @@ class DailyStoryTracker:
 
     def _generate_with_gemini(self, gemini_verifier, baby_name: str, age_display: str) -> dict:
         prompt = f"""
-Bạn là Chuyên gia Giáo Dục Sớm & Tâm Lý Trẻ Em của BabyGuard AI.
-Nhiệm vụ của bạn là sáng tác hoặc trích chọn "1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA & PHƯƠNG PHÁP DẠY CON" dành cho ba mẹ của bé {baby_name} ({age_display}).
+Bạn là Chuyên gia Giáo Dục Nhân Cách & Kể Chuyện Thiếu Nhi Thế Giới của BabyGuard AI.
+Nhiệm vụ của bạn là chọn lựa hoặc chuyển thể "1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA & BÀI HỌC ĐẠO ĐỨC ĐẦU ĐỜI" dành cho ba mẹ của bé {baby_name} ({age_display}).
 
-Mục đích:
-- Giúp ba mẹ có câu chuyện nhân văn để đọc hoặc thủ thỉ trò chuyện bên nôi cùng bé (kích thích ngôn ngữ và gắn kết thính giác).
-- Cung cấp mỗi ngày một bài học dạy con trở thành người nhân hậu, dũng cảm, biết ơn và có nhân cách tốt.
-- Nguồn lấy đa dạng, luân phiên từ:
-  + Truyện cổ tích Việt Nam hoặc ngụ ngôn thế giới (Aesop, Andersen, La Fontaine).
-  + Trích đoạn Kinh Thánh mang thông điệp tình thương, sự tha thứ và lòng bác ái.
-  + Triết lý Phật giáo về chữ Hiếu, lòng từ bi, sự khiêm nhường và gieo mầm thiện.
-  + Sách giáo dục sớm & dạy con thông minh (Nuôi con kiểu Nhật, Người Do Thái dạy con, Dạy con tự lập).
+NGUYÊN TẮC TUYỂN CHỌN & PHÂN TÍCH BẮT BUỘC (TUYỆT ĐỐI TUÂN THỦ):
+1. ƯU TIÊN CÂU CHUYỆN KINH ĐIỂN THẾ GIỚI:
+   - Ưu tiên các tác phẩm kinh điển giàu tính nhân văn: Ngụ ngôn Aesop, truyện cổ Hans Christian Andersen, Lev Tolstoy, truyện cổ tích thế giới, Hạt giống tâm hồn.
+   - TUYỆT ĐỐI TRÁNH BỊA ĐẶT các câu chuyện khó hiểu, kỳ quặc, viển vông hoặc giáo điều nặng nề.
+2. MỤC TIÊU NUÔI DẠY ĐẠO ĐỨC TỐT NHẤT:
+   - Mục đích tối thượng là nuôi dưỡng đạo đức đầu đời cho trẻ: Lòng nhân ái, sự biết ơn cha mẹ, đức tính trung thực, lòng dũng cảm, sự sẻ chia và khiêm nhường.
+3. PHÂN TÍCH GIẢN DỊ, DỄ HIỂU:
+   - Lời văn trong sáng, ấm áp, câu từ giản dị để ba mẹ dễ đọc hoặc thì thầm cùng bé bên nôi trước giờ ngủ.
 
 Yêu cầu định dạng JSON bắt buộc:
 {{
-  "title": "Tiêu đề câu chuyện ngắn gọn, hấp dẫn (dưới 10 chữ)",
-  "category": "Truyện Cổ Tích" | "Kinh Thánh" | "Triết Lý Phật Giáo" | "Sách Dạy Con Thông Minh" | "Giai Thoại Danh Nhân",
-  "source": "Tên nguồn cụ thể (ví dụ: 'Truyện ngụ ngôn Aesop', 'Kinh Thánh Tân Ước', 'Sách Nuôi Con Kiểu Nhật')",
-  "quote": "Một câu châm ngôn hoặc câu nói sâu sắc đúc kết (1 câu)",
-  "content": "Lời kể câu chuyện súc tích, văn phong ấm áp, truyền cảm (khoảng 3-5 câu ngắn gọn để đọc trong 1 phút)",
-  "parenting_lesson": "Gợi ý cách thức nuôi dạy con cụ thể hôm nay: Ba mẹ nên làm gì hoặc ứng xử thế nào để gieo hạt mầm tính cách này cho con (2-3 câu)",
-  "baby_talk_prompt": "Gợi ý câu thủ thỉ thì thầm ba mẹ nói bên tai bé trước giờ đi ngủ (ví dụ: 'A Siu ơi, ba mẹ yêu con...')"
+  "title": "Tiêu đề câu chuyện kinh điển ngắn gọn (dưới 10 chữ)",
+  "category": "Ngụ Ngôn Thế Giới (Aesop / Andersen)" | "Bài Học Đạo Đức Đầu Đời" | "Hạt Giống Tâm Hồn",
+  "source": "Tên nguồn kinh điển cụ thể (ví dụ: 'Truyện ngụ ngôn Aesop', 'Truyện cổ Andersen', 'Lev Tolstoy')",
+  "quote": "Một câu đúc kết nhân cách giản dị, sâu sắc (1 câu ngắn)",
+  "content": "Lời kể câu chuyện kinh điển ngắn gọn, văn phong ấm áp, trong sáng (khoảng 3-5 câu ngắn gọn)",
+  "parenting_lesson": "Phân tích bài học nhân cách giản dị: Ba mẹ làm gương và dạy con đức tính tốt này như thế nào trong đời sống (2-3 câu dễ hiểu)",
+  "baby_talk_prompt": "Lời thủ thỉ yêu thương dịu dàng ba mẹ nói bên nôi trước giờ bé ngủ (ví dụ: '{baby_name} ngoan ơi, sau này con lớn...')"
 }}
 """
         resp = gemini_verifier._call_gemini_resilient(

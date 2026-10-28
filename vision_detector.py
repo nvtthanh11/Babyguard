@@ -1061,12 +1061,20 @@ class VisionTracker:
         if (now_t - self.last_moment_time) < self.moment_capture_interval:
             return
 
-        # Tạo khung chân dung em bé (Portrait Crop) chuẩn xác theo tọa độ khuôn mặt thật từ YuNet:
-        # Mở rộng ngang ~1.5x fw mỗi bên, trên ~0.8x fh, dưới ~2.6x fh (ôm trọn thân bé)
-        crop_x1 = max(0, fx - int(fw * 1.5))
-        crop_y1 = max(0, fy - int(fh * 0.8))
-        crop_x2 = min(w, fx + fw + int(fw * 1.5))
-        crop_y2 = min(h, fy + fh + int(fh * 2.6))
+        # Căn giữa khuôn mặt em bé vào khung chân dung (Auto-Center Portrait Framing):
+        # Khuôn mặt bé nằm ở ~35% từ trên xuống và căn chính giữa bề ngang (Quy tắc 1/3 nhiếp ảnh)
+        desired_w = max(int(fw * 3.2), 220)
+        desired_h = int(desired_w * 1.25)  # Tỉ lệ 4:5 chân dung chuẩn nhiếp ảnh
+
+        crop_x1 = max(0, int(fcx - desired_w / 2.0))
+        crop_x2 = min(w, crop_x1 + desired_w)
+        if (crop_x2 - crop_x1) < desired_w:
+            crop_x1 = max(0, crop_x2 - desired_w)
+
+        crop_y1 = max(0, int(fcy - desired_h * 0.35))
+        crop_y2 = min(h, crop_y1 + desired_h)
+        if (crop_y2 - crop_y1) < desired_h:
+            crop_y1 = max(0, crop_y2 - desired_h)
 
         portrait_crop = frame[crop_y1:crop_y2, crop_x1:crop_x2].copy()
         if portrait_crop.size == 0 or portrait_crop.shape[0] < 50 or portrait_crop.shape[1] < 50:
@@ -1150,6 +1158,21 @@ class VisionTracker:
                         # Thử lại sau 3 phút thay vì phải chờ cả 12 phút
                         self.last_moment_time = time.time() - (self.moment_capture_interval - 180.0)
                         return
+                    
+                    # Nếu Gemini đề xuất tọa độ căn giữa tối ưu (clean_crop_box) -> Cắt tinh chỉnh
+                    cbox = res.get("clean_crop_box")
+                    if cbox and isinstance(cbox, list) and len(cbox) == 4:
+                        try:
+                            ch, cw = frame_to_save.shape[:2]
+                            b_xmin, b_ymin, b_xmax, b_ymax = [float(v) for v in cbox]
+                            bx1 = max(0, int(min(b_xmin, b_xmax) * cw))
+                            by1 = max(0, int(min(b_ymin, b_ymax) * ch))
+                            bx2 = min(cw, int(max(b_xmin, b_xmax) * cw))
+                            by2 = min(ch, int(max(b_ymin, b_ymax) * ch))
+                            if (bx2 - bx1) >= 80 and (by2 - by1) >= 80:
+                                frame_to_save = frame_to_save[by1:by2, bx1:bx2].copy()
+                        except Exception:
+                            pass
                 else:
                     caption = "Bé có nụ cười / biểu cảm đáng yêu" if has_special_expression else "Khoảnh khắc em bé ngủ ngoan"
                     res = {
@@ -1161,10 +1184,20 @@ class VisionTracker:
                         "has_other_person": False
                     }
 
-                now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+                now_dt = datetime.now()
+                now_str = now_dt.strftime("%Y%m%d_%H%M%S")
                 fn = f"moment_{now_str}.jpg"
                 m_path = os.path.join(self.moments_dir, fn)
                 cv2.imwrite(m_path, frame_to_save)
+
+                # Đồng bộ lưu trữ Google Drive theo cấu trúc Năm > Tháng > Ngày > Giờ-Phút-Giây.jpg
+                try:
+                    from google_drive_sync import save_moment_to_google_drive
+                    drive_file = save_moment_to_google_drive(frame_to_save, self.config, now_dt)
+                    if drive_file:
+                        res["google_drive_path"] = drive_file
+                except Exception as de:
+                    print(f"[VisionTracker] Lỗi gọi đồng bộ Google Drive: {de}")
 
                 self.last_moment_time = time.time()
                 if curr_geom:

@@ -1,0 +1,53 @@
+{
+    "version": "1.0",
+    "updated_at": "2026-10-28",
+    "disclaimer": "⚠️ KHUYẾN CÁO Y KHOA QUAN TRỌNG: Đây là quy trình sơ cứu khẩn cấp ban đầu theo chuẩn quốc tế của Hiệp hội Tim mạch Hoa Kỳ (AHA) và Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP). Bố mẹ hãy lập tức liên hệ với cơ sở y tế gần nhất hoặc gọi cấp cứu 115 để được y bác sĩ trực tiếp hướng dẫn và cấp cứu kịp thời!",
+    "emergency_phone": "115",
+    "protocols": {
+        "choking_aspiration": {
+            "title": "SƠ CỨU HÓC DỊ VẬT / SẶC SỮA Ở TRẺ DƯỚI 1 TUỔI (AHA)",
+            "source": "American Heart Association (AHA) Pediatric First Aid Guidelines",
+            "recognition": "Bé sặc sữa, không phát ra tiếng khóc, ho yếu ớt hoặc tím tái quanh môi và mặt.",
+            "steps": [
+                "1. Giữ bình tĩnh, KHÔNG dùng ngón tay móc mù vào họng bé vì có thể đẩy sữa hoặc dị vật vào sâu hơn khí quản.",
+                "2. VỖ LƯNG (5 LẦN): Đặt bé nằm sấp dọc theo cẳng tay người lớn, bàn tay nâng giữ cằm và hàm dưới (không bóp vào cổ). Để đầu bé chúc xuống thấp hơn ngực (tựa cẳng tay lên đùi). Dùng gót bàn tay kia vỗ dứt khoát 5 lần vào lưng giữa 2 xương bả vai.",
+                "3. ẤN NGỰC (5 LẦN): Nếu chưa thông khí, lật ngửa bé dọc theo cẳng tay (đầu vẫn dốc thấp hơn thân). Đặt 2 ngón tay ở giữa ngực, ngay dưới đường nối 2 núm vú khoảng 1 khoát ngón tay. Ấn dứt khoát 5 lần sâu khoảng 4 cm (1/3 lồng ngực).",
+                "4. LẶP LẠI LUÂN PHIÊN: 5 lần vỗ lưng và 5 lần ấn ngực cho đến khi sữa/dị vật bật ra và bé khóc to, hồng hào trở lại.",
+                "5. NẾU BÉ NGẤT / BẤT TỈNH: Đặt bé lên mặt phẳng cứng, gọi ngay Cấp cứu 115 và tiến hành ép tim thổi ngạt (CPR) chu kỳ 30 lần ép tim : 2 lần thổi ngạt."
+            ],
+            "do_not": [
+                "TUYỆT ĐỐI KHÔNG xốc ngược lắc mạnh bé (nguy cơ chấn thương não và đốt sống cổ - Shaken Baby Syndrome).",
+                "TUYỆT ĐỐI KHÔNG dùng tay móc mò vào họng bé nếu không nhìn thấy rõ dị vật nằm ngay đầu miệng."
+            ]
+        },
+        "suffocation_prone": {
+            "title": "XỬ TRÍ KHẨN CẤP: BÉ NẰM SẤP / MẶT BỊ CHE KHUẤT NGUY CƠ NGẠT (AAP)",
+            "source": "American Academy of Pediatrics (AAP) Safe Sleep Task Force",
+            "recognition": "Mặt bé bị chăn, gối, khăn xô hoặc thú bông che kín đường thở, hoặc bé nằm úp mặt xuống nệm mềm.",
+            "steps": [
+                "1. LẬP TỨC LẬT BÉ VỀ TƯ THẾ NẰM NGỬA (Back to Sleep) trên mặt phẳng cứng và phẳng.",
+                "2. GẠT BỎ TOÀN BỘ chăn, gối, thú bông, khăn quấn khỏi vùng mặt, cổ và lồng ngực của bé.",
+                "3. KIỂM TRA PHẢN XẠ THỞ: Kích thích nhẹ bằng cách gõ/búng vào lòng bàn chân hoặc xoa nhẹ lưng bé.",
+                "4. ĐÁNH GIÁ MÀU DA: Quan sát môi và đầu móng tay. Nếu môi hồng hào và bé cựa quậy thở đều: Tiếp tục theo dõi sát.",
+                "5. NẾU BÉ TÍM TÁI HOẶC NGƯNG THỞ: Gọi ngay 115, kiểm tra đường thở và bắt đầu ép tim hỗ trợ hô hấp."
+            ],
+            "do_not": [
+                "KHÔNG để bất kỳ vật mềm, chăn dày, gối hoặc gấu bông nào trong nôi của bé dưới 12 tháng tuổi."
+            ]
+        },
+        "respiratory_distress": {
+            "title": "DẤU HIỆU CẢNH BÁO SUY HÔ HẤP / KHÓ THỞ Ở TRẺ NHỎ (WHO / AAP)",
+            "source": "World Health Organization (WHO) & American Academy of Pediatrics (AAP)",
+            "recognition": "Rút lõm lồng ngực (da hõm sâu quanh xương sườn khi hít vào), phập phồng cánh mũi, thở rên (grunting), nhịp thở >60 lần/phút ở trẻ <2 tháng hoặc >50 lần/phút ở trẻ 2-12 tháng.",
+            "steps": [
+                "1. ĐẶT BÉ TƯ THẾ THOÁNG: Bế bé ở tư thế đầu cao hoặc nửa nằm nửa ngồi, cổ hơi ngửa nhẹ (tư thế ngửi hoa) để mở rộng đường thở.",
+                "2. NỚI LỎNG QUẦN ÁO: Mở cúc áo ngực, nới lỏng tã để lồng ngực và cơ hoành dễ co giãn.",
+                "3. KHÔNG ÉP BÉ ĂN/UỐNG: Khi đang thở gắng sức, cho bé bú hoặc uống nước rất dễ gây sặc vào phổi.",
+                "4. ĐƯA ĐẾN CƠ SỞ Y TẾ GẦN NHẤT NGAY LẬP TỨC: Khó thở co kéo ở trẻ sơ sinh có thể diễn tiến xấu rất nhanh trong vài giờ."
+            ],
+            "do_not": [
+                "KHÔNG tự ý cho bé uống thuốc giãn phế quản hay nhỏ thuốc xông mũi khi chưa có chỉ định của bác sĩ."
+            ]
+        }
+    }
+}

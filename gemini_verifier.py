@@ -752,34 +752,36 @@ Trả về đúng định dạng JSON:
             return {"checked_by_gemini": False, "approved": False, "reason_vi": "Lỗi mã hóa ảnh."}
 
         prompt = f"""
-Bạn là Giám khảo Nhiếp ảnh Trẻ Sơ Sinh & Giám sát Quyền Riêng Tư (Strict Infant Photography & Privacy Inspector) của hệ thống BabyGuard AI.
+Bạn là Giám khảo Nhiếp ảnh Nghệ thuật Trẻ Sơ Sinh & Giám sát Quyền Riêng Tư (Strict Baby Photo Critic & Privacy Inspector) của BabyGuard AI.
 Bức ảnh này được hệ thống chụp để lưu vào Album Kỷ Niệm của bé {self.baby_name}.
 
-QUY TẮC KIỂM DUYỆT BẮT BUỘC (TUYỆT ĐỐI KHÔNG DU DI):
+TIÊU CHUẨN ĐÁNH GIÁ ẢNH ĐẸP & AN TOÀN BẮT BUỘC (TUYỆT ĐỐI TUÂN THỦ):
 
-1. KIỂM DUYỆT QUYỀN RIÊNG TƯ & AN TOÀN (ZERO TOLERANCE - TỪ CHỐI NGAY LẬP TỨC):
-   - NẾU trong ảnh có bất kỳ người lớn nào cởi trần, hở lưng, lộ đùi, mặc đồ lót, đồ ngủ nhạy cảm, hoặc nằm ở tư thế khó coi/phản cảm:
-     -> BẮT BUỘC TỪ CHỐI (approved = false, privacy_safe = false, reason_vi = "Ảnh có người lớn chưa chỉnh tề hoặc tư thế nhạy cảm").
-   - NẾU KHÔNG THẤY RÕ RÀNG KHUÔN MẶT CỦA EM BÉ (ảnh chỉ có tay/chân/lưng bé, chụp sau gáy, chăn gối che mất mặt, ảnh tối đen hoặc mờ tịt):
-     -> BẮT BUỘC TỪ CHỐI (approved = false, baby_face_clear = false, reason_vi = "Không nhận diện được rõ nét khuôn mặt em bé").
-   - NẾU em bé đang thay tã hoặc không mặc tã/quần áo:
-     -> BẮT BUỘC TỪ CHỐI (approved = false, reason_vi = "Bé chưa mặc đồ chỉnh tề").
+1. CHỦ THỂ TRUNG TÂM PHẢI LÀ EM BÉ (BẮT BUỘC):
+   - TRONG HÌNH PHẢI CÓ EM BÉ và bé là nhân vật chính trung tâm của bức ảnh (baby_present = true, is_baby_central_subject = true).
+   - NẾU ảnh chỉ có chăn màn, nôi trống, đồ vật, hoặc KHÔNG CÓ BÉ -> TỪ CHỐI NGAY (approved = false, reason_vi = "Không có em bé trong hình").
+   - NẾU người lớn nằm chiếm ưu thế, người lớn lướt điện thoại, người lớn che khuất bé -> TỪ CHỐI NGAY (approved = false, reason_vi = "Ảnh vướng người lớn chiếm khung hình").
 
-2. ĐIỀU KIỆN ĐỂ DUYỆT LƯU VÀO ALBUM (approved = true):
-   - CHỈ DUYỆT khi và chỉ khi nhìn thấy RÕ RÀNG VÀ ĐẦY ĐỦ KHUÔN MẶT EM BÉ (mắt, mũi, miệng rõ ràng). Bé đang ngủ bình yên hoặc thức nhìn đáng yêu.
-   - Bé mặc quần áo/tã/quấn khăn lịch sự kín đáo.
-   - Bố cục ảnh tập trung vào em bé, hoàn toàn KHÔNG có cảnh nhạy cảm của người lớn.
-   - Điểm thẩm mỹ đạt từ 7/10 trở lên.
+2. TIÊU CHUẨN THẨM MỸ & CẢM XÚC NHIẾP ẢNH:
+   - Khuôn mặt bé rõ nét, ánh mắt trong trẻo hoặc đang ngủ say bình yên, nụ cười thiên thần, ngáp chúm chím, mút tay đáng yêu.
+   - Bỏ qua nếu bé đang khóc mếu dữ dội, nôn trớ, hoặc mặt bị tối sầm/mờ nhòe rung lắc.
+   - Bé mặc quần áo/tã lót lịch sự, trang nghiêm, kín đáo.
+
+3. TỌA ĐỘ CĂN GIỮA CHÂN DUNG BÉ (clean_crop_box):
+   - Trả về tọa độ [xmin, ymin, xmax, ymax] (float 0.0 -> 1.0) để hệ thống tự động cắt và ĐƯA BÉ VÀO TRUNG TÂM KHUNG CHÂN DUNG (Center-aligned Portrait Crop), cắt bỏ các viền phòng hoặc đồ vật thừa thãi.
 
 Trả về đúng định dạng JSON:
 {{
+  "baby_present": boolean,
+  "is_baby_central_subject": boolean,
   "baby_face_clear": boolean,
+  "no_dominant_adults": boolean,
   "privacy_safe": boolean,
-  "has_adult_nudity_or_body": boolean,
   "approved": boolean,
   "aesthetic_score": integer,
-  "caption_vi": "Một câu chú thích tiếng Việt thật ấm áp về nụ cười hoặc giấc ngủ của bé",
-  "reason_vi": "Giải thích lý do duyệt hoặc từ chối"
+  "clean_crop_box": [float, float, float, float],
+  "caption_vi": "Một câu chú thích ngắn ấm áp về nụ cười hoặc giấc ngủ ngoan của bé",
+  "reason_vi": "Giải thích ngắn gọn lý do duyệt hoặc từ chối"
 }}
 """
         try:
@@ -794,15 +796,19 @@ Trả về đúng định dạng JSON:
                 temperature=0.1
             )
             data = json.loads(resp.text)
+            baby_present = bool(data.get("baby_present", False))
+            is_central = bool(data.get("is_baby_central_subject", False))
             baby_face_clear = bool(data.get("baby_face_clear", False))
+            no_adults = bool(data.get("no_dominant_adults", True))
             privacy_safe = bool(data.get("privacy_safe", False))
-            has_nudity = bool(data.get("has_adult_nudity_or_body", False))
             score = int(data.get("aesthetic_score", 0))
 
             approved = (
-                baby_face_clear
+                baby_present
+                and is_central
+                and baby_face_clear
+                and no_adults
                 and privacy_safe
-                and not has_nudity
                 and bool(data.get("approved", False))
                 and score >= 7
             )
@@ -810,12 +816,13 @@ Trả về đúng định dạng JSON:
             result = {
                 "checked_by_gemini": True,
                 "approved": approved,
-                "privacy_safe": approved,
+                "privacy_safe": privacy_safe,
                 "baby_face_clear": baby_face_clear,
-                "has_other_person": False,
+                "has_other_person": not no_adults,
                 "aesthetic_score": score,
+                "clean_crop_box": data.get("clean_crop_box", None),
                 "caption_vi": str(data.get("caption_vi", f"Khoảnh khắc đáng yêu của {self.baby_name}")),
-                "reason_vi": str(data.get("reason_vi", ""))
+                "reason_vi": str(data.get("reason_vi", "Đã đánh giá chất lượng chân dung qua AI"))
             }
 
             print(f"[GeminiVerifier] Duyệt ảnh Cute Moment ({self.active_model}): approved={approved}, "
@@ -977,19 +984,28 @@ Trả về đúng định dạng JSON:
         y_sleep = yesterday.get("total_sleep_hours")
         y_nap = yesterday.get("longest_nap_minutes")
         y_score = yesterday.get("sleep_score")
-        if y_sleep is not None:
-            sleep_tracking_metric_str = (
-                f"- Chu kỳ 24h trọn vẹn ngày hôm trước: Bé đã ngủ {y_sleep} giờ (cữ sâu dài nhất {y_nap} phút, điểm giấc ngủ: {y_score}/100 đạt chuẩn AAP).\n"
-                f"- Tiến độ cữ ngủ sáng nay (từ 00:00): Hệ thống camera ghi nhận {total_sleep} giờ ngủ trong nôi."
-            )
-        else:
-            sleep_tracking_metric_str = f"- Thời gian ngủ trực tiếp qua camera ghi nhận: {total_sleep} giờ"
+
+        delta_summary = sleep_summary.get("delta_summary", {})
+        hourly_clusters = delta_summary.get("hourly_clusters", {})
+        notable_clusters = []
+        for h_key, cl in sorted(hourly_clusters.items()):
+            c_coughs = cl.get("cough_count", 0)
+            c_chokes = cl.get("choke_risk_count", 0)
+            c_cry = cl.get("crying_minutes", 0.0)
+            if c_coughs > 0 or c_chokes > 0 or c_cry > 3.0:
+                notable_clusters.append(f"  • Khung {cl.get('time_range')}: {c_coughs} lần ho, {c_chokes} nguy cơ sặc, {c_cry}p quấy khóc.")
+        cluster_text = "\n".join(notable_clusters) if notable_clusters else "  • Các khung giờ phân bổ êm ả, không phát hiện cụm triệu chứng tập trung."
+
+        sleep_tracking_metric_str = (
+            f"- Chu kỳ đo 24h: Tính từ 07:00 sáng hôm trước đến 07:00 sáng hôm nay (Chuẩn AAP/AASM).\n"
+            f"- Thời gian ngủ ghi nhận qua camera trong chu kỳ 24h: {total_sleep} giờ (cữ dài nhất: {sleep_summary.get('longest_nap_minutes', 0)} phút)."
+        )
 
         prompt = f"""
 Bạn là Bác sĩ Nhi khoa Chuyên gia về Sơ sinh & Giấc ngủ Trẻ em (Pediatrician & Sleep Specialist) của hệ thống BabyGuard AI.
-Dưới đây là hồ sơ đo lường sinh học thực tế của em bé {baby_name} ({age_display}) trong 24 giờ qua:
+Dưới đây là hồ sơ bệnh án sinh học thực tế của em bé {baby_name} ({age_display}) trong chu kỳ 24h (đo từ 07:00 sáng hôm qua đến 07:00 sáng hôm nay theo chuẩn AAP/AASM):
 
-1. DỮ LIỆU ĐO LƯỜNG THỰC TẾ QUA CAMERA BABYGUARD AI:
+1. DỮ LIỆU ĐO LƯỜNG SINH HỌC 24H:
 {sleep_tracking_metric_str}
 - Thời gian thức chơi / vận động trong tầm camera: {total_awake} giờ
 - Thời gian ngoài tầm camera (được bố mẹ bế ra ngoài, bú sữa, tắm, chơi...): ~{camera_offline} giờ
@@ -1001,26 +1017,22 @@ Dưới đây là hồ sơ đo lường sinh học thực tế của em bé {bab
 - Thống kê âm thanh AI: {crying_count} lần quấy khóc, {cough_count} cơn ho / tiếng thở dốc / nguy cơ sặc sữa.
 - Chỉ số thể trạng & tăng trưởng: {growth_str}
 
+2. PHÂN TÍCH CỤM BIẾN ĐỘNG THEO TỪNG KHUNG GIỜ (HOURLY CLUSTERS):
+{cluster_text}
+(LƯU Ý Y KHOA: Tuyệt đối không chia bình quân số lần ho/sặc ra 24h. Cần phân tích cụm thời điểm bé bị ho/sặc dồn dập, ví dụ ho nhiều lúc nửa đêm về sáng thường do trào ngược dạ dày thực quản GERD, sữa trào ngược khi nằm ngang hoặc nhiệt độ phòng giảm lạnh).
+
 Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG cho bố mẹ với các yêu cầu bắt buộc:
-A. PHÂN TÍCH RÕ RÀNG: Dữ liệu ghi nhận trong camera vs Thời gian ngoài camera:
-   - Ghi nhận chính xác số giờ camera bắt được. Nếu đang là buổi sáng sớm và hệ thống vừa reset lúc 00:00, hãy đối chiếu chu kỳ 24h trọn vẹn của ngày hôm trước ({y_sleep if y_sleep is not None else total_sleep}h) để đánh giá đúng nhịp sinh học tổng thể của bé thay vì vội kết luận bé thiếu ngủ.
-   - Với thời gian ngoài camera ({camera_offline} giờ): Phân tích dựa trên chuẩn sinh lý của Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) và Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) cho trẻ ở độ tuổi {age_display} (nhu cầu ngủ tổng 14-17 giờ/ngày, cửa sổ thức 45-90 phút).
-B. ĐÁNH GIÁ SỨC KHỎE HÔ HẤP & TIÊU HÓA:
-   - Đánh giá nhịp thở {avg_bpm} BPM (đối chiếu chuẩn sinh lý sơ sinh 30 - 60 BPM).
-   - Đánh giá các cơn ho/sặc sữa ({cough_count} lần) và quấy khóc ({crying_count} lần), hướng dẫn mẹ cách chống sặc sữa và trào ngược dạ dày thực quản (GERD): giữ bé thẳng đứng 15-20 phút sau bú, vỗ ợ hơi, kê cao đầu nôi 15 độ.
-C. ĐÁNH GIÁ THỂ TRẠNG THEO CHUẨN WHO:
-   - Nhận xét chiều cao và cân nặng so với Chuẩn Tăng trưởng Trẻ em của WHO (WHO Child Growth Standards).
-D. LỜI KHUYÊN & LỊCH SINH HOẠT HÔM NAY:
-   - Hướng dẫn Cửa sổ thức (Wake Window) và giờ ru ngủ tối ưu cho ngày hôm nay.
-   - Tuân thủ quy tắc ngủ an toàn ABC (Alone, Back, Crib) của AAP.
-E. TRÍCH DẪN NGUỒN NGHIÊN CỨU KHOA HỌC:
-   - Phải ghi rõ nguồn trích dẫn: Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP Policy Statement on Safe Sleep), Tổ chức Y tế Thế giới (WHO Child Growth Standards), Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM).
+A. PHÂN TÍCH CHU KỲ 24H: Đo từ 07:00 sáng theo chuẩn AAP/AASM, phân tích thời gian ngủ nôi vs ngoài camera ({camera_offline}h) dựa trên nhu cầu ngủ 14-17h của trẻ sơ sinh.
+B. ĐÁNH GIÁ CỤM BIẾN ĐỘNG & HÔ HẤP: Nhận xét nhịp thở {avg_bpm} BPM và cụm biến động ho/sặc, hướng dẫn mẹ phòng ngừa trào ngược (vỗ ợ hơi, bế dựng 15-20p sau bú).
+C. ĐÁNH GIÁ THỂ TRẠNG THEO CHUẨN WHO: Nhận xét cân nặng, chiều cao đối chiếu trung vị WHO.
+D. LỜI KHUYÊN & LỊCH SINH HOẠT HÔM NAY: Wake Window tối ưu cho trẻ lứa tuổi này, quy tắc ngủ an toàn ABC của AAP.
+E. TRÍCH DẪN NGUỒN CHÍNH THỐNG: AAP, AASM, WHO.
 
 Trả về đúng định dạng JSON:
 {{
   "headline_vi": "Tiêu đề báo cáo ngắn gọn, ấm áp",
-  "summary_vi": "Phân tích cụ thể giữa số liệu đo trong camera và ước lượng thời gian ngoài camera theo chuẩn sinh lý lứa tuổi (3-4 câu tiếng Việt)",
-  "respiratory_and_reflux_vi": "Nhận xét chi tiết về nhịp thở, ho/sặc sữa và hướng dẫn xử lý chống sặc sữa (3-4 câu tiếng Việt)",
+  "summary_vi": "Phân tích cụ thể chu kỳ 24h từ 07:00 sáng và nhịp sinh học của bé (3-4 câu tiếng Việt)",
+  "respiratory_and_reflux_vi": "Nhận xét chi tiết về nhịp thở và phân tích cụm ho/sặc sữa theo khung giờ (3-4 câu tiếng Việt)",
   "growth_analysis_vi": "Đánh giá chiều cao, cân nặng đối chiếu bảng chuẩn WHO (2-3 câu tiếng Việt)",
   "schedule_advice_vi": "Lịch sinh hoạt và gợi ý canh cửa sổ thức (Wake Window) hôm nay (2-3 câu tiếng Việt)",
   "tips_vi": ["Lời khuyên thực tế 1", "Lời khuyên thực tế 2", "Lời khuyên thực tế 3"],
@@ -1053,11 +1065,15 @@ Trả về đúng định dạng JSON:
             ])
 
             # Soạn thảo nội dung định dạng HTML chuẩn đẹp để gửi Telegram
+            cluster_tele_part = ""
+            if notable_clusters:
+                cluster_tele_part = "• <i>Phân tích cụm thời gian biến động:</i>\n" + "\n".join(notable_clusters[:3]) + "\n"
+
             tele_msg = (
                 f"🩺 <b>BÁO CÁO NHI KHOA BUỔI SÁNG (07:00) — {baby_name.upper()}</b>\n"
-                f"👶 <i>Độ tuổi: {age_display} | Ngày: {sleep_summary.get('today_date')}</i>\n"
+                f"👶 <i>Độ tuổi: {age_display} | Chu kỳ 24h neo 07:00 AM (Chuẩn AAP/AASM)</i>\n"
                 f"━━━━━━━━━━━━━━━━━━━\n\n"
-                f"📊 <b>1. GIÁM SÁT GIẤC NGỦ & CAMERA 24H:</b>\n"
+                f"📊 <b>1. GIÁM SÁT GIẤC NGỦ 24H:</b>\n"
                 f"• Ghi nhận qua Camera: <b>{total_sleep}h ngủ</b> | <b>{total_awake}h thức</b>\n"
                 f"• Ngoài tầm quan sát: ~<b>{camera_offline}h</b> (bế chơi, bú sữa, tắm...)\n"
                 f"• Chu kỳ: <b>{sleep_summary.get('deep_ratio_pct', 55)}% NREM</b> (Sâu) | <b>{sleep_summary.get('rem_ratio_pct', 45)}% REM</b> (Động)\n"
@@ -1066,6 +1082,7 @@ Trả về đúng định dạng JSON:
                 f"🫁 <b>2. HÔ HẤP, HO & PHÒNG CHỐNG SẶC SỮA:</b>\n"
                 f"• Nhịp thở khi ngủ: <b>{avg_bpm} BPM</b> (Chuẩn sơ sinh: 30 - 60 BPM)\n"
                 f"• Cơn ho / trớ sặc sữa: <b>{cough_count} lần</b> | Tiếng khóc: <b>{crying_count} lần</b>\n"
+                f"{cluster_tele_part}"
                 f"👉 <i>{reflux_vi}</i>\n\n"
                 f"📈 <b>3. THỂ TRẠNG & TĂNG TRƯỞNG (CHUẨN WHO):</b>\n"
                 f"• Số đo mới nhất: <b>{growth.get('weight_kg', 'N/A')} kg</b> | <b>{growth.get('height_cm', 'N/A')} cm</b>\n"

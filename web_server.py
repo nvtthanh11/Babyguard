@@ -349,6 +349,10 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         summary_dict["cough_count"] = daily_counts.get("cough_count", 0)
         summary_dict["apnea_count"] = daily_counts.get("apnea_count", 0)
 
+        # Bổ sung Cụm Biến Động Ban Ngày (Hourly Cluster Delta Summary)
+        if hasattr(sleep_tracker, "get_health_cluster_summary"):
+            summary_dict["delta_summary"] = sleep_tracker.get_health_cluster_summary()
+
         vis_st = vision_tracker.get_status() if vision_tracker else {}
         summary_dict["avg_bpm"] = vis_st.get("breathing_bpm", 36.0)
 
@@ -398,29 +402,66 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
         threading.Thread(target=_bg, daemon=True).start()
 
+    # Luồng chạy ngầm điều phối Bác Sĩ Nhi Khoa 07:00 Sáng & Giám sát Cụm Bất Thường Ban Ngày
+    def _start_background_pediatric_scheduler():
+        last_anomaly_check_time = 0.0
+        while True:
+            try:
+                time.sleep(20)
+                now_dt = datetime.now()
+                now_t = time.time()
+
+                # 1. Đúng 07:00 sáng: Thu thập dữ liệu 24h & kích hoạt Gemini chấm điểm gửi Telegram
+                if now_dt.hour == 7 and 0 <= now_dt.minute <= 15:
+                    cur_cycle = getattr(sleep_tracker, "today_date", "")
+                    if _ai_sleep_State.get("last_auto_date") != cur_cycle:
+                        has_rep = (
+                            sleep_tracker.daily_ai_report is not None
+                            and sleep_tracker.daily_ai_report.get("date") == cur_cycle
+                        )
+                        if not has_rep and not _ai_sleep_State["generating"]:
+                            _ai_sleep_State["last_auto_date"] = cur_cycle
+                            cfg = load_config()
+                            age_m = int(cfg.get("baby_age_months", 1))
+                            vis_st = vision_tracker.get_status() if vision_tracker else {}
+                            aud_st = audio_detector.get_status() if audio_detector else {}
+                            snap = sleep_tracker.get_summary(
+                                adult_holding=vis_st.get("adult_holding", False),
+                                is_crying=aud_st.get("is_crying", False),
+                                age_months=age_m
+                            )
+                            print("[WebServer] ⏰ ĐÚNG 07:00 SÁNG: Kích hoạt Bác Sĩ AI tổng hợp bệnh án 24h...")
+                            _trigger_morning_ai_sleep_report(snap)
+
+                # 2. Giám sát Cụm Biến Động Khẩn Cấp trong ngày (Micro-Triage)
+                if (now_t - last_anomaly_check_time) >= 90.0:
+                    last_anomaly_check_time = now_t
+                    if hasattr(sleep_tracker, "check_health_cluster_anomaly"):
+                        anomaly = sleep_tracker.check_health_cluster_anomaly(window_minutes=30)
+                        if anomaly.get("has_anomaly") and anomaly.get("severity") in ["CRITICAL", "HIGH"]:
+                            print(f"[WebServer] 🚨 PHÁT HIỆN CỤM BẤT THƯỜNG: {anomaly.get('reason')}")
+                            # Nếu có nguy cơ sặc hoặc ngưng thở, AlertManager đã có sẵn cooldown nội bộ
+                            if alert_manager:
+                                alert_manager.trigger_event("cough", message=anomaly.get("reason"), extra_info=anomaly.get("counts"))
+            except Exception as se:
+                print(f"[WebServer] Lỗi background pediatric scheduler: {se}")
+
+    threading.Thread(target=_start_background_pediatric_scheduler, daemon=True).start()
+
     @app.get("/api/sleep_summary")
     def get_sleep_summary():
-        vis_st = vision_tracker.get_status()
-        aud_st = audio_detector.get_status()
+        vis_st = vision_tracker.get_status() if vision_tracker else {}
+        aud_st = audio_detector.get_status() if audio_detector else {}
+        cfg = load_config()
+        age_m = int(cfg.get("baby_age_months", 1))
         summary = sleep_tracker.get_summary(
             adult_holding=vis_st.get("adult_holding", False),
-            is_crying=aud_st.get("is_crying", False)
+            is_crying=aud_st.get("is_crying", False),
+            age_months=age_m
         )
-        # Bổ sung thông tin độ tuổi chi tiết từ Ngày Sinh
-        cfg = load_config()
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         summary["age_info"] = calculate_exact_age(b_date)
         summary["baby_name"] = cfg.get("baby_name", "Bé")
-
-        # Tự động tổng hợp Bảng Phân Tích Giấc Ngủ Đêm Qua & 24h vào mỗi sáng (từ 05:00 sáng trở đi)
-        now_dt = datetime.now()
-        today_str = summary.get("today_date", "")
-        has_gemini_report = (
-            sleep_tracker.daily_ai_report is not None
-            and sleep_tracker.daily_ai_report.get("date") == today_str
-        )
-        if not has_gemini_report and now_dt.hour >= 5 and _ai_sleep_State["last_auto_date"] != today_str:
-            _trigger_morning_ai_sleep_report(summary)
         return summary
 
     @app.post("/api/sleep/analyze-ai")
@@ -665,6 +706,36 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     def get_config():
         return load_config()
 
+    @app.get("/api/settings/google-drive")
+    def get_google_drive_settings():
+        cfg = load_config()
+        from google_drive_sync import get_google_drive_status
+        return get_google_drive_status(cfg)
+
+    @app.post("/api/settings/google-drive/scan")
+    def scan_google_drive_settings():
+        from google_drive_sync import detect_macos_google_drive_path
+        detected = detect_macos_google_drive_path()
+        return {
+            "success": bool(detected),
+            "detected_path": detected,
+            "message": f"Đã tìm thấy Google Drive: {detected}" if detected else "Chưa phát hiện ứng dụng Google Drive trên máy."
+        }
+
+    @app.post("/api/settings/google-drive")
+    def update_google_drive_settings(payload: dict):
+        cfg = load_config()
+        if "enabled" in payload:
+            cfg["google_drive_enabled"] = bool(payload["enabled"])
+        if "path" in payload:
+            cfg["google_drive_path"] = str(payload["path"]).strip()
+        save_config(cfg)
+        from google_drive_sync import get_google_drive_status
+        return {
+            "success": True,
+            "status": get_google_drive_status(cfg)
+        }
+
     class ConfigToggle(BaseModel):
         key: str
         value: bool
@@ -890,6 +961,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         camera_rtsp_url: str = None
         camera_index: int = None
         audio_device_index: int = None
+        google_drive_enabled: bool = None
+        google_drive_path: str = None
         telegram_enabled: bool = None
         telegram_bot_token: str = None
         telegram_chat_id: str = None
