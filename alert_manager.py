@@ -80,12 +80,10 @@ class AlertManager:
         disclaimer = self.first_aid_data.get(disclaimer_key, self.first_aid_data.get("disclaimer_vi", self.first_aid_data.get("disclaimer", "")))
 
         out = f"\n\n🏥 <b>{title}</b>\n"
-        for s in steps[:3]:
+        for s in steps[:2]:
             out += f"• {s}\n"
         if do_nots:
             out += f"⛔ <i>{do_nots[0]}</i>\n"
-        if disclaimer:
-            out += f"\n{disclaimer}\n"
         return out
 
     def update_config(self, new_config: dict):
@@ -241,6 +239,23 @@ class AlertManager:
 
         return recipients
 
+    @staticmethod
+    def _safe_photo_caption(raw_caption: str, max_len: int = 950) -> str:
+        if len(raw_caption) <= max_len:
+            return raw_caption
+        truncated = raw_caption[:max_len]
+        last_nl = truncated.rfind("\n")
+        if last_nl > 400:
+            truncated = truncated[:last_nl]
+        import re
+        open_tags = re.findall(r"<([a-zA-Z]+)(?:\s+[^>]*)?>", truncated)
+        close_tags = re.findall(r"</([a-zA-Z]+)>", truncated)
+        for t in reversed(open_tags):
+            if open_tags.count(t) > close_tags.count(t):
+                truncated += f"</{t}>"
+                close_tags.append(t)
+        return truncated
+
     def _send_telegram(self, photo_path: str, caption: str):
         bot_token = self.config.get("telegram_bot_token", "").strip()
         enabled = self.config.get("telegram_enabled", False)
@@ -252,25 +267,38 @@ class AlertManager:
         def _send():
             photo_url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
             msg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            import re
+            clean_photo_cap = self._safe_photo_caption(caption, max_len=950)
+            plain_photo_cap = re.sub(r'<[^>]+>', '', clean_photo_cap)
+
             for r in recipients:
                 try:
                     chat_id = r["chat_id"]
-                    if len(caption) > 1000:
-                        short_cap = caption[:900] + "\n<i>(Xem tiếp hướng dẫn sơ cứu bên dưới...)</i>"
-                        with open(photo_path, "rb") as f:
-                            resp = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": short_cap, "parse_mode": "HTML"}, timeout=10)
-                        if resp.status_code != 200:
+                    # 1. Gửi ảnh kèm chú thích an toàn (luôn dưới 1,000 ký tự)
+                    sent_photo = False
+                    if photo_path and os.path.exists(photo_path):
+                        try:
                             with open(photo_path, "rb") as f:
-                                requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": short_cap.replace("<i>", "").replace("</i>", "")}, timeout=10)
-                        # Gửi toàn văn hướng dẫn sơ cứu đầy đủ qua sendMessage (cho phép tới 4096 ký tự)
+                                resp = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": clean_photo_cap, "parse_mode": "HTML"}, timeout=12)
+                            if resp.status_code == 200:
+                                sent_photo = True
+                            else:
+                                # Thử lại với plain text nếu parse HTML bị từ chối
+                                with open(photo_path, "rb") as f:
+                                    resp2 = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": plain_photo_cap}, timeout=12)
+                                if resp2.status_code == 200:
+                                    sent_photo = True
+                        except Exception as pe:
+                            print(f"[AlertManager] Lỗi gửi ảnh: {pe}")
+
+                    # 2. Nếu nội dung ban đầu quá dài (> 950 ký tự), gửi thêm tin nhắn văn bản hướng dẫn đầy đủ
+                    if len(caption) > 950:
                         requests.post(msg_url, data={"chat_id": chat_id, "text": caption, "parse_mode": "HTML"}, timeout=10)
-                    else:
-                        with open(photo_path, "rb") as f:
-                            resp = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"}, timeout=10)
-                        if resp.status_code != 200:
-                            with open(photo_path, "rb") as f:
-                                requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": caption}, timeout=10)
-                    print(f"[AlertManager] Telegram alert sent to {r['name']} ({chat_id})")
+                    elif not sent_photo:
+                        # Fallback nếu không có ảnh hoặc gửi ảnh lỗi hoàn toàn -> gửi văn bản
+                        requests.post(msg_url, data={"chat_id": chat_id, "text": caption, "parse_mode": "HTML"}, timeout=10)
+
+                    print(f"[AlertManager] Telegram alert sent to {r['name']} ({chat_id}) [photo={sent_photo}]")
                 except Exception as e:
                     print(f"[AlertManager] Failed to send Telegram to {r['name']}: {e}")
 

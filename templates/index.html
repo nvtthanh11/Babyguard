@@ -106,7 +106,7 @@
         }
 
         /* =========================================================================
-           LIGHT THEME OVERRIDES (Clean Medical / Apple Health Style)
+           LIGHT THEME OVERRIDES (High-Contrast Medical / Apple Health Style)
            ========================================================================= */
         html:not(.dark) {
             color-scheme: light;
@@ -135,21 +135,41 @@
             color: #0F172A !important;
         }
         html:not(.dark) .text-slate-300 {
-            color: #334155 !important;
+            color: #1E293B !important;
         }
         html:not(.dark) .text-slate-400 {
-            color: #64748B !important;
+            color: #475569 !important;
         }
+
+        /* High-Contrast Color Overrides in Light Mode (Chống lóa / mất chữ trên nền trắng) */
+        html:not(.dark) .text-emerald-300,
+        html:not(.dark) .text-emerald-400 {
+            color: #065F46 !important; /* Deep Forest Emerald */
+        }
+        html:not(.dark) .text-amber-300,
+        html:not(.dark) .text-amber-400 {
+            color: #92400E !important; /* Deep Warm Amber */
+        }
+        html:not(.dark) .text-cyan-300,
+        html:not(.dark) .text-cyan-400 {
+            color: #0E7490 !important; /* Deep Ocean Cyan */
+        }
+        html:not(.dark) .text-rose-300,
+        html:not(.dark) .text-rose-400 {
+            color: #9F1239 !important; /* Deep Ruby Rose */
+        }
+        html:not(.dark) .text-indigo-300,
+        html:not(.dark) .text-indigo-400 {
+            color: #3730A3 !important; /* Deep Royal Indigo */
+        }
+        html:not(.dark) .text-purple-300,
+        html:not(.dark) .text-purple-400 {
+            color: #5B21B6 !important; /* Deep Violet */
+        }
+
         html:not(.dark) .bg-slate-900,
         html:not(.dark) .bg-slate-950 {
             background-color: #F1F5F9 !important;
-        }
-        html:not(.dark) .bg-slate-900\/80,
-        html:not(.dark) .bg-slate-900\/90,
-        html:not(.dark) .bg-slate-950\/90,
-        html:not(.dark) .bg-slate-950\/85,
-        html:not(.dark) .bg-slate-950\/80 {
-            background-color: rgba(255, 255, 255, 0.94) !important;
         }
         html:not(.dark) .border-slate-800,
         html:not(.dark) .border-slate-700,
@@ -159,15 +179,33 @@
         }
         html:not(.dark) .bg-slate-800 {
             background-color: #E2E8F0 !important;
-            color: #1E293B !important;
+            color: #0F172A !important;
         }
         html:not(.dark) .hover\:bg-slate-700:hover,
         html:not(.dark) .hover\:bg-slate-800:hover {
             background-color: #CBD5E1 !important;
         }
+
+        /* Giữ nguyên Badge Kính Đen Sang Trọng trên Video và Ảnh (Permanent Dark Glass) */
+        #video-container .bg-slate-950\/80,
+        #video-container .bg-slate-900\/80,
+        #video-container .bg-slate-950\/90,
+        #video-container .bg-black\/60,
+        .photo-overlay-badge,
+        .video-overlay-badge {
+            background-color: rgba(15, 23, 42, 0.88) !important;
+            color: #FFFFFF !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+        }
+        #video-container span,
+        #video-container p {
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        }
+
         html:not(.dark) .camera-action-bar {
             background-color: rgba(255, 255, 255, 0.95) !important;
             border-color: #E2E8F0 !important;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08) !important;
         }
         html:not(.dark) input,
         html:not(.dark) select,

@@ -1,10 +1,10 @@
 {
     "version": "2.0",
     "updated_at": "2026-10-28",
-    "disclaimer_vi": "⚠️ KHUYẾN CÁO Y KHOA QUAN TRỌNG: Đây là quy trình sơ cứu khẩn cấp ban đầu theo chuẩn quốc tế của Hiệp hội Tim mạch Hoa Kỳ (AHA) và Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP). Bố mẹ hãy lập tức liên hệ với cơ sở y tế gần nhất hoặc gọi cấp cứu 115 để được y bác sĩ trực tiếp hướng dẫn và cấp cứu kịp thời!",
-    "disclaimer_en": "⚠️ CRITICAL MEDICAL DISCLAIMER: This emergency first-aid protocol adheres strictly to American Heart Association (AHA) and American Academy of Pediatrics (AAP) pediatric guidelines. Always immediately call emergency medical services (911 / 112 / 115) or reach the nearest medical center for direct physician care!",
-    "emergency_phone_vi": "115",
-    "emergency_phone_en": "911",
+    "disclaimer_vi": "⚠️ KHUYẾN CÁO Y KHOA QUAN TRỌNG: Đây là quy trình sơ cứu khẩn cấp ban đầu theo chuẩn quốc tế của Hiệp hội Tim mạch Hoa Kỳ (AHA) và Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP). Bố mẹ hãy lập tức liên hệ với cơ sở y tế gần nhất hoặc gọi Dịch vụ Cấp Cứu Y Tế Khẩn Cấp (115 / 911 / 112) để được y bác sĩ trực tiếp hướng dẫn và cấp cứu kịp thời!",
+    "disclaimer_en": "⚠️ CRITICAL MEDICAL DISCLAIMER: This emergency first-aid protocol adheres strictly to American Heart Association (AHA) and American Academy of Pediatrics (AAP) pediatric guidelines. Always immediately call local emergency medical services (911 / 112 / 115) or reach the nearest medical center for direct physician care!",
+    "emergency_phone_vi": "Cấp cứu Y tế Địa phương (Emergency Services)",
+    "emergency_phone_en": "Local Emergency Services (911/112)",
     "protocols": {
         "choking_aspiration": {
             "vi": {
@@ -16,7 +16,7 @@
                     "2. VỖ LƯNG (5 LẦN): Đặt bé nằm sấp dọc theo cẳng tay người lớn, bàn tay nâng giữ cằm và hàm dưới (không bóp vào cổ). Để đầu bé chúc xuống thấp hơn ngực (tựa cẳng tay lên đùi). Dùng gót bàn tay kia vỗ dứt khoát 5 lần vào lưng giữa 2 xương bả vai.",
                     "3. ẤN NGỰC (5 LẦN): Nếu chưa thông khí, lật ngửa bé dọc theo cẳng tay (đầu vẫn dốc thấp hơn thân). Đặt 2 ngón tay ở giữa ngực, ngay dưới đường nối 2 núm vú khoảng 1 khoát ngón tay. Ấn dứt khoát 5 lần sâu khoảng 4 cm (1/3 lồng ngực).",
                     "4. LẶP LẠI LUÂN PHIÊN: 5 lần vỗ lưng và 5 lần ấn ngực cho đến khi sữa/dị vật bật ra và bé khóc to, hồng hào trở lại.",
-                    "5. NẾU BÉ NGẤT / BẤT TỈNH: Đặt bé lên mặt phẳng cứng, gọi ngay Cấp cứu 115 và tiến hành ép tim thổi ngạt (CPR) chu kỳ 30 lần ép tim : 2 lần thổi ngạt."
+                    "5. NẾU BÉ NGẤT / BẤT TỈNH: Đặt bé lên mặt phẳng cứng, gọi ngay Dịch vụ Cấp Cứu Y Tế Khẩn Cấp và tiến hành ép tim thổi ngạt (CPR) chu kỳ 30 lần ép tim : 2 lần thổi ngạt."
                 ],
                 "do_not": [
                     "TUYỆT ĐỐI KHÔNG xốc ngược lắc mạnh bé (nguy cơ chấn thương não và đốt sống cổ - Shaken Baby Syndrome).",
@@ -50,7 +50,7 @@
                     "2. GẠT BỎ TOÀN BỘ chăn, gối, thú bông, khăn quấn khỏi vùng mặt, cổ và lồng ngực của bé.",
                     "3. KIỂM TRA PHẢN XẠ THỞ: Kích thích nhẹ bằng cách gõ/búng vào lòng bàn chân hoặc xoa nhẹ lưng bé.",
                     "4. ĐÁNH GIÁ MÀU DA: Quan sát môi và đầu móng tay. Nếu môi hồng hào và bé cựa quậy thở đều: Tiếp tục theo dõi sát.",
-                    "5. NẾU BÉ TÍM TÁI HOẶC NGƯNG THỞ: Gọi ngay 115, kiểm tra đường thở và bắt đầu ép tim hỗ trợ hô hấp."
+                    "5. NẾU BÉ TÍM TÁI HOẶC NGƯNG THỞ: Gọi ngay Dịch vụ Cấp Cứu Y Tế Khẩn Cấp, kiểm tra đường thở và bắt đầu ép tim hỗ trợ hô hấp."
                 ],
                 "do_not": [
                     "KHÔNG để bất kỳ vật mềm, chăn dày, gối hoặc gấu bông nào trong nôi của bé dưới 12 tháng tuổi."

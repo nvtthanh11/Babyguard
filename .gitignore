@@ -18,6 +18,7 @@ snapshots/*
 moments/*
 !moments/.gitkeep
 sleep_data.json
+daily_delta_log.json
 *.zip
 
 # Sensitive personal configurations (Keep config.example.json)

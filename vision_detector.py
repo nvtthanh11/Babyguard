@@ -95,7 +95,7 @@ class VisionTracker:
         self.moments_dir = moments_dir or os.path.join(BASE_DIR, "moments")
         os.makedirs(self.moments_dir, exist_ok=True)
         # Chu kỳ giãn cách tối ưu: 12 phút (720s) giữa các lần chụp để ảnh luôn chọn lọc & tiết kiệm API
-        self.moment_capture_interval = 720.0
+        self.moment_capture_interval = 300.0  # Chụp giãn cách 5 phút để tuyển chọn 10-20 khoảnh khắc đẹp/ngày
         # Cho phép tự động chụp khoảnh khắc đầu tiên sau 30s kể từ khi khởi động
         self.last_moment_time = time.time() - (self.moment_capture_interval - 30.0)
         self.recent_moment_crops = [] # Lưu các thumbnail 64x64 để chống chụp trùng lặp >= 78%
@@ -110,6 +110,11 @@ class VisionTracker:
 
         # Buffer lưu trữ 5 khung hình thô gần nhất để khử nhiễu đa khung hình ban đêm (Night Stacking)
         self.raw_frame_burst = collections.deque(maxlen=5)
+        self.temporal_frame_cache = collections.deque(maxlen=14) # Lưu (timestamp, frame) trong 6s qua
+        self.last_temporal_cache_time = 0.0
+        self.pending_alert_verifications = {} # {alert_type: bool}
+        self.cute_moment_candidates = [] # Lưu tối đa 12 ứng viên ảnh đẹp trong ngày
+        self.last_mosaic_eval_time = 0.0
         
         # Breathing metrics (Đo quang học nhịp thở thật từ bụng & lồng ngực với Butterworth DSP)
         self.breathing_bpm = 42.0
@@ -964,8 +969,8 @@ class VisionTracker:
             still_time = now_t - getattr(self, "last_breath_peak_time", now_t)
             if still_time > 25.0 and len(self.chest_history) >= 35:
                 vals = [v for t, v in self.chest_history]
-                if float(np.std(vals)) < 0.015 and self.on_apnea_callback:
-                    self._safe_dispatch_callback(self.on_apnea_callback)
+                if float(np.std(vals)) < 0.015:
+                    self._trigger_high_risk_double_check(frame, "apnea", "Không phát hiện vi cử động lồng ngực trong 25 giây", dispatch_callback=self.on_apnea_callback)
                     self.breathing_status = "Cảnh báo ngưng thở"
         else:
             self.last_motion_time = now_t
@@ -983,41 +988,128 @@ class VisionTracker:
             except Exception as e:
                 print(f"[VisionTracker] ⚠️ Ngoại lệ an toàn từ callback {getattr(cb, '__name__', str(cb))}: {e}")
 
-    def _trigger_gemini_alert_verify(self, frame, alert_type: str, local_reason: str):
-        """Kích hoạt cảnh báo khẩn cấp cục bộ ngay lập tức và thẩm định chi tiết song song qua Gemini API."""
-        if getattr(self, "pending_alert_verify", False):
+    def _trigger_high_risk_double_check(self, frame, alert_type: str, local_reason: str, dispatch_callback=None):
+        """
+        Cơ chế Kiểm Tra Chéo An Toàn 2 Tầng (Two-Tier Double-Check Sentinel):
+        - Tầng 1: Edge AI phát hiện bất thường và duy trì debounce (2.5 - 3 giây).
+        - Tầng 2: Gửi chuỗi 3 khung thời gian (T-2s, T-1s, T-0s) + Crop đường thở lên Gemini.
+        - Xử lý:
+          + Nếu Gemini xác nhận NGUY HIỂM: Dispatch callback (báo động còi loa + Telegram).
+          + Nếu Gemini báo AN TOÀN (Báo động giả): Hủy cảnh báo, không làm phiền bố mẹ.
+            Đặc biệt nếu là danger_zone và có corrected_safe_zone_polygon -> Tự động nới rộng khung nôi xanh lá cây!
+          + Nếu MẤT MẠNG hoặc Gemini timeout > 3.5s -> FAIL-SAFE: Tự động kích hoạt báo động cấp 1 ngay lập tức!
+        """
+        if getattr(self, "pending_alert_verifications", {}).get(alert_type, False):
             return
 
-        # 1. Kích hoạt báo động âm thanh và giao diện cục bộ NGAY LẬP TỨC (Zero-latency)
-        self.covered_face_active = True
-        self.sleep_pose = "Mặt bị che khuất (Nguy cơ ngạt)"
-        self.baby_status = "CẢNH BÁO: MẶT BÉ BỊ CHE KHUẤT!"
-        if self.on_covered_face_callback:
-            self._safe_dispatch_callback(self.on_covered_face_callback)
-
+        # Nếu Gemini chưa bật hoặc chưa sẵn sàng -> Fallback ngay lập tức về báo động cục bộ
         if self.gemini_verifier is None or not self.gemini_verifier.is_ready() or not self.gemini_verifier.verify_alerts_enabled:
+            if dispatch_callback:
+                self._safe_dispatch_callback(dispatch_callback)
             return
 
-        self.pending_alert_verify = True
+        self.pending_alert_verifications[alert_type] = True
         frame_copy = frame.copy()
+        now_t = time.time()
+
+        # Trích xuất 2 khung hình thời gian gần nhất (cách đây 2.0s và 1.0s)
+        f_t2, f_t1 = None, None
+        if hasattr(self, "temporal_frame_cache") and self.temporal_frame_cache:
+            frames_sorted = list(self.temporal_frame_cache)
+            for ts, f in frames_sorted:
+                if (now_t - ts) >= 1.6:
+                    f_t2 = f
+                    break
+            for ts, f in frames_sorted:
+                if 0.6 <= (now_t - ts) <= 1.5:
+                    f_t1 = f
+                    break
+
+        # Crop đường thở (Airway crop)
+        airway_crop = None
+        if getattr(self, "last_face_box", None) is not None:
+            fb = self.last_face_box
+            fh, fw = frame_copy.shape[:2]
+            fx1, fy1, fx2, fy2 = fb
+            pad_w = int((fx2 - fx1) * 0.45)
+            pad_h = int((fy2 - fy1) * 0.45)
+            cx1 = max(0, fx1 - pad_w)
+            cy1 = max(0, fy1 - pad_h)
+            cx2 = min(fw, fx2 + pad_w)
+            cy2 = min(fh, fy2 + pad_h)
+            if (cx2 - cx1) >= 40 and (cy2 - cy1) >= 40:
+                airway_crop = frame_copy[cy1:cy2, cx1:cx2].copy()
 
         def _worker():
             try:
-                res = self.gemini_verifier.verify_high_risk_alert(frame_copy, alert_type=alert_type, local_reason=local_reason)
+                hist = [f_t2, f_t1] if (f_t2 is not None and f_t1 is not None) else None
+                res = self.gemini_verifier.verify_high_risk_alert(
+                    frame_copy,
+                    alert_type=alert_type,
+                    local_reason=local_reason,
+                    frame_history=hist,
+                    airway_crop=airway_crop
+                )
+
                 if res.get("is_dangerous", False):
-                    diag = res.get("diagnosis_vi", "Nguy cơ che khuất đường thở")
-                    self.sleep_pose = "Nguy cơ ngạt (Đã xác thực AI)"
-                    self.baby_status = f"CẢNH BÁO AI: {diag[:42]}"
+                    diag = res.get("diagnosis_vi", local_reason)
+                    if alert_type == "covered_face":
+                        self.covered_face_active = True
+                        self.sleep_pose = "Nguy cơ ngạt (Đã xác thực AI)"
+                        self.baby_status = f"CẢNH BÁO AI: {diag[:38]}"
+                    elif alert_type == "danger_zone":
+                        self.is_near_edge = True
+                        self.baby_status = f"CẢNH BÁO AI: Bé vượt mép nôi!"
+                    elif alert_type == "apnea":
+                        self.breathing_status = "Ngưng thở (Đã xác thực AI)"
+                        self.baby_status = f"CẢNH BÁO AI: {diag[:38]}"
+                    elif alert_type == "prone":
+                        self.sleep_pose = "Nằm sấp (Nguy cơ ngạt)"
+                        self.baby_status = f"CẢNH BÁO AI: {diag[:38]}"
+
+                    if dispatch_callback:
+                        self._safe_dispatch_callback(dispatch_callback)
                 else:
-                    # Nếu Gemini xác nhận an toàn (bác bỏ báo động giả) -> Hủy cảnh báo
-                    self.covered_face_active = False
-                    self.covered_face_frame_count = 0
-                    self.gemini_suppressed_until = time.time() + 15.0  # Chỉ nghỉ 15 giây, không khóa 3 phút
-                    print(f"[VisionTracker] ✅ Gemini đã kiểm tra và dập báo động giả: {res.get('diagnosis_vi')}")
+                    # Bác bỏ báo động giả
+                    diag = res.get("diagnosis_vi", "An toàn")
+                    print(f"[VisionTracker] ✅ Gemini đã dập báo động giả ({alert_type}): {diag}")
+                    if alert_type == "covered_face":
+                        self.covered_face_active = False
+                        self.covered_face_frame_count = 0
+                    elif alert_type == "danger_zone":
+                        self.is_near_edge = False
+                        self.danger_zone_frame_count = 0
+                        # Tự động nới rộng khung nôi nếu Gemini cung cấp corrected_safe_zone_polygon
+                        new_poly = res.get("corrected_safe_zone_polygon")
+                        if new_poly and len(new_poly) == 4:
+                            self.safe_zone_polygon = new_poly
+                            xs = [p[0] for p in new_poly]
+                            ys = [p[1] for p in new_poly]
+                            self.safe_zone_left, self.safe_zone_right = min(xs), max(xs)
+                            self.safe_zone_top, self.safe_zone_bottom = min(ys), max(ys)
+                            print(f"[VisionTracker] 🎯 Đã tự động nới rộng Khung Nôi sang xanh lá để ôm trọn tấm đệm của bé!")
+                    elif alert_type == "prone":
+                        self.prone_frame_count = 0
+                    elif alert_type == "apnea":
+                        self.last_breath_peak_time = time.time()
+                        self.breathing_status = "Thở đều (Bình thường)"
             finally:
-                self.pending_alert_verify = False
+                self.pending_alert_verifications[alert_type] = False
 
         threading.Thread(target=_worker, daemon=True).start()
+
+    def _trigger_gemini_alert_verify(self, frame, alert_type: str, local_reason: str):
+        # Tương thích ngược với các lệnh gọi cũ
+        cb = None
+        if alert_type == "covered_face":
+            cb = self.on_covered_face_callback
+        elif alert_type == "danger_zone":
+            cb = self.on_danger_zone_callback
+        elif alert_type == "prone":
+            cb = self.on_prone_callback
+        elif alert_type == "apnea":
+            cb = self.on_apnea_callback
+        self._trigger_high_risk_double_check(frame, alert_type, local_reason, dispatch_callback=cb)
 
     def _trigger_cute_moment_capture(self, frame, baby_face_info=None):
         """
@@ -1070,17 +1162,17 @@ class VisionTracker:
         if (now_t - self.last_moment_time) < self.moment_capture_interval:
             return
 
-        # Căn giữa khuôn mặt em bé vào khung chân dung (Auto-Center Portrait Framing):
-        # Khuôn mặt bé nằm ở ~35% từ trên xuống và căn chính giữa bề ngang (Quy tắc 1/3 nhiếp ảnh)
-        desired_w = max(int(fw * 3.2), 220)
-        desired_h = int(desired_w * 1.25)  # Tỉ lệ 4:5 chân dung chuẩn nhiếp ảnh
+        # Căn chỉnh bố cục chân dung toàn diện cho bé (Comfortable Baby Candid Framing):
+        # Giữ tỷ lệ khung rộng, không zoom lẹm mặt, bao gồm cả nôi và cơ thể bé với lề 50%
+        desired_w = min(w, max(int(fw * 5.5), int(w * 0.70)))
+        desired_h = min(h, int(desired_w * 0.85))
 
         crop_x1 = max(0, int(fcx - desired_w / 2.0))
         crop_x2 = min(w, crop_x1 + desired_w)
         if (crop_x2 - crop_x1) < desired_w:
             crop_x1 = max(0, crop_x2 - desired_w)
 
-        crop_y1 = max(0, int(fcy - desired_h * 0.35))
+        crop_y1 = max(0, int(fcy - desired_h * 0.40))
         crop_y2 = min(h, crop_y1 + desired_h)
         if (crop_y2 - crop_y1) < desired_h:
             crop_y1 = max(0, crop_y2 - desired_h)
@@ -1168,20 +1260,8 @@ class VisionTracker:
                         self.last_moment_time = time.time() - (self.moment_capture_interval - 180.0)
                         return
                     
-                    # Nếu Gemini đề xuất tọa độ căn giữa tối ưu (clean_crop_box) -> Cắt tinh chỉnh
-                    cbox = res.get("clean_crop_box")
-                    if cbox and isinstance(cbox, list) and len(cbox) == 4:
-                        try:
-                            ch, cw = frame_to_save.shape[:2]
-                            b_xmin, b_ymin, b_xmax, b_ymax = [float(v) for v in cbox]
-                            bx1 = max(0, int(min(b_xmin, b_xmax) * cw))
-                            by1 = max(0, int(min(b_ymin, b_ymax) * ch))
-                            bx2 = min(cw, int(max(b_xmin, b_xmax) * cw))
-                            by2 = min(ch, int(max(b_ymin, b_ymax) * ch))
-                            if (bx2 - bx1) >= 80 and (by2 - by1) >= 80:
-                                frame_to_save = frame_to_save[by1:by2, bx1:bx2].copy()
-                        except Exception:
-                            pass
+                    # Không cắt lẹm thứ cấp vào mặt bé để giữ độ phân giải 1080p sắc nét và góc nhìn tự nhiên
+                    pass
                 else:
                     caption = "Bé có nụ cười / biểu cảm đáng yêu" if has_special_expression else "Khoảnh khắc em bé ngủ ngoan"
                     res = {
@@ -1435,6 +1515,11 @@ class VisionTracker:
 
     def _process_frame(self, frame):
         h, w = frame.shape[:2]
+        now_t = time.time()
+        if (now_t - getattr(self, "last_temporal_cache_time", 0.0)) >= 0.5:
+            self.last_temporal_cache_time = now_t
+            self.temporal_frame_cache.append((now_t, cv2.resize(frame, (640, 360))))
+
         self.raw_frame_burst.append(frame.copy())
         annotated = frame.copy()
 
@@ -1563,8 +1648,8 @@ class VisionTracker:
 
             if self.prone_alert_enabled and pose_level == "danger":
                 self.prone_frame_count += 1
-                if self.prone_frame_count >= 35 and self.on_prone_callback: # ~3.0 seconds
-                    self._safe_dispatch_callback(self.on_prone_callback)
+                if self.prone_frame_count >= 35: # ~3.0 seconds debounce
+                    self._trigger_high_risk_double_check(frame, "prone", "Bé nằm sấp úp mặt xuống đệm", dispatch_callback=self.on_prone_callback)
             else:
                 self.prone_frame_count = max(0, self.prone_frame_count - 1)
 
@@ -1606,8 +1691,8 @@ class VisionTracker:
 
             if self.danger_zone_enabled and self.is_near_edge:
                 self.danger_zone_frame_count += 1
-                if self.danger_zone_frame_count >= 15 and self.on_danger_zone_callback:
-                    self._safe_dispatch_callback(self.on_danger_zone_callback)
+                if self.danger_zone_frame_count >= 20: # ~2.0s debounce
+                    self._trigger_high_risk_double_check(frame, "danger_zone", "Bé cựa quậy vượt mép nôi an toàn", dispatch_callback=self.on_danger_zone_callback)
             else:
                 self.danger_zone_frame_count = max(0, self.danger_zone_frame_count - 1)
 
@@ -1762,8 +1847,8 @@ class VisionTracker:
 
             if self.danger_zone_enabled and self.is_near_edge:
                 self.danger_zone_frame_count += 1
-                if self.danger_zone_frame_count >= 15 and self.on_danger_zone_callback:
-                    self._safe_dispatch_callback(self.on_danger_zone_callback)
+                if self.danger_zone_frame_count >= 20: # ~2.0s debounce
+                    self._trigger_high_risk_double_check(frame, "danger_zone", "Bé cựa quậy vượt mép nôi an toàn", dispatch_callback=self.on_danger_zone_callback)
             else:
                 self.danger_zone_frame_count = max(0, self.danger_zone_frame_count - 1)
 

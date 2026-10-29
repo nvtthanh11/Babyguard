@@ -597,50 +597,143 @@ Trả về đúng JSON:
             return {"audited": False, "error": str(e)}
 
     # =========================================================================
-    # 1. HỘI CHẨN CẢNH BÁO NGUY HIỂM CAO (CHỐNG BÁO ĐỘNG GIẢ GỐI ÔM / NẰM SẤP)
     # =========================================================================
-    def verify_high_risk_alert(self, frame_bgr, alert_type: str = "covered_face", local_reason: str = "") -> dict:
+    # 1. HỘI CHẨN CẢNH BÁO NGUY HIỂM CAO (KIỂM TRA CHÉO 4 Ô THỜI GIAN & ĐƯỜNG THỞ)
+    # =========================================================================
+    def _create_emergency_quad_matrix(self, frame_t_minus_2, frame_t_minus_1, frame_t_0, airway_crop=None):
+        """
+        Ghép 4 góc nhìn thời gian và cận cảnh đường thở vào DUY NHẤT 1 bức ảnh 1024x1024:
+        - Ô 1 [Top-Left]: T - 2.0s
+        - Ô 2 [Top-Right]: T - 1.0s
+        - Ô 3 [Bottom-Left]: T - 0.0s (Toàn cảnh hiện tại)
+        - Ô 4 [Bottom-Right]: Cận cảnh độ nét gốc 100% Mũi - Miệng - Đường thở của bé
+        """
+        try:
+            h, w = frame_t_0.shape[:2]
+            f_t2 = frame_t_minus_2 if frame_t_minus_2 is not None else frame_t_0
+            f_t1 = frame_t_minus_1 if frame_t_minus_1 is not None else frame_t_0
+
+            p1 = cv2.resize(f_t2, (512, 512))
+            p2 = cv2.resize(f_t1, (512, 512))
+            p3 = cv2.resize(frame_t_0, (512, 512))
+
+            if airway_crop is not None and airway_crop.size > 0:
+                p4 = cv2.resize(airway_crop, (512, 512))
+            else:
+                # Cắt trung tâm nếu chưa có airway_crop riêng
+                cy1, cy2 = int(h * 0.2), int(h * 0.8)
+                cx1, cx2 = int(w * 0.2), int(w * 0.8)
+                p4 = cv2.resize(frame_t_0[cy1:cy2, cx1:cx2], (512, 512))
+
+            # Vẽ nhãn định danh trực quan trên từng ô
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            def _draw_badge(img, label):
+                cv2.rectangle(img, (8, 8), (270, 38), (15, 23, 42), -1)
+                cv2.rectangle(img, (8, 8), (270, 38), (56, 189, 248), 1)
+                cv2.putText(img, label, (16, 28), font, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
+
+            _draw_badge(p1, "[1] T - 2.0s (2 giay truoc)")
+            _draw_badge(p2, "[2] T - 1.0s (1 giay truoc)")
+            _draw_badge(p3, "[3] T - 0.0s (Hien tai)")
+            _draw_badge(p4, "[4] Mui-Mieng-Duong Tho (100%)")
+
+            top_row = np.hstack([p1, p2])
+            bottom_row = np.hstack([p3, p4])
+            quad = np.vstack([top_row, bottom_row])
+            return quad
+        except Exception as e:
+            print(f"[GeminiVerifier] Lỗi ghép 4 ô khẩn cấp: {e}")
+            return frame_t_0
+
+    def verify_high_risk_alert(self, frame_bgr, alert_type: str = "covered_face", local_reason: str = "", frame_history: list = None, airway_crop = None) -> dict:
+        """
+        Kiểm tra chéo an toàn cấp cao (Double-Check Sentinel):
+        - Phân tích động thái lồng ngực qua chuỗi thời gian 3 ô + soi đường thở ô 4
+        - Chống tràn quota: Giới hạn tối đa 3 req/phút toàn hệ thống, khóa hồi 45s (an toàn) và 90s (nguy hiểm)
+        - Fail-Safe Fallback: Nếu Gemini gặp sự cố mạng hoặc timeout > 3.5s -> Luôn tự động bật báo động cấp 1
+        """
         if not self.is_ready() or not self.verify_alerts_enabled:
             return {
                 "verified_by_gemini": False,
                 "is_dangerous": True,
-                "diagnosis_vi": local_reason or "Cảnh báo từ hệ thống AI cục bộ.",
+                "diagnosis_vi": local_reason or "Cảnh báo từ hệ thống AI cục bộ (Chưa bật Gemini).",
                 "confidence": 80
             }
 
         now = time.time()
+
+        # 1. Rào chắn Quota: Kiểm tra Cooldown theo từng loại cảnh báo
         last_t = self.last_alert_verify_time.get(alert_type, 0.0)
-        if (now - last_t) < self.alert_cooldown_sec and alert_type in self.last_alert_result:
+        cooldown_needed = 45.0 if self.last_alert_result.get(alert_type, {}).get("is_dangerous") is False else 90.0
+        if (now - last_t) < cooldown_needed and alert_type in self.last_alert_result:
             cached = self.last_alert_result[alert_type].copy()
             cached["from_cache"] = True
             return cached
 
-        img_bytes = self._encode_frame_jpeg(frame_bgr, max_dim=768)
+        # 2. Rào chắn Quota: Global Rate Limiter tối đa 3 requests/phút
+        recent_calls = [t for t, _, _ in self.call_timestamps if (now - t) < 60.0]
+        if len(recent_calls) >= 3:
+            print(f"[GeminiVerifier] ⏱️ Global Rate Limiter: Đã có {len(recent_calls)} req trong 60s. Tự động chuyển Fallback an toàn!")
+            return {
+                "verified_by_gemini": False,
+                "is_dangerous": True,
+                "diagnosis_vi": local_reason or "Cảnh báo khẩn cấp (Hệ thống bảo vệ hạn mức Quota).",
+                "confidence": 75
+            }
+
+        # 3. Tạo ảnh composite 4 ô
+        if frame_history and len(frame_history) >= 2:
+            f_t2 = frame_history[0]
+            f_t1 = frame_history[1]
+            f_t0 = frame_bgr
+            composite = self._create_emergency_quad_matrix(f_t2, f_t1, f_t0, airway_crop)
+        else:
+            composite = self._create_emergency_quad_matrix(frame_bgr, frame_bgr, frame_bgr, airway_crop)
+
+        img_bytes = self._encode_frame_jpeg(composite, max_dim=1024)
         if not img_bytes:
             return {"verified_by_gemini": False, "is_dangerous": True, "diagnosis_vi": local_reason, "confidence": 50}
 
         prompt = f"""
-Bạn là Bác sĩ Nhi khoa & Chuyên gia An toàn Giấc ngủ Trẻ sơ sinh (BabyGuard AI).
-Hệ thống camera Edge AI vừa phát tín hiệu nghi ngờ: "{alert_type}" ({local_reason}) đối với bé {self.baby_name} ({self.baby_age_months} tháng tuổi).
+Bạn là Bác sĩ Nhi khoa Trực ban Cấp cứu (BabyGuard AI Sentinel) cho bé {self.baby_name} ({self.baby_age_months} tháng tuổi).
+Hệ thống Edge AI vừa phát hiện tín hiệu bất thường: "{alert_type}" ({local_reason}).
 
-Hãy quan sát thật kỹ bức ảnh thực tế này và phân biệt chính xác:
-1. NGUY HIỂM THẬT (is_dangerous = true):
-   - Chăn, khăn, gối ôm hoặc thú bông đang đè trực tiếp lên vùng MŨI hoặc MIỆNG làm cản trở đường thở của bé.
-   - Hoặc bé đang nằm úp sấp mặt (prone) úp mũi xuống đệm.
-2. BÁO ĐỘNG GIẢ / AN TOÀN (is_dangerous = false):
-   - Gối ôm / thú bông CHỈ nằm sát bên cạnh sườn, vai hoặc đỉnh đầu để chặn cho bé khỏi giật mình, nhưng vùng MŨI và MIỆNG của bé vẫn lộ rõ, thông thoáng hoàn toàn.
-   - Hoặc bé chỉ đang nằm nghiêng đầu ngủ ngon lành, không bị vật gì đè lên mặt.
+Bức ảnh ghép 4 ô (Composite 4-Panel Matrix) gửi kèm gồm:
+- Ô 1 [Top-Left]: Khung cảnh cách đây 2.0 giây.
+- Ô 2 [Top-Right]: Khung cảnh cách đây 1.0 giây.
+- Ô 3 [Bottom-Left]: Khung cảnh toàn diện hiện tại (T - 0.0s).
+- Ô 4 [Bottom-Right]: Cận cảnh 100% độ nét gốc vùng Mũi, Miệng, Đường thở & Lồng ngực của bé.
+
+HÃY ĐỐI SOÁT KỸ LƯỠNG GIỮA CÁC Ô ĐỂ PHÂN BIỆT:
+1. ĐỐI VỚI NGUY CƠ CHE MẶT / NGẠT THỞ (covered_face):
+   - NGUY HIỂM THẬT (is_dangerous=true): Chăn, gối, thú bông hoặc nệm đang trùm lên hoặc đè trực tiếp vào MŨI/MIỆNG của bé ở Ô 3 và Ô 4 làm cản trở đường thở.
+   - BÁO ĐỘNG GIẢ (is_dangerous=false): Vùng MŨI và MIỆNG ở Ô 4 vẫn lộ rõ, thông thoáng khí quyển hoàn toàn. Gối/chăn chỉ nằm bên cạnh sườn, tay hoặc đỉnh đầu để chặn giật mình.
+
+2. ĐỐI VỚI NGUY CƠ NẰM SẤP (prone):
+   - NGUY HIỂM THẬT (is_dangerous=true): Bé úp mặt thẳng đứng xuống mặt đệm, đường thở bị chặn.
+   - BÁO ĐỘNG GIẢ (is_dangerous=false): Bé nằm nghiêng một bên hoặc quay đầu sang bên thở bình thường.
+
+3. ĐỐI VỚI NGUY CƠ NGƯNG THỞ / BẤT THƯỜNG HÔ HẤP (apnea):
+   - So sánh chuyển động lồng ngực/bụng qua Ô 1 -> Ô 2 -> Ô 3:
+   - NGUY HIỂM THẬT (is_dangerous=true): Lồng ngực hoàn toàn bất động suốt 3 khung thời gian và có dấu hiệu suy hô hấp/bất thường.
+   - BÁO ĐỘNG GIẢ (is_dangerous=false): Bé chỉ đang ngủ sâu bình thường hoặc có vi chuyển động thở nhẹ, hoặc bé đã được người lớn bế ra khỏi nôi.
+
+4. ĐỐI VỚI NGUY CƠ VƯỢT KHUNG NÔI / MÉP GIƯỜNG (danger_zone):
+   - NGUY HIỂM THẬT (is_dangerous=true): Bé đang trườn, bò, ngóc đầu hoặc lăn sát mép rơi ngã nguy hiểm (ví dụ mép giường không có rào chắn, thành nôi thấp).
+   - BÁO ĐỘNG GIẢ (is_dangerous=false): Bé vẫn nằm an toàn trên tấm đệm hoặc giữa giường lớn, không có nguy cơ ngã tức thì (chỉ do khung nôi bị vẽ chật).
+   - NẾU LÀ BÁO ĐỘNG GIẢ CỦA KHUNG NÔI: Hãy trả về tọa độ 4 đỉnh đa giác "corrected_safe_zone_polygon" [[x,y],[x,y],[x,y],[x,y]] (chuẩn hóa 0.03 - 0.97) bao quanh TRỌN VẸN toàn bộ tấm đệm của bé để hệ thống tự động mở rộng khung nôi ôm kín bé, không báo động giả nữa!
 
 Trả về đúng định dạng JSON:
 {{
   "is_dangerous": boolean,
   "confidence": integer (0-100),
   "airway_clear": boolean,
-  "diagnosis_vi": "Câu nhận xét ngắn gọn, rõ ràng bằng tiếng Việt giải thích vì sao an toàn hoặc nguy hiểm"
+  "diagnosis_vi": "Nhận xét ngắn gọn 1-2 câu tiếng Việt chuyên nghiệp",
+  "corrected_safe_zone_polygon": [[float, float], [float, float], [float, float], [float, float]] | null
 }}
 """
         try:
-            self.status_text = "Đang hội chẩn Gemini..."
+            self.status_text = f"Đang kiểm tra chéo Gemini ({alert_type})..."
             resp = self._call_gemini_resilient(
                 contents=[
                     types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
@@ -648,15 +741,31 @@ Trả về đúng định dạng JSON:
                 ],
                 call_type="alert_verify",
                 json_mode=True,
-                temperature=0.1
+                temperature=0.05
             )
             data = json.loads(resp.text)
+            is_danger = bool(data.get("is_dangerous", False))
+            corr_poly = data.get("corrected_safe_zone_polygon")
+            clean_poly = None
+            if isinstance(corr_poly, list) and len(corr_poly) == 4:
+                try:
+                    clean_poly = []
+                    for pt in corr_poly:
+                        px = float(pt[0])
+                        py = float(pt[1])
+                        if px > 1.0: px = px / 1000.0 if px <= 1000.0 else px / 1280.0
+                        if py > 1.0: py = py / 1000.0 if py <= 1000.0 else py / 720.0
+                        clean_poly.append([round(max(0.02, min(0.98, px)), 3), round(max(0.02, min(0.98, py)), 3)])
+                except Exception:
+                    clean_poly = None
+
             result = {
                 "verified_by_gemini": True,
-                "is_dangerous": bool(data.get("is_dangerous", False)),
-                "airway_clear": bool(data.get("airway_clear", True)),
+                "is_dangerous": is_danger,
+                "airway_clear": bool(data.get("airway_clear", not is_danger)),
                 "confidence": int(data.get("confidence", 90)),
-                "diagnosis_vi": str(data.get("diagnosis_vi", "Đã kiểm tra qua Gemini AI."))
+                "diagnosis_vi": str(data.get("diagnosis_vi", "Đã kiểm tra chéo qua Gemini AI.")),
+                "corrected_safe_zone_polygon": clean_poly
             }
             self.last_alert_verify_time[alert_type] = now
             self.last_alert_result[alert_type] = result
@@ -667,16 +776,18 @@ Trả về đúng định dạng JSON:
                 "summary_vi": result["diagnosis_vi"],
                 "confidence": result["confidence"]
             }
-            self.status_text = "An toàn (Đã xác thực AI)" if not result["is_dangerous"] else "CẢNH BÁO ĐÃ XÁC THỰC"
-            print(f"[GeminiVerifier] Hội chẩn ({alert_type}): dangerous={result['is_dangerous']} - {result['diagnosis_vi']}")
+            self.status_text = "An toàn (Đã kiểm tra chéo)" if not result["is_dangerous"] else "CẢNH BÁO ĐÃ XÁC THỰC"
+            print(f"[GeminiVerifier] 🩺 Double-Check ({alert_type}): dangerous={result['is_dangerous']} - {result['diagnosis_vi']}")
             return result
         except Exception as e:
-            print(f"[GeminiVerifier] Lỗi gọi Gemini verify_high_risk_alert: {e}")
+            # FAIL-SAFE FALLBACK: Khi mạng lỗi hoặc Gemini không phản hồi -> Luôn báo động an toàn cho bé!
+            print(f"[GeminiVerifier] ⚠️ Lỗi gọi Gemini verify_high_risk_alert: {e} -> Kích hoạt FAIL-SAFE!")
             return {
                 "verified_by_gemini": False,
                 "is_dangerous": True,
-                "diagnosis_vi": local_reason or "Cảnh báo từ AI cục bộ",
-                "confidence": 75
+                "diagnosis_vi": local_reason or "Cảnh báo khẩn cấp: Không thể kiểm tra chéo đám mây, tự động kích hoạt bảo vệ cục bộ!",
+                "confidence": 75,
+                "corrected_safe_zone_polygon": None
             }
 
     # =========================================================================
@@ -870,6 +981,84 @@ Trả về đúng định dạng JSON:
                 "caption_vi": "",
                 "reason_vi": f"Tạm hoãn lưu ảnh do chưa kết nối được AI kiểm duyệt riêng tư ({str(e)[:80]})"
             }
+
+    def rank_moments_mosaic(self, candidate_images: list) -> dict:
+        """
+        Bản ghép Mosaic tuyển chọn khoảnh khắc đáng yêu:
+        Ghép 6-12 ảnh ứng viên vào 1 bản ghép duy nhất (Contact Sheet Grid).
+        Gọi Gemini 1 lượt duy nhất để thẩm định so sánh tương đối:
+        - Chọn ra tối đa 10 bức ảnh đẹp nhất (không mờ nhòe, không vướng người lớn, biểu cảm tự nhiên).
+        - Trả về danh sách thứ hạng và caption tương ứng.
+        """
+        if not candidate_images:
+            return {"ranked_indices": [], "captions": {}}
+
+        n = min(len(candidate_images), 12)
+        tiles = []
+        for i, img in enumerate(candidate_images[:n]):
+            resized = cv2.resize(img, (480, 480))
+            cv2.rectangle(resized, (8, 8), (110, 48), (0, 0, 0), -1)
+            cv2.rectangle(resized, (8, 8), (110, 48), (255, 215, 0), 2)
+            cv2.putText(resized, f"#{i+1}", (18, 38), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2, cv2.LINE_AA)
+            tiles.append(resized)
+
+        cols = 3 if n >= 5 else 2
+        rows = (n + cols - 1) // cols
+        blank_tile = np.zeros((480, 480, 3), dtype=np.uint8)
+        while len(tiles) < rows * cols:
+            tiles.append(blank_tile)
+
+        grid_rows = []
+        for r in range(rows):
+            row_tiles = tiles[r * cols : (r + 1) * cols]
+            grid_rows.append(np.hstack(row_tiles))
+        mosaic = np.vstack(grid_rows)
+
+        img_bytes = self._encode_frame_jpeg(mosaic, max_dim=1536)
+        if not img_bytes:
+            return {"ranked_indices": list(range(n)), "captions": {}}
+
+        prompt = f"""
+Bạn là Giám khảo Nghệ thuật & Nhiếp ảnh Gia Đình Trẻ Sơ Sinh (BabyGuard AI).
+Đây là bản ghép Mosaic gồm {n} bức ảnh ứng viên được đánh số từ #1 đến #{n} của bé {self.baby_name}.
+
+NHIỆM VỤ CỦA BẠN:
+1. Quan sát toàn bộ {n} bức ảnh cùng lúc và so sánh tương quan để chọn ra tối đa 10 bức ảnh ĐẸP NHẤT, CẢM XÚC NHẤT.
+2. Tiêu chuẩn ưu tiên:
+   - Bé là trung tâm, rõ mặt, nét căng, ánh mắt sáng hoặc giấc ngủ thiên thần, nụ cười chúm chím, ngáp, vươn vai, mút tay.
+   - Không bị nhòe mờ rung lắc, không bị lẹm mặt, không có người lớn nằm chiếm ưu thế hoặc nhạy cảm.
+3. Trả về danh sách số thứ tự (1-indexed) xếp theo thứ tự từ đẹp nhất trở xuống.
+
+Trả về JSON:
+{{
+  "selected_indices": [1, 2, 3],
+  "captions": {{
+    "1": "string caption"
+  }}
+}}
+"""
+        try:
+            resp = self._call_gemini_resilient(
+                contents=[
+                    types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
+                    prompt
+                ],
+                call_type="moment_judge",
+                json_mode=True,
+                temperature=0.1
+            )
+            data = json.loads(resp.text)
+            raw_indices = data.get("selected_indices", [])
+            clean_indices = [idx - 1 for idx in raw_indices if isinstance(idx, int) and 1 <= idx <= n]
+            if not clean_indices:
+                clean_indices = list(range(min(n, 10)))
+            return {
+                "ranked_indices": clean_indices,
+                "captions": data.get("captions", {})
+            }
+        except Exception as e:
+            print(f"[GeminiVerifier] Lỗi rank_moments_mosaic: {e}")
+            return {"ranked_indices": list(range(min(n, 10))), "captions": {}}
 
     # =========================================================================
     # 3. TRỢ LÝ CĂN CHỈNH NÔI THÔNG MINH (AUTO-CALIBRATION)
