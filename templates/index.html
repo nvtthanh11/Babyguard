@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BabyGuard AI • Vệ sĩ Thông minh cho Bé</title>
+    <!-- Prevent theme flash on load -->
+    <script>
+        (function() {
+            var theme = localStorage.getItem('babyguard_theme') || 'dark';
+            if (theme === 'light') {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+            }
+        })();
+    </script>
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,6 +104,84 @@
             0%, 100% { opacity: 1; }
             50% { opacity: .4; }
         }
+
+        /* =========================================================================
+           LIGHT THEME OVERRIDES (Clean Medical / Apple Health Style)
+           ========================================================================= */
+        html:not(.dark) {
+            color-scheme: light;
+        }
+        html:not(.dark) body {
+            background-color: #F8FAFC !important;
+            color: #0F172A !important;
+        }
+        html:not(.dark) .bg-obsidian,
+        html:not(.dark) .bg-obsidian\/85 {
+            background-color: rgba(248, 250, 252, 0.94) !important;
+        }
+        html:not(.dark) .bg-cardbg {
+            background-color: #FFFFFF !important;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+        }
+        html:not(.dark) .hover\:bg-cardhover:hover {
+            background-color: #F1F5F9 !important;
+        }
+        html:not(.dark) .border-bordercol,
+        html:not(.dark) .border-bordercol\/80 {
+            border-color: #E2E8F0 !important;
+        }
+        html:not(.dark) .text-slate-100,
+        html:not(.dark) .text-slate-200 {
+            color: #0F172A !important;
+        }
+        html:not(.dark) .text-slate-300 {
+            color: #334155 !important;
+        }
+        html:not(.dark) .text-slate-400 {
+            color: #64748B !important;
+        }
+        html:not(.dark) .bg-slate-900,
+        html:not(.dark) .bg-slate-950 {
+            background-color: #F1F5F9 !important;
+        }
+        html:not(.dark) .bg-slate-900\/80,
+        html:not(.dark) .bg-slate-900\/90,
+        html:not(.dark) .bg-slate-950\/90,
+        html:not(.dark) .bg-slate-950\/85,
+        html:not(.dark) .bg-slate-950\/80 {
+            background-color: rgba(255, 255, 255, 0.94) !important;
+        }
+        html:not(.dark) .border-slate-800,
+        html:not(.dark) .border-slate-700,
+        html:not(.dark) .border-slate-700\/70,
+        html:not(.dark) .border-slate-800\/80 {
+            border-color: #E2E8F0 !important;
+        }
+        html:not(.dark) .bg-slate-800 {
+            background-color: #E2E8F0 !important;
+            color: #1E293B !important;
+        }
+        html:not(.dark) .hover\:bg-slate-700:hover,
+        html:not(.dark) .hover\:bg-slate-800:hover {
+            background-color: #CBD5E1 !important;
+        }
+        html:not(.dark) .camera-action-bar {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            border-color: #E2E8F0 !important;
+        }
+        html:not(.dark) input,
+        html:not(.dark) select,
+        html:not(.dark) textarea {
+            background-color: #FFFFFF !important;
+            color: #0F172A !important;
+            border-color: #CBD5E1 !important;
+        }
+        html:not(.dark) input::placeholder {
+            color: #94A3B8 !important;
+        }
+        html:not(.dark) ::-webkit-scrollbar-track { background: #F1F5F9; }
+        html:not(.dark) ::-webkit-scrollbar-thumb { background: #CBD5E1; }
+        html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
@@ -146,6 +234,9 @@
             <button onclick="openLicenseModal()" id="header-license-btn" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition" title="Bản quyền phần mềm BabyGuard AI">
                 <span id="header-license-icon">🔑</span>
                 <span id="header-license-text">Bản quyền</span>
+            </button>
+            <button onclick="toggleTheme()" id="header-theme-btn" class="p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition flex items-center justify-center text-sm shadow-sm" title="Chuyển chế độ Sáng / Tối (Light / Dark Mode)">
+                <span id="header-theme-icon">🌙</span>
             </button>
             <button onclick="toggleAppLanguage()" id="header-lang-btn" class="px-2.5 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-xs font-bold text-slate-200 transition flex items-center gap-1.5" title="Chuyển đổi Ngôn ngữ / Switch Language (VI / EN)">
                 <span id="header-lang-flag">🇻🇳</span>
@@ -261,45 +352,61 @@
                             </div>
                         </div>
 
-                        <!-- Action Bar Under Video -->
-                        <div class="p-3.5 bg-slate-950/90 border-t border-bordercol flex items-center justify-between gap-3 text-xs flex-wrap">
-                            <div class="flex items-center gap-2">
+                        <!-- Action Bar Under Video (Redesigned Professional Camera Toolbar) -->
+                        <div class="camera-action-bar px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-950/85 backdrop-blur-xl border-t border-bordercol flex items-center justify-between gap-2 text-xs">
+                            <!-- Left Group: Audio & Media Interaction -->
+                            <div class="flex items-center gap-1.5 sm:gap-2">
                                 <!-- Push-to-Talk Intercom Button -->
-                                <button id="talkback-btn" class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg transition active:scale-95 select-none">
-                                    <span class="text-base">🎙️</span>
-                                    <span id="talkback-label">Giữ để nói với bé</span>
-                                </button>
-                                <!-- Instant Snapshot Button -->
-                                <button onclick="takeManualSnapshot()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium">
-                                    <span>📸</span>
-                                    <span class="hidden sm:inline">Chụp Ảnh</span>
+                                <button id="talkback-btn" class="h-9 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-md shadow-emerald-500/20 transition active:scale-95 select-none flex items-center gap-2">
+                                    <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                        <line x1="12" x2="12" y1="19" y2="22"/>
+                                    </svg>
+                                    <span id="talkback-label" class="text-xs font-bold whitespace-nowrap">Nói Với Bé</span>
                                 </button>
                                 <!-- Live Room Audio Listen Button -->
-                                <button id="live-audio-btn" onclick="toggleLiveAudio()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium select-none" title="Bật/Tắt nghe âm thanh trực tiếp từ phòng bé">
-                                    <span id="live-audio-icon">🔇</span>
-                                    <span id="live-audio-label" class="hidden sm:inline">Nghe Phòng</span>
+                                <button id="live-audio-btn" onclick="toggleLiveAudio()" class="h-9 px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium select-none flex items-center gap-1.5" title="Bật/Tắt nghe âm thanh trực tiếp từ phòng bé">
+                                    <span id="live-audio-icon" class="text-sm">🔇</span>
+                                    <span id="live-audio-label" class="hidden sm:inline font-semibold">Nghe Phòng</span>
+                                </button>
+                                <!-- Instant Snapshot Button -->
+                                <button onclick="takeManualSnapshot()" class="h-9 px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium flex items-center gap-1.5" title="Chụp ảnh kỷ niệm tức thì">
+                                    <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                                        <circle cx="12" cy="13" r="3"/>
+                                    </svg>
+                                    <span class="hidden sm:inline font-semibold">Chụp Ảnh</span>
                                 </button>
                             </div>
 
-                            <div class="flex items-center gap-2">
-                                <!-- Gemini AI Auto-Calibrate Crib Status Badge (Automatic) -->
-                                <button id="btn-ai-calibrate" onclick="autoCalibrateCribWithGemini()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 transition font-semibold" title="Hệ thống tự động căn chỉnh khung nôi & giường bằng AI định kỳ (Bấm nếu muốn quét lại ngay)">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    <span>Tự Động Căn Nôi: Bật</span>
+                            <!-- Right Group: AI Smart Sentry & Camera Utilities -->
+                            <div class="flex items-center gap-1.5 sm:gap-2">
+                                <!-- Gemini AI Auto-Calibrate Crib Status Badge -->
+                                <button id="btn-ai-calibrate" onclick="autoCalibrateCribWithGemini()" class="h-9 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 transition font-semibold flex items-center gap-1.5" title="Hệ thống tự động căn chỉnh khung nôi & giường bằng AI định kỳ (Bấm nếu muốn quét lại ngay)">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                                    <span class="hidden md:inline">Tự Động Căn Nôi: Bật</span>
+                                    <span class="md:hidden">AI Nôi</span>
                                 </button>
                                 <!-- Toggle Safe Zone Edit Button -->
-                                <button id="btn-toggle-safe-zone-edit" onclick="toggleSafeZoneEditor()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium" title="Chỉnh tay 4 góc nếu muốn">
-                                    <span>📐</span>
-                                    <span class="hidden sm:inline">Chỉnh Tay</span>
+                                <button id="btn-toggle-safe-zone-edit" onclick="toggleSafeZoneEditor()" class="h-9 px-2.5 sm:px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium flex items-center gap-1.5" title="Chỉnh tay 4 góc khung an toàn nếu muốn">
+                                    <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+                                    </svg>
+                                    <span class="hidden lg:inline font-medium">Chỉnh Khung</span>
                                 </button>
                                 <!-- Refresh Stream Button -->
-                                <button onclick="reconnectStream()" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium" title="Làm mới luồng video khi bị đứng">
-                                    <span>🔄</span>
-                                    <span class="hidden sm:inline" id="btn-reconnect-cam">Làm Mới Cam</span>
+                                <button onclick="reconnectStream()" class="h-9 w-9 sm:w-auto sm:px-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium flex items-center justify-center gap-1.5" title="Làm mới luồng video khi bị đứng">
+                                    <svg class="w-4 h-4 shrink-0 text-slate-400 transition-transform active:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>
+                                    </svg>
+                                    <span class="hidden xl:inline text-xs" id="btn-reconnect-cam">Làm Mới</span>
                                 </button>
                                 <!-- Fullscreen Button -->
-                                <button onclick="toggleFullscreen()" class="p-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Toàn màn hình">
-                                    ⛶
+                                <button onclick="toggleFullscreen()" class="h-9 w-9 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition flex items-center justify-center" title="Xem camera toàn màn hình">
+                                    <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><polyline points="21 15 21 21 15 21"/><polyline points="3 9 3 3 9 3"/>
+                                    </svg>
                                 </button>
                             </div>
                         </div>
@@ -2350,6 +2457,40 @@
             applyAppLanguage(nextLang);
             showToast(nextLang === 'en' ? 'Switched to English' : 'Đã chuyển sang Tiếng Việt', '🌐');
         }
+
+        // =========================================================================
+        // LIGHT / DARK THEME MANAGEMENT
+        // =========================================================================
+        let currentTheme = localStorage.getItem('babyguard_theme') || 'dark';
+
+        function applyTheme(theme) {
+            currentTheme = (theme === 'light') ? 'light' : 'dark';
+            localStorage.setItem('babyguard_theme', currentTheme);
+            const htmlEl = document.documentElement;
+            const iconEl = document.getElementById('header-theme-icon');
+            
+            if (currentTheme === 'light') {
+                htmlEl.classList.remove('dark');
+                htmlEl.classList.add('light');
+                if (iconEl) iconEl.innerText = '☀️';
+            } else {
+                htmlEl.classList.remove('light');
+                htmlEl.classList.add('dark');
+                if (iconEl) iconEl.innerText = '🌙';
+            }
+        }
+
+        function toggleTheme() {
+            const nextTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+            applyTheme(nextTheme);
+            const msg = (nextTheme === 'light') 
+                ? (currentLang === 'en' ? 'Switched to Light Mode' : 'Đã bật chế độ Sáng') 
+                : (currentLang === 'en' ? 'Switched to Dark Mode' : 'Đã bật chế độ Tối');
+            showToast(msg, nextTheme === 'light' ? '☀️' : '🌙');
+        }
+
+        // Tự động khởi tạo theme khi tải trang
+        applyTheme(currentTheme);
 
         // =========================================================================
         // COMMERCIAL LICENSE MANAGEMENT
