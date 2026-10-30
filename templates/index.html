@@ -2,8 +2,16 @@
 <html lang="vi" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BabyGuard AI • Vệ sĩ Thông minh cho Bé</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#020617">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BabyGuard AI">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
     <!-- Prevent theme flash on load -->
     <script>
         (function() {
@@ -257,6 +265,11 @@
 
         <!-- Right Quick Controls -->
         <div class="flex items-center gap-2">
+            <button onclick="openAppDownloadModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition active:scale-95" title="Cài đặt Ứng dụng BabyGuard AI cho điện thoại (Android APK & PWA)">
+                <span>📱</span>
+                <span class="hidden sm:inline">Cài App ĐT</span>
+                <span class="sm:hidden font-extrabold">App</span>
+            </button>
             <a id="header-remote-link" href="#" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-cyan-500/30 text-xs font-semibold text-cyan-300 transition" title="Link xem camera từ xa trên 4G/5G">
                 <span>🌐</span>
                 <span id="header-remote-link-text">Xem Từ Xa 4G</span>
@@ -344,7 +357,7 @@
     </nav>
 
     <!-- Main Workspace Content -->
-    <main class="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full">
+    <main class="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
 
         <!-- ================= TAB 1: LIVE MONITOR & BABY GUARD ================= -->
         <section id="tab-live" class="tab-content space-y-6">
@@ -1683,6 +1696,35 @@
 
     </main>
 
+    <!-- Mobile Bottom Sticky Navigation Bar (Native Mobile Experience for Phones) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-obsidian/95 backdrop-blur-2xl border-t border-bordercol px-2 py-1.5 flex items-center justify-around text-[10px] font-medium safe-area-pb shadow-2xl">
+        <button onclick="switchTab('live')" id="mob-tab-btn-live" class="mob-nav-btn flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition text-emerald-400 font-bold active:scale-95" title="Camera trực tiếp">
+            <span class="text-base">📹</span>
+            <span>Camera</span>
+        </button>
+        <button onclick="switchTab('sleep')" id="mob-tab-btn-sleep" class="mob-nav-btn flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition text-slate-400 active:scale-95" title="Giấc ngủ bé">
+            <span class="text-base">📊</span>
+            <span>Giấc Ngủ</span>
+        </button>
+        <button onclick="switchTab('growth')" id="mob-tab-btn-growth" class="mob-nav-btn flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition text-slate-400 active:scale-95" title="Sổ đo WHO">
+            <span class="text-base">📏</span>
+            <span>WHO</span>
+        </button>
+        <button onclick="switchTab('vaccine')" id="mob-tab-btn-vaccine" class="mob-nav-btn flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition text-slate-400 relative active:scale-95" title="Sổ tiêm chủng">
+            <span class="text-base">💉</span>
+            <span>Tiêm Chủng</span>
+            <span id="mob-nav-vaccine-badge" class="hidden absolute top-0.5 right-2 w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        </button>
+        <button onclick="openAppDownloadModal()" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition text-emerald-400 font-extrabold active:scale-95" title="Tải App APK cho điện thoại">
+            <span class="text-base animate-bounce">📲</span>
+            <span class="text-emerald-300">Tải App</span>
+        </button>
+        <button onclick="openSettingsModal()" class="mob-nav-btn flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition text-slate-400 active:scale-95" title="Cài đặt">
+            <span class="text-base">⚙️</span>
+            <span>Cài Đặt</span>
+        </button>
+    </nav>
+
     <!-- Modal: Smart White Noise & Instrumental Lullaby (Closed-Loop Mic Calibration) -->
     <div id="music-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden" onclick="toggleMusicModal()">
         <div class="bg-cardbg rounded-3xl border border-bordercol max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
@@ -2388,6 +2430,167 @@
         </div>
     </div>
 
+    <!-- Modal: Download Mobile App (Android APK, iOS PWA & Google Play Store) -->
+    <div id="app-download-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden" onclick="if(event.target===this)closeAppDownloadModal()">
+        <div class="bg-cardbg border border-bordercol rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <!-- Top Close Button -->
+            <button onclick="closeAppDownloadModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition" title="Đóng">
+                ✕
+            </button>
+
+            <!-- Header -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-400/20 border border-emerald-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                    📱
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-extrabold text-base text-slate-100">Cài Đặt App BabyGuard AI</h3>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">v1.0.0</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Ứng dụng theo dõi bé trực tiếp trên điện thoại 24/7</p>
+                </div>
+            </div>
+
+            <!-- Free Trial Badge -->
+            <div class="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-teal-950/60 border border-emerald-500/30 flex items-center gap-2.5 text-xs">
+                <span class="text-xl">🎁</span>
+                <div>
+                    <span class="font-bold text-emerald-300">Trọn Vẹn 14 Ngày Trải Nghiệm Miễn Phí</span>
+                    <p class="text-[11px] text-slate-300">Không giới hạn tính năng: Giám sát camera AI, báo lật sấp, nhịp thở, báo khóc, biểu đồ WHO & lịch tiêm.</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs for Download -->
+            <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900/90 rounded-2xl border border-slate-800 text-xs font-semibold">
+                <button onclick="switchAppTab('apk')" id="app-tab-btn-apk" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    <span>🤖</span>
+                    <span>Android APK</span>
+                </button>
+                <button onclick="switchAppTab('ios')" id="app-tab-btn-ios" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                    <span>🍎</span>
+                    <span>iPhone iOS</span>
+                </button>
+                <button onclick="switchAppTab('chplay')" id="app-tab-btn-chplay" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                    <span>🏪</span>
+                    <span>CH Play</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: ANDROID APK DIRECT INSTALL -->
+            <div id="app-tab-content-apk" class="space-y-4">
+                <!-- QR Code & Quick Scan -->
+                <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                    <div class="w-36 h-36 bg-slate-900 rounded-xl border border-emerald-500/30 flex items-center justify-center p-1 shrink-0 shadow-lg">
+                        <img id="app-download-qr-img" src="/static/icons/icon-192.png" alt="QR Code Tải APK" class="w-full h-full object-contain rounded-lg">
+                    </div>
+                    <div class="space-y-2">
+                        <div class="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                            <span>⚡</span> Quét Mã Bằng Điện Thoại
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-200">Quét Camera hoặc Zalo để tải ngay</h4>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">
+                            Mở camera điện thoại Android hoặc ứng dụng Zalo quét mã QR bên cạnh để tải trực tiếp file APK về máy ba mẹ.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Direct APK Download Button -->
+                <a id="app-download-apk-link" href="/download/app.apk" download="BabyGuard_AI.apk" class="w-full py-3 px-4 rounded-2xl font-extrabold text-xs sm:text-sm bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 transition active:scale-95">
+                    <span class="text-base">📥</span>
+                    <span>Tải File BabyGuard_AI.apk</span>
+                    <span id="app-download-apk-size" class="text-xs font-normal opacity-80">(1.24 MB)</span>
+                </a>
+
+                <!-- 3 Steps Guide -->
+                <div class="space-y-2 bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800 text-xs">
+                    <h5 class="font-bold text-slate-200 flex items-center gap-1.5">
+                        <span>📋</span>
+                        <span>3 Bước cài đặt siêu nhanh trên điện thoại Android:</span>
+                    </h5>
+                    <ol class="space-y-2 text-[11px] text-slate-300 list-decimal list-inside pl-1">
+                        <li class="leading-relaxed">
+                            <b>Nhấn nút Tải APK</b> ở trên (hoặc quét mã QR).
+                        </li>
+                        <li class="leading-relaxed">
+                            Sau khi tải xong, nhấn <b>Mở file</b>. Nếu điện thoại hiện cảnh báo <i>"Tệp có thể gây hại"</i> hoặc <i>"Cài đặt nguồn không xác định"</i>, ba chọn <b>"Vẫn tải xuống" / "Cho phép từ nguồn này"</b> (Do file APK được build và ký riêng từ máy tính của ba).
+                        </li>
+                        <li class="leading-relaxed">
+                            Nhấn <b>"Cài đặt"</b> -> Mở App <b>BabyGuard AI</b> trên màn hình chính và bắt đầu theo dõi bé trọn vẹn!
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- TAB 2: IPHONE (IOS PWA) -->
+            <div id="app-tab-content-ios" class="space-y-3.5 text-xs hidden">
+                <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+                    <div class="flex items-center gap-2 text-indigo-400 font-bold">
+                        <span>🍎</span>
+                        <span>Dành Cho iPhone & iPad (Apple iOS):</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        Hệ điều hành iOS không hỗ trợ cài file .apk ngoài, nhưng Apple hỗ trợ công nghệ <b>PWA Toàn Màn Hình</b> mượt mà không kém gì app App Store:
+                    </p>
+                    <div class="space-y-2.5 pt-1 text-[11px] text-slate-200">
+                        <div class="flex items-start gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                            <span class="font-bold text-emerald-400">1.</span>
+                            <span>Mở trình duyệt <b>Safari</b> trên iPhone và truy cập link từ xa của ba.</span>
+                        </div>
+                        <div class="flex items-start gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                            <span class="font-bold text-emerald-400">2.</span>
+                            <span>Bấm nút <b>Chia sẻ</b> (biểu tượng hình vuông có mũi tên trỏ lên ở đáy màn hình Safari).</span>
+                        </div>
+                        <div class="flex items-start gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                            <span class="font-bold text-emerald-400">3.</span>
+                            <span>Cuộn xuống và chọn <b>"Thêm vào Màn hình chính" (Add to Home Screen)</b> -> Nhấn <b>"Thêm" (Add)</b>.</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-emerald-400 font-semibold pt-1">
+                        ✨ Biểu tượng BabyGuard AI sẽ xuất hiện trên màn hình iPhone, bấm vào là chạy toàn màn hình y hệt ứng dụng gốc!
+                    </p>
+                </div>
+            </div>
+
+            <!-- TAB 3: GOOGLE PLAY STORE (CH PLAY) -->
+            <div id="app-tab-content-chplay" class="space-y-3.5 text-xs hidden">
+                <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+                    <div class="flex items-center gap-2 text-amber-400 font-bold">
+                        <span>🏪</span>
+                        <span>Đóng Gói Phát Hành CH Play (Google Play Console):</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        Hệ thống đã biên dịch sẵn gói ứng dụng <b>Android App Bundle (.aab)</b> chuẩn định dạng mới nhất theo quy chuẩn Google Play Store 2026.
+                    </p>
+                    <a href="/download/app.aab" download="BabyGuard_AI.aab" class="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-indigo-600/20">
+                        <span>📦</span>
+                        <span>Tải Gói BabyGuard_AI.aab Cho CH Play</span>
+                        <span id="app-download-aab-size" class="text-[11px] font-normal opacity-80">(1.3 MB)</span>
+                    </a>
+                    <div class="space-y-1.5 text-[11px] text-slate-400 bg-slate-900 p-3 rounded-xl border border-slate-800">
+                        <p class="font-semibold text-slate-200">Các bước đưa lên CH Play:</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Đăng nhập <a href="https://play.google.com/console" target="_blank" class="text-cyan-400 underline">Google Play Console</a> (phí đăng ký $25 trả 1 lần).</li>
+                            <li>Tạo Ứng Dụng Mới: Tên <b>BabyGuard AI</b>, Thể loại: Nuôi dạy con / Y tế.</li>
+                            <li>Vào mục <b>Phát hành (Release)</b> -> Tải tệp <b class="text-slate-200">BabyGuard_AI.aab</b> lên.</li>
+                            <li>Điền ảnh chụp màn hình, mô tả và gửi xét duyệt (Google duyệt trong 24-48h).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Link & Close -->
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/80 text-[11px] gap-2">
+                <div class="text-slate-400 truncate max-w-xs">
+                    Link trực tiếp: <span id="app-download-tunnel-url" class="font-mono text-cyan-300 select-all"></span>
+                </div>
+                <button onclick="closeAppDownloadModal()" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition">
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Core App Logic -->
     <script>
         let currentConfig = {};
@@ -2867,11 +3070,82 @@
                 }
             }
         }
-                if (resEl) {
-                    resEl.className = 'text-[11px] text-rose-400 block';
-                    resEl.innerText = 'Lỗi kết nối máy chủ.';
+
+        // =========================================================================
+        // MOBILE APP (APK & PWA) DOWNLOAD MODAL HANDLERS
+        // =========================================================================
+        async function openAppDownloadModal() {
+            const modal = document.getElementById('app-download-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/app-info');
+                const info = await res.json();
+                
+                // Construct clean download URL
+                let origin = window.location.origin;
+                if (info.tunnel_url && info.tunnel_url.startsWith('http')) {
+                    origin = info.tunnel_url;
                 }
+                const apkFullUrl = `${origin}/download/app.apk`;
+                
+                const qrImg = document.getElementById('app-download-qr-img');
+                if (qrImg) {
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(apkFullUrl)}&color=10-185-129&bgcolor=15-23-42`;
+                }
+
+                const tunnelDisplay = document.getElementById('app-download-tunnel-url');
+                if (tunnelDisplay) {
+                    tunnelDisplay.innerText = apkFullUrl;
+                }
+
+                const apkLink = document.getElementById('app-download-apk-link');
+                if (apkLink) {
+                    apkLink.href = `/download/app.apk`;
+                }
+                const apkSizeEl = document.getElementById('app-download-apk-size');
+                if (apkSizeEl && info.apk_size_mb) {
+                    apkSizeEl.innerText = `(${info.apk_size_mb} MB)`;
+                }
+                const aabSizeEl = document.getElementById('app-download-aab-size');
+                if (aabSizeEl && info.aab_size_mb) {
+                    aabSizeEl.innerText = `(${info.aab_size_mb} MB)`;
+                }
+            } catch (err) {
+                console.error("Lỗi lấy thông tin tải app:", err);
             }
+        }
+
+        function closeAppDownloadModal() {
+            const modal = document.getElementById('app-download-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function switchAppTab(tabName) {
+            ['apk', 'ios', 'chplay'].forEach(t => {
+                const content = document.getElementById(`app-tab-content-${t}`);
+                const btn = document.getElementById(`app-tab-btn-${t}`);
+                if (content) content.classList.add('hidden');
+                if (btn) {
+                    btn.classList.remove('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/40');
+                    btn.classList.add('bg-slate-900', 'text-slate-400', 'border-transparent');
+                }
+            });
+            const activeContent = document.getElementById(`app-tab-content-${tabName}`);
+            const activeBtn = document.getElementById(`app-tab-btn-${tabName}`);
+            if (activeContent) activeContent.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/40');
+                activeBtn.classList.remove('bg-slate-900', 'text-slate-400', 'border-transparent');
+            }
+        }
+
+        // Register Service Worker for Mobile PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(e => console.log('SW Note:', e));
+            });
         }
 
         // Tab Switching
@@ -2882,13 +3156,24 @@
                 el.classList.remove('bg-cardbg', 'text-emerald-400', 'border-emerald-500/30');
                 el.classList.add('bg-transparent', 'text-slate-400', 'border-transparent');
             });
+            // Update Mobile Bottom Nav highlights
+            document.querySelectorAll('.mob-nav-btn').forEach(el => {
+                el.classList.remove('text-emerald-400', 'font-bold');
+                el.classList.add('text-slate-400');
+            });
 
             const content = document.getElementById(`tab-${tabId}`);
             const btn = document.getElementById(`tab-btn-${tabId}`);
+            const mobBtn = document.getElementById(`mob-tab-btn-${tabId}`);
+
             if (content) content.classList.remove('hidden');
             if (btn) {
                 btn.classList.add('bg-cardbg', 'text-emerald-400', 'border-emerald-500/30');
                 btn.classList.remove('bg-transparent', 'text-slate-400', 'border-transparent');
+            }
+            if (mobBtn) {
+                mobBtn.classList.add('text-emerald-400', 'font-bold');
+                mobBtn.classList.remove('text-slate-400');
             }
 
             if (tabId === 'moments') fetchMoments();

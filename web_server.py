@@ -14,6 +14,7 @@ import requests
 import sounddevice as sd
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
@@ -27,6 +28,9 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     snapshots_dir = os.path.join(BASE_DIR, "snapshots")
     recordings_dir = os.path.join(BASE_DIR, "recordings")
     music_dir = os.path.join(BASE_DIR, "music")
+    static_dir = os.path.join(BASE_DIR, "static")
+    os.makedirs(static_dir, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     config_file_lock = threading.Lock()
 
@@ -66,6 +70,74 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
         return templates.TemplateResponse(request=request, name="index.html")
+
+    @app.get("/manifest.json")
+    async def get_manifest():
+        manifest_file = os.path.join(static_dir, "manifest.json")
+        if os.path.exists(manifest_file):
+            return FileResponse(manifest_file, media_type="application/manifest+json")
+        return JSONResponse({"status": "error", "message": "manifest.json not found"}, status_code=404)
+
+    @app.get("/sw.js")
+    async def get_service_worker():
+        sw_file = os.path.join(static_dir, "sw.js")
+        if os.path.exists(sw_file):
+            return FileResponse(sw_file, media_type="application/javascript")
+        return JSONResponse({"status": "error", "message": "sw.js not found"}, status_code=404)
+
+    @app.api_route("/download/app.apk", methods=["GET", "HEAD"])
+    async def download_apk():
+        apk_path = os.path.join(static_dir, "BabyGuard_AI.apk")
+        if not os.path.exists(apk_path):
+            return JSONResponse({"status": "not_ready", "message": "File APK đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
+        return FileResponse(
+            apk_path,
+            media_type="application/vnd.android.package-archive",
+            filename="BabyGuard_AI.apk",
+            headers={
+                "Content-Disposition": "attachment; filename=BabyGuard_AI.apk",
+                "Cache-Control": "no-cache"
+            }
+        )
+
+    @app.api_route("/download/app.aab", methods=["GET", "HEAD"])
+    async def download_aab():
+        aab_path = os.path.join(static_dir, "BabyGuard_AI.aab")
+        if not os.path.exists(aab_path):
+            return JSONResponse({"status": "not_ready", "message": "File AAB đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
+        return FileResponse(
+            aab_path,
+            media_type="application/octet-stream",
+            filename="BabyGuard_AI.aab",
+            headers={
+                "Content-Disposition": "attachment; filename=BabyGuard_AI.aab",
+                "Cache-Control": "no-cache"
+            }
+        )
+
+    @app.get("/api/app-info")
+    async def get_app_info():
+        apk_path = os.path.join(static_dir, "BabyGuard_AI.apk")
+        aab_path = os.path.join(static_dir, "BabyGuard_AI.aab")
+        has_apk = os.path.exists(apk_path)
+        has_aab = os.path.exists(aab_path)
+        apk_size_mb = round(os.path.getsize(apk_path) / (1024 * 1024), 2) if has_apk else 0
+        aab_size_mb = round(os.path.getsize(aab_path) / (1024 * 1024), 2) if has_aab else 0
+        tunnel_url = ""
+        if tunnel_manager and hasattr(tunnel_manager, "get_url"):
+            tunnel_url = tunnel_manager.get_url() or ""
+        return {
+            "app_name": "BabyGuard AI",
+            "version": "1.0.0",
+            "package_id": "vn.babyguard.ai",
+            "has_apk": has_apk,
+            "apk_size_mb": apk_size_mb,
+            "download_url": "/download/app.apk",
+            "has_aab": has_aab,
+            "aab_size_mb": aab_size_mb,
+            "aab_download_url": "/download/app.aab",
+            "tunnel_url": tunnel_url
+        }
 
     def generate_frames(annotated: bool = True):
         last_good_bytes = None

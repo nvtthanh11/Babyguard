@@ -1,0 +1,43 @@
+{
+  "packageId": "vn.babyguard.ai",
+  "host": "encryption-tba-show-dig.trycloudflare.com",
+  "name": "BabyGuard AI - Vệ Sĩ Bé Yêu",
+  "launcherName": "BabyGuard",
+  "display": "standalone",
+  "themeColor": "#020617",
+  "themeColorDark": "#020617",
+  "navigationColor": "#020617",
+  "navigationColorDark": "#020617",
+  "navigationDividerColor": "#1F293D",
+  "navigationDividerColorDark": "#1F293D",
+  "backgroundColor": "#020617",
+  "enableNotifications": true,
+  "startUrl": "/?source=pwa",
+  "iconUrl": "http://localhost:8080/static/icons/icon-512.png",
+  "maskableIconUrl": "http://localhost:8080/static/icons/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "/Volumes/SSD/WORK/baby_monitor/android_project/babyguard.keystore",
+    "alias": "babyguard"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap",
+  "webManifestUrl": "http://localhost:8080/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "minSdkVersion": 24,
+  "orientation": "portrait-primary",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "displayOverride": [],
+  "appVersion": "1.0.0"
+}
