@@ -72,11 +72,10 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         while True:
             try:
                 frame = vision_tracker.get_latest_frame(annotated=annotated)
-                if frame is not None:
-                    if frame.mean() > 2.0:
-                        ret, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                        if ret:
-                            last_good_bytes = buffer.tobytes()
+                if frame is not None and frame.size > 0:
+                    ret, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    if ret:
+                        last_good_bytes = buffer.tobytes()
 
                 if last_good_bytes is not None:
                     yield (b"--frame\r\n"
@@ -92,8 +91,31 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     def video_feed(annotated: bool = True):
         return StreamingResponse(
             generate_frames(annotated=annotated),
-            media_type="multipart/x-mixed-replace; boundary=frame"
+            media_type="multipart/x-mixed-replace; boundary=frame",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "X-Accel-Buffering": "no"
+            }
         )
+
+    @app.get("/api/current_frame.jpg")
+    def get_current_frame_jpg():
+        """Lấy 1 khung hình JPEG tức thì phục vụ watchdog kiểm tra luồng và fallback chống đen màn hình."""
+        from fastapi import Response
+        frame = vision_tracker.get_latest_frame(annotated=True)
+        if frame is None or frame.size == 0:
+            frame = vision_tracker._make_disconnected_frame() if hasattr(vision_tracker, "_make_disconnected_frame") else None
+        if frame is not None and frame.size > 0:
+            ret, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
+            if ret:
+                return Response(
+                    content=buf.tobytes(),
+                    media_type="image/jpeg",
+                    headers={"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"}
+                )
+        return Response(content=b"", media_type="image/jpeg")
 
     @app.get("/audio_feed")
     @app.get("/api/audio_feed")

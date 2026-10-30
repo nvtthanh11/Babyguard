@@ -378,9 +378,24 @@
                         </div>
 
                         <!-- Video / Canvas Container -->
-                        <div class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
-                            <img id="live-stream-img" src="/video_feed" alt="Baby Monitor Live Feed" class="w-full h-full object-contain select-none">
+                        <div id="video-feed-container" class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden cursor-pointer" title="Nhấp vào màn hình để làm mới nếu luồng video bị gián đoạn">
+                            <img id="live-stream-img" src="/video_feed" alt="Baby Monitor Live Feed" class="w-full h-full object-contain select-none" onclick="safeReconnectStream('img-click')">
                             <canvas id="safe-zone-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-10" style="display: none;"></canvas>
+
+                            <!-- Stream Disconnected / Reconnect Overlay (Automatically shown when stream stalls) -->
+                            <div id="stream-reconnect-overlay" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-20" onclick="safeReconnectStream('overlay-click')">
+                                <div class="w-12 h-12 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 text-xl animate-pulse">
+                                    📹
+                                </div>
+                                <div class="text-center space-y-1">
+                                    <p class="text-xs font-bold text-white">Luồng hình ảnh bị gián đoạn</p>
+                                    <p class="text-[10px] text-slate-400">Đang tự động kết nối lại... hoặc nhấp để tải lại ngay</p>
+                                </div>
+                                <button class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition active:scale-95 flex items-center gap-1.5">
+                                    <span>🔄</span>
+                                    <span>Làm Mới Luồng Video</span>
+                                </button>
+                            </div>
                             
                             <!-- Safe Zone Edit Overlay Controls (when in editing mode) -->
                             <div id="safe-zone-editor-controls" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-950/90 border border-emerald-500/40 rounded-full px-5 py-2 flex items-center gap-3 backdrop-blur-lg shadow-xl" style="display: none;">
@@ -5330,44 +5345,96 @@
             }
         }
 
-        // Camera Live Stream Watchdog & Reconnection
-        function reconnectStream() {
+        // =========================================================================
+        // CAMERA LIVE STREAM WATCHDOG & AUTO-HEALING (CHỐNG ĐEN MÀN HÌNH)
+        // =========================================================================
+        let lastStreamReconnectTime = 0;
+        let streamWatchdogTimer = null;
+
+        function safeReconnectStream(source = 'manual') {
+            const now = Date.now();
+            if (now - lastStreamReconnectTime < 1200) {
+                // Tránh gọi dồn dập nhiều lần cùng lúc khi đổi tab
+                return;
+            }
+            lastStreamReconnectTime = now;
+            reconnectStream(source);
+        }
+
+        function reconnectStream(source = 'manual') {
             const img = document.getElementById('live-stream-img');
+            const overlay = document.getElementById('stream-reconnect-overlay');
             if (img) {
                 const ts = Date.now();
                 img.src = '/video_feed?t=' + ts;
-                console.log('[Camera Stream] Reconnecting video feed:', ts);
-                showToast(currentLang === 'en' ? 'Camera stream refreshed' : 'Đang làm mới camera...', '🔄');
+                console.log(`[Camera Stream] Reconnecting video feed via ${source}:`, ts);
+                if (source === 'img-click' || source === 'manual' || source === 'overlay-click') {
+                    showToast(currentLang === 'en' ? 'Camera stream refreshing...' : 'Đang làm mới luồng camera...', '🔄');
+                }
             }
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Tự động kiểm tra luồng camera mỗi 3.5 giây (Watchdog Heartbeat)
+        function startStreamWatchdog() {
+            if (streamWatchdogTimer) clearInterval(streamWatchdogTimer);
+            streamWatchdogTimer = setInterval(async () => {
+                if (document.hidden) return; // Nếu đang ẩn tab thì không quét để tiết kiệm pin
+                const img = document.getElementById('live-stream-img');
+                const overlay = document.getElementById('stream-reconnect-overlay');
+                
+                try {
+                    // Kiểm tra nhanh xem 1 ảnh JPEG tĩnh có lấy được không
+                    const testImg = new Image();
+                    testImg.onload = () => {
+                        // Backend vẫn khỏe, nếu ảnh chính bị đen hoặc ngắt kết nối thì tự phục hồi
+                        if (img && img.naturalWidth === 0 && img.complete) {
+                            console.warn('[Watchdog] Ảnh stream chính bị gián đoạn, tự động nạp lại...');
+                            if (overlay) overlay.classList.remove('hidden');
+                            safeReconnectStream('watchdog-auto');
+                        } else if (overlay && !overlay.classList.contains('hidden') && img && img.naturalWidth > 0) {
+                            overlay.classList.add('hidden');
+                        }
+                    };
+                    testImg.onerror = () => {
+                        if (overlay) overlay.classList.remove('hidden');
+                    };
+                    testImg.src = '/api/current_frame.jpg?t=' + Date.now();
+                } catch (e) {
+                    // ignore
+                }
+            }, 3500);
         }
 
         // Auto-reconnect camera on error or when waking from sleep/tab focus
         window.addEventListener('DOMContentLoaded', () => {
             const img = document.getElementById('live-stream-img');
+            const overlay = document.getElementById('stream-reconnect-overlay');
             if (img) {
+                img.onload = () => {
+                    if (overlay) overlay.classList.add('hidden');
+                };
                 img.onerror = () => {
-                    console.warn('[Camera] Luồng video bị gián đoạn, tự động kết nối lại sau 1.5s...');
+                    console.warn('[Camera] Luồng video bị gián đoạn, tự động kết nối lại sau 1s...');
+                    if (overlay) overlay.classList.remove('hidden');
                     setTimeout(() => {
-                        if (img) img.src = '/video_feed?t=' + Date.now();
-                    }, 1500);
+                        safeReconnectStream('onerror');
+                    }, 1000);
                 };
             }
+            startStreamWatchdog();
         });
 
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                const img = document.getElementById('live-stream-img');
-                if (img) {
-                    img.src = '/video_feed?t=' + Date.now();
-                }
+                safeReconnectStream('visibilitychange');
             }
         });
 
         window.addEventListener('focus', () => {
-            const img = document.getElementById('live-stream-img');
-            if (img) {
-                img.src = '/video_feed?t=' + Date.now();
-            }
+            safeReconnectStream('window-focus');
         });
 
         // Pediatric Growth Tracking & Monthly Reminder Handlers
