@@ -1,0 +1,10 @@
+# BabyGuard AI - AI Assistant Rules (.cursorrules)
+# This file is automatically loaded by Cursor, Claude, ChatGPT, and modern AI coding assistants.
+
+- Always refer to `AI_CONTEXT.md` for the complete system architecture, file map, and business logic.
+- Project: BabyGuard AI - Smart AI Baby Monitor (Commercial Edition).
+- Founder: Nguyen Vu Truong Thanh.
+- Terminology constraint: ALWAYS use the Vietnamese word "ba", NEVER use "bố" in UI, stories, code comments, or docs.
+- Core philosophy: 100% Edge AI privacy first, Hybrid Cloud with Gemini Pool fallback, Zero-cost maintenance for the founder.
+- Payment & Activation: VietQR 199,000 VND automated via SePay IPN webhook (`/api/sepay/ipn`) to MBBank `1550107316004` (Nguyen Vu Truong Thanh). Never require customers to manually type keys after payment.
+- To run the application: `python3.11 main.py`
