@@ -834,8 +834,14 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
         merchant_id = sepay_cfg.get("merchant_id", "SP-TEST-NV5B9824")
         amount = sepay_cfg.get("default_amount", 199000)
-        tunnel_url = cfg.get("remote_access_url", "https://efficiency-behalf-manager-explicitly.trycloudflare.com")
+        tunnel_url = cfg.get("remote_access_url", "https://hypothetical-practice-independently-talks.trycloudflare.com")
         ipn_url = f"{tunnel_url.rstrip('/')}/api/sepay/ipn"
+
+        bank_bin = sepay_cfg.get("bank_bin", "970422")
+        acc_num = sepay_cfg.get("account_number", "1550107316004")
+        acc_name = sepay_cfg.get("account_name", "Nguyen Vu Truong Thanh")
+        encoded_name = acc_name.replace(" ", "%20")
+        encoded_content = transfer_content.replace(" ", "%20")
 
         return {
             "merchant_id": merchant_id,
@@ -844,9 +850,12 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "transfer_content": transfer_content,
             "amount": amount,
             "currency": "VND",
+            "bank_name": "MBBank",
+            "account_number": acc_num,
+            "account_name": acc_name,
             "ipn_url": ipn_url,
             "checkout_url": f"https://my.sepay.vn/pg/checkout?merchant_id={merchant_id}&amount={amount}&order_id=INV-{short_id}",
-            "vietqr_url": f"https://img.vietqr.io/image/970422-SPTEST-compact2.png?amount={amount}&addInfo={transfer_content.replace(' ', '%20')}"
+            "vietqr_url": f"https://img.vietqr.io/image/{bank_bin}-{acc_num}-compact2.png?amount={amount}&addInfo={encoded_content}&accountName={encoded_name}"
         }
 
     @app.get("/api/sepay/ipn")
