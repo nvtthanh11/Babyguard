@@ -1,0 +1,10 @@
+{
+  "merchant_id": "SP-TEST-NV5B9824",
+  "secret_key": "spsk_test_xxxxxxxxxxqE2z5EFvh8MBUj9ZMbHr3EN",
+  "environment": "sandbox",
+  "currency": "VND",
+  "default_amount": 199000,
+  "product_name": "BabyGuard AI - Bản Quyền Vĩnh Viễn",
+  "ipn_url": "https://efficiency-behalf-manager-explicitly.trycloudflare.com/api/sepay/ipn",
+  "created_at": "2026-10-30T18:06:00+07:00"
+}

@@ -41,3 +41,4 @@ ENV/
 ._*
 .Spotlight-V100
 .Trashes
+sepay_transactions.json

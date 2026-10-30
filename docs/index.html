@@ -1057,9 +1057,15 @@
               <li class="flex items-center gap-2">✓ Tiết kiệm hơn 10 triệu đồng so với mua camera ngoại</li>
             </ul>
           </div>
-          <a href="#download" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 text-white font-black text-center text-sm shadow-lg transition">
-            Tải Bản Trải Nghiệm 14 Ngày
-          </a>
+          <div class="space-y-2.5 pt-2">
+            <button onclick="openCheckoutModal()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-center text-sm shadow-xl shadow-emerald-500/20 transition transform active:scale-95 flex items-center justify-center gap-2">
+              <span>⚡</span>
+              <span>Mua Bản Quyền 199k (Tự Động Mở Khóa)</span>
+            </button>
+            <a href="#download" class="block w-full py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-center text-xs transition">
+              Tải Bản Trải Nghiệm 14 Ngày Miễn Phí
+            </a>
+          </div>
         </div>
 
       </div>
@@ -1776,7 +1782,151 @@
       renderActiveFeature();
       startFeatureRotation();
     });
+
+    // =========================================================================
+    // CHECKOUT MODAL LOGIC (SEPAY VIETQR / INTERNATIONAL CHECKOUT)
+    // =========================================================================
+    function openCheckoutModal() {
+      const modal = document.getElementById('checkout-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeCheckoutModal() {
+      const modal = document.getElementById('checkout-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function switchCheckoutTab(tab) {
+      const btnVietQR = document.getElementById('tab-checkout-vietqr');
+      const btnIntl = document.getElementById('tab-checkout-intl');
+      const contentVietQR = document.getElementById('checkout-content-vietqr');
+      const contentIntl = document.getElementById('checkout-content-intl');
+
+      if (tab === 'vietqr') {
+        if (btnVietQR) btnVietQR.className = 'flex-1 py-2.5 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md';
+        if (btnIntl) btnIntl.className = 'flex-1 py-2.5 px-3 rounded-xl font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+        if (contentVietQR) contentVietQR.classList.remove('hidden');
+        if (contentIntl) contentIntl.classList.add('hidden');
+      } else {
+        if (btnVietQR) btnVietQR.className = 'flex-1 py-2.5 px-3 rounded-xl font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+        if (btnIntl) btnIntl.className = 'flex-1 py-2.5 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md';
+        if (contentVietQR) contentVietQR.classList.add('hidden');
+        if (contentIntl) contentIntl.classList.remove('hidden');
+      }
+    }
+
+    function copyCheckoutMemo() {
+      const memo = document.getElementById('checkout-memo');
+      const txt = memo ? memo.innerText.trim() : 'BG [SĐT HOẶC TELEGRAM]';
+      navigator.clipboard.writeText(txt).then(() => {
+        alert('Đã sao chép cú pháp chuyển khoản vào bộ nhớ tạm!');
+      });
+    }
   </script>
+
+  <!-- CHECKOUT MODAL: 100% AUTOMATED PAYMENT VIA VIETQR / SEPAY -->
+  <div id="checkout-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      
+      <!-- Close button -->
+      <button onclick="closeCheckoutModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl p-1">✕</button>
+
+      <!-- Header -->
+      <div class="space-y-2">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+          <span>🛡️</span> Bản Quyền Vĩnh Viễn BabyGuard AI
+        </div>
+        <h3 class="text-2xl font-black text-white">Mở Khóa Trọn Đời - 199.000 VNĐ</h3>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Chỉ thanh toán 1 lần duy nhất. Không phí duy trì hàng tháng. Hệ thống tự động kích hoạt bảo vệ bé 24/7.
+        </p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex items-center gap-1.5 p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs">
+        <button onclick="switchCheckoutTab('vietqr')" id="tab-checkout-vietqr" class="flex-1 py-2.5 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md">
+          <span>🇻🇳</span>
+          <span>Chuyển Khoản VietQR (199k)</span>
+        </button>
+        <button onclick="switchCheckoutTab('intl')" id="tab-checkout-intl" class="flex-1 py-2.5 px-3 rounded-xl font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
+          <span>🌍</span>
+          <span>Thẻ Quốc Tế ($29)</span>
+        </button>
+      </div>
+
+      <!-- Tab Content: VietQR -->
+      <div id="checkout-content-vietqr" class="space-y-4 text-xs">
+        <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center gap-5">
+          <div class="bg-white p-2.5 rounded-2xl shadow-xl flex-shrink-0 text-center">
+            <img src="https://img.vietqr.io/image/970422-SPTEST-compact2.png?amount=199000&addInfo=BG%20LIFETIME" alt="VietQR 199k BabyGuard AI" class="w-36 h-36 object-contain rounded-xl">
+            <span class="text-[9px] text-slate-500 font-bold block mt-1">Cổng Tự Động SePay</span>
+          </div>
+
+          <div class="space-y-2.5 flex-1 w-full">
+            <div>
+              <span class="text-slate-400 text-[11px] block">Số tiền thanh toán:</span>
+              <span class="text-xl font-black text-emerald-400">199.000 VNĐ</span>
+              <span class="text-[10px] text-slate-400 ml-1">(Giá gốc 990.000đ)</span>
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-slate-400 text-[11px] block">Cú pháp nội dung chuyển khoản:</span>
+              <div class="flex items-center justify-between bg-slate-900 px-3 py-2 rounded-xl border border-slate-700 font-mono text-emerald-300 font-bold">
+                <span id="checkout-memo">BG [SĐT HOẶC NICK TELEGRAM]</span>
+                <button onclick="copyCheckoutMemo()" class="text-slate-400 hover:text-white text-xs" title="Sao chép cú pháp">📋</button>
+              </div>
+              <p class="text-[10px] text-amber-300">💡 Ví dụ: <code class="text-emerald-300 font-mono">BG 0912345678</code> hoặc <code class="text-emerald-300 font-mono">BG @nguyenvana</code></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-indigo-500/10 border border-indigo-500/20 p-3.5 rounded-2xl space-y-2 text-[11px] text-slate-300">
+          <div class="font-bold text-indigo-300 flex items-center gap-1.5">
+            <span>⚡</span> Cơ Chế Kích Hoạt Tự Động 100%
+          </div>
+          <ul class="space-y-1 text-slate-300 text-[11px]">
+            <li>✓ Ngay khi chuyển khoản thành công, bot SePay tự động ghi nhận giao dịch trong 3 giây.</li>
+            <li>✓ Nếu bạn đang mở app trên máy tính, app sẽ <strong>tự động mở khóa vĩnh viễn ngay lập tức</strong> mà bạn không cần phải gõ mã key!</li>
+            <li>✓ Hoàn tiền 100% trong 30 ngày nếu ứng dụng không hoạt động mượt mà như mong đợi.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Tab Content: International -->
+      <div id="checkout-content-intl" class="space-y-4 text-xs hidden">
+        <div class="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="font-bold text-white text-sm">International License (Lifetime)</h4>
+              <p class="text-[11px] text-slate-400">Pay with Visa, Mastercard, Apple Pay, Google Pay</p>
+            </div>
+            <div class="text-right">
+              <span class="text-2xl font-black text-brand-400">$29</span>
+              <span class="text-[10px] text-slate-400 block">One-time payment</span>
+            </div>
+          </div>
+
+          <p class="text-slate-300 text-xs leading-relaxed">
+            Secure international checkout via Lemon Squeezy / Stripe. Your universal commercial license key will be delivered instantly to your email inbox!
+          </p>
+
+          <a href="https://buy.stripe.com/test_babyguard_lifetime" target="_blank" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-center text-sm shadow-lg flex items-center justify-center gap-2">
+            <span>💳</span>
+            <span>Pay with Card / Apple Pay ($29)</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+        <span>Hỗ trợ 24/7 qua Telegram: <strong class="text-slate-200">@babyguard_support</strong></span>
+        <button onclick="closeCheckoutModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">
+          Đóng
+        </button>
+      </div>
+
+    </div>
+  </div>
 
 </body>
 </html>
