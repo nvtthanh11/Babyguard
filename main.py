@@ -286,13 +286,46 @@ def main():
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
 
-    try:
-        uvicorn.run(app, host=host, port=port, log_level="warning")
-    finally:
-        tunnel_manager.stop()
-        vision_tracker.stop()
-        audio_detector.stop()
-        music_player.stop()
+    is_headless = "--headless" in sys.argv or "--server-only" in sys.argv or os.environ.get("HEADLESS") == "1"
+
+    if is_headless:
+        try:
+            uvicorn.run(app, host=host, port=port, log_level="warning")
+        finally:
+            tunnel_manager.stop()
+            vision_tracker.stop()
+            audio_detector.stop()
+            music_player.stop()
+    else:
+        # GUI Desktop Mode: Mở Cửa Sổ Ứng Dụng Độc Lập Native (Không mở trình duyệt Safari/Chrome)
+        server_thread = threading.Thread(
+            target=lambda: uvicorn.run(app, host=host, port=port, log_level="warning"),
+            daemon=True
+        )
+        server_thread.start()
+        time.sleep(1.2)
+
+        try:
+            import webview
+            print("[BabyGuard AI] 🚀 Đang khởi chạy Cửa Sổ Ứng Dụng Độc Lập Native...")
+            window = webview.create_window(
+                title="BabyGuard AI • Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé",
+                url=f"http://127.0.0.1:{port}/app",
+                width=1280,
+                height=820,
+                min_size=(960, 600),
+                text_select=False
+            )
+            webview.start()
+        except Exception as e:
+            print(f"[BabyGuard AI] Ghi chú cửa sổ GUI: {e}. Đang duy trì chế độ chạy liên tục.")
+            while True:
+                time.sleep(1)
+        finally:
+            tunnel_manager.stop()
+            vision_tracker.stop()
+            audio_detector.stop()
+            music_player.stop()
 
 
 if __name__ == "__main__":

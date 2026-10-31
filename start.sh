@@ -52,10 +52,6 @@ echo "👉 http://$LOCAL_IP:8080"
 echo "👉 http://$(hostname).local:8080  (Dùng trên iPhone/Mac không lo router đổi IP)"
 echo "------------------------------------------------------------"
 
-# 5. Tự động mở Safari/Chrome khi khởi chạy
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    (sleep 3 && open "http://localhost:8080") &
-fi
-
-# 6. Chạy ứng dụng chính
+# 5. Khởi chạy Ứng dụng BabyGuard AI (Native Window)
+echo "🚀 Đang mở Cửa sổ Ứng dụng BabyGuard AI..."
 $PYTHON_BIN main.py
