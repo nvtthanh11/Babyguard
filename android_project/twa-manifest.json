@@ -12,7 +12,7 @@
   "navigationDividerColorDark": "#1F293D",
   "backgroundColor": "#020617",
   "enableNotifications": true,
-  "startUrl": "/?source=pwa",
+  "startUrl": "/app",
   "iconUrl": "http://localhost:8080/static/icons/icon-512.png",
   "maskableIconUrl": "http://localhost:8080/static/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
@@ -25,7 +25,7 @@
   "shortcuts": [],
   "generatorApp": "bubblewrap",
   "webManifestUrl": "http://localhost:8080/manifest.json",
-  "fallbackType": "customtabs",
+  "fallbackType": "webview",
   "features": {},
   "alphaDependencies": {
     "enabled": false

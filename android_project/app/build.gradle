@@ -23,7 +23,7 @@ plugins {
 def twaManifest = [
     applicationId: 'vn.babyguard.ai',
     hostName: 'babyguard.site', // The domain being opened in the TWA.
-    launchUrl: '/?source=pwa', // The start path for the TWA. Must be relative to the domain.
+    launchUrl: '/app', // The start path for the TWA. Must be relative to the domain.
     name: 'BabyGuard AI - Vệ Sĩ Bé Yêu', // The application name.
     launcherName: 'BabyGuard', // The name shown on the Android Launcher.
     themeColor: '#020617', // The color used for the status bar.
@@ -45,7 +45,7 @@ def twaManifest = [
     generatorApp: 'bubblewrap', // Application that generated the Android Project
     // The fallback strategy for when Trusted Web Activity is not available. Possible values are
     // 'customtabs' and 'webview'.
-    fallbackType: 'customtabs',
+    fallbackType: 'webview',
     enableSiteSettingsShortcut: 'true',
     orientation: 'portrait-primary',
 ]

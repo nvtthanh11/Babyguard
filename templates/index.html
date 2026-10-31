@@ -1840,7 +1840,7 @@
     <!-- MODAL: GIAO DIỆN CÀI ĐẶT BAN ĐẦU CỦA ỨNG DỤNG (APP SETUP WIZARD) -->
     <!-- ========================================================================= -->
     <div id="app-setup-wizard" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
-        <div class="bg-cardbg rounded-3xl border border-indigo-500/30 max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden text-slate-100">
+        <div class="bg-cardbg rounded-3xl border border-indigo-500/30 max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden text-slate-100 max-h-[92vh] overflow-y-auto">
             
             <!-- Top Glow Decoration -->
             <div class="absolute -top-12 -right-12 w-36 h-36 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -1854,83 +1854,91 @@
                     </div>
                     <div>
                         <h3 class="font-black text-lg text-white">Cài Đặt Ứng Dụng BabyGuard AI</h3>
-                        <p class="text-xs text-slate-400">Trợ lý Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé (Thiết lập trong 1 phút)</p>
+                        <p class="text-xs text-slate-400">Trợ lý Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé (Thiết lập 4 bước nhanh)</p>
                     </div>
                 </div>
-                <button onclick="closeSetupWizard()" class="text-slate-400 hover:text-white p-1 text-lg" title="Bỏ qua cài đặt">✕</button>
+                <button onclick="closeSetupWizard()" class="text-slate-400 hover:text-white p-1 text-lg" title="Đóng cài đặt">✕</button>
             </div>
 
-            <!-- Stepper Progress Bar -->
+            <!-- Stepper Progress Bar (4 Bước: Đặt Tên -> API -> ID -> Này Nọ) -->
             <div class="grid grid-cols-4 gap-2 text-center text-[11px] font-bold">
                 <div id="step-tab-1" class="py-2 px-1 rounded-xl bg-purple-600 text-white shadow-sm flex items-center justify-center gap-1 transition-all">
-                    <span>1. Bé Yêu</span>
+                    <span>1. Đặt Tên</span>
                 </div>
                 <div id="step-tab-2" class="py-2 px-1 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center gap-1 transition-all">
-                    <span>2. Camera</span>
+                    <span>2. Khóa API</span>
                 </div>
                 <div id="step-tab-3" class="py-2 px-1 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center gap-1 transition-all">
-                    <span>3. Báo Động</span>
+                    <span>3. ID Báo Động</span>
                 </div>
                 <div id="step-tab-4" class="py-2 px-1 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center gap-1 transition-all">
-                    <span>4. Hoàn Tất</span>
+                    <span>4. Mắt Thần</span>
                 </div>
             </div>
 
-            <!-- STEP 1: HỒ SƠ BÉ YÊU -->
+            <!-- STEP 1: ĐẶT TÊN BÉ YÊU -->
             <div id="wizard-step-1" class="space-y-4">
                 <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
                     <div class="text-xs text-purple-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                        <span>👶</span> Bước 1: Thông tin bé yêu
+                        <span>👶</span> Bước 1: Hồ sơ bé yêu
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Tên thường gọi của bé:</label>
-                        <input type="text" id="wz-baby-name" placeholder="vd: Bé Bơ, Bé Siu, Bé Cún..." class="w-full bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white outline-none">
+                        <input type="text" id="wz-baby-name" placeholder="vd: Bé A Siu, Bé Bơ, Bé Cún..." class="w-full bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white outline-none">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1">Ngày sinh (hoặc dự sinh):</label>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Ngày sinh (hoặc ngày dự sinh):</label>
                             <input type="date" id="wz-baby-birth" class="w-full bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-xs font-bold text-white outline-none">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-300 mb-1">Giới tính:</label>
                             <select id="wz-baby-gender" class="w-full bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-xs font-bold text-white outline-none">
-                                <option value="boy">Bé Trai</option>
-                                <option value="girl">Bé Gái</option>
+                                <option value="boy">Bé Trai 👦</option>
+                                <option value="girl">Bé Gái 👧</option>
                             </select>
                         </div>
                     </div>
                 </div>
                 <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center gap-2">
                     <span>💡</span>
-                    <span>AI sẽ tự động tính tuần tuổi để đo nhịp thở chuẩn (30-40 BPM) và dự đoán cữ ngủ cho bé.</span>
+                    <span>AI sẽ tự động tính tuần tuổi để cân chỉnh nhịp thở sinh lý chuẩn (30-40 BPM) và dự đoán cữ ngủ cho bé.</span>
                 </div>
                 <div class="pt-2 flex justify-end">
                     <button onclick="wizardGoToStep(2)" class="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 text-white font-bold text-xs shadow-lg flex items-center gap-2">
-                        <span>Tiếp Tục: Kiểm Tra Camera</span>
+                        <span>Tiếp Tục: Khóa Trí Tuệ (API)</span>
                         <span>➔</span>
                     </button>
                 </div>
             </div>
 
-            <!-- STEP 2: CAMERA & MICRO -->
+            <!-- STEP 2: KHÓA TRÍ TUỆ NHÂN TẠO (API) -->
             <div id="wizard-step-2" class="space-y-4 hidden">
                 <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
-                    <div class="text-xs text-blue-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                        <span>📹</span> Bước 2: Kiểm tra Mắt Thần Camera & Micro
+                    <div class="text-xs text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🤖</span> Bước 2: Khóa Trí Tuệ Nhân Tạo (Gemini API)
                     </div>
-                    
-                    <!-- Live Camera Preview Box -->
-                    <div class="relative rounded-2xl overflow-hidden border border-slate-700 aspect-video bg-black flex items-center justify-center">
-                        <img id="wz-camera-preview" src="/video_feed" class="w-full h-full object-cover" onerror="this.src='/api/current_frame.jpg'">
-                        <div class="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-emerald-400 text-[10px] font-bold flex items-center gap-1.5 border border-emerald-500/30">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>Camera Hoạt Động Tốt</span>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        BabyGuard sử dụng mô hình trí tuệ đa phương thức <strong>Google Gemini 2.5 Flash</strong> để phân tích tiếng khóc, chống báo động giả khi bé chỉ cựa mình, và làm Bác sĩ Nhi hội chẩn giấc ngủ.
+                    </p>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Khóa Google Gemini API Key:</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="wz-gemini-api-key" placeholder="Dán mã AIzaSy... hoặc AQ.Ab8... vào đây" class="w-full bg-slate-800 border border-slate-700 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 pr-10 text-xs font-mono font-bold text-white outline-none">
+                            <button type="button" onclick="toggleWzGeminiKeyVisibility()" class="absolute right-3 text-slate-400 hover:text-slate-200 text-sm" title="Hiện/Ẩn mật khẩu">👁️</button>
                         </div>
                     </div>
-
-                    <div class="text-[11px] text-slate-300 space-y-1">
-                        <div class="font-bold text-slate-200">💡 Gợi ý bố trí máy:</div>
-                        <p class="text-slate-400">Đặt laptop/camera cách nôi bé khoảng 1m, hướng chéo 45 độ xuống đệm để AI bao quát toàn bộ tư thế nằm của bé.</p>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 text-xs font-bold transition">
+                            <span>🎁</span>
+                            <span>Lấy Khóa API Miễn Phí (Google AI Studio) ↗</span>
+                        </a>
+                        <button onclick="wizardTestGeminiApiKey()" id="wz-btn-test-gemini" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow flex items-center justify-center gap-1.5 shrink-0">
+                            <span>🔍 Kiểm Tra Khóa API</span>
+                        </button>
+                    </div>
+                    <div id="wz-gemini-status" class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400">
+                        Chưa có khóa? Bấm nút nhận miễn phí ở trên, đăng nhập Gmail và bấm <strong>Create API key</strong> là xong (100% Free).
                     </div>
                 </div>
 
@@ -1938,18 +1946,18 @@
                     <button onclick="wizardGoToStep(1)" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs">
                         <span>⬅ Quay Lại</span>
                     </button>
-                    <button onclick="wizardGoToStep(3)" class="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-bold text-xs shadow-lg flex items-center gap-2">
-                        <span>Tiếp Tục: Nhận Báo Động</span>
+                    <button onclick="wizardGoToStep(3)" class="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 text-white font-bold text-xs shadow-lg flex items-center gap-2">
+                        <span>Tiếp Tục: Báo Động (ID)</span>
                         <span>➔</span>
                     </button>
                 </div>
             </div>
 
-            <!-- STEP 3: KẾT NỐI TELEGRAM BÁO ĐỘNG -->
+            <!-- STEP 3: KẾT NỐI BÁO ĐỘNG TELEGRAM (ID) -->
             <div id="wizard-step-3" class="space-y-4 hidden">
                 <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3.5">
                     <div class="text-xs text-emerald-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                        <span>🔔</span> Bước 3: Chuông Báo Điện Thoại (Telegram)
+                        <span>📱</span> Bước 3: Chuông Báo Điện Thoại (Telegram ID)
                     </div>
                     
                     <p class="text-xs text-slate-300 leading-relaxed">
@@ -1966,8 +1974,13 @@
                         </div>
                     </div>
 
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Telegram Bot Token (Đã điền sẵn Bot chính thức của BabyGuard):</label>
+                        <input type="text" id="wz-telegram-bot-token" value="8999651261:AAECeyqJaPj4eh_CKT-Q7TkyFj5lvBfntPc" class="w-full bg-slate-800/70 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-300 outline-none">
+                    </div>
+
                     <div id="wz-tele-test-status" class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400">
-                        Chưa biết lấy Chat ID? Mở Telegram tìm bot <strong class="text-emerald-400">@userinfobot</strong> bấm Start là thấy ID của bạn ngay.
+                        Chưa biết lấy Chat ID? Mở app Telegram trên điện thoại > tìm bot <strong class="text-emerald-400">@userinfobot</strong> > bấm <strong>Start</strong> là thấy ID của bạn ngay.
                     </div>
                 </div>
 
@@ -1976,31 +1989,55 @@
                         <span>⬅ Quay Lại</span>
                     </button>
                     <button onclick="wizardGoToStep(4)" class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-bold text-xs shadow-lg flex items-center gap-2">
-                        <span>Tiếp Tục: Hoàn Tất</span>
+                        <span>Tiếp Tục: Chọn Camera & Micro</span>
                         <span>➔</span>
                     </button>
                 </div>
             </div>
 
-            <!-- STEP 4: HOÀN TẤT & BẮT ĐẦU BẢO VỆ -->
+            <!-- STEP 4: MẮT THẦN CAMERA & MICRO (NÀY NỌ) -->
             <div id="wizard-step-4" class="space-y-4 hidden">
-                <div class="p-5 rounded-2xl bg-gradient-to-tr from-emerald-500/10 via-indigo-500/10 to-purple-500/10 border border-emerald-500/30 text-center space-y-3">
-                    <div class="text-4xl">🎉</div>
-                    <h4 class="text-lg font-black text-white">Sẵn Sàng Bảo Vệ Bé Yêu 24/7!</h4>
-                    <p class="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
-                        Cấu hình đã hoàn tất. BabyGuard AI sẽ bắt đầu đo nhịp thở, theo dõi giấc ngủ và bảo vệ an toàn cho con yêu của bạn ngay bây giờ.
-                    </p>
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                        <span>🎁</span> Đang kích hoạt 14 Ngày Dùng Thử Miễn Phí
+                <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+                    <div class="text-xs text-blue-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <span>📹</span> Bước 4: Mắt Thần Camera & Micro Thu Âm
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Chọn Mắt Thần Camera:</label>
+                            <select id="wz-camera-select" onchange="switchWizardCamera()" class="w-full bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none">
+                                <option value="0">Camera 0 (Mặc định)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Chọn Micro Thu Âm Tiếng Khóc:</label>
+                            <select id="wz-audio-select" class="w-full bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none">
+                                <option value="0">Micro mặc định</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Live Camera Preview Box -->
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-700 aspect-video bg-black flex items-center justify-center shadow-inner">
+                        <img id="wz-camera-preview" src="/video_feed" class="w-full h-full object-cover" onerror="this.src='/api/current_frame.jpg'">
+                        <div class="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-emerald-400 text-[10px] font-bold flex items-center gap-1.5 border border-emerald-500/30">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>Camera Trực Tiếp Đang Hoạt Động</span>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] text-slate-300 space-y-1">
+                        <div class="font-bold text-slate-200">💡 Gợi ý bố trí máy:</div>
+                        <p class="text-slate-400">Đặt laptop/camera cách nôi bé khoảng 1m - 1.5m, hướng chéo 45 độ xuống đệm để AI bao quát toàn bộ tư thế nằm của bé.</p>
                     </div>
                 </div>
 
-                <div class="pt-2 flex items-center justify-between">
-                    <button onclick="wizardGoToStep(3)" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs">
+                <div class="pt-2 flex items-center justify-between gap-3">
+                    <button onclick="wizardGoToStep(3)" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs shrink-0">
                         <span>⬅ Quay Lại</span>
                     </button>
-                    <button onclick="wizardFinishAndStart()" class="flex-1 ml-3 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 text-slate-950 font-black text-sm shadow-xl glow-emerald flex items-center justify-center gap-2 transform active:scale-95 transition">
-                        <span>🚀 BẮT ĐẦU GIÁM SÁT BÉ NGAY</span>
+                    <button onclick="wizardFinishAndStart()" id="wz-btn-finish" class="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 text-slate-950 font-black text-sm shadow-xl glow-emerald flex items-center justify-center gap-2 transform active:scale-95 transition">
+                        <span>🚀 LƯU CẤU HÌNH & BẮT ĐẦU GIÁM SÁT BÉ NGAY</span>
                     </button>
                 </div>
             </div>
@@ -2024,6 +2061,20 @@
                     </div>
                 </div>
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
+            </div>
+
+            <!-- Shortcut to Onboarding Wizard -->
+            <div class="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-brand-500/10 border border-purple-500/30">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">🪄</span>
+                    <div>
+                        <div class="text-xs font-bold text-purple-300">Trợ Lý Cài Đặt Ban Đầu (Setup Wizard)</div>
+                        <div class="text-[10px] text-slate-400">Hướng dẫn 4 bước: Đặt tên bé, Khóa API, ID báo động & Camera</div>
+                    </div>
+                </div>
+                <button onclick="closeSettingsModal(); openSetupWizard();" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0">
+                    Mở Cài Đặt ➔
+                </button>
             </div>
 
             <!-- Onboarding Welcome Banner (Shown on First Startup) -->
@@ -4152,10 +4203,28 @@
                     ).join('');
                 }
 
+                // Đồng bộ dropdown Camera trong Wizard Cài Đặt Ban Đầu
+                const wzCamSel = document.getElementById('wz-camera-select');
+                if (wzCamSel && d.cameras) {
+                    const currentCamIdx = Number(currentConfig.camera_index || 0);
+                    wzCamSel.innerHTML = d.cameras.map(c =>
+                        `<option value="${c.index}" ${c.index === currentCamIdx ? 'selected' : ''}>${c.label}</option>`
+                    ).join('');
+                }
+
                 const micSel = document.getElementById('cfg-audio-index');
                 if (micSel && d.microphones) {
                     const currentMicIdx = Number(currentConfig.audio_device_index !== undefined ? currentConfig.audio_device_index : 2);
                     micSel.innerHTML = d.microphones.map(m =>
+                        `<option value="${m.index}" ${m.index === currentMicIdx ? 'selected' : ''}>${m.label}</option>`
+                    ).join('');
+                }
+
+                // Đồng bộ dropdown Micro trong Wizard Cài Đặt Ban Đầu
+                const wzMicSel = document.getElementById('wz-audio-select');
+                if (wzMicSel && d.microphones) {
+                    const currentMicIdx = Number(currentConfig.audio_device_index !== undefined ? currentConfig.audio_device_index : 2);
+                    wzMicSel.innerHTML = d.microphones.map(m =>
                         `<option value="${m.index}" ${m.index === currentMicIdx ? 'selected' : ''}>${m.label}</option>`
                     ).join('');
                 }
@@ -4225,10 +4294,12 @@
                 switchCameraSourceTab(currentConfig.camera_source_type || 'usb');
                 updateHeaderBabyProfile();
 
-                // Auto-open Setup Wizard on first launch if setup_completed is false
+                // Auto-open Setup Wizard on first launch if setup_completed is false or url has setup
                 if (!hasCheckedOnboarding) {
                     hasCheckedOnboarding = true;
-                    if (currentConfig.setup_completed === false) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const forceSetup = urlParams.get('setup') === '1' || window.location.pathname.includes('/setup');
+                    if (currentConfig.setup_completed === false || forceSetup) {
                         openSetupWizard();
                     }
                 }
@@ -4250,8 +4321,15 @@
                 if (babyBirthInput && currentConfig.baby_birth_date) babyBirthInput.value = currentConfig.baby_birth_date;
                 const babyGenderInput = document.getElementById('wz-baby-gender');
                 if (babyGenderInput && currentConfig.baby_gender) babyGenderInput.value = currentConfig.baby_gender;
+                const geminiKeyInput = document.getElementById('wz-gemini-api-key');
+                if (geminiKeyInput && currentConfig.gemini_api_key) geminiKeyInput.value = currentConfig.gemini_api_key;
                 const teleChatInput = document.getElementById('wz-telegram-chat-id');
                 if (teleChatInput && currentConfig.telegram_chat_id) teleChatInput.value = currentConfig.telegram_chat_id;
+                const teleTokenInput = document.getElementById('wz-telegram-bot-token');
+                if (teleTokenInput && currentConfig.telegram_bot_token) teleTokenInput.value = currentConfig.telegram_bot_token;
+            }
+            if (typeof loadHardwareDevices === 'function') {
+                loadHardwareDevices(false);
             }
             wizardGoToStep(1);
         }
@@ -4259,6 +4337,13 @@
         function closeSetupWizard() {
             const wizard = document.getElementById('app-setup-wizard');
             if (wizard) wizard.classList.add('hidden');
+        }
+
+        function toggleWzGeminiKeyVisibility() {
+            const input = document.getElementById('wz-gemini-api-key');
+            if (input) {
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
         }
 
         function wizardGoToStep(step) {
@@ -4279,32 +4364,75 @@
                     }
                 }
             }
+            if (step === 4) {
+                const previewImg = document.getElementById('wz-camera-preview');
+                if (previewImg) previewImg.src = '/video_feed?t=' + Date.now();
+            }
+        }
+
+        async function wizardTestGeminiApiKey() {
+            const apiKey = document.getElementById('wz-gemini-api-key')?.value.trim();
+            const btn = document.getElementById('wz-btn-test-gemini');
+            const status = document.getElementById('wz-gemini-status');
+            if (!apiKey) {
+                showToast('Vui lòng nhập Google Gemini API Key', '⚠️');
+                if (status) status.innerHTML = '⚠️ <strong class="text-amber-400">Vui lòng dán mã API Key trước khi kiểm tra.</strong>';
+                return;
+            }
+            if (btn) btn.innerText = 'Đang kiểm tra...';
+            if (status) status.innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> Đang kết nối thử với máy chủ Google Gemini...';
+            try {
+                const res = await fetch('/api/test-gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey })
+                });
+                const data = await res.json();
+                if (data.success || data.status === 'ok') {
+                    if (status) {
+                        status.innerHTML = '✅ <strong class="text-emerald-400">Khóa API chính xác và hoạt động tốt!</strong> Google Gemini đã sẵn sàng bảo vệ bé.';
+                    }
+                    showToast('Khóa Gemini API hợp lệ!', '🤖');
+                } else {
+                    if (status) {
+                        status.innerHTML = `⚠️ <strong class="text-amber-400">Khóa API chưa kết nối được:</strong> ${data.error || data.message || 'Kiểm tra lại ký tự API key'}`;
+                    }
+                    showToast('Lỗi kiểm tra API Key', '❌');
+                }
+            } catch (e) {
+                if (status) status.innerHTML = `❌ <strong class="text-rose-400">Lỗi kết nối máy chủ:</strong> ${e.message}`;
+            } finally {
+                if (btn) btn.innerHTML = '<span>🔍 Kiểm Tra Khóa API</span>';
+            }
         }
 
         async function wizardTestTelegramAlert() {
             const chatId = document.getElementById('wz-telegram-chat-id')?.value.trim();
+            const botToken = document.getElementById('wz-telegram-bot-token')?.value.trim();
             const btn = document.getElementById('wz-btn-test-tele');
             const status = document.getElementById('wz-tele-test-status');
             if (!chatId) {
                 showToast('Vui lòng nhập Telegram Chat ID', '⚠️');
+                if (status) status.innerHTML = '⚠️ <strong class="text-amber-400">Vui lòng nhập Chat ID trước khi gửi thử.</strong>';
                 return;
             }
             if (btn) btn.innerText = 'Đang gửi...';
+            if (status) status.innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> Đang bắn chuông báo qua Telegram...';
             try {
-                const res = await fetch('/api/test_telegram', {
+                const res = await fetch('/api/test-telegram', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: chatId })
+                    body: JSON.stringify({ chat_id: chatId, token: botToken })
                 });
                 const data = await res.json();
-                if (data.status === 'ok') {
+                if (data.status === 'ok' || data.success) {
                     if (status) {
-                        status.innerHTML = '✅ <strong class="text-emerald-400">Đã gửi tin nhắn test thành công!</strong> Vui lòng kiểm tra chuông báo trên điện thoại.';
+                        status.innerHTML = '✅ <strong class="text-emerald-400">Đã gửi chuông báo thành công!</strong> Vui lòng kiểm tra ứng dụng Telegram trên điện thoại.';
                     }
                     showToast('Đã gửi tin nhắn chuông báo test!', '🔔');
                 } else {
                     if (status) {
-                        status.innerHTML = `⚠️ <strong class="text-amber-400">Chưa nhận được tin nhắn:</strong> ${data.message || 'Kiểm tra lại bot token hoặc chat ID'}`;
+                        status.innerHTML = `⚠️ <strong class="text-amber-400">Chưa nhận được tin nhắn:</strong> ${data.message || data.error || 'Kiểm tra lại bot token hoặc chat ID'}`;
                     }
                     showToast('Lỗi gửi tin nhắn Telegram', '❌');
                 }
@@ -4315,11 +4443,37 @@
             }
         }
 
+        async function switchWizardCamera() {
+            const sel = document.getElementById('wz-camera-select');
+            if (!sel) return;
+            const camIdx = parseInt(sel.value);
+            try {
+                await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ camera_index: camIdx, camera_source_type: 'usb' })
+                });
+                setTimeout(() => {
+                    const previewImg = document.getElementById('wz-camera-preview');
+                    if (previewImg) previewImg.src = '/video_feed?t=' + Date.now();
+                }, 400);
+            } catch (e) {
+                console.warn('Switch camera error:', e);
+            }
+        }
+
         async function wizardFinishAndStart() {
+            const btn = document.getElementById('wz-btn-finish');
+            if (btn) btn.innerText = 'Đang lưu cấu hình...';
+
             const name = document.getElementById('wz-baby-name')?.value.trim() || 'Bé Yêu';
             const birth = document.getElementById('wz-baby-birth')?.value || '';
             const gender = document.getElementById('wz-baby-gender')?.value || 'boy';
+            const geminiKey = document.getElementById('wz-gemini-api-key')?.value.trim() || '';
             const chatId = document.getElementById('wz-telegram-chat-id')?.value.trim() || '';
+            const botToken = document.getElementById('wz-telegram-bot-token')?.value.trim() || '';
+            const camSel = document.getElementById('wz-camera-select');
+            const micSel = document.getElementById('wz-audio-select');
 
             const updates = {
                 baby_name: name,
@@ -4327,9 +4481,22 @@
                 baby_gender: gender,
                 setup_completed: true
             };
+            if (geminiKey) {
+                updates.gemini_api_key = geminiKey;
+                updates.gemini_enabled = true;
+            }
             if (chatId) {
                 updates.telegram_chat_id = chatId;
                 updates.telegram_enabled = true;
+            }
+            if (botToken) {
+                updates.telegram_bot_token = botToken;
+            }
+            if (camSel && camSel.value !== "") {
+                updates.camera_index = parseInt(camSel.value);
+            }
+            if (micSel && micSel.value !== "") {
+                updates.audio_device_index = parseInt(micSel.value);
             }
 
             try {
@@ -4341,6 +4508,8 @@
                 showToast(`Chào mừng ${name} đến với BabyGuard AI!`, '🍼');
             } catch (e) {
                 console.warn('Config save error:', e);
+            } finally {
+                if (btn) btn.innerHTML = '<span>🚀 LƯU CẤU HÌNH & BẮT ĐẦU BẢO VỆ BÉ NGAY</span>';
             }
             closeSetupWizard();
             if (typeof fetchConfig === 'function') fetchConfig();

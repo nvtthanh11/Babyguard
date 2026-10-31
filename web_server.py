@@ -220,6 +220,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         return RedirectResponse(url="/", status_code=302)
 
     @app.get("/app")
+    @app.get("/setup")
     @app.get("/dashboard")
     @app.get("/control")
     async def view_app_dashboard(request: Request):
@@ -2354,16 +2355,18 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
     # --- MULTI-RECIPIENT FAMILY TELEGRAM APIS ---
     class TelegramTest(BaseModel):
-        token: str
+        token: str = ""
         chat_id: str = ""
         name: str = "Người nhà"
         recipients: list = None
 
     @app.post("/api/test-telegram")
+    @app.post("/api/test_telegram")
     def test_telegram(payload: TelegramTest):
-        token = (payload.token or "").strip()
+        cfg = load_config()
+        token = (payload.token or "").strip() or str(cfg.get("telegram_bot_token", "")).strip() or "8999651261:AAECeyqJaPj4eh_CKT-Q7TkyFj5lvBfntPc"
         if not token:
-            return {"success": False, "error": "Vui lòng nhập Bot Token trước."}
+            return {"success": False, "status": "error", "error": "Vui lòng nhập Bot Token trước.", "message": "Vui lòng nhập Bot Token trước."}
 
         targets = []
         if payload.chat_id and payload.chat_id.strip():
@@ -2374,7 +2377,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                     targets.append({"name": r.get("name", "Người nhà"), "chat_id": str(r["chat_id"]).strip()})
 
         if not targets:
-            return {"success": False, "error": "Chưa có người nhận nào trong danh sách."}
+            return {"success": False, "status": "error", "error": "Chưa có Chat ID người nhận nào.", "message": "Vui lòng nhập Telegram Chat ID."}
 
         sent_count = 0
         last_err = ""
@@ -2395,8 +2398,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                 last_err = str(e)
 
         if sent_count > 0:
-            return {"success": True, "sent_count": sent_count}
-        return {"success": False, "error": last_err or "Không gửi được tin nhắn."}
+            return {"success": True, "status": "ok", "sent_count": sent_count, "message": "Đã gửi chuông báo thử nghiệm thành công!"}
+        return {"success": False, "status": "error", "error": last_err or "Không gửi được tin nhắn.", "message": last_err or "Không gửi được tin nhắn qua Telegram."}
 
     class TelegramDiscoverRequest(BaseModel):
         token: str
@@ -2458,10 +2461,24 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         api_key: str = ""
 
     @app.post("/api/test-gemini")
+    @app.post("/api/test_gemini")
     def test_gemini(payload: GeminiTestRequest):
+        cfg = load_config()
+        key = (payload.api_key or "").strip() or str(cfg.get("gemini_api_key", "")).strip()
+        if not key:
+            return {"success": False, "status": "error", "error": "Vui lòng nhập Gemini API Key.", "message": "Vui lòng nhập Gemini API Key."}
         if gemini_verifier is None:
-            return {"success": False, "error": "Module Gemini chưa được khởi tạo."}
-        return gemini_verifier.test_connection(payload.api_key)
+            return {"success": False, "status": "error", "error": "Module Gemini chưa được khởi tạo.", "message": "Module Gemini chưa được khởi tạo."}
+        res = gemini_verifier.test_connection(key)
+        if res.get("success"):
+            res["status"] = "ok"
+            if "message" not in res:
+                res["message"] = "Khóa API chính xác! Google Gemini đã sẵn sàng kết nối."
+        else:
+            res["status"] = "error"
+            if "message" not in res:
+                res["message"] = res.get("error", "Lỗi kiểm tra API Key.")
+        return res
 
     @app.post("/api/gemini/auto-calibrate")
     def auto_calibrate_crib():
