@@ -2,7 +2,7 @@
   "name": "BabyGuard AI - Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé",
   "short_name": "BabyGuard AI",
   "description": "Trợ lý Vệ sĩ & Bác sĩ Giấc ngủ AI Thông minh bảo vệ giấc ngủ bé yêu 24/7",
-  "start_url": "/?source=pwa",
+  "start_url": "/app?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#020617",

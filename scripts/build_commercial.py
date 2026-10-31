@@ -41,8 +41,7 @@ ASSET_DIRS = [
     "models",
     "medical_knowledge",
     "music",
-    "static",
-    "docs"
+    "static"
 ]
 
 SUPPORT_FILES = [

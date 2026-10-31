@@ -219,21 +219,58 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         # Người lạ trên mạng gõ bừa vào /cam mà không có chìa khóa bí mật -> Đẩy về trang bán hàng
         return RedirectResponse(url="/", status_code=302)
 
+    @app.get("/app")
+    @app.get("/dashboard")
+    @app.get("/control")
+    async def view_app_dashboard(request: Request):
+        """Cổng mở thẳng Giao diện Ứng dụng BabyGuard AI (Dành cho App điện thoại & Máy tính gia đình)."""
+        cfg = load_config()
+        acc_key = get_access_key(cfg)
+        response = templates.TemplateResponse(request=request, name="index.html")
+        response.set_cookie(
+            key="babyguard_auth",
+            value=acc_key,
+            max_age=365 * 86400,
+            httponly=True,
+            samesite="lax"
+        )
+        return response
+
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
         host = request.headers.get("host", "").lower()
-        # Chỉ máy nội bộ gia đình (localhost hoặc mạng WiFi ở nhà 192.168.x.x) mới vào Dashboard điều khiển
+        # 1. Nếu mở từ máy nội bộ gia đình (localhost hoặc mạng WiFi ở nhà 192.168.x.x) -> VÀO THẲNG PHẦN MỀM
         if "localhost" in host or "127.0.0.1" in host or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100."):
             return templates.TemplateResponse(request=request, name="index.html")
 
-        # Nếu bố mẹ truy cập babyguard.site mà trên máy đã lưu cookie xác thực tự động -> Vào thẳng camera
+        # 2. Nếu mở từ ỨNG DỤNG ĐIỆN THOẠI (App Android APK / PWA đã cài đặt) -> VÀO THẲNG PHẦN MỀM
+        is_app = (
+            request.query_params.get("source") in ["pwa", "app"] or
+            request.query_params.get("app") == "1" or
+            request.headers.get("X-Requested-With") == "vn.babyguard.ai" or
+            request.query_params.get("mode") == "standalone"
+        )
+        if is_app:
+            cfg = load_config()
+            acc_key = get_access_key(cfg)
+            response = templates.TemplateResponse(request=request, name="index.html")
+            response.set_cookie(
+                key="babyguard_auth",
+                value=acc_key,
+                max_age=365 * 86400,
+                httponly=True,
+                samesite="lax"
+            )
+            return response
+
+        # 3. Nếu bố mẹ truy cập babyguard.site mà trên máy đã lưu cookie xác thực tự động -> Vào thẳng camera
         cfg = load_config()
         acc_key = get_access_key(cfg)
         auth_cookie = request.cookies.get("babyguard_auth", "")
         if auth_cookie and hmac.compare_digest(auth_cookie, acc_key):
             return templates.TemplateResponse(request=request, name="index.html")
 
-        # Toàn bộ truy cập từ internet qua domain babyguard.site -> 100% LÀ TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
+        # 4. Toàn bộ khách lạ truy cập từ internet qua domain babyguard.site -> TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
         landing_file = os.path.join(BASE_DIR, "docs", "index.html")
         if os.path.exists(landing_file):
             return FileResponse(landing_file, media_type="text/html")
