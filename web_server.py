@@ -5,6 +5,8 @@ import json
 import time
 import base64
 import socket
+import hmac
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import subprocess
@@ -12,8 +14,9 @@ import threading
 import cv2
 import requests
 import sounddevice as sd
+import secrets
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -65,17 +68,169 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     from growth_tracker import GrowthTracker, calculate_exact_age
     from vaccine_tracker import VaccineTracker
     from daily_story_tracker import DailyStoryTracker
-    from license_manager import LicenseManager, get_machine_fingerprint, generate_license_key
+    from license_manager import LicenseManager, get_machine_fingerprint, generate_license_key, MASTER_SECRET
     growth_tracker = GrowthTracker()
     vaccine_tracker = VaccineTracker()
     daily_story_tracker = DailyStoryTracker()
     license_manager = LicenseManager(load_config())
+
+    def get_family_pin(cfg: dict) -> str:
+        return str(cfg.get("family_pin", "888888")).strip()
+
+    def get_access_key(cfg: dict) -> str:
+        key = cfg.get("access_key", "")
+        if not key:
+            key = "bg_" + secrets.token_hex(16)
+            cfg["access_key"] = key
+            save_config(cfg)
+        return str(key).strip()
+
+    def generate_session_token(machine_id: str, pin: str) -> str:
+        msg = f"BG_FAMILY_AUTH:{machine_id}:{pin}:{MASTER_SECRET.decode(errors='ignore')}".encode()
+        return hmac.new(MASTER_SECRET, msg, hashlib.sha256).hexdigest()
+
+    def is_request_authenticated(request: Request, cfg: dict) -> bool:
+        host = request.headers.get("host", "").lower()
+        client_ip = request.client.host if request.client else ""
+        if "localhost" in host or "127.0.0.1" in host or client_ip in ["127.0.0.1", "::1"] or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100."):
+            return True
+
+        acc_key = get_access_key(cfg)
+
+        # 1. Chìa khóa cookie tự động trên điện thoại (Không bao giờ phải nhập mật khẩu)
+        auth_cookie = request.cookies.get("babyguard_auth", "")
+        if auth_cookie and hmac.compare_digest(auth_cookie, acc_key):
+            return True
+
+        # 2. Chìa khóa tự động trong link Telegram (?k= hoặc ?key= hoặc ?token=)
+        q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("token", "")
+        if q_key and hmac.compare_digest(q_key, acc_key):
+            return True
+
+        # 3. Fallback phiên làm việc cũ
+        pin = get_family_pin(cfg)
+        mid = get_machine_fingerprint()
+        expected_token = generate_session_token(mid, pin)
+
+        auth_session = request.cookies.get("babyguard_family_session", "")
+        if auth_session and hmac.compare_digest(auth_session, expected_token):
+            return True
+
+        auth_param = request.query_params.get("pin_token", "") or request.headers.get("X-Family-Token", "")
+        if auth_param and hmac.compare_digest(auth_param, expected_token):
+            return True
+
+        q_pin = request.query_params.get("pin", "")
+        if q_pin and q_pin == pin:
+            return True
+
+        return False
+
+    @app.get("/api/auth/status")
+    def get_auth_status(request: Request):
+        cfg = load_config()
+        authed = is_request_authenticated(request, cfg)
+        host = request.headers.get("host", "").lower()
+        client_ip = request.client.host if request.client else ""
+        is_local = "localhost" in host or "127.0.0.1" in host or client_ip in ["127.0.0.1", "::1"]
+        return {
+            "authenticated": authed,
+            "is_local": is_local,
+            "has_pin_set": bool(cfg.get("family_pin"))
+        }
+
+    @app.post("/api/auth/verify-pin")
+    async def verify_family_pin(request: Request):
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        entered_pin = str(body.get("pin", "")).strip()
+        cfg = load_config()
+        correct_pin = get_family_pin(cfg)
+
+        if entered_pin and entered_pin == correct_pin:
+            mid = get_machine_fingerprint()
+            token = generate_session_token(mid, correct_pin)
+            response = JSONResponse({
+                "success": True,
+                "message": "Xác thực mã PIN bảo vệ gia đình thành công!",
+                "token": token
+            })
+            response.set_cookie(
+                key="babyguard_family_session",
+                value=token,
+                max_age=30 * 86400,
+                httponly=True,
+                samesite="lax"
+            )
+            return response
+        else:
+            return JSONResponse({
+                "success": False,
+                "message": "Mã PIN bảo vệ không chính xác. Vui lòng thử lại!"
+            }, status_code=401)
+
+    @app.post("/api/auth/change-pin")
+    async def change_family_pin(request: Request):
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        old_pin = str(body.get("old_pin", "")).strip()
+        new_pin = str(body.get("new_pin", "")).strip()
+        cfg = load_config()
+        current_pin = get_family_pin(cfg)
+
+        if old_pin != current_pin:
+            return JSONResponse({"success": False, "message": "Mã PIN cũ không chính xác!"}, status_code=400)
+        if len(new_pin) < 4 or len(new_pin) > 8 or not new_pin.isdigit():
+            return JSONResponse({"success": False, "message": "Mã PIN mới phải gồm 4 đến 8 chữ số!"}, status_code=400)
+
+        cfg["family_pin"] = new_pin
+        save_config(cfg)
+        return {"success": True, "message": "Đã đổi Mã PIN bảo vệ gia đình thành công!"}
+
+    @app.get("/cam")
+    @app.get("/watch")
+    @app.get("/live")
+    async def view_camera_live(request: Request):
+        cfg = load_config()
+        acc_key = get_access_key(cfg)
+        q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("token", "")
+        auth_cookie = request.cookies.get("babyguard_auth", "")
+
+        host = request.headers.get("host", "").lower()
+        is_local = "localhost" in host or "127.0.0.1" in host or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100.")
+
+        # Nếu có chìa khóa trong link, hoặc đã có cookie hợp lệ, hoặc là mạng nội bộ gia đình:
+        # => MỞ THẲNG DASHBOARD XEM CAMERA NGAY LẬP TỨC TRONG 1 GIÂY, KHÔNG HỎI MẬT KHẨU!
+        if is_local or (q_key and hmac.compare_digest(q_key, acc_key)) or (auth_cookie and hmac.compare_digest(auth_cookie, acc_key)):
+            response = templates.TemplateResponse(request=request, name="index.html")
+            response.set_cookie(
+                key="babyguard_auth",
+                value=acc_key,
+                max_age=365 * 86400,
+                httponly=True,
+                samesite="lax"
+            )
+            return response
+
+        # Người lạ trên mạng gõ bừa vào /cam mà không có chìa khóa bí mật -> Đẩy về trang bán hàng
+        return RedirectResponse(url="/", status_code=302)
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
         host = request.headers.get("host", "").lower()
         # Chỉ máy nội bộ gia đình (localhost hoặc mạng WiFi ở nhà 192.168.x.x) mới vào Dashboard điều khiển
         if "localhost" in host or "127.0.0.1" in host or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100."):
+            return templates.TemplateResponse(request=request, name="index.html")
+
+        # Nếu bố mẹ truy cập babyguard.site mà trên máy đã lưu cookie xác thực tự động -> Vào thẳng camera
+        cfg = load_config()
+        acc_key = get_access_key(cfg)
+        auth_cookie = request.cookies.get("babyguard_auth", "")
+        if auth_cookie and hmac.compare_digest(auth_cookie, acc_key):
             return templates.TemplateResponse(request=request, name="index.html")
 
         # Toàn bộ truy cập từ internet qua domain babyguard.site -> 100% LÀ TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
@@ -204,14 +359,11 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             except Exception:
                 time.sleep(0.05)
 
-    def _is_private_access(req: Request) -> bool:
-        host = req.headers.get("host", "").lower()
-        return "localhost" in host or "127.0.0.1" in host or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100.")
-
     @app.get("/video_feed")
     def video_feed(request: Request, annotated: bool = True):
-        if not _is_private_access(request):
-            return JSONResponse({"status": "forbidden", "message": "Truy cập camera phòng ngủ bị chặn từ internet công cộng để bảo vệ quyền riêng tư gia đình."}, status_code=403)
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"status": "forbidden", "message": "Yêu cầu mã PIN bảo vệ gia đình để truy cập camera phòng ngủ."}, status_code=401)
         return StreamingResponse(
             generate_frames(annotated=annotated),
             media_type="multipart/x-mixed-replace; boundary=frame",
@@ -226,8 +378,9 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.get("/api/current_frame.jpg")
     def get_current_frame_jpg(request: Request):
         """Lấy 1 khung hình JPEG tức thì phục vụ watchdog kiểm tra luồng và fallback chống đen màn hình."""
-        if not _is_private_access(request):
-            return JSONResponse({"status": "forbidden", "message": "Truy cập camera phòng ngủ bị chặn từ internet công cộng để bảo vệ quyền riêng tư gia đình."}, status_code=403)
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"status": "forbidden", "message": "Yêu cầu mã PIN bảo vệ gia đình để truy cập camera phòng ngủ."}, status_code=401)
         from fastapi import Response
         frame = vision_tracker.get_latest_frame(annotated=True)
         if frame is None or frame.size == 0:
@@ -246,8 +399,9 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.get("/api/audio_feed")
     def audio_feed(request: Request):
         """Phát luồng âm thanh phòng bé thời gian thực qua Web Audio (WAV 16kHz mono)."""
-        if not _is_private_access(request):
-            return JSONResponse({"status": "forbidden", "message": "Truy cập âm thanh phòng ngủ bị chặn từ internet công cộng để bảo vệ quyền riêng tư gia đình."}, status_code=403)
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"status": "forbidden", "message": "Yêu cầu mã PIN bảo vệ gia đình để nghe âm thanh phòng ngủ."}, status_code=401)
         def generate_wav_stream():
             import struct
             header = bytearray(44)

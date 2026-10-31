@@ -2836,6 +2836,34 @@
         </div>
     </div>
 
+    <!-- Modal: Mã PIN Bảo Vệ Camera Gia Đình (Family Security Shield) -->
+    <div id="family-pin-modal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+        <div class="bg-cardbg border border-emerald-500/30 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 flex items-center justify-center text-3xl mx-auto shadow-inner">
+                🛡️
+            </div>
+            <div class="space-y-1">
+                <h3 class="font-extrabold text-lg text-slate-100">Bảo Vệ Riêng Tư Gia Đình</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Camera phòng ngủ được mã hóa chuẩn y tế. Vui lòng nhập mã PIN bảo mật 6 số của gia đình để mở khóa.
+                </p>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <input type="password" id="family-pin-input" maxlength="8" placeholder="••••••" onkeydown="if(event.key==='Enter')submitFamilyPin()" class="w-full text-center text-2xl font-mono tracking-widest bg-slate-950 border border-slate-700 focus:border-emerald-500 outline-none rounded-2xl py-3 text-emerald-400 font-black">
+                <p id="family-pin-error" class="text-rose-400 text-xs hidden font-semibold"></p>
+                <div class="text-[11px] text-slate-500">
+                    Mã PIN mặc định: <b class="text-slate-400 font-mono">888888</b> (Đổi được trong Cài Đặt)
+                </div>
+            </div>
+
+            <button onclick="submitFamilyPin()" class="w-full py-3.5 px-4 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition active:scale-95 flex items-center justify-center gap-2">
+                <span>🔓</span>
+                <span>Mở Khóa Camera</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Core App Logic -->
     <script>
         let currentConfig = {};
@@ -6686,9 +6714,65 @@
             }
         })();
 
+        // =========================================================================
+        // ONE-TOUCH INSTANT ACCESS (1 GIÂY MỞ THẲNG CAMERA KHÔNG CẦN MẬT KHẨU)
+        // =========================================================================
+        async function checkPinAuthStatus() {
+            // Tối ưu trải nghiệm: Bố mẹ bấm link Telegram là xem bé ngay lập tức trong 1 giây, không chặn màn hình hỏi mật khẩu
+            closeFamilyPinModal();
+        }
+
+        function openFamilyPinModal() {
+            const modal = document.getElementById('family-pin-modal');
+            if (modal) modal.classList.remove('hidden');
+            const input = document.getElementById('family-pin-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function closeFamilyPinModal() {
+            const modal = document.getElementById('family-pin-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function submitFamilyPin() {
+            const input = document.getElementById('family-pin-input');
+            const pin = input ? input.value.trim() : '';
+            if (!pin) {
+                showToast('Vui lòng nhập mã PIN', '⚠️');
+                return;
+            }
+            try {
+                const res = await fetch('/api/auth/verify-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin: pin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeFamilyPinModal();
+                    showToast('Mở khóa camera thành công!', '🔓');
+                    const video = document.getElementById('video-stream');
+                    if (video) video.src = '/video_feed?' + Date.now();
+                } else {
+                    showToast(data.message || 'Mã PIN không đúng!', '❌');
+                    const errEl = document.getElementById('family-pin-error');
+                    if (errEl) {
+                        errEl.innerText = data.message || 'Mã PIN không đúng!';
+                        errEl.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                showToast('Lỗi kiểm tra mã PIN', '❌');
+            }
+        }
+
         // Initialize App on DOM Ready
         window.addEventListener('DOMContentLoaded', () => {
             applyAppLanguage(currentLang);
+            checkPinAuthStatus();
             fetchLicenseStatus();
             fetchConfig();
             fetchEvents();

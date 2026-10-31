@@ -305,25 +305,17 @@ class AlertManager:
         threading.Thread(target=_send, daemon=True).start()
 
     def _get_compact_view_link(self) -> str:
-        """Tạo link rút gọn siêu đẹp, hiển thị chữ bấm được '👉 Mở Camera Xem Bé Ngay' trên Telegram."""
+        """Tạo link xem trực tiếp 1 chạm siêu nhanh không cần mật khẩu cho bố mẹ."""
         url = str(self.config.get("remote_access_url", "")).strip()
-        if not url or "trycloudflare.com" in url or url == "https://babyguard.site":
-            url = "https://cam.babyguard.site"
-        elif "babyguard.site" in url and not url.startswith("https://cam.") and not url.endswith("/cam"):
-            url = "https://cam.babyguard.site"
+        if not url or "trycloudflare.com" in url or "cam.babyguard.site" in url or url == "https://babyguard.site":
+            url = "https://babyguard.site/cam"
 
-        if not url:
-            import socket
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.connect(("8.8.8.8", 80))
-                ip = s.getsockname()[0]
-                s.close()
-                port = self.config.get("web_port", 8080)
-                url = f"http://{ip}:{port}"
-            except Exception:
-                url = "http://localhost:8080"
-        return f'\n🔗 <b><a href="{url}">👉 Mở Camera Xem Bé Ngay</a></b>'
+        acc_key = str(self.config.get("access_key", "")).strip()
+        if acc_key and "?k=" not in url and "&k=" not in url:
+            separator = "&" if "?" in url else "?"
+            url = f"{url}{separator}k={acc_key}"
+
+        return f'\n🔗 <b><a href="{url}">👉 BẤM XEM CAMERA NGAY (1 GIÂY)</a></b>'
 
     def send_telegram_text(self, text: str, pin: bool = False, tag_recipients: bool = False) -> bool:
         bot_token = self.config.get("telegram_bot_token", "").strip()
