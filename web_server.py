@@ -73,6 +73,33 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
+        host = request.headers.get("host", "").lower()
+        query_view = request.query_params.get("view", "")
+        is_pwa = request.query_params.get("source", "") == "pwa"
+        # Nếu truy cập qua subdomain cam.babyguard.site, từ app mobile (source=pwa), có query view=cam, hoặc truy cập trên máy nội bộ (localhost/LAN) -> vào thẳng Camera Dashboard
+        if (
+            host.startswith("cam.")
+            or query_view == "cam"
+            or is_pwa
+            or "localhost" in host
+            or "127.0.0.1" in host
+            or host.startswith("192.168.")
+            or host.startswith("10.")
+        ):
+            return templates.TemplateResponse(request=request, name="index.html")
+
+        # Mặc định truy cập qua domain công khai babyguard.site -> TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
+        landing_file = os.path.join(BASE_DIR, "docs", "index.html")
+        if os.path.exists(landing_file):
+            return FileResponse(landing_file, media_type="text/html")
+        return templates.TemplateResponse(request=request, name="index.html")
+
+    @app.get("/cam", response_class=HTMLResponse)
+    @app.get("/monitor", response_class=HTMLResponse)
+    @app.get("/dashboard", response_class=HTMLResponse)
+    @app.get("/app", response_class=HTMLResponse)
+    async def camera_monitor_page(request: Request):
+        """Trang giám sát Camera Nôi bé riêng tư."""
         return templates.TemplateResponse(request=request, name="index.html")
 
     @app.get("/manifest.json")

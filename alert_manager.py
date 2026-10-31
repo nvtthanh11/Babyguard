@@ -307,6 +307,11 @@ class AlertManager:
     def _get_compact_view_link(self) -> str:
         """Tạo link rút gọn siêu đẹp, hiển thị chữ bấm được '👉 Mở Camera Xem Bé Ngay' trên Telegram."""
         url = str(self.config.get("remote_access_url", "")).strip()
+        if not url or "trycloudflare.com" in url or url == "https://babyguard.site":
+            url = "https://cam.babyguard.site"
+        elif "babyguard.site" in url and not url.startswith("https://cam.") and not url.endswith("/cam"):
+            url = "https://cam.babyguard.site"
+
         if not url:
             import socket
             try:

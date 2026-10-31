@@ -126,8 +126,8 @@ class TunnelManager:
                     with self.lock:
                         self.tunnel_process = proc
 
-                    self.current_url = "https://babyguard.site"
-                    print(f"[TunnelManager] 🚀 TÊN MIỀN CỐ ĐỊNH CHÍNH THỨC: {self.current_url}")
+                    self.current_url = "https://cam.babyguard.site"
+                    print(f"[TunnelManager] 🚀 TÊN MIỀN CỐ ĐỊNH CAMERA CHÍNH THỨC: {self.current_url} (Web Bán Hàng: https://babyguard.site)")
                     self._persist_url(self.current_url)
                     if self.on_tunnel_ready:
                         try:
