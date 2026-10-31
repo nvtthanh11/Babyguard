@@ -32,6 +32,10 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     os.makedirs(static_dir, exist_ok=True)
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+    docs_assets_dir = os.path.join(BASE_DIR, "docs", "assets")
+    if os.path.exists(docs_assets_dir):
+        app.mount("/assets", StaticFiles(directory=docs_assets_dir), name="assets")
+
     config_file_lock = threading.Lock()
 
     def load_config():
