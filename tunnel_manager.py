@@ -111,6 +111,46 @@ class TunnelManager:
                 time.sleep(60)
                 continue
 
+            named_config = os.path.expanduser("~/.cloudflared/config.yml")
+            if os.path.exists(named_config):
+                cmd = [self.cloudflared_bin, "tunnel", "run", "babyguard"]
+                print(f"[TunnelManager] 🌟 Đang kết nối Tên Miền Riêng babyguard.site: {' '.join(cmd)}")
+                try:
+                    proc = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        bufsize=1
+                    )
+                    with self.lock:
+                        self.tunnel_process = proc
+
+                    self.current_url = "https://babyguard.site"
+                    print(f"[TunnelManager] 🚀 TÊN MIỀN CỐ ĐỊNH CHÍNH THỨC: {self.current_url}")
+                    self._persist_url(self.current_url)
+                    if self.on_tunnel_ready:
+                        try:
+                            self.on_tunnel_ready(self.current_url)
+                        except Exception as e:
+                            print(f"[TunnelManager] Lỗi gọi on_tunnel_ready: {e}")
+
+                    for line in proc.stdout:
+                        if not self.running:
+                            break
+                        if "Registered tunnel connection" in line:
+                            print(f"[TunnelManager] ✅ Cloudflare Tunnel đã kết nối thành công tới trạm mạng!")
+
+                    proc.wait()
+                except Exception as e:
+                    print(f"[TunnelManager] Lỗi chạy Named Tunnel: {e}")
+
+                with self.lock:
+                    self.tunnel_process = None
+                if self.running:
+                    time.sleep(5)
+                continue
+
             custom_url = self._get_custom_url()
             # 1. Kiểm tra nếu URL hiện tại trong config vẫn đang hoạt động tốt (tránh đổi link liên tục)
             if custom_url and self._is_url_reachable(custom_url):

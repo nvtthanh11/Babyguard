@@ -22,7 +22,7 @@ plugins {
 
 def twaManifest = [
     applicationId: 'vn.babyguard.ai',
-    hostName: 'encryption-tba-show-dig.trycloudflare.com', // The domain being opened in the TWA.
+    hostName: 'babyguard.site', // The domain being opened in the TWA.
     launchUrl: '/?source=pwa', // The start path for the TWA. Must be relative to the domain.
     name: 'BabyGuard AI - Vệ Sĩ Bé Yêu', // The application name.
     launcherName: 'BabyGuard', // The name shown on the Android Launcher.

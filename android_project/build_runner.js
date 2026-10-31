@@ -15,7 +15,7 @@ async function run() {
   console.log('[1/6] Preparing twa-manifest.json...');
   const manifestData = {
     packageId: 'vn.babyguard.ai',
-    host: 'encryption-tba-show-dig.trycloudflare.com',
+    host: 'babyguard.site',
     name: 'BabyGuard AI - Vệ Sĩ Bé Yêu',
     launcherName: 'BabyGuard',
     display: 'standalone',
