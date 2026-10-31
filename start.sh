@@ -19,6 +19,18 @@ else
     PYTHON_BIN="python"
 fi
 
+# 1.1 Kiểm tra thư viện AI, thiếu cái gì tự động cài cái đó
+echo "🔍 Đang kiểm tra các thư viện AI cần thiết..."
+$PYTHON_BIN -c "import fastapi, uvicorn, cv2, webview" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "============================================================"
+    echo "📦 ĐANG TỰ ĐỘNG CÀI ĐẶT THƯ VIỆN AI (CHỈ MẤT 1 - 2 PHÚT)..."
+    echo "Hệ thống đang tự tải các gói cần thiết: FastAPI, OpenCV, WebView..."
+    echo "============================================================"
+    $PYTHON_BIN -m pip install -r requirements.txt
+    $PYTHON_BIN -m pip install pywebview pyobjc-framework-WebKit
+fi
+
 # 2. Tìm công cụ xem từ xa Cloudflared
 CLOUDFLARE_BIN=""
 if [ -f "/opt/homebrew/bin/cloudflared" ]; then

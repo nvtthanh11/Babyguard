@@ -47,6 +47,7 @@ ASSET_DIRS = [
 SUPPORT_FILES = [
     "HUONG_DAN_SU_DUNG.md",
     "User_Guide_EN.md",
+    "Khoi_Dong_BabyGuard.bat",
     "Khoi_Dong_BabyGuard.command",
     "Start_BabyGuard.command",
     "Tat_BabyGuard.command",
@@ -126,14 +127,11 @@ def build_commercial_distribution():
     finally:
         os.chdir(orig_cwd)
 
-    # 5. Dọn sạch toàn bộ mã nguồn .py và tệp .c trung gian
-    print("[5/6] 🛡️ Xóa bỏ 100% mã nguồn .py và tệp trung gian .c (Chỉ giữ lại binary .so)...")
+    # 5. Dọn sạch tệp trung gian .c (Giữ lại .py để tương thích đa nền tảng Windows + .so cho macOS)
+    print("[5/6] 🛡️ Dọn dẹp tệp trung gian .c, bảo toàn mã nguồn chạy đa nền tảng...")
     compiled_count = 0
     for mod in CYTHON_MODULES:
-        py_in_dist = os.path.join(COMMERCIAL_DIR, mod)
         c_in_dist = os.path.join(COMMERCIAL_DIR, mod.replace(".py", ".c"))
-        if os.path.exists(py_in_dist):
-            os.remove(py_in_dist)
         if os.path.exists(c_in_dist):
             os.remove(c_in_dist)
 
@@ -152,30 +150,50 @@ def build_commercial_distribution():
                 except Exception:
                     pass
                 compiled_count += 1
-                print(f"   🔒 [MÃ HÓA NATIVE]: {f}")
+                print(f"   🔒 [MÃ HÓA NATIVE MAC]: {f}")
 
     # Sao chép main.py sạch (bootloader)
     shutil.copyfile(os.path.join(ROOT_DIR, "main.py"), os.path.join(COMMERCIAL_DIR, "main.py"))
     print("   + Đã gắn Bootloader: main.py")
 
-    # 6. Đóng gói tệp ZIP phân phối
-    print(f"\n[6/6] 📦 Đóng gói tệp nén thương mại: {ZIP_OUTPUT}...")
-    if os.path.exists(ZIP_OUTPUT):
-        os.remove(ZIP_OUTPUT)
+    # 6. Đóng gói các tệp ZIP phân phối cho từng hệ điều hành
+    WIN_ZIP = os.path.join(DIST_ROOT, "BabyGuard_Windows.zip")
+    MAC_ZIP = os.path.join(DIST_ROOT, "BabyGuard_Mac.zip")
 
-    with zipfile.ZipFile(ZIP_OUTPUT, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for root, dirs, files in os.walk(COMMERCIAL_DIR):
-            for file in files:
-                full_path = os.path.join(root, file)
-                rel_path = os.path.relpath(full_path, DIST_ROOT)
-                zipf.write(full_path, rel_path)
+    print(f"\n[6/6] 📦 Đang đóng gói tệp nén thương mại:")
+    print(f"   1. Gói Universal: {ZIP_OUTPUT}")
+    print(f"   2. Gói Windows:   {WIN_ZIP}")
+    print(f"   3. Gói MacBook:   {MAC_ZIP}")
 
-    zip_size_mb = os.path.getsize(ZIP_OUTPUT) / (1024 * 1024)
+    for target_zip in [ZIP_OUTPUT, WIN_ZIP, MAC_ZIP]:
+        if os.path.exists(target_zip):
+            os.remove(target_zip)
+        with zipfile.ZipFile(target_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(COMMERCIAL_DIR):
+                for file in files:
+                    # Gói Windows không cần các file .so hay .command của Mac
+                    if target_zip == WIN_ZIP and (file.endswith(".so") or file.endswith(".command") or file.endswith(".sh")):
+                        continue
+                    # Gói Mac không cần file .bat của Windows
+                    if target_zip == MAC_ZIP and file.endswith(".bat"):
+                        continue
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, DIST_ROOT)
+                    zipf.write(full_path, rel_path)
+
+    # Sao chép vào thư mục static để phục vụ tải về trực tiếp
+    static_dir = os.path.join(ROOT_DIR, "static")
+    if os.path.exists(static_dir):
+        for z in [ZIP_OUTPUT, WIN_ZIP, MAC_ZIP]:
+            if os.path.exists(z):
+                shutil.copyfile(z, os.path.join(static_dir, os.path.basename(z)))
+
     print("=" * 70)
     print("🎉 ĐÓNG GÓI THƯƠNG MẠI HOÀN TẤT THÀNH CÔNG!")
     print(f"📁 Thư mục phát hành: {COMMERCIAL_DIR}")
-    print(f"📦 Tệp nén sẵn sàng bán: {ZIP_OUTPUT} ({zip_size_mb:.2f} MB)")
-    print(f"🛡️ Tổng số module thuật toán cốt lõi được mã hóa nhị phân: {compiled_count} modules")
+    print(f"📦 1. Tệp Windows:   {WIN_ZIP} ({os.path.getsize(WIN_ZIP) / (1024*1024):.2f} MB)")
+    print(f"📦 2. Tệp MacBook:   {MAC_ZIP} ({os.path.getsize(MAC_ZIP) / (1024*1024):.2f} MB)")
+    print(f"📦 3. Tệp Universal: {ZIP_OUTPUT} ({os.path.getsize(ZIP_OUTPUT) / (1024*1024):.2f} MB)")
     print("=" * 70)
 
 

@@ -344,6 +344,50 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                 )
         return JSONResponse({"status": "not_ready", "message": "Gói cài đặt máy tính đang được chuẩn bị. Vui lòng tải lại sau giây lát!"}, status_code=404)
 
+    @app.api_route("/download/windows-app", methods=["GET", "HEAD"])
+    @app.api_route("/download/BabyGuard_Windows.zip", methods=["GET", "HEAD"])
+    async def download_windows_app():
+        candidates = [
+            os.path.join(static_dir, "BabyGuard_Windows.zip"),
+            os.path.join(BASE_DIR, "dist", "BabyGuard_Windows.zip"),
+            os.path.join(static_dir, "BabyGuard_AI_v2.0_Commercial.zip"),
+            os.path.join(BASE_DIR, "dist", "BabyGuard_AI_v2.0_Commercial.zip")
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                return FileResponse(
+                    c,
+                    media_type="application/zip",
+                    filename="BabyGuard_Windows.zip",
+                    headers={
+                        "Content-Disposition": "attachment; filename=BabyGuard_Windows.zip",
+                        "Cache-Control": "no-cache"
+                    }
+                )
+        return JSONResponse({"status": "not_ready", "message": "Gói cài đặt Windows đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
+
+    @app.api_route("/download/mac-app", methods=["GET", "HEAD"])
+    @app.api_route("/download/BabyGuard_Mac.zip", methods=["GET", "HEAD"])
+    async def download_mac_app():
+        candidates = [
+            os.path.join(static_dir, "BabyGuard_Mac.zip"),
+            os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.zip"),
+            os.path.join(static_dir, "BabyGuard_AI_v2.0_Commercial.zip"),
+            os.path.join(BASE_DIR, "dist", "BabyGuard_AI_v2.0_Commercial.zip")
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                return FileResponse(
+                    c,
+                    media_type="application/zip",
+                    filename="BabyGuard_Mac.zip",
+                    headers={
+                        "Content-Disposition": "attachment; filename=BabyGuard_Mac.zip",
+                        "Cache-Control": "no-cache"
+                    }
+                )
+        return JSONResponse({"status": "not_ready", "message": "Gói cài đặt MacBook đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
+
     @app.get("/landing", response_class=HTMLResponse)
     @app.get("/huong-dan", response_class=HTMLResponse)
     @app.get("/guide", response_class=HTMLResponse)

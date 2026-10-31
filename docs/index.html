@@ -1443,8 +1443,8 @@
         </p>
       </div>
 
-      <!-- 4-PLATFORM DOWNLOAD CARDS GRID -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- 3-PLATFORM DOWNLOAD CARDS GRID (WINDOWS, MAC, ANDROID) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         
         <!-- CARD 1: WINDOWS -->
         <div class="bg-slate-900/90 border border-slate-800 hover:border-blue-500/50 rounded-3xl p-6 flex flex-col justify-between transition-all hover:shadow-2xl hover:shadow-blue-500/10 group relative">
@@ -1457,19 +1457,19 @@
             </div>
             <div>
               <h4 class="text-lg font-black text-white">Máy Tính Windows</h4>
-              <p class="text-xs text-blue-400 font-semibold mt-0.5">Windows 10 & 11 (Dell, HP, Asus...)</p>
+              <p class="text-xs text-blue-400 font-semibold mt-0.5">Windows 10 & 11 (Dell, HP, Asus, Lenovo...)</p>
             </div>
             <p class="text-xs text-slate-300 leading-relaxed">
-              Trạm AI giám sát đặt tại phòng bé. Tự nhận diện webcam laptop hoặc camera cắm cổng USB.
+              Trạm AI giám sát đặt tại phòng bé. Tự động kiểm tra và cài đặt toàn bộ thư viện cần thiết chỉ với 1 cú nhấp chuột.
             </p>
             <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Dung lượng: <strong>31.9 MB (ZIP)</strong></div>
-              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Cài đặt: Giải nén ➔ Bấm chạy ngay</div>
+              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Dung lượng: <strong>32 MB (ZIP)</strong></div>
+              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Cài đặt: Giải nén ➔ Bấm đúp <strong>Khoi_Dong_BabyGuard.bat</strong></div>
             </div>
           </div>
           <div class="pt-6">
-            <a href="/download/desktop-app" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm text-center shadow-lg flex items-center justify-center gap-2 active:scale-95 transition">
-              <span>⬇️ TẢI CHO WINDOWS</span>
+            <a href="/download/windows-app" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm text-center shadow-lg flex items-center justify-center gap-2 active:scale-95 transition">
+              <span>⬇️ TẢI BỘ CÀI WINDOWS (.ZIP)</span>
             </a>
           </div>
         </div>
@@ -1485,16 +1485,16 @@
               <p class="text-xs text-slate-400 font-semibold mt-0.5">Apple Silicon M1-M4 & Intel</p>
             </div>
             <p class="text-xs text-slate-300 leading-relaxed">
-              Tối ưu phần cứng Apple, siêu tiết kiệm pin, tận dụng camera FaceTime HD siêu nét làm mắt thần AI.
+              Tối ưu phần cứng Apple, siêu tiết kiệm pin, tự động cài đặt thư viện thiếu và mở cửa sổ ứng dụng giám sát.
             </p>
             <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Dung lượng: <strong>31.9 MB (ZIP)</strong></div>
-              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Chạy: Bấm đúp file .command</div>
+              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Dung lượng: <strong>32 MB (ZIP)</strong></div>
+              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Cài đặt: Giải nén ➔ Bấm đúp <strong>Khoi_Dong_BabyGuard.command</strong></div>
             </div>
           </div>
           <div class="pt-6">
-            <a href="/download/desktop-app" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white font-bold text-xs sm:text-sm text-center shadow-lg flex items-center justify-center gap-2 border border-slate-600 active:scale-95 transition">
-              <span>⬇️ TẢI CHO MACBOOK</span>
+            <a href="/download/mac-app" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white font-bold text-xs sm:text-sm text-center shadow-lg flex items-center justify-center gap-2 border border-slate-600 active:scale-95 transition">
+              <span>⬇️ TẢI BỘ CÀI MACBOOK (.ZIP)</span>
             </a>
           </div>
         </div>
@@ -1513,42 +1513,17 @@
               <p class="text-xs text-emerald-400 font-semibold mt-0.5">Samsung, Xiaomi, Oppo, Vivo...</p>
             </div>
             <p class="text-xs text-slate-300 leading-relaxed">
-              Ứng dụng cài trực tiếp trên máy của ba mẹ. Nhận chuông báo khi bé khóc và xem camera 4G/5G mượt mà.
+              Ứng dụng cài trực tiếp trên máy của ba mẹ. Quét mã QR liên kết máy tính ở nhà để nhận chuông báo và xem camera 4G/5G.
             </p>
             <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
               <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Dung lượng: <strong>1.2 MB (File APK)</strong></div>
-              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Cài đặt: Mở file APK ➔ Bấm Cài</div>
+              <div class="flex items-center gap-1.5 text-slate-300 font-medium">✓ Cài đặt: Mở file APK ➔ Bấm Cài Đặt</div>
             </div>
           </div>
           <div class="pt-6">
             <a href="/download/app.apk" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm text-center shadow-lg flex items-center justify-center gap-2 active:scale-95 transition">
               <span>⬇️ TẢI FILE APK (ANDROID)</span>
             </a>
-          </div>
-        </div>
-
-        <!-- CARD 4: IPHONE (IOS) -->
-        <div class="bg-slate-900/90 border border-slate-800 hover:border-purple-500/50 rounded-3xl p-6 flex flex-col justify-between transition-all hover:shadow-2xl hover:shadow-purple-500/10 group relative">
-          <div class="space-y-4">
-            <div class="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition">
-              📱
-            </div>
-            <div>
-              <h4 class="text-lg font-black text-white">iPhone & iPad (iOS)</h4>
-              <p class="text-xs text-purple-400 font-semibold mt-0.5">Mọi phiên bản iPhone / iOS</p>
-            </div>
-            <p class="text-xs text-slate-300 leading-relaxed">
-              Không cần tải file nặng. Mở trực tiếp trên trình duyệt Safari với tốc độ mượt mà như app gốc.
-            </p>
-            <div class="text-[11px] text-slate-300 space-y-1.5 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-              <div class="font-bold text-purple-300">Cài vào màn hình chính trong 3 bước:</div>
-              <div class="text-[10.5px] text-slate-400">1. Mở link trên Safari ➔ 2. Bấm nút Chia sẻ (⎋) ➔ 3. Chọn <strong>"Thêm vào MH chính"</strong></div>
-            </div>
-          </div>
-          <div class="pt-6">
-            <button onclick="openIosGuideModal()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm text-center shadow-lg flex items-center justify-center gap-2 active:scale-95 transition">
-              <span>📖 XEM HƯỚNG DẪN IPHONE</span>
-            </button>
           </div>
         </div>
 
@@ -2142,8 +2117,8 @@
         </p>
       </div>
 
-      <!-- 4 Cards in 2x2 Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <!-- 3 Cards in Grid (Windows, Mac, Android) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         <!-- CARD: WINDOWS -->
         <div class="bg-slate-950/80 border border-slate-800 hover:border-blue-500/50 rounded-2xl p-4.5 space-y-3 flex flex-col justify-between">
@@ -2157,14 +2132,14 @@
               <p class="text-[11px] text-slate-400">Dell, HP, Asus, Lenovo, Acer...</p>
             </div>
             <p class="text-[11px] text-slate-300">
-              Trạm AI phát hiện bé lật úp, khóc, ngạt thở. Tự nhận camera laptop & webcam cắm rời.
+              Trạm AI phát hiện bé lật úp, khóc, ngạt thở. Tự động kiểm tra và cài đặt toàn bộ thư viện cần thiết.
             </p>
             <div class="text-[10px] text-slate-400 bg-slate-900/80 p-2 rounded-lg">
-              📦 Dung lượng: 31.9 MB • Tải về giải nén là chạy
+              📦 Dung lượng: 32 MB • Bấm đúp file .bat
             </div>
           </div>
-          <a href="/download/desktop-app" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 transition active:scale-95">
-            <span>⬇️ TẢI CHO WINDOWS (.ZIP)</span>
+          <a href="/download/windows-app" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 transition active:scale-95">
+            <span>⬇️ TẢI BỘ CÀI WINDOWS (.ZIP)</span>
           </a>
         </div>
 
@@ -2180,14 +2155,14 @@
               <p class="text-[11px] text-slate-400">MacBook Air, Pro, iMac, Mac mini</p>
             </div>
             <p class="text-[11px] text-slate-300">
-              Tối ưu chip Apple Silicon, siêu mát máy, dùng camera FaceTime HD làm mắt thần AI.
+              Tối ưu chip Apple Silicon, siêu mát máy, tự cài đặt thư viện thiếu và mở ứng dụng.
             </p>
             <div class="text-[10px] text-slate-400 bg-slate-900/80 p-2 rounded-lg">
-              📦 Dung lượng: 31.9 MB • Bấm đúp file .command
+              📦 Dung lượng: 32 MB • Bấm đúp file .command
             </div>
           </div>
-          <a href="/download/desktop-app" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 border border-slate-600 transition active:scale-95">
-            <span>⬇️ TẢI CHO MACBOOK (.ZIP)</span>
+          <a href="/download/mac-app" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 border border-slate-600 transition active:scale-95">
+            <span>⬇️ TẢI BỘ CÀI MACBOOK (.ZIP)</span>
           </a>
         </div>
 
@@ -2203,7 +2178,7 @@
               <p class="text-[11px] text-slate-400">Samsung, Xiaomi, Oppo, Vivo...</p>
             </div>
             <p class="text-[11px] text-slate-300">
-              Xem camera trực tiếp qua 4G/5G và nhận chuông báo tức thì mỗi khi con có báo động.
+              Quét mã QR liên kết camera máy tính ở nhà để xem live qua 4G/5G và nhận chuông báo tức thì.
             </p>
             <div class="text-[10px] text-slate-400 bg-slate-900/80 p-2 rounded-lg">
               📦 Dung lượng: 1.2 MB • Bấm tải là cài được ngay
@@ -2212,29 +2187,6 @@
           <a href="/download/app.apk" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 transition active:scale-95">
             <span>⬇️ TẢI FILE APK (ANDROID)</span>
           </a>
-        </div>
-
-        <!-- CARD: IPHONE (IOS) -->
-        <div class="bg-slate-900/80 border border-slate-800 hover:border-purple-500/50 rounded-2xl p-4.5 space-y-3 flex flex-col justify-between">
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-2xl">📱</span>
-              <span class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold">Không Cần Tải File</span>
-            </div>
-            <div>
-              <h4 class="font-bold text-white text-sm">iPhone & iPad (iOS)</h4>
-              <p class="text-[11px] text-slate-400">Mọi phiên bản iPhone / iOS</p>
-            </div>
-            <p class="text-[11px] text-slate-300">
-              Dùng trực tiếp trên Safari. Thêm vào màn hình chính chỉ trong 3 bước là có icon như app thật.
-            </p>
-            <div class="text-[10px] text-slate-400 bg-slate-900/80 p-2 rounded-lg">
-              ✨ Mượt mà • Tốc độ 1 giây • Không tốn bộ nhớ
-            </div>
-          </div>
-          <button onclick="openIosGuideModal()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 transition active:scale-95">
-            <span>📖 HƯỚNG DẪN CÀI CHO IPHONE</span>
-          </button>
         </div>
 
       </div>

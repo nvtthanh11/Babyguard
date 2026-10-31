@@ -13,4 +13,5 @@ requests>=2.31.0
 pillow>=10.0.0
 scipy>=1.11.0
 google-genai>=1.0.0
+pywebview>=5.0.0
 ai-edge-litert>=2.0.0; sys_platform == 'darwin'
