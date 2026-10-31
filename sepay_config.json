@@ -3,14 +3,14 @@
   "secret_key": "spsk_test_oYvk45BSjTDmZwGrH2wcMHQp4LN6rhZK",
   "environment": "sandbox",
   "currency": "VND",
-  "default_amount": 199000,
+  "default_amount": 49000,
   "product_name": "BabyGuard AI - Bản Quyền Vĩnh Viễn",
   "bank_name": "Ngân Hàng TMCP Quân Đội (MB)",
   "bank_code": "MB",
   "bank_bin": "970422",
   "account_number": "1550107316004",
   "account_name": "Nguyen Vu Truong Thanh",
-  "ipn_url": "https://hypothetical-practice-independently-talks.trycloudflare.com/api/sepay/ipn",
+  "ipn_url": "https://babyguard.site/api/sepay/ipn",
   "created_at": "2026-10-30T18:06:00+07:00",
   "updated_at": "2026-10-30T18:49:00+07:00"
 }

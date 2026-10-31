@@ -270,6 +270,14 @@
                 <span class="hidden sm:inline">Cài App ĐT</span>
                 <span class="sm:hidden font-extrabold">App</span>
             </button>
+            <button onclick="openUserGuideModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition" title="Hướng dẫn sử dụng và cài đặt 3 bước cho ba mẹ">
+                <span>📖</span>
+                <span class="hidden sm:inline">Hướng Dẫn</span>
+            </button>
+            <button onclick="openDevicePairingModal()" class="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-teal-500/30 text-xs font-semibold text-teal-300 transition" title="Kết nối với nôi bé ở nhà hoặc đổi thiết bị">
+                <span>🔄</span>
+                <span>Ghép Nối</span>
+            </button>
             <a id="header-remote-link" href="#" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-cyan-500/30 text-xs font-semibold text-cyan-300 transition" title="Link xem camera từ xa trên 4G/5G">
                 <span>🌐</span>
                 <span id="header-remote-link-text">Xem Từ Xa 4G</span>
@@ -2322,7 +2330,7 @@
             <div class="flex items-center gap-1.5 p-1 bg-slate-900 rounded-xl border border-slate-800 text-xs">
                 <button onclick="switchLicenseTab('auto')" id="lic-tab-btn-auto" class="flex-1 py-2 px-3 rounded-lg font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md">
                     <span>⚡</span>
-                    <span>Tự Động 199k (VietQR)</span>
+                    <span>Tự Động 49k (VietQR)</span>
                 </button>
                 <button onclick="switchLicenseTab('manual')" id="lic-tab-btn-manual" class="flex-1 py-2 px-3 rounded-lg font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
                     <span>🔑</span>
@@ -2349,14 +2357,14 @@
                             <p class="text-[10px] text-slate-400">Tự động mở khóa app ngay khi chuyển khoản thành công</p>
                         </div>
                         <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full font-black text-xs">
-                            199.000 VNĐ
+                            49.000 VNĐ
                         </span>
                     </div>
 
                     <!-- QR code display & Bank details -->
                     <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                         <div class="relative bg-white p-2 rounded-xl shadow-lg flex-shrink-0">
-                            <img id="lic-vietqr-img" src="https://img.vietqr.io/image/970422-1550107316004-compact2.png?amount=199000&addInfo=BG%20BABY&accountName=Nguyen%20Vu%20Truong%20Thanh" alt="VietQR MBBank" class="w-32 h-32 object-contain rounded-lg">
+                            <img id="lic-vietqr-img" src="https://img.vietqr.io/image/970422-1550107316004-compact2.png?amount=49000&addInfo=BG%20BABY&accountName=Nguyen%20Vu%20Truong%20Thanh" alt="VietQR MBBank" class="w-32 h-32 object-contain rounded-lg">
                             <div class="text-[9px] text-slate-500 text-center font-bold mt-1">MBBank • SePay Auto</div>
                         </div>
 
@@ -2375,7 +2383,7 @@
                             </div>
                             <div class="space-y-0.5">
                                 <span class="text-slate-400 text-[10px]">Số tiền thanh toán:</span>
-                                <div class="font-bold text-white text-xs">199.000 VNĐ <span class="text-[10px] text-slate-400 font-normal">(Mua 1 lần vĩnh viễn)</span></div>
+                                <div class="font-bold text-white text-xs">49.000 VNĐ <span class="text-[10px] text-emerald-400 font-bold">(Giá ưu đãi • Trọn đời)</span></div>
                             </div>
                             <!-- Live status indicator -->
                             <div class="flex items-center gap-2 pt-1 text-indigo-300 font-medium text-[11px]">
@@ -2587,6 +2595,243 @@
                 <button onclick="closeAppDownloadModal()" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition">
                     Đóng
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Hướng Dẫn Cài Đặt & Sử Dụng Toàn Diện (User Guide) -->
+    <div id="user-guide-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden" onclick="if(event.target===this)closeUserGuideModal()">
+        <div class="bg-cardbg border border-bordercol rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <!-- Top Close Button -->
+            <button onclick="closeUserGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition" title="Đóng">
+                ✕
+            </button>
+
+            <!-- Header -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500/20 to-brand-500/20 border border-indigo-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                    📖
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-base text-slate-100 flex items-center gap-2">
+                        <span>Hướng Dẫn Cài Đặt & Sử Dụng BabyGuard AI</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Dành Cho Ba Mẹ</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Bảo vệ bé 24/7 chỉ với 3 bước siêu dễ • Bản quyền vĩnh viễn 49k</p>
+                </div>
+            </div>
+
+            <!-- Guide Tabs Navigation -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-1 p-1 bg-slate-900/90 rounded-2xl border border-slate-800 text-[11px] font-semibold">
+                <button onclick="switchGuideTab('quick')" id="guide-tab-btn-quick" class="py-2 px-1.5 rounded-xl transition text-center bg-indigo-600 text-white shadow-md">
+                    ⚡ 3 Bước Nhanh
+                </button>
+                <button onclick="switchGuideTab('camera')" id="guide-tab-btn-camera" class="py-2 px-1.5 rounded-xl transition text-center bg-slate-900 text-slate-400 hover:text-slate-200">
+                    📹 Đặt Camera
+                </button>
+                <button onclick="switchGuideTab('telegram')" id="guide-tab-btn-telegram" class="py-2 px-1.5 rounded-xl transition text-center bg-slate-900 text-slate-400 hover:text-slate-200">
+                    ✈️ Telegram
+                </button>
+                <button onclick="switchGuideTab('license')" id="guide-tab-btn-license" class="py-2 px-1.5 rounded-xl transition text-center bg-slate-900 text-slate-400 hover:text-slate-200">
+                    🔑 Bản Quyền 49k
+                </button>
+                <button onclick="switchGuideTab('faq')" id="guide-tab-btn-faq" class="col-span-2 sm:col-span-1 py-2 px-1.5 rounded-xl transition text-center bg-slate-900 text-slate-400 hover:text-slate-200">
+                    ❓ Hỏi Đáp FAQ
+                </button>
+            </div>
+
+            <!-- TAB 1: 3 BƯỚC NHANH -->
+            <div id="guide-tab-content-quick" class="space-y-3.5 text-xs">
+                <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-indigo-950/40 border border-emerald-500/30 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center justify-center shrink-0 text-sm">
+                            1
+                        </div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-white text-sm">Khởi động trên Máy Tính (Macbook / Laptop / Mini PC)</h4>
+                            <p class="text-slate-300 text-[11px] leading-relaxed">
+                                Tải file nén <a href="/download/desktop-app" class="font-bold text-emerald-400 underline">BabyGuard_AI_v2.0_Commercial.zip</a> về máy tính, giải nén và nhấp đúp file <code class="bg-slate-950 px-1.5 py-0.5 rounded text-amber-300 font-mono">Start_BabyGuard.command</code>. Ứng dụng tự động bật và hiện mã QR kết nối.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 border-t border-slate-800 pt-3">
+                        <div class="w-8 h-8 rounded-xl bg-cyan-500 text-slate-950 font-black flex items-center justify-center shrink-0 text-sm">
+                            2
+                        </div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-white text-sm">Cài App trên Điện Thoại & Quét Mã QR</h4>
+                            <p class="text-slate-300 text-[11px] leading-relaxed">
+                                Tải app <a href="/download/app.apk" class="font-bold text-cyan-400 underline">BabyGuard_AI.apk</a> cho điện thoại Android (hoặc mở Safari iPhone). Mở app lên quét mã QR trên màn hình máy tính để kết nối ngay tới camera nôi bé!
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 border-t border-slate-800 pt-3">
+                        <div class="w-8 h-8 rounded-xl bg-indigo-500 text-white font-black flex items-center justify-center shrink-0 text-sm">
+                            3
+                        </div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-white text-sm">AI Canh Nôi 24/7 & Báo Động Khi Có Nguy Hiểm</h4>
+                            <p class="text-slate-300 text-[11px] leading-relaxed">
+                                AI tự động giám sát liên tục: Báo động lật úp, ngạt thở, ho sốt, khóc đêm. Tự động phát nhạc ru làm dịu bé và gửi clip ngắn về Telegram cho ba mẹ đi làm yên tâm.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <a href="/download/app.apk" class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs text-center transition flex items-center justify-center gap-1.5 shadow">
+                        <span>📱</span>
+                        <span>Tải App Android (.apk)</span>
+                    </a>
+                    <a href="/download/desktop-app" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs text-center border border-slate-700 transition flex items-center justify-center gap-1.5">
+                        <span>💻</span>
+                        <span>Tải Bộ Cài Máy Tính (.zip)</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- TAB 2: ĐẶT CAMERA -->
+            <div id="guide-tab-content-camera" class="space-y-3 text-xs hidden">
+                <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
+                    <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                        <span>📹</span> Vị Trí & Góc Quay Camera Chuẩn Y Khoa
+                    </h4>
+                    <ul class="space-y-2 text-slate-300 text-[11px] leading-relaxed">
+                        <li class="flex items-start gap-2">
+                            <span class="text-emerald-400 font-bold">✓</span>
+                            <span><b>Khoảng cách lý tưởng:</b> Đặt camera cách mặt nôi/giường từ <b>1.0m – 1.8m</b> để AI nhìn trọn vẹn toàn thân bé.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-emerald-400 font-bold">✓</span>
+                            <span><b>Góc nhìn:</b> Đặt nghiêng từ trên xuống góc <b>45° - 60°</b> (tương tự như đứng cạnh nôi nhìn vào bé).</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-emerald-400 font-bold">✓</span>
+                            <span><b>Ánh sáng ban đêm:</b> Khuyên dùng đèn ngủ vàng dịu (2W - 5W) hoặc camera có đèn hồng ngoại ban đêm để AI theo dõi nhịp thở chính xác nhất.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-emerald-400 font-bold">✓</span>
+                            <span><b>Loại camera hỗ trợ:</b> Bất kỳ USB Webcam giá rẻ nào (Logitech, Rapoo, camera laptop...) hoặc camera IP có luồng RTSP.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- TAB 3: TELEGRAM -->
+            <div id="guide-tab-content-telegram" class="space-y-3 text-xs hidden">
+                <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
+                    <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                        <span>✈️</span> Cài Đặt Nhận Cảnh Báo Qua Telegram (30 Giây)
+                    </h4>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Khi phát hiện bé lật úp, khóc to, hoặc có khoảnh khắc đáng yêu, BabyGuard AI sẽ gửi ảnh chụp và video clip trực tiếp về ứng dụng Telegram của bạn:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1.5 text-slate-300 text-[11px] bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <li>Mở ứng dụng Telegram trên điện thoại, tìm bot <b class="text-cyan-400">@BotFather</b> và gõ <code class="text-amber-300">/newbot</code> để tạo Bot riêng.</li>
+                        <li>Sao chép mã <b>Bot Token</b> (dạng: <code class="text-emerald-400">123456:ABC-DEF...</code>).</li>
+                        <li>Tìm bot <b class="text-cyan-400">@userinfobot</b> để lấy mã <b>Chat ID</b> của bạn (dạng số: <code class="text-emerald-400">2082937337</code>).</li>
+                        <li>Bấm vào icon <b>⚙️ Cài Đặt</b> ở góc phải BabyGuard AI, dán Token và Chat ID vào rồi bấm Lưu!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- TAB 4: BẢN QUYỀN 49K -->
+            <div id="guide-tab-content-license" class="space-y-3 text-xs hidden">
+                <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-teal-950/60 border border-emerald-500/40 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-emerald-300">🎉 Chính Sách Giá Hỗ Trợ Gia Đình Trẻ</span>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 font-black text-xs">Chỉ 49.000 VNĐ</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        BabyGuard AI thấu hiểu nỗi vất vả chi tiêu của cha mẹ. Vì vậy chúng tôi áp dụng mức giá siêu ưu đãi: <b>Chỉ 49.000đ</b> (bằng 1 ly trà sữa) để sở hữu <b>bản quyền vĩnh viễn trọn đời</b>:
+                    </p>
+                    <ul class="space-y-1.5 text-[11px] text-slate-300">
+                        <li class="flex items-center gap-2">✓ <b>14 ngày dùng thử miễn phí 100%</b> toàn bộ tính năng cao cấp.</li>
+                        <li class="flex items-center gap-2">✓ <b>Không phí duy trì</b> hàng tháng, hàng năm.</li>
+                        <li class="flex items-center gap-2">✓ <b>Thanh toán tự động 3 giây:</b> Quét mã VietQR ngân hàng, hệ thống SePay tự động mở khóa vĩnh viễn ngay lập tức.</li>
+                        <li class="flex items-center gap-2">✓ Cập nhật trọn đời các bản nâng cấp AI mới nhất.</li>
+                    </ul>
+                    <button onclick="closeUserGuideModal(); openLicenseModal();" class="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/20 transition active:scale-95 flex items-center justify-center gap-2">
+                        <span>⚡</span>
+                        <span>Mở Hộp Thoại Kích Hoạt Bản Quyền 49k</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 5: FAQ -->
+            <div id="guide-tab-content-faq" class="space-y-2.5 text-xs hidden">
+                <div class="space-y-2 text-[11px]">
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                        <div class="font-bold text-white">1. Tôi có cần mua thêm camera đắt tiền không?</div>
+                        <p class="text-slate-400">Không cần! Bạn có thể tận dụng webcam có sẵn trên laptop hoặc mua 1 chiếc webcam USB giá 100k - 200k cắm vào máy tính là chạy mượt mà.</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                        <div class="font-bold text-white">2. Video hình ảnh con tôi có bị lộ lên mạng không?</div>
+                        <p class="text-slate-400">Tuyệt đối không! BabyGuard AI hoạt động theo mô hình Edge AI cục bộ. Toàn bộ hình ảnh được xử lý trực tiếp trên máy tính của bạn, không lưu trữ trên máy chủ công cộng nào.</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                        <div class="font-bold text-white">3. Đi làm ở cơ quan có xem được camera ở nhà không?</div>
+                        <p class="text-slate-400">Được! Hệ thống tự động tạo đường link xem từ xa bảo mật qua Cloudflare Tunnel. Chỉ cần máy tính ở nhà bật và kết nối Wifi, điện thoại có 4G/5G là bạn xem được con 24/7.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Support & Close -->
+            <div class="pt-2 flex items-center justify-between border-t border-slate-800/80 text-[11px]">
+                <span class="text-slate-400">Hỗ trợ kỹ thuật 24/7: <b class="text-slate-200">Telegram @babyguard_support</b></span>
+                <button onclick="closeUserGuideModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">
+                    Đã Hiểu & Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Ghép Nối Nôi Bé / Chuyển Đổi Thiết Bị (Device Pairing) -->
+    <div id="device-pairing-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden" onclick="if(event.target===this)closeDevicePairingModal()">
+        <div class="bg-cardbg border border-bordercol rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <!-- Top Close Button -->
+            <button onclick="closeDevicePairingModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition" title="Đóng">
+                ✕
+            </button>
+
+            <!-- Header -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-500/20 to-cyan-500/20 border border-teal-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                    🔄
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-base text-slate-100">Ghép Nối Nôi Của Bé</h3>
+                    <p class="text-xs text-slate-400">Kết nối ứng dụng với máy tính đặt tại phòng bé</p>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                <p class="text-slate-300 leading-relaxed text-[11px]">
+                    Nếu bạn đang mở app trên điện thoại và muốn kết nối với nôi bé tại nhà, hãy nhập đường link hiển thị trên màn hình máy tính của bạn:
+                </p>
+                <div>
+                    <label class="block text-slate-400 text-[11px] font-semibold mb-1">Địa chỉ Link Nôi của bạn:</label>
+                    <input type="text" id="input-custom-device-url" placeholder="https://babyguard.site hoặc http://192.168.1.15:8080" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-xs">
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-2 pt-1 text-xs">
+                <button onclick="saveCustomDeviceUrl()" class="w-full py-2.5 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/20 transition active:scale-95 flex items-center justify-center gap-2">
+                    <span>💾</span>
+                    <span>Lưu & Kết Nối Tới Nôi</span>
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="resetToDefaultDevice()" class="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 font-semibold text-[11px] transition">
+                        🔄 Khôi Phục Mặc Định
+                    </button>
+                    <button onclick="closeDevicePairingModal()" class="py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] transition">
+                        Hủy
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -6348,6 +6593,98 @@
             }
             toggleSafeZoneEditor();
         }
+
+        // =========================================================================
+        // USER GUIDE & DEVICE PAIRING HANDLERS
+        // =========================================================================
+        function openUserGuideModal(defaultTab = 'quick') {
+            const modal = document.getElementById('user-guide-modal');
+            if (modal) modal.classList.remove('hidden');
+            switchGuideTab(defaultTab);
+        }
+
+        function closeUserGuideModal() {
+            const modal = document.getElementById('user-guide-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function switchGuideTab(tab) {
+            ['quick', 'camera', 'telegram', 'license', 'faq'].forEach(t => {
+                const c = document.getElementById(`guide-tab-content-${t}`);
+                const b = document.getElementById(`guide-tab-btn-${t}`);
+                if (c) c.classList.add('hidden');
+                if (b) {
+                    b.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
+                    b.classList.add('bg-slate-900', 'text-slate-400');
+                }
+            });
+            const activeC = document.getElementById(`guide-tab-content-${tab}`);
+            const activeB = document.getElementById(`guide-tab-btn-${tab}`);
+            if (activeC) activeC.classList.remove('hidden');
+            if (activeB) {
+                activeB.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
+                activeB.classList.remove('bg-slate-900', 'text-slate-400');
+            }
+        }
+
+        function openDevicePairingModal() {
+            const modal = document.getElementById('device-pairing-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            const input = document.getElementById('input-custom-device-url');
+            if (input) {
+                input.value = localStorage.getItem('babyguard_custom_server') || window.location.origin;
+            }
+        }
+
+        function closeDevicePairingModal() {
+            const modal = document.getElementById('device-pairing-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function saveCustomDeviceUrl() {
+            const input = document.getElementById('input-custom-device-url');
+            if (!input) return;
+            let val = input.value.trim();
+            if (!val) {
+                showToast('Vui lòng nhập đường link kết nối', '⚠️');
+                return;
+            }
+            if (!val.startsWith('http://') && !val.startsWith('https://')) {
+                val = 'https://' + val;
+            }
+            val = val.replace(/\/+$/, '');
+            localStorage.setItem('babyguard_custom_server', val);
+            showToast('Đang kết nối tới nôi của bạn...', '🚀');
+            setTimeout(() => {
+                window.location.href = val;
+            }, 600);
+        }
+
+        function resetToDefaultDevice() {
+            localStorage.removeItem('babyguard_custom_server');
+            showToast('Đã khôi phục về máy chủ mặc định', '🔄');
+            setTimeout(() => {
+                window.location.href = '/?nopair=1';
+            }, 500);
+        }
+
+        // Auto-redirect if customer is paired to their own home device
+        (function checkPairedDevice() {
+            try {
+                const customServer = localStorage.getItem('babyguard_custom_server');
+                if (customServer && !window.location.search.includes('nopair') && !window.location.search.includes('paired')) {
+                    const cleanCustom = customServer.replace(/\/+$/, '').toLowerCase();
+                    const cleanOrigin = window.location.origin.replace(/\/+$/, '').toLowerCase();
+                    if (cleanCustom !== cleanOrigin && cleanCustom.startsWith('http')) {
+                        console.log('Redirecting to paired home device:', cleanCustom);
+                        window.location.href = cleanCustom + '/?paired=1';
+                    }
+                }
+            } catch (e) {
+                console.log('Pair check note:', e);
+            }
+        })();
 
         // Initialize App on DOM Ready
         window.addEventListener('DOMContentLoaded', () => {

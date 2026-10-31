@@ -40,7 +40,9 @@ ASSET_DIRS = [
     "templates",
     "models",
     "medical_knowledge",
-    "music"
+    "music",
+    "static",
+    "docs"
 ]
 
 SUPPORT_FILES = [
@@ -53,7 +55,8 @@ SUPPORT_FILES = [
     "start.sh",
     "stop.sh",
     "requirements.txt",
-    "config.example.json"
+    "config.example.json",
+    "sepay_config.json"
 ]
 
 

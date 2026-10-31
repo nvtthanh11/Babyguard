@@ -115,6 +115,38 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             }
         )
 
+    @app.api_route("/download/desktop-app", methods=["GET", "HEAD"])
+    @app.api_route("/download/app.zip", methods=["GET", "HEAD"])
+    @app.api_route("/download/BabyGuard_AI.zip", methods=["GET", "HEAD"])
+    async def download_desktop_app():
+        candidates = [
+            os.path.join(static_dir, "BabyGuard_AI_v2.0_Commercial.zip"),
+            os.path.join(BASE_DIR, "dist", "BabyGuard_AI_v2.0_Commercial.zip"),
+            os.path.join(BASE_DIR, "BabyGuard_AI_v1.0_Commercial.zip"),
+            os.path.join(os.path.dirname(BASE_DIR), "BabyGuard_AI_v1.0_Commercial.zip")
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                return FileResponse(
+                    c,
+                    media_type="application/zip",
+                    filename="BabyGuard_AI_v2.0_Commercial.zip",
+                    headers={
+                        "Content-Disposition": "attachment; filename=BabyGuard_AI_v2.0_Commercial.zip",
+                        "Cache-Control": "no-cache"
+                    }
+                )
+        return JSONResponse({"status": "not_ready", "message": "Gói cài đặt máy tính đang được chuẩn bị. Vui lòng tải lại sau giây lát!"}, status_code=404)
+
+    @app.get("/landing", response_class=HTMLResponse)
+    @app.get("/huong-dan", response_class=HTMLResponse)
+    @app.get("/guide", response_class=HTMLResponse)
+    async def landing_and_guide_page(request: Request):
+        doc_path = os.path.join(BASE_DIR, "docs", "index.html")
+        if os.path.exists(doc_path):
+            return FileResponse(doc_path, media_type="text/html")
+        return templates.TemplateResponse(request=request, name="index.html")
+
     @app.get("/api/app-info")
     async def get_app_info():
         apk_path = os.path.join(static_dir, "BabyGuard_AI.apk")
@@ -897,10 +929,57 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
     @app.get("/api/license/auto-check")
     def auto_check_license():
-        """Endpoint kiểm tra trạng thái kích hoạt tự động theo thời gian thực cho popup thanh toán."""
+        """
+        Endpoint kiểm tra trạng thái kích hoạt tự động theo thời gian thực cho popup thanh toán.
+        Tự động truy vấn cloud verify trên babyguard.site nếu là máy khách hàng chưa kích hoạt.
+        """
         cfg = load_config()
         lm = LicenseManager(cfg)
         status = lm.get_status()
+
+        # Nếu chưa kích hoạt vĩnh viễn, thử kiểm tra xác thực qua babyguard.site
+        if not status.get("is_lifetime") and status.get("status") != "activated":
+            mid = get_machine_fingerprint()
+            short_id = mid.split("-")[-1] if "-" in mid else mid[:6]
+            
+            # 1. Kiểm tra trong paid_licenses.json nội bộ trước (nếu là server chính)
+            paid_path = os.path.join(BASE_DIR, "paid_licenses.json")
+            if os.path.exists(paid_path):
+                try:
+                    with open(paid_path, "r", encoding="utf-8") as pf:
+                        paid_data = json.load(pf)
+                    if short_id in paid_data or mid in paid_data:
+                        rec = paid_data.get(short_id) or paid_data.get(mid)
+                        new_key = rec.get("license_key") or generate_license_key(mid, tier="LIFETIME")
+                        cfg["license_key"] = new_key
+                        cfg["license_activated_via"] = "cloud_sepay_auto"
+                        cfg["license_activated_at"] = datetime.now().isoformat()
+                        save_config(cfg)
+                        lm = LicenseManager(cfg)
+                        status = lm.get_status()
+                except Exception as e:
+                    print(f"[LicenseAutoCheck] Lỗi kiểm tra file cục bộ: {e}")
+
+            # 2. Nếu vẫn chưa kích hoạt và không phải chính babyguard.site thì gọi cloud API
+            if not status.get("is_lifetime") and cfg.get("remote_access_url") != "https://babyguard.site":
+                try:
+                    import urllib.request
+                    cloud_url = f"https://babyguard.site/api/license/cloud-verify?short_id={short_id}&machine_id={mid}"
+                    req = urllib.request.Request(cloud_url, headers={"User-Agent": "BabyGuard-Client/2.0"})
+                    with urllib.request.urlopen(req, timeout=2.5) as resp:
+                        if resp.status == 200:
+                            cdata = json.loads(resp.read().decode("utf-8"))
+                            if cdata.get("valid") and cdata.get("license_key"):
+                                new_key = cdata["license_key"]
+                                cfg["license_key"] = new_key
+                                cfg["license_activated_via"] = "cloud_sepay_remote"
+                                cfg["license_activated_at"] = datetime.now().isoformat()
+                                save_config(cfg)
+                                lm = LicenseManager(cfg)
+                                status = lm.get_status()
+                except Exception:
+                    pass
+
         return {
             "valid": status.get("valid", False),
             "tier": status.get("tier", "TRIAL"),
@@ -908,6 +987,53 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "status": status.get("status", "trial"),
             "machine_id": status.get("machine_id", ""),
             "license_key": cfg.get("license_key", "")
+        }
+
+    @app.get("/api/license/cloud-verify")
+    def cloud_verify_license(short_id: str = "", machine_id: str = ""):
+        """
+        Dịch vụ Xác thực Giấy phép Đám mây (Cloud Licensing Verification) trên babyguard.site:
+        Khách hàng ở bất kỳ đâu chuyển khoản 49k, máy tính của họ sẽ gọi về đây để nhận License Key tự động.
+        """
+        short_id = short_id.strip().upper()
+        machine_id = machine_id.strip().upper()
+        if not short_id and not machine_id:
+            return {"valid": False, "reason": "missing_id"}
+
+        paid_path = os.path.join(BASE_DIR, "paid_licenses.json")
+        paid_data = {}
+        if os.path.exists(paid_path):
+            try:
+                with open(paid_path, "r", encoding="utf-8") as pf:
+                    paid_data = json.load(pf)
+            except Exception:
+                paid_data = {}
+
+        # Tra cứu theo short_id hoặc machine_id
+        matched_rec = None
+        for k, v in paid_data.items():
+            k_up = str(k).upper()
+            if (short_id and (short_id in k_up or k_up in short_id)) or (machine_id and (machine_id in k_up or k_up in machine_id)):
+                matched_rec = v
+                break
+
+        if matched_rec:
+            target_mid = machine_id or f"BG-MAC-{short_id}"
+            key = matched_rec.get("license_key") or generate_license_key(target_mid, tier="LIFETIME")
+            return {
+                "valid": True,
+                "status": "activated",
+                "tier": "LIFETIME",
+                "is_lifetime": True,
+                "license_key": key,
+                "amount_paid": matched_rec.get("amount", 49000),
+                "message": "Xác thực thanh toán 49.000đ thành công. Đã cấp bản quyền Vĩnh Viễn!"
+            }
+
+        return {
+            "valid": False,
+            "status": "pending_payment",
+            "message": "Chưa ghi nhận thanh toán cho mã máy này. Vui lòng quét mã VietQR và chờ 3-5 giây."
         }
 
     @app.get("/api/sepay/info")
@@ -927,8 +1053,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                 pass
 
         merchant_id = sepay_cfg.get("merchant_id", "SP-TEST-NV5B9824")
-        amount = sepay_cfg.get("default_amount", 199000)
-        tunnel_url = cfg.get("remote_access_url", "https://hypothetical-practice-independently-talks.trycloudflare.com")
+        amount = int(sepay_cfg.get("default_amount", 49000))
+        tunnel_url = cfg.get("remote_access_url", "https://babyguard.site")
         ipn_url = f"{tunnel_url.rstrip('/')}/api/sepay/ipn"
 
         bank_bin = sepay_cfg.get("bank_bin", "970422")
@@ -990,14 +1116,27 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
         if "order" in body or body.get("notification_type") == "ORDER_PAID":
             order_data = body.get("order", {})
-            amount = float(order_data.get("order_amount", 0) or order_data.get("amount", 0) or 199000)
+            amount = float(order_data.get("order_amount", 0) or order_data.get("amount", 0) or 49000)
             order_code = str(order_data.get("order_invoice_number") or order_data.get("id") or "")
         elif "transferAmount" in body or body.get("transferType") == "in":
-            amount = float(body.get("transferAmount", 0) or 199000)
+            amount = float(body.get("transferAmount", 0) or 49000)
             order_code = str(body.get("code") or body.get("content") or "")
         else:
-            amount = float(body.get("amount", 0) or body.get("transferAmount", 0) or 199000)
+            amount = float(body.get("amount", 0) or body.get("transferAmount", 0) or 49000)
             order_code = str(body.get("content") or body.get("description") or "BabyGuard Lifetime")
+
+        # Trích xuất Machine Short ID nếu có trong nội dung chuyển khoản (VD: 'BG F7A7' hoặc 'BG 29BF')
+        import re
+        target_short_id = ""
+        m_match = re.search(r'BG[\s_-]?([A-Za-z0-9]{4,16})', order_code, re.IGNORECASE)
+        if m_match:
+            target_short_id = m_match.group(1).upper()
+        else:
+            # Tìm trong cả raw payload
+            raw_str = json.dumps(body)
+            m_raw = re.search(r'BG[\s_-]?([A-Za-z0-9]{4,16})', raw_str, re.IGNORECASE)
+            if m_raw:
+                target_short_id = m_raw.group(1).upper()
 
         # Lưu lịch sử giao dịch SePay
         sepay_history_path = os.path.join(BASE_DIR, "sepay_transactions.json")
@@ -1014,6 +1153,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "transaction_id": trans_id,
             "amount": amount,
             "order_code": order_code,
+            "matched_short_id": target_short_id,
             "raw_payload": body
         }
         history.append(tx_record)
@@ -1023,34 +1163,64 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         except Exception as e:
             print(f"[SePay IPN] Lỗi lưu lịch sử: {e}")
 
-        # TỰ ĐỘNG KÍCH HOẠT BẢN QUYỀN VĨNH VIỄN
+        # TỰ ĐỘNG TẠO VÀ LƯU BẢN QUYỀN VĨNH VIỄN VÀO CLOUD REGISTRY
         mid = get_machine_fingerprint()
-        lifetime_key = generate_license_key(mid, tier="LIFETIME")
+        local_short_id = mid.split("-")[-1] if "-" in mid else mid[:6]
+        
+        target_machine_for_key = f"BG-MAC-{target_short_id}" if target_short_id else mid
+        customer_lifetime_key = generate_license_key(target_machine_for_key, tier="LIFETIME")
         universal_key = generate_license_key("UNIVERSAL", tier="LIFETIME")
 
-        cfg = load_config()
-        cfg["license_key"] = lifetime_key
-        cfg["license_activated_via"] = "sepay_auto"
-        cfg["license_activated_at"] = datetime.now().isoformat()
-        cfg["last_payment"] = {
+        # Ghi nhận vào paid_licenses.json để mọi máy khách hàng có thể gọi về lấy
+        paid_path = os.path.join(BASE_DIR, "paid_licenses.json")
+        paid_data = {}
+        if os.path.exists(paid_path):
+            try:
+                with open(paid_path, "r", encoding="utf-8") as pf:
+                    paid_data = json.load(pf)
+            except Exception:
+                paid_data = {}
+
+        key_anchor = target_short_id or local_short_id
+        paid_data[key_anchor] = {
+            "short_id": key_anchor,
             "amount": amount,
             "transaction_id": trans_id,
             "order_code": order_code,
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "license_key": customer_lifetime_key,
+            "universal_key": universal_key,
+            "paid_at": datetime.now().isoformat()
         }
-        save_config(cfg)
+        try:
+            with open(paid_path, "w", encoding="utf-8") as pf:
+                json.dump(paid_data, pf, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"[SePay IPN] Lỗi ghi paid_licenses: {e}")
 
-        # Cập nhật LicenseManager trực tiếp
-        lm = LicenseManager(cfg)
+        # Nếu là thanh toán cho máy hiện tại (hoặc không chỉ định thì mặc định active máy hiện tại)
+        if not target_short_id or target_short_id == local_short_id or target_short_id in mid:
+            cfg = load_config()
+            cfg["license_key"] = customer_lifetime_key
+            cfg["license_activated_via"] = "sepay_auto"
+            cfg["license_activated_at"] = datetime.now().isoformat()
+            cfg["last_payment"] = {
+                "amount": amount,
+                "transaction_id": trans_id,
+                "order_code": order_code,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            save_config(cfg)
+            LicenseManager(cfg)
 
-        # Gửi thông báo chúc mừng tới Telegram của phụ huynh
+        # Gửi thông báo chúc mừng tới Telegram của phụ huynh / Tác giả
         tele_msg = (
-            f"🎉 <b>[THANH TOÁN THÀNH CÔNG - BABYGUARD AI]</b>\n\n"
+            f"🎉 <b>[ĐÃ NHẬN THANH TOÁN 49.000đ - BABYGUARD AI]</b>\n\n"
             f"💰 <b>Số tiền:</b> {amount:,.0f} VNĐ\n"
             f"📋 <b>Mã GD / Nội dung:</b> <code>{order_code or trans_id}</code>\n"
-            f"🔑 <b>Key Vĩnh Viễn:</b> <code>{lifetime_key}</code>\n"
+            f"🆔 <b>Mã Máy Khách:</b> <code>{target_short_id or local_short_id}</code>\n"
+            f"🔑 <b>Key Vĩnh Viễn:</b> <code>{customer_lifetime_key}</code>\n"
             f"🌐 <b>Key Toàn Năng:</b> <code>{universal_key}</code>\n\n"
-            f"✨ <i>Hệ thống đã TỰ ĐỘNG KÍCH HOẠT BẢN QUYỀN VĨNH VIỄN cho ứng dụng của bạn! Cảm ơn ba mẹ đã đồng hành cùng BabyGuard AI!</i> ❤️"
+            f"✨ <i>Hệ thống đã TỰ ĐỘNG CẤP BẢN QUYỀN VĨNH VIỄN! Khách hàng có thể sử dụng trọn đời không giới hạn.</i> ❤️"
         )
         if alert_manager is not None:
             try:
@@ -1062,7 +1232,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "success": True,
             "message": "Payment verified and lifetime license activated successfully!",
             "status": "LICENSE_ACTIVATED",
-            "license_key": lifetime_key,
+            "license_key": customer_lifetime_key,
             "transaction_id": trans_id
         }
 

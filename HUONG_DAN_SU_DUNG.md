@@ -132,3 +132,16 @@ Mọi thiết lập có thể thực hiện trực quan ngay trên giao diện w
   * Kiểm tra xem mục Micro trên Dashboard có nhảy thanh âm lượng % khi nói chuyện hay không.
 * **Mất kết nối mạng**:
   * Hệ thống AI vẫn tự động ghi hình clip, phát hiện nguy hiểm và hú còi cảnh báo tại chỗ qua loa máy tính ngay cả khi mất internet hoàn toàn.
+
+---
+
+## 8. CHÍNH SÁCH BẢN QUYỀN THƯƠNG MẠI & KÍCH HOẠT (CHỈ 49.000 VNĐ)
+
+* 🎁 **Dùng Thử Miễn Phí 14 Ngày**: Ba mẹ được trải nghiệm trọn vẹn 100% tính năng AI y tế cao cấp, không bị giới hạn bất kỳ chức năng nào.
+* ⚡ **Giá Bản Quyền Vĩnh Viễn: Chỉ 49.000 VNĐ** (Giảm 90% từ 499.000đ - Chỉ bằng 1 ly trà sữa để bảo vệ bé yêu 24/7 trọn đời).
+* 🔄 **Thanh Toán Tự Động 3 Giây**:
+  1. Bấm vào icon **🔑 Bản Quyền** trên thanh công cụ.
+  2. Mở ứng dụng ngân hàng bất kỳ (Vietcombank, MB, Techcombank, BIDV, Momo...) quét mã **VietQR** trên màn hình.
+  3. Cổng thanh toán SePay tự động nhận diện giao dịch và **mở khóa bản quyền vĩnh viễn ngay lập tức**!
+* 🛡️ **Cam Kết Không Thu Phí Định Kỳ**: Mua một lần sở hữu trọn đời. Không thu phí thuê bao tháng, không thu phí năm, cập nhật nâng cấp miễn phí trọn đời!
+
