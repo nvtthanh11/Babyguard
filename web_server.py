@@ -74,32 +74,14 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
         host = request.headers.get("host", "").lower()
-        query_view = request.query_params.get("view", "")
-        is_pwa = request.query_params.get("source", "") == "pwa"
-        # Nếu truy cập qua subdomain cam.babyguard.site, từ app mobile (source=pwa), có query view=cam, hoặc truy cập trên máy nội bộ (localhost/LAN) -> vào thẳng Camera Dashboard
-        if (
-            host.startswith("cam.")
-            or query_view == "cam"
-            or is_pwa
-            or "localhost" in host
-            or "127.0.0.1" in host
-            or host.startswith("192.168.")
-            or host.startswith("10.")
-        ):
+        # Chỉ máy nội bộ gia đình (localhost hoặc mạng WiFi ở nhà 192.168.x.x) mới vào Dashboard điều khiển
+        if "localhost" in host or "127.0.0.1" in host or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100."):
             return templates.TemplateResponse(request=request, name="index.html")
 
-        # Mặc định truy cập qua domain công khai babyguard.site -> TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
+        # Toàn bộ truy cập từ internet qua domain babyguard.site -> 100% LÀ TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
         landing_file = os.path.join(BASE_DIR, "docs", "index.html")
         if os.path.exists(landing_file):
             return FileResponse(landing_file, media_type="text/html")
-        return templates.TemplateResponse(request=request, name="index.html")
-
-    @app.get("/cam", response_class=HTMLResponse)
-    @app.get("/monitor", response_class=HTMLResponse)
-    @app.get("/dashboard", response_class=HTMLResponse)
-    @app.get("/app", response_class=HTMLResponse)
-    async def camera_monitor_page(request: Request):
-        """Trang giám sát Camera Nôi bé riêng tư."""
         return templates.TemplateResponse(request=request, name="index.html")
 
     @app.get("/manifest.json")
@@ -222,8 +204,14 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             except Exception:
                 time.sleep(0.05)
 
+    def _is_private_access(req: Request) -> bool:
+        host = req.headers.get("host", "").lower()
+        return "localhost" in host or "127.0.0.1" in host or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100.")
+
     @app.get("/video_feed")
-    def video_feed(annotated: bool = True):
+    def video_feed(request: Request, annotated: bool = True):
+        if not _is_private_access(request):
+            return JSONResponse({"status": "forbidden", "message": "Truy cập camera phòng ngủ bị chặn từ internet công cộng để bảo vệ quyền riêng tư gia đình."}, status_code=403)
         return StreamingResponse(
             generate_frames(annotated=annotated),
             media_type="multipart/x-mixed-replace; boundary=frame",
@@ -236,8 +224,10 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         )
 
     @app.get("/api/current_frame.jpg")
-    def get_current_frame_jpg():
+    def get_current_frame_jpg(request: Request):
         """Lấy 1 khung hình JPEG tức thì phục vụ watchdog kiểm tra luồng và fallback chống đen màn hình."""
+        if not _is_private_access(request):
+            return JSONResponse({"status": "forbidden", "message": "Truy cập camera phòng ngủ bị chặn từ internet công cộng để bảo vệ quyền riêng tư gia đình."}, status_code=403)
         from fastapi import Response
         frame = vision_tracker.get_latest_frame(annotated=True)
         if frame is None or frame.size == 0:
@@ -254,8 +244,10 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
     @app.get("/audio_feed")
     @app.get("/api/audio_feed")
-    def audio_feed():
+    def audio_feed(request: Request):
         """Phát luồng âm thanh phòng bé thời gian thực qua Web Audio (WAV 16kHz mono)."""
+        if not _is_private_access(request):
+            return JSONResponse({"status": "forbidden", "message": "Truy cập âm thanh phòng ngủ bị chặn từ internet công cộng để bảo vệ quyền riêng tư gia đình."}, status_code=403)
         def generate_wav_stream():
             import struct
             header = bytearray(44)
