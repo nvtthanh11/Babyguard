@@ -296,23 +296,95 @@
                 </span>
               </div>
 
-              <!-- Real Telegram Message Bubble with Baby Photo -->
-              <div class="bg-slate-800/90 rounded-2xl p-2.5 space-y-2 border border-slate-700/80 telegram-bubble">
-                <div class="relative rounded-xl overflow-hidden aspect-[4/3] bg-black">
-                  <img src="/static/baby_camera.jpg?v=3" alt="Baby Sleeping Live Feed" class="w-full h-full object-cover">
-                  <div class="absolute top-2 left-2 bg-slate-950/85 text-emerald-300 text-[10px] px-2 py-0.5 rounded-md font-bold border border-emerald-500/30">
-                    🫁 32 BPM • Nằm ngửa an toàn
+              <!-- Real Telegram Message Bubble with Rotating Baby Crib Carousel -->
+              <div class="bg-slate-800/90 rounded-2xl p-2.5 space-y-2 border border-slate-700/80 telegram-bubble" id="telegram-baby-card">
+                
+                <!-- Baby Crib Photo Carousel Container -->
+                <div class="relative rounded-xl overflow-hidden aspect-[16/10] bg-slate-950 select-none group" id="baby-crib-carousel">
+                  
+                  <!-- Slide 1: Baby Crib 1 (Ngửa an toàn - Full body trong nôi) -->
+                  <div class="baby-crib-slide absolute inset-0 transition-opacity duration-700 ease-in-out opacity-100" data-index="0">
+                    <img src="/static/baby_crib_1.jpg" alt="Bé A Siu ngủ ngon trong nôi" class="w-full h-full object-cover">
+                    <!-- Neon 3D Crib Safety Box Overlay -->
+                    <div class="absolute inset-[8%] border border-cyan-400/50 rounded-lg pointer-events-none shadow-[0_0_12px_rgba(34,211,238,0.25)]">
+                      <div class="absolute -top-1.5 -left-1.5 w-3 h-3 border-t-2 border-l-2 border-cyan-400"></div>
+                      <div class="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-cyan-400"></div>
+                      <div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-cyan-400"></div>
+                      <div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-cyan-400"></div>
+                      <span class="absolute top-1 right-1.5 text-[8px] font-mono font-bold text-cyan-300 bg-slate-950/80 px-1 py-0.2 rounded border border-cyan-500/30">AI CRIB 3D</span>
+                    </div>
                   </div>
-                  <div class="absolute bottom-2 right-2 bg-slate-950/85 text-slate-300 text-[9px] px-2 py-0.5 rounded-md">
+
+                  <!-- Slide 2: Baby Crib 2 (Túi ngủ hồng pastel - Full body trong nôi) -->
+                  <div class="baby-crib-slide absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0 pointer-events-none" data-index="1">
+                    <img src="/static/baby_crib_2.jpg" alt="Bé A Siu say giấc trong túi ngủ" class="w-full h-full object-cover">
+                    <!-- Neon 3D Crib Safety Box Overlay -->
+                    <div class="absolute inset-[8%] border border-emerald-400/50 rounded-lg pointer-events-none shadow-[0_0_12px_rgba(52,211,153,0.25)]">
+                      <div class="absolute -top-1.5 -left-1.5 w-3 h-3 border-t-2 border-l-2 border-emerald-400"></div>
+                      <div class="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-emerald-400"></div>
+                      <div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-emerald-400"></div>
+                      <div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-emerald-400"></div>
+                      <span class="absolute top-1 right-1.5 text-[8px] font-mono font-bold text-emerald-300 bg-slate-950/80 px-1 py-0.2 rounded border border-emerald-500/30">AI CRIB 3D</span>
+                    </div>
+                  </div>
+
+                  <!-- Slide 3: Baby Crib 3 (Tư thế sao biển - Full body trong nôi) -->
+                  <div class="baby-crib-slide absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0 pointer-events-none" data-index="2">
+                    <img src="/static/baby_crib_3.jpg" alt="Bé A Siu ngủ tư thế sao biển" class="w-full h-full object-cover">
+                    <!-- Neon 3D Crib Safety Box Overlay -->
+                    <div class="absolute inset-[8%] border border-cyan-400/50 rounded-lg pointer-events-none shadow-[0_0_12px_rgba(34,211,238,0.25)]">
+                      <div class="absolute -top-1.5 -left-1.5 w-3 h-3 border-t-2 border-l-2 border-cyan-400"></div>
+                      <div class="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-cyan-400"></div>
+                      <div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-cyan-400"></div>
+                      <div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-cyan-400"></div>
+                      <span class="absolute top-1 right-1.5 text-[8px] font-mono font-bold text-cyan-300 bg-slate-950/80 px-1 py-0.2 rounded border border-cyan-500/30">AI CRIB 3D</span>
+                    </div>
+                  </div>
+
+                  <!-- Slide 4: Baby Crib 4 (Quấn chũn xanh pastel - Full body trong nôi) -->
+                  <div class="baby-crib-slide absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0 pointer-events-none" data-index="3">
+                    <img src="/static/baby_crib_4.jpg" alt="Bé A Siu quấn chũn an toàn" class="w-full h-full object-cover">
+                    <!-- Neon 3D Crib Safety Box Overlay -->
+                    <div class="absolute inset-[8%] border border-sky-400/50 rounded-lg pointer-events-none shadow-[0_0_12px_rgba(56,189,248,0.25)]">
+                      <div class="absolute -top-1.5 -left-1.5 w-3 h-3 border-t-2 border-l-2 border-sky-400"></div>
+                      <div class="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-sky-400"></div>
+                      <div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-sky-400"></div>
+                      <div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-sky-400"></div>
+                      <span class="absolute top-1 right-1.5 text-[8px] font-mono font-bold text-sky-300 bg-slate-950/80 px-1 py-0.2 rounded border border-sky-500/30">AI CRIB 3D</span>
+                    </div>
+                  </div>
+
+                  <!-- Live Respiratory & Safety Badge Overlay -->
+                  <div id="crib-status-badge" class="absolute top-2 left-2 bg-slate-950/85 backdrop-blur-md text-emerald-300 text-[10px] px-2 py-0.5 rounded-md font-bold border border-emerald-500/30 flex items-center gap-1 shadow transition-all duration-300">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="crib-status-text">🫁 32 BPM • Nằm ngửa an toàn</span>
+                  </div>
+
+                  <!-- Live Time Overlay -->
+                  <div id="crib-time-badge" class="absolute bottom-2 right-2 bg-slate-950/85 text-slate-300 text-[9px] px-2 py-0.5 rounded-md shadow">
                     14:25 • Đã gửi
                   </div>
+
+                  <!-- Carousel Dot Indicators -->
+                  <div class="absolute bottom-2 left-2 flex items-center gap-1 bg-slate-950/60 backdrop-blur-sm px-1.5 py-1 rounded-full z-10">
+                    <button onclick="goToCribSlide(0)" class="crib-dot w-3.5 h-1 rounded-full bg-emerald-400 transition-all duration-300" aria-label="Hình 1"></button>
+                    <button onclick="goToCribSlide(1)" class="crib-dot w-1.5 h-1 rounded-full bg-white/40 hover:bg-white/80 transition-all duration-300" aria-label="Hình 2"></button>
+                    <button onclick="goToCribSlide(2)" class="crib-dot w-1.5 h-1 rounded-full bg-white/40 hover:bg-white/80 transition-all duration-300" aria-label="Hình 3"></button>
+                    <button onclick="goToCribSlide(3)" class="crib-dot w-1.5 h-1 rounded-full bg-white/40 hover:bg-white/80 transition-all duration-300" aria-label="Hình 4"></button>
+                  </div>
                 </div>
+
+                <!-- Dynamic Telegram Notification Details matching active slide -->
                 <div class="text-[11px] text-slate-200 leading-snug space-y-1">
-                  <div class="font-bold text-emerald-400">✅ [KIỂM TRA CHÉO: AN TOÀN]</div>
-                  <p>Bé A Siu đang ngủ rất ngoan. Vùng mũi miệng thông thoáng 100%, chăn gối đặt an toàn cạnh sườn.</p>
-                  <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-700 flex justify-between">
-                    <span>Nhịp thở lồng ngực: <strong>32 BPM</strong></span>
-                    <span class="text-sky-400 font-semibold">👉 Xem camera</span>
+                  <div id="crib-msg-title" class="font-bold text-emerald-400 transition-colors duration-300 flex items-center gap-1">
+                    <span>✅</span> <span>[KIỂM TRA CHÉO: AN TOÀN]</span>
+                  </div>
+                  <p id="crib-msg-desc" class="text-slate-300 min-h-[32px] transition-all duration-300">
+                    Bé A Siu đang ngủ rất ngoan. Toàn thân bé nằm trọn trong lòng nôi, vùng mũi miệng thông thoáng 100%.
+                  </p>
+                  <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-700/80 flex justify-between items-center">
+                    <span id="crib-msg-vital">Nhịp thở lồng ngực: <strong class="text-slate-100">32 BPM</strong></span>
+                    <span class="text-sky-400 font-semibold cursor-pointer hover:underline" onclick="nextCribSlide()">👉 Xem ảnh tiếp</span>
                   </div>
                 </div>
               </div>
@@ -2082,7 +2154,116 @@
       buildThumbnailStrip();
       renderActiveFeature();
       startFeatureRotation();
+      initCribCarousel();
     });
+
+    // =========================================================================
+    // BABY CRIB ROTATING SLIDESHOW (HERO TELEGRAM MOCKUP)
+    // =========================================================================
+    const cribSlidesData = [
+      {
+        badge: "🫁 32 BPM • Nằm ngửa an toàn",
+        time: "14:25 • Đã gửi",
+        title: "<span>✅</span> <span>[KIỂM TRA CHÉO: AN TOÀN]</span>",
+        desc: "Bé A Siu đang ngủ rất ngoan. Toàn thân bé nằm trọn trong lòng nôi, vùng mũi miệng thông thoáng 100%.",
+        vital: 'Nhịp thở lồng ngực: <strong class="text-slate-100">32 BPM</strong>'
+      },
+      {
+        badge: "🫁 30 BPM • Thở đều nhịp nhàng",
+        time: "14:28 • Đã gửi",
+        title: "<span>🛡️</span> <span>[KHUNG NÔI AN TOÀN: 100%]</span>",
+        desc: "Bé say giấc trong túi ngủ êm ái. AI xác nhận không có dị vật, chăn phủ ngực an toàn cạnh sườn.",
+        vital: 'Nhịp thở lồng ngực: <strong class="text-slate-100">30 BPM</strong>'
+      },
+      {
+        badge: "🫁 29 BPM • Giấc ngủ sâu (REM)",
+        time: "14:31 • Đã gửi",
+        title: "<span>✨</span> <span>[GIẤC NGỦ HOÀN HẢO: REM]</span>",
+        desc: "Bé ngủ tư thế sao biển dang tay thư giãn. Lồng ngực phập phồng đều đặn, đường thở thông thoáng.",
+        vital: 'Nhịp thở lồng ngực: <strong class="text-slate-100">29 BPM</strong>'
+      },
+      {
+        badge: "🫁 31 BPM • Thoáng khí 100%",
+        time: "14:35 • Đã gửi",
+        title: "<span>💤</span> <span>[ĐƯỜNG THỞ THÔNG THOÁNG]</span>",
+        desc: "Bé quấn chũn muslin ấm áp, tư thế chuẩn y khoa AAP. Hệ thống AI đang trực chiến bảo vệ 24/7.",
+        vital: 'Nhịp thở lồng ngực: <strong class="text-slate-100">31 BPM</strong>'
+      }
+    ];
+
+    let curCribSlide = 0;
+    let cribSlideTimer = null;
+
+    function showCribSlide(idx) {
+      const slides = document.querySelectorAll('.baby-crib-slide');
+      const dots = document.querySelectorAll('.crib-dot');
+      if (!slides.length) return;
+
+      curCribSlide = (idx + slides.length) % slides.length;
+
+      slides.forEach((sl, i) => {
+        if (i === curCribSlide) {
+          sl.classList.remove('opacity-0', 'pointer-events-none');
+          sl.classList.add('opacity-100');
+        } else {
+          sl.classList.remove('opacity-100');
+          sl.classList.add('opacity-0', 'pointer-events-none');
+        }
+      });
+
+      dots.forEach((dot, i) => {
+        if (i === curCribSlide) {
+          dot.className = 'crib-dot w-3.5 h-1 rounded-full bg-emerald-400 transition-all duration-300';
+        } else {
+          dot.className = 'crib-dot w-1.5 h-1 rounded-full bg-white/40 hover:bg-white/80 transition-all duration-300';
+        }
+      });
+
+      const data = cribSlidesData[curCribSlide];
+      if (data) {
+        const badgeEl = document.getElementById('crib-status-text');
+        const timeEl = document.getElementById('crib-time-badge');
+        const titleEl = document.getElementById('crib-msg-title');
+        const descEl = document.getElementById('crib-msg-desc');
+        const vitalEl = document.getElementById('crib-msg-vital');
+
+        if (badgeEl) badgeEl.innerText = data.badge;
+        if (timeEl) timeEl.innerText = data.time;
+        if (titleEl) titleEl.innerHTML = data.title;
+        if (descEl) descEl.innerText = data.desc;
+        if (vitalEl) vitalEl.innerHTML = data.vital;
+      }
+    }
+
+    function nextCribSlide() {
+      showCribSlide(curCribSlide + 1);
+      resetCribTimer();
+    }
+
+    function goToCribSlide(idx) {
+      showCribSlide(idx);
+      resetCribTimer();
+    }
+
+    function resetCribTimer() {
+      if (cribSlideTimer) clearInterval(cribSlideTimer);
+      cribSlideTimer = setInterval(() => {
+        showCribSlide(curCribSlide + 1);
+      }, 3500);
+    }
+
+    function initCribCarousel() {
+      resetCribTimer();
+      const carouselEl = document.getElementById('baby-crib-carousel');
+      if (carouselEl) {
+        carouselEl.addEventListener('mouseenter', () => {
+          if (cribSlideTimer) clearInterval(cribSlideTimer);
+        });
+        carouselEl.addEventListener('mouseleave', () => {
+          resetCribTimer();
+        });
+      }
+    }
 
     // =========================================================================
     // UNIVERSAL DOWNLOAD MODAL & IOS GUIDE MODAL
