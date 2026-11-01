@@ -3930,12 +3930,20 @@
             } else {
                 if (badgeEl) {
                     badgeEl.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30';
-                    badgeEl.innerText = (currentLang === 'en') ? 'Expired' : 'Hết Hạn';
+                    badgeEl.innerText = (currentLang === 'en') ? 'Trial Expired' : 'Hết Hạn Dùng Thử';
                 }
-                if (expEl) expEl.innerText = (currentLang === 'en') ? 'Please enter license key' : 'Vui lòng kích hoạt';
-                if (headerBtn) headerBtn.innerText = (currentLang === 'en') ? 'Unlicensed' : 'Chưa kích hoạt';
+                if (expEl) expEl.innerText = (currentLang === 'en') ? 'Trial ended. Please scan VietQR to unlock lifetime' : 'Đã hết 14 ngày dùng thử. Vui lòng quét VietQR để mở khóa vĩnh viễn';
+                if (headerBtn) headerBtn.innerText = (currentLang === 'en') ? 'Expired' : 'Hết Hạn';
                 if (autoPayBox) autoPayBox.classList.remove('hidden');
                 if (autoActiveBanner) autoActiveBanner.classList.add('hidden');
+
+                // Tự động bật Hộp Thoại Thanh Toán VietQR giữa màn hình khi hết hạn 14 ngày
+                const licModal = document.getElementById('license-modal');
+                if (licModal && licModal.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        openLicenseModal();
+                    }, 800);
+                }
             }
         }
 
