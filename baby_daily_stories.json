@@ -98,16 +98,30 @@
       "created_at": "07:00 - 31/10/2026"
     },
     "2026-11-01": {
-      "title": "Sư Tử Và Chú Chuột Nhỏ",
-      "category": "Ngụ Ngôn Thế Giới (Aesop / Andersen)",
-      "source": "Truyện ngụ ngôn Aesop",
-      "quote": "Lòng tốt dù nhỏ bé cũng có thể tạo nên điều kỳ diệu.",
-      "content": "Một chú sư tử dũng mãnh đang ngủ say thì bị chú chuột nhỏ đánh thức. Thay vì ăn thịt, sư tử đã tha cho chuột, và sau này, chính chú chuột nhỏ đã dùng hàm răng sắc nhọn của mình để cứu sư tử thoát khỏi lưới của thợ săn. Câu chuyện nhắc nhở rằng, không ai là quá nhỏ bé để làm việc tốt và không ai là quá lớn lao để cần đến sự giúp đỡ.",
-      "parenting_lesson": "Ba mẹ hãy dạy con rằng mỗi người đều có giá trị riêng và lòng nhân ái là sức mạnh lớn nhất. Hãy làm gương bằng cách đối xử tử tế với mọi người xung quanh để con cảm nhận được tình yêu thương từ chính hành động của ba mẹ.",
-      "baby_talk_prompt": "Bé A Siu ngoan ơi, thế giới này rộng lớn và xinh đẹp lắm, con hãy cứ lớn lên thật dịu dàng và biết yêu thương mọi người như chú chuột nhỏ nhé, ba mẹ sẽ luôn ở đây che chở và yêu thương con.",
-      "source_type": "Gemini AI",
+      "weekday": 6,
+      "theme_id": "wonder",
+      "theme_name": "Chủ Nhật: Tình Yêu Thiên Nhiên & Trí Tò Mò Sáng Tạo",
+      "title": "Thomas Edison Và Ngọn Đèn Tò Mò Thắp Sáng Cả Thế Giới",
+      "category": "Khám Phá Thế Giới & Trí Tò Mò Khoa Học",
+      "source": "Giai Thoại Danh Nhân & Lòng Hiếu Kỳ Vĩ Đại",
+      "quote": "Trí tưởng tượng và lòng tò mò chính là đôi cánh đưa con người vươn tới các vì sao.",
+      "content": "Ngày xửa ngày xưa, tại một thị trấn nhỏ yên bình ở nước Mỹ, có một cậu bé với đôi mắt to tròn lấp lánh tên là Thomas Edison. Ngay từ khi còn là một đứa trẻ chập chững biết đi, Thomas đã luôn tò mò về mọi chuyển động của thế giới xung quanh. Cậu có thể ngồi hàng giờ dưới bóng râm để ngắm nhìn đàn kiến nhỏ tha mồi, say mê ngắm nhìn dòng nước chảy dưới chân cầu và không ngừng đặt ra hàng vạn câu hỏi 'Tại sao?': Tại sao bầu trời lại màu xanh? Tại sao chim có thể bay mà con người lại không thể?\n\nMột buổi chiều mùa xuân ấm áp, người mẹ đi tìm con khắp nơi thì bàng hoàng phát hiện Thomas đang ngồi xổm im phăng phắc trong chuồng ngỗng, dưới bụng cậu ủ cẩn thận mấy quả trứng ngỗng to tròn. Khi mẹ dịu dàng hỏi con đang làm gì, cậu bé ngước đôi mắt ngây thơ đáp: 'Con thấy ngỗng mẹ nằm lên trứng thì trứng nở ra ngỗng con, con cũng đang thử ấp xem chúng có nở ra những chú ngỗng xinh đẹp không mẹ ạ!'. Thay vì quát mắng hay cười nhạo con ngốc nghếch, người mẹ mỉm cười ôm con vào lòng và giải thích cặn kẽ về nhiệt độ cơ thể và sự diệu kỳ của tạo hóa.\n\nLớn lên một chút, Thomas bị nhà trường trả về vì cho rằng cậu quá hiếu động và hỏi những câu hỏi kỳ lạ làm gián đoạn lớp học. Nhưng mẹ của Thomas - một người phụ nữ với tình mẫu tử vĩ đại - đã tự tay dạy dỗ con tại nhà, khích lệ mọi trí tò mò khoa học của cậu. Bà biến căn gác xép nhỏ thành phòng thí nghiệm cho con tự do pha chế hóa chất và mày mò chế tạo máy móc. Chính ngọn lửa tò mò không bao giờ tắt cùng niềm tin vô điều kiện của mẹ đã nuôi dưỡng Thomas trở thành nhà phát minh vĩ đại nhất lịch sử nhân loại với hơn một ngàn sáng chế, trong đó có bóng đèn điện thắp sáng đêm đen cho toàn thế giới.\n\nTình yêu thiên nhiên và lòng hiếu kỳ khám phá chính là hạt mầm của mọi trí tuệ vĩ đại. Một đứa trẻ luôn ngạc nhiên trước vẻ đẹp của một chiếc lá rơi hay cánh bướm rập rờn sẽ luôn giữ được tâm hồn phong phú, sáng tạo và tràn đầy tình yêu đối với cuộc sống muôn màu.",
+      "parenting_lesson": "1. Về mặt tâm lý phát triển: Trí tò mò (Curiosity) là động lực tự nhiên mạnh mẽ nhất thúc đẩy sự phát triển các kết nối nơ-ron thần kinh ở não bộ trẻ sơ sinh và trẻ nhỏ. Khi trẻ chỉ trỏ, sờ nắm hoặc nhìn chăm chú vào một vật, trẻ đang tiến hành những 'thí nghiệm khoa học' đầu tiên để khám phá thế giới.\n2. Phương pháp nuôi dạy của ba mẹ: Hãy tôn trọng và khích lệ trí tò mò của con: Dành thời gian đưa con ra công viên ngắm cỏ cây hoa lá, lắng nghe tiếng chim hót và trả lời các câu hỏi của con bằng sự kiên nhẫn. Đừng bao giờ dập tắt trí tưởng tượng hay biến sự tò mò trong sáng của con thành điều sai trái.",
+      "baby_talk_prompt": "Bé cưng của ba mẹ ơi, thế giới ngoài kia rộng lớn, rực rỡ và ẩn chứa biết bao bí mật diệu kỳ đang chờ đón đôi bàn chân nhỏ bé của con khám phá. Ba mẹ mong con lớn lên sẽ luôn giữ được đôi mắt lấp lánh sự tò mò và một trái tim yêu mến thiên nhiên vạn vật sâu sắc. Hãy ngủ một giấc thật ngon lành, mai này lớn khôn con sẽ thắp sáng ước mơ của chính mình con nhé.",
       "date": "2026-11-01",
-      "created_at": "07:00 - 01/11/2026"
+      "created_at": "20:55 - 01/11/2026",
+      "source_type": "Curated Library"
     }
-  }
+  },
+  "theme_history": [
+    {
+      "date": "2026-11-01",
+      "day_name": "Chủ Nhật",
+      "theme_id": "wonder",
+      "theme_name": "Tình Yêu Thiên Nhiên & Trí Tò Mò Sáng Tạo",
+      "story_title": "Thomas Edison Và Ngọn Đèn Tò Mò Thắp Sáng Cả Thế Giới",
+      "source": "Giai Thoại Danh Nhân & Lòng Hiếu Kỳ Vĩ Đại",
+      "category": "Khám Phá Thế Giới & Trí Tò Mò Khoa Học"
+    }
+  ]
 }

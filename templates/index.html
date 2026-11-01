@@ -271,59 +271,49 @@
             <span id="header-breathing-pill" class="text-cyan-400 font-medium">🫁 -- RPM</span>
         </div>
 
-        <!-- Right Quick Controls -->
-        <div class="flex items-center gap-2">
-            <button onclick="openSetupWizard()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600/25 hover:bg-purple-600/45 border border-purple-500/40 text-xs font-bold text-purple-300 transition active:scale-95" title="Mở Giao Diện Cài Đặt Ban Đầu Cho Khách Hàng (Setup Wizard)">
-                <span>🪄</span>
-                <span class="hidden sm:inline">Cài Đặt App</span>
+        <!-- Right Quick Controls (Clean & Minimalist: Max 6 items on Desktop, 4 on Mobile) -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <!-- 1. Primary Highlight Button: Kết Nối Điện Thoại (Quét QR, 4G & Tải App) -->
+            <button onclick="openMobileHubModal()" class="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/35 hover:to-emerald-500/35 border border-teal-500/40 text-xs font-bold text-teal-300 transition active:scale-95 shadow-sm" title="Kết Nối Điện Thoại (Quét Mã QR, Xem Từ Xa 4G & Cài App)">
+                <span class="text-sm">📱</span>
+                <span class="hidden sm:inline">Kết Nối ĐT</span>
+                <span class="sm:hidden font-extrabold">Kết Nối</span>
             </button>
-            <button onclick="openAppDownloadModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition active:scale-95" title="Cài đặt Ứng dụng BabyGuard AI cho điện thoại (Android APK & PWA)">
-                <span>📱</span>
-                <span class="hidden sm:inline">Cài App ĐT</span>
-                <span class="sm:hidden font-extrabold">App</span>
-            </button>
-            <button onclick="openUserGuideModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition" title="Hướng dẫn sử dụng và cài đặt 3 bước cho ba mẹ">
-                <span>📖</span>
-                <span class="hidden sm:inline">Hướng Dẫn</span>
-            </button>
-            <button onclick="openDevicePairingModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-teal-500/20 to-cyan-500/20 hover:from-teal-500/35 hover:to-cyan-500/35 border border-teal-500/40 text-xs font-bold text-teal-300 transition active:scale-95 shadow-sm" title="Hiển thị mã QR để kết nối điện thoại ba mẹ">
-                <span>📱</span>
-                <span class="hidden sm:inline">Kết Nối ĐT (QR)</span>
-                <span class="sm:hidden font-extrabold">QR</span>
-            </button>
-            <button onclick="confirmUnpair()" id="header-unpair-btn" class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-slate-700 text-xs font-semibold text-slate-400 hover:text-slate-200 transition" title="Đổi máy chủ / Ngắt kết nối nôi hiện tại">
-                <span>🔄</span>
-                <span class="hidden sm:inline">Đổi Nôi</span>
-            </button>
-            <a id="header-remote-link" href="#" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-cyan-500/30 text-xs font-semibold text-cyan-300 transition" title="Link xem camera từ xa trên 4G/5G">
-                <span>🌐</span>
-                <span id="header-remote-link-text">Xem Từ Xa 4G</span>
-            </a>
-            <button onclick="openGrowthModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-emerald-500/30 text-xs font-semibold text-emerald-300 transition" title="Sổ Đo Chiều Cao & Cân Nặng (Chuẩn Tăng Trưởng WHO)">
-                <span>📏</span>
-                <span class="hidden sm:inline">Sổ Đo WHO</span>
-            </button>
-            <button onclick="openSettingsModal()" id="header-gemini-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-xs font-semibold text-slate-300 transition" title="Cấu hình Gemini Hybrid AI">
-                <span id="header-gemini-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
-                <span id="header-gemini-text">Thiết lập AI</span>
-            </button>
-            <button onclick="openLicenseModal()" id="header-license-btn" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition" title="Bản quyền phần mềm BabyGuard AI">
+
+            <!-- 2. License Status Pill -->
+            <button onclick="openLicenseModal()" id="header-license-btn" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition" title="Bản quyền phần mềm BabyGuard AI">
                 <span id="header-license-icon">🔑</span>
-                <span id="header-license-text">Bản quyền</span>
+                <span id="header-license-text" class="hidden sm:inline">Bản quyền</span>
             </button>
-            <button onclick="toggleTheme()" id="header-theme-btn" class="p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition flex items-center justify-center text-sm shadow-sm" title="Chuyển chế độ Sáng / Tối (Light / Dark Mode)">
+
+            <!-- 3. Music Icon -->
+            <button onclick="toggleMusicModal()" class="p-2 sm:p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-amber-400 hover:text-amber-300 transition" title="Nhạc ru & Tiếng ồn trắng">
+                🎵
+            </button>
+
+            <!-- 4. Theme Toggle (Desktop) -->
+            <button onclick="toggleTheme()" id="header-theme-btn" class="hidden sm:flex p-2 sm:p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition items-center justify-center text-sm shadow-sm" title="Chuyển chế độ Sáng / Tối (Light / Dark Mode)">
                 <span id="header-theme-icon">🌙</span>
             </button>
-            <button onclick="toggleAppLanguage()" id="header-lang-btn" class="px-2.5 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-xs font-bold text-slate-200 transition flex items-center gap-1.5" title="Chuyển đổi Ngôn ngữ / Switch Language (VI / EN)">
+
+            <!-- 5. Language Switcher (Desktop) -->
+            <button onclick="toggleAppLanguage()" id="header-lang-btn" class="hidden sm:flex px-2.5 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-xs font-bold text-slate-200 transition items-center gap-1.5" title="Chuyển đổi Ngôn ngữ (VI / EN)">
                 <span id="header-lang-flag">🇻🇳</span>
                 <span id="header-lang-label">VI</span>
             </button>
-            <button onclick="toggleMusicModal()" class="p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-amber-400 hover:text-amber-300 transition" title="Nhạc ru & Tiếng ồn trắng">
-                🎵
-            </button>
-            <button onclick="openSettingsModal()" class="p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Cài đặt Hệ thống & Hồ sơ Bé">
+
+            <!-- 6. Settings Hub (Desktop & Mobile) -->
+            <button onclick="openSettingsModal()" class="p-2 sm:p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Cài đặt Hệ thống & Hồ sơ Bé">
                 ⚙️
             </button>
+
+            <!-- Hidden Safe Elements to preserve DOM API references -->
+            <div class="hidden" aria-hidden="true">
+                <button id="header-unpair-btn" onclick="confirmUnpair()"></button>
+                <a id="header-remote-link" href="#" target="_blank"><span id="header-remote-link-text">Xem Từ Xa 4G</span></a>
+                <span id="header-gemini-dot"></span>
+                <span id="header-gemini-text">Thiết lập AI</span>
+            </div>
         </div>
     </header>
 
@@ -693,42 +683,59 @@
             </div>
 
             <!-- 1 Ngày 1 Câu Chuyện Ý Nghĩa Cho Con (Đưa lên Trang Nhất Dashboard) -->
-            <div class="p-6 rounded-3xl bg-gradient-to-r from-indigo-950/40 via-cardbg to-slate-900 border border-indigo-500/30 space-y-4 shadow-xl">
-                <div class="flex items-center justify-between flex-wrap gap-2">
-                    <div class="flex items-center gap-2.5">
-                        <span class="text-2xl">📖</span>
+            <div class="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-indigo-950/40 via-cardbg to-slate-900 border border-indigo-500/30 space-y-4 shadow-xl">
+                <div class="flex items-center justify-between flex-wrap gap-2.5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xl shrink-0 shadow-inner">
+                            📖
+                        </div>
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h3 class="font-extrabold text-base text-slate-100">1 Ngày 1 Câu Chuyện Ý Nghĩa Cho Con</h3>
-                                <span id="story-category-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">Bài Học Đạo Đức Đầu Đời</span>
+                                <span id="story-theme-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">🌟 Chủ Đề Tuần</span>
+                                <span id="story-category-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">Bài Học Đạo Đức Đầu Đời</span>
                             </div>
                             <span id="story-source-text" class="text-[11px] text-indigo-300/80">Truyện ngụ ngôn thế giới (Aesop, Andersen) & Hạt giống tâm hồn</span>
                         </div>
                     </div>
                     <button onclick="refreshDailyStory()" id="btn-refresh-story" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow">
                         <span>🔄</span>
-                        <span class="hidden sm:inline">Đổi Truyện Khác (AI)</span>
+                        <span>Đổi Truyện Khác (AI)</span>
                     </button>
                 </div>
 
-                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
-                    <div class="flex items-baseline justify-between border-b border-slate-800/80 pb-2 flex-wrap gap-2">
-                        <h4 id="story-title" class="text-sm font-bold text-slate-100">Đang tải câu chuyện hôm nay...</h4>
-                        <span id="story-quote" class="text-xs text-amber-300/90 italic hidden sm:inline">"Gieo hạt mầm yêu thương..."</span>
+                <div class="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
+                    <div class="space-y-2 border-b border-slate-800/80 pb-3">
+                        <h4 id="story-title" class="text-base sm:text-lg font-bold text-slate-100">Đang tải câu chuyện hôm nay...</h4>
+                        <div id="story-quote-container" class="p-3 rounded-xl bg-amber-500/10 border-l-4 border-amber-400 text-xs sm:text-sm text-amber-200 italic font-medium">
+                            <span id="story-quote">"Gieo hạt mầm yêu thương..."</span>
+                        </div>
                     </div>
-                    <p id="story-content" class="text-xs text-slate-300 leading-relaxed font-serif">
-                        Đang kết nối thư viện câu chuyện ý nghĩa...
-                    </p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
-                        <div class="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/20">
-                            <span class="font-bold text-indigo-300 block mb-1">🌱 Bài học nhân cách giản dị:</span>
-                            <p id="story-parenting-lesson" class="text-[11px] text-slate-300 leading-relaxed">
+                    
+                    <!-- Main Story Content (Rich multi-paragraph literary text) -->
+                    <div class="p-3 sm:p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
+                        <p id="story-content" class="text-xs sm:text-sm text-slate-200 leading-relaxed font-serif whitespace-pre-line space-y-2">
+                            Đang kết nối thư viện câu chuyện ý nghĩa...
+                        </p>
+                    </div>
+
+                    <!-- 2 Pedagogical & Emotional Columns -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                        <div class="p-4 rounded-2xl bg-indigo-950/25 border border-indigo-500/30 space-y-1.5">
+                            <span class="font-bold text-indigo-300 flex items-center gap-1.5 text-xs">
+                                <span>🌱</span>
+                                <span>Bài Học Giáo Dục & Nuôi Dưỡng EQ:</span>
+                            </span>
+                            <p id="story-parenting-lesson" class="text-xs text-slate-300 leading-relaxed whitespace-pre-line">
                                 Đang cập nhật...
                             </p>
                         </div>
-                        <div class="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/20">
-                            <span class="font-bold text-emerald-300 block mb-1">💬 Lời thủ thỉ cùng con bên nôi:</span>
-                            <p id="story-baby-talk" class="text-[11px] text-slate-300 italic leading-relaxed">
+                        <div class="p-4 rounded-2xl bg-emerald-950/25 border border-emerald-500/30 space-y-1.5">
+                            <span class="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
+                                <span>💬</span>
+                                <span>Lời Thủ Thỉ Yêu Thương Bên Nôi Bé:</span>
+                            </span>
+                            <p id="story-baby-talk" class="text-xs text-slate-300 italic leading-relaxed whitespace-pre-line">
                                 Đang cập nhật...
                             </p>
                         </div>
@@ -2096,18 +2103,39 @@
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
             </div>
 
-            <!-- Shortcut to Onboarding Wizard -->
-            <div class="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-brand-500/10 border border-purple-500/30">
-                <div class="flex items-center gap-2.5">
-                    <span class="text-xl">🪄</span>
-                    <div>
-                        <div class="text-xs font-bold text-purple-300">Trợ Lý Cài Đặt Ban Đầu (Setup Wizard)</div>
-                        <div class="text-[10px] text-slate-400">Hướng dẫn 4 bước: Đặt tên bé, Khóa API, ID báo động & Camera</div>
+            <!-- Shortcut to Onboarding Wizard & Quick Tools -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-brand-500/10 border border-purple-500/30">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-xl">🪄</span>
+                        <div>
+                            <div class="text-xs font-bold text-purple-300">Trợ Lý Cài Đặt Ban Đầu (Setup Wizard)</div>
+                            <div class="text-[10px] text-slate-400">Hướng dẫn 4 bước: Đặt tên bé, Khóa API, ID báo động & Camera</div>
+                        </div>
                     </div>
+                    <button onclick="closeSettingsModal(); openSetupWizard();" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0">
+                        Mở Cài Đặt ➔
+                    </button>
                 </div>
-                <button onclick="closeSettingsModal(); openSetupWizard();" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0">
-                    Mở Cài Đặt ➔
-                </button>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button onclick="closeSettingsModal(); openUserGuideModal();" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/40 text-left transition flex items-center gap-2 text-xs font-semibold text-indigo-300">
+                        <span>📖</span>
+                        <span>Hướng Dẫn</span>
+                    </button>
+                    <button onclick="closeSettingsModal(); openMobileHubModal();" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-teal-500/40 text-left transition flex items-center gap-2 text-xs font-semibold text-teal-300">
+                        <span>📱</span>
+                        <span>Kết Nối ĐT</span>
+                    </button>
+                    <button onclick="closeSettingsModal(); openGrowthModal();" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-left transition flex items-center gap-2 text-xs font-semibold text-emerald-300">
+                        <span>📏</span>
+                        <span>Sổ Đo WHO</span>
+                    </button>
+                    <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/40 text-left transition flex items-center gap-2 text-xs font-semibold text-amber-300">
+                        <span>🌓</span>
+                        <span>Đổi Sáng/Tối</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Onboarding Welcome Banner (Shown on First Startup) -->
@@ -3378,10 +3406,10 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MODAL: KẾT NỐI ĐIỆN THOẠI BA MẸ (HIỂN THỊ MÃ QR TRÊN MÁY TÍNH)             -->
+    <!-- MODAL: KẾT NỐI ĐIỆN THOẠI BA MẸ (UNIFIED MOBILE CONNECTION HUB)             -->
     <!-- ========================================================================= -->
     <div id="device-pairing-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden" onclick="if(event.target===this)closeDevicePairingModal()">
-        <div class="bg-cardbg border border-bordercol rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div class="bg-cardbg border border-bordercol rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] overflow-y-auto" onclick="event.stopPropagation()">
             <!-- Top Close Button -->
             <button onclick="closeDevicePairingModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition" title="Đóng">
                 ✕
@@ -3394,82 +3422,215 @@
                 </div>
                 <div>
                     <h3 class="font-extrabold text-base text-slate-100">Kết Nối Điện Thoại Ba Mẹ</h3>
-                    <p class="text-xs text-slate-400">Xem trực tiếp camera nôi bé trên Android & iPhone</p>
+                    <p class="text-xs text-slate-400">Theo dõi nôi bé trực tiếp trên điện thoại Android, iPhone & iPad</p>
                 </div>
             </div>
 
-            <!-- Network Selection Tabs -->
-            <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs font-semibold">
-                <button id="net-tab-btn-local" onclick="switchPairingNetworkTab('local')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40">
-                    <span>🏠</span>
-                    <span>WiFi Tại Nhà</span>
+            <!-- Unified Mobile Navigation Tabs (3 Clean Tabs) -->
+            <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs font-semibold">
+                <button id="mhub-tab-btn-qr" onclick="switchMobileHubTab('qr')" class="py-2 px-1.5 rounded-xl transition flex items-center justify-center gap-1 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-sm">
+                    <span>⚡</span>
+                    <span class="truncate">Quét Mã QR</span>
                 </button>
-                <button id="net-tab-btn-remote" onclick="switchPairingNetworkTab('remote')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                <button id="mhub-tab-btn-remote" onclick="switchMobileHubTab('remote')" class="py-2 px-1.5 rounded-xl transition flex items-center justify-center gap-1 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
                     <span>🌐</span>
-                    <span>Xem Từ Xa (4G/5G)</span>
+                    <span class="truncate">Xem Từ Xa 4G</span>
+                </button>
+                <button id="mhub-tab-btn-app" onclick="switchMobileHubTab('app')" class="py-2 px-1.5 rounded-xl transition flex items-center justify-center gap-1 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                    <span>📥</span>
+                    <span class="truncate">Tải App ĐT</span>
                 </button>
             </div>
 
-            <!-- QR Code Box -->
-            <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-3">
-                <div class="w-52 h-52 sm:w-56 sm:h-56 mx-auto bg-slate-900 rounded-2xl border-2 border-teal-500/30 p-2 flex items-center justify-center shadow-xl">
-                    <img id="device-pairing-qr-img" src="/static/icons/icon-192.png" alt="Mã QR Kết Nối Điện Thoại" class="w-full h-full object-contain rounded-xl">
-                </div>
-                <div class="space-y-1">
-                    <p class="text-xs font-bold text-teal-300 flex items-center justify-center gap-1.5">
-                        <span>⚡</span>
-                        <span>Mở Camera điện thoại hoặc App quét mã trên</span>
-                    </p>
-                    <p id="pairing-qr-network-desc" class="text-[11px] text-slate-400">
-                        Kết nối trực tiếp qua mạng WiFi nội bộ gia đình (Siêu nhanh, không tốn 4G)
-                    </p>
-                </div>
-            </div>
-
-            <!-- Full Pairing URL & Copy -->
-            <div class="space-y-1.5">
-                <label class="block text-slate-400 text-[11px] font-semibold">Đường link kết nối (Đã mã hóa bảo mật):</label>
-                <div class="flex gap-2">
-                    <input type="text" id="input-pairing-full-url" readonly class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-teal-300 select-all outline-none">
-                    <button onclick="copyPairingLink()" class="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-xs transition active:scale-95 shrink-0 flex items-center gap-1">
-                        <span>📋</span>
-                        <span>Sao Chép</span>
+            <!-- ================= TAB 1: QUÉT MÃ QR (XEM CAMERA NGAY) ================= -->
+            <div id="mhub-content-qr" class="space-y-4">
+                <!-- Sub Network Selection: WiFi vs Remote -->
+                <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 text-xs font-semibold">
+                    <button id="net-tab-btn-local" onclick="switchPairingNetworkTab('local')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold">
+                        <span>🏠</span>
+                        <span>WiFi Tại Nhà</span>
+                    </button>
+                    <button id="net-tab-btn-remote" onclick="switchPairingNetworkTab('remote')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                        <span>🌐</span>
+                        <span>Mạng 4G/5G</span>
                     </button>
                 </div>
-            </div>
 
-            <!-- 3 Steps Guide -->
-            <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
-                <h5 class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
-                    <span>📋</span>
-                    <span>3 Bước kết nối nhanh trên điện thoại:</span>
-                </h5>
-                <ol class="space-y-1.5 text-[11px] text-slate-300 list-decimal list-inside pl-1 leading-relaxed">
-                    <li>Mở ứng dụng <b>BabyGuard AI</b> trên điện thoại Android (hoặc mở Camera/Zalo trên iPhone).</li>
-                    <li>Hướng camera điện thoại quét <b>Mã QR</b> ở trên.</li>
-                    <li>Điện thoại sẽ tự động kết nối và hiển thị camera nôi bé ngay lập tức!</li>
-                </ol>
-            </div>
+                <!-- QR Code Box -->
+                <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-3">
+                    <div class="w-48 h-48 sm:w-56 sm:h-56 mx-auto bg-slate-900 rounded-2xl border-2 border-teal-500/30 p-2 flex items-center justify-center shadow-xl">
+                        <img id="device-pairing-qr-img" src="/static/icons/icon-192.png" alt="Mã QR Kết Nối Điện Thoại" class="w-full h-full object-contain rounded-xl">
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-xs font-bold text-teal-300 flex items-center justify-center gap-1.5">
+                            <span>⚡</span>
+                            <span>Mở Camera điện thoại hoặc Zalo quét mã</span>
+                        </p>
+                        <p id="pairing-qr-network-desc" class="text-[11px] text-slate-400">
+                            Kết nối trực tiếp qua mạng WiFi nội bộ gia đình (Siêu mượt, không tốn 4G)
+                        </p>
+                    </div>
+                </div>
 
-            <!-- Custom Server Overrides -->
-            <details class="text-[11px] text-slate-400 border border-slate-800/80 rounded-xl p-2.5">
-                <summary class="cursor-pointer font-semibold text-slate-300 hover:text-white">
-                    ⚙️ Tùy chỉnh đổi máy chủ kết nối thủ công
-                </summary>
-                <div class="pt-2 space-y-2">
-                    <input type="text" id="input-custom-device-url" placeholder="http://192.168.1.15:8080" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-mono text-xs">
+                <!-- Full Pairing URL & Copy -->
+                <div class="space-y-1.5">
+                    <label class="block text-slate-400 text-[11px] font-semibold">Đường link kết nối (Mã hóa bảo mật):</label>
                     <div class="flex gap-2">
-                        <button onclick="saveCustomDeviceUrl()" class="flex-1 py-1.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-xs">
-                            Lưu Link Thủ Công
-                        </button>
-                        <button onclick="resetToDefaultDevice()" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs">
-                            Khôi Phục
+                        <input type="text" id="input-pairing-full-url" readonly class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-teal-300 select-all outline-none">
+                        <button onclick="copyPairingLink()" class="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-xs transition active:scale-95 shrink-0 flex items-center gap-1">
+                            <span>📋</span>
+                            <span>Sao Chép</span>
                         </button>
                     </div>
                 </div>
-            </details>
-        </div>
-    </div>
+
+                <!-- 3 Steps Guide -->
+                <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+                    <h5 class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
+                        <span>📋</span>
+                        <span>3 Bước kết nối nhanh trên điện thoại:</span>
+                    </h5>
+                    <ol class="space-y-1.5 text-[11px] text-slate-300 list-decimal list-inside pl-1 leading-relaxed">
+                        <li>Mở ứng dụng <b>BabyGuard AI</b> trên điện thoại Android (hoặc Camera/Zalo trên iPhone).</li>
+                        <li>Hướng camera điện thoại quét <b>Mã QR</b> ở trên.</li>
+                        <li>Điện thoại sẽ tự động kết nối và hiển thị camera nôi bé ngay lập tức!</li>
+                    </ol>
+                </div>
+
+                <!-- Custom Server Overrides -->
+                <details class="text-[11px] text-slate-400 border border-slate-800/80 rounded-xl p-2.5">
+                    <summary class="cursor-pointer font-semibold text-slate-300 hover:text-white">
+                        ⚙️ Tùy chỉnh đổi máy chủ kết nối thủ công
+                    </summary>
+                    <div class="pt-2 space-y-2">
+                        <input type="text" id="input-custom-device-url" placeholder="http://192.168.1.15:8080" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-mono text-xs">
+                        <div class="flex gap-2">
+                            <button onclick="saveCustomDeviceUrl()" class="flex-1 py-1.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-xs">
+                                Lưu Link Thủ Công
+                            </button>
+                            <button onclick="resetToDefaultDevice()" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs">
+                                Khôi Phục
+                            </button>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <!-- ================= TAB 2: XEM TỪ XA 4G/5G (CLOUDFLARE SECURE TUNNEL) ================= -->
+            <div id="mhub-content-remote" class="space-y-4 hidden">
+                <div class="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-500/30 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🌐</span>
+                            <div>
+                                <h4 class="font-bold text-xs text-cyan-300">Đường Truyền Cloudflare Tunnel An Toàn</h4>
+                                <p class="text-[11px] text-slate-400">Xem trực tiếp camera bé khi ba mẹ đi làm hoặc công tác xa</p>
+                            </div>
+                        </div>
+                        <span id="mhub-remote-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            ● Đang Hoạt Động
+                        </span>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-slate-400 text-[11px] font-semibold">Địa chỉ xem từ xa HTTPS (Bảo mật 100%):</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="mhub-remote-input-url" readonly class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-cyan-300 select-all outline-none">
+                            <button onclick="copyMhubRemoteLink()" class="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs transition active:scale-95 shrink-0 flex items-center gap-1">
+                                <span>📋</span>
+                                <span>Sao Chép</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 pt-1">
+                        <a id="mhub-remote-open-link" href="#" target="_blank" class="flex-1 py-2 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                            <span>🔗</span>
+                            <span>Mở Trong Tab Mới</span>
+                        </a>
+                        <button onclick="refreshCloudflareTunnel()" class="py-2 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition">
+                            <span>🔄</span>
+                            <span>Làm Mới Tunnel</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+                    <h5 class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
+                        <span>🛡️</span>
+                        <span>Đặc tính bảo mật khi xem từ xa:</span>
+                    </h5>
+                    <ul class="space-y-1 text-[11px] text-slate-300 list-disc list-inside pl-1 leading-relaxed">
+                        <li>Mã hóa SSL/TLS 256-bit chuẩn ngân hàng quốc tế.</li>
+                        <li>Không mở cổng modem mạng gia đình (Zero Port-Forwarding), ngăn chặn hoàn toàn nguy cơ rò rỉ hình ảnh.</li>
+                        <li>Tốc độ truyền tải siêu tốc qua mạng lưới máy chủ Cloudflare toàn cầu.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ================= TAB 3: CÀI ĐẶT APP ĐIỆN THOẠI (ANDROID APK & IOS) ================= -->
+            <div id="mhub-content-app" class="space-y-4 hidden">
+                <!-- Sub Tab: Android APK vs iPhone iOS -->
+                <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 text-xs font-semibold">
+                    <button id="mhub-app-sub-apk" onclick="switchAppSubTab('apk')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                        <span>🤖</span>
+                        <span>Android APK</span>
+                    </button>
+                    <button id="mhub-app-sub-ios" onclick="switchAppSubTab('ios')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                        <span>🍎</span>
+                        <span>iPhone & iPad (iOS)</span>
+                    </button>
+                </div>
+
+                <!-- Sub-Content: Android APK -->
+                <div id="mhub-app-content-apk" class="space-y-3.5">
+                    <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row items-center gap-3.5 text-center sm:text-left">
+                        <div class="w-32 h-32 bg-slate-900 rounded-xl border border-emerald-500/30 flex items-center justify-center p-1 shrink-0 shadow-lg">
+                            <img id="mhub-app-apk-qr" src="/static/icons/icon-192.png" alt="QR Tải APK" class="w-full h-full object-contain rounded-lg">
+                        </div>
+                        <div class="space-y-1.5">
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                ⚡ Quét Mã Tải Về Điện Thoại
+                            </span>
+                            <h4 class="text-xs font-bold text-slate-200">Quét Camera hoặc Zalo để tải file APK</h4>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">
+                                Hướng camera điện thoại quét mã QR bên cạnh để tải trực tiếp bản cài đặt Android về máy.
+                            </p>
+                        </div>
+                    </div>
+
+                    <a id="mhub-btn-download-apk" href="/download/app.apk" download="BabyGuard_AI.apk" class="w-full py-3 px-4 rounded-2xl font-black text-xs sm:text-sm bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 transition active:scale-95">
+                        <span>📥</span>
+                        <span>Tải File BabyGuard_AI.apk (Cài Nhanh)</span>
+                    </a>
+
+                    <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5 text-[11px] text-slate-300 leading-relaxed">
+                        <p class="font-bold text-slate-200">3 Bước cài đặt trên Android:</p>
+                        <p>1. Nhấn nút <b>Tải File APK</b> ở trên -> Chọn <i>"Vẫn tải xuống"</i> nếu có thông báo.</p>
+                        <p>2. Mở file vừa tải -> Nhấn <b>"Cài đặt"</b> (Cho phép từ nguồn này nếu máy hỏi).</p>
+                        <p>3. Mở ứng dụng <b>BabyGuard AI</b> trên màn hình chính và bắt đầu theo dõi bé 24/7!</p>
+                    </div>
+                </div>
+
+                <!-- Sub-Content: iPhone iOS PWA -->
+                <div id="mhub-app-content-ios" class="space-y-3.5 hidden">
+                    <div class="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 space-y-2.5 text-xs">
+                        <div class="flex items-center gap-2 text-indigo-300 font-bold">
+                            <span>🍎</span>
+                            <span>Cài đặt 1 Chạm Cho iPhone & iPad (Apple iOS):</span>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            Không cần qua App Store phức tạp! Ba mẹ có thể cài đặt BabyGuard AI thành ứng dụng độc lập toàn màn hình chuẩn PWA:
+                        </p>
+                        <ol class="space-y-2 text-[11px] text-slate-300 list-decimal list-inside pl-1 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                            <li>Mở trình duyệt <b>Safari</b> trên iPhone và truy cập link BabyGuard (hoặc quét mã QR ở Tab 1).</li>
+                            <li>Bấm vào biểu tượng <b>Chia sẻ</b> (hình ô vuông có mũi tên chỉ lên <b>⬆️</b> ở thanh dưới cùng Safari).</li>
+                            <li>Cuộn xuống và chọn <b>"Thêm vào Màn hình chính"</b> (Add to Home Screen) -> Nhấn <b>"Thêm"</b> (Add).</li>
+                            <li>Biểu tượng <b>BabyGuard AI 👶</b> sẽ xuất hiện ngay trên màn hình chính iPhone của ba mẹ, chạy mượt mà như app gốc!</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -4572,7 +4733,9 @@
         function renderDailyStory(story) {
             const titleEl = document.getElementById('story-title');
             const quoteEl = document.getElementById('story-quote');
+            const quoteContainer = document.getElementById('story-quote-container');
             const contentEl = document.getElementById('story-content');
+            const themeBadge = document.getElementById('story-theme-badge');
             const catBadge = document.getElementById('story-category-badge');
             const srcText = document.getElementById('story-source-text');
             const lessonEl = document.getElementById('story-parenting-lesson');
@@ -4580,8 +4743,18 @@
 
             if (titleEl) titleEl.innerText = story.title || 'Câu Chuyện Hôm Nay';
             if (quoteEl) quoteEl.innerText = story.quote ? `"${story.quote}"` : '';
+            if (quoteContainer) {
+                if (story.quote) {
+                    quoteContainer.classList.remove('hidden');
+                } else {
+                    quoteContainer.classList.add('hidden');
+                }
+            }
             if (contentEl) contentEl.innerText = story.content || '';
-            if (catBadge) catBadge.innerText = story.category || 'Bài học cuộc sống';
+            if (themeBadge) {
+                themeBadge.innerText = story.theme_name ? `🌟 ${story.theme_name}` : '🌟 Bài Học Nhân Cách';
+            }
+            if (catBadge) catBadge.innerText = story.category || 'Ngụ ngôn chọn lọc';
             if (srcText) srcText.innerText = story.source ? `Trích từ: ${story.source}` : '';
             if (lessonEl) lessonEl.innerText = story.parenting_lesson || '';
             if (babyTalkEl) babyTalkEl.innerText = story.baby_talk_prompt ? `"${story.baby_talk_prompt}"` : '';
@@ -7725,31 +7898,132 @@
         window._currentPairingNetTab = 'local';
         let _mobileHtml5QrScanner = null;
 
-        async function openDevicePairingModal() {
+        // =========================================================================
+        // UNIFIED MOBILE HUB & PHONE PAIRING (KẾT NỐI ĐIỆN THOẠI TOÀN DIỆN)
+        // =========================================================================
+        window._pairingInfo = null;
+        window._currentPairingNetTab = 'local';
+        let _mobileHtml5QrScanner = null;
+
+        async function openMobileHubModal(defaultTab = 'qr') {
             const modal = document.getElementById('device-pairing-modal');
             if (!modal) return;
             modal.classList.remove('hidden');
+
+            switchMobileHubTab(defaultTab);
 
             try {
                 const res = await fetch('/api/pairing-info');
                 const data = await res.json();
                 if (data && data.success) {
                     window._pairingInfo = data;
-                    // Mặc định chọn tab nội bộ WiFi (hoặc remote nếu đang ở ngoài)
+                    // Cập nhật tab quét QR
                     const isRemoteOnly = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !window.location.hostname.startsWith('192.168.');
                     switchPairingNetworkTab(isRemoteOnly && data.has_remote ? 'remote' : 'local');
+
+                    // Cập nhật thông tin Tab 2: Xem Từ Xa 4G
+                    const remoteUrl = data.remote_pair_url || data.remote_url || '';
+                    const remoteInput = document.getElementById('mhub-remote-input-url');
+                    const remoteOpenLink = document.getElementById('mhub-remote-open-link');
+                    const remoteStatus = document.getElementById('mhub-remote-status-pill');
+
+                    if (remoteInput && remoteUrl) remoteInput.value = remoteUrl;
+                    if (remoteOpenLink && remoteUrl) remoteOpenLink.href = remoteUrl;
+                    if (remoteStatus) {
+                        if (data.has_remote) {
+                            remoteStatus.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                            remoteStatus.innerText = '● Đang Hoạt Động';
+                        } else {
+                            remoteStatus.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40';
+                            remoteStatus.innerText = '⚠️ Chưa Bật Tunnel';
+                        }
+                    }
+
+                    // Cập nhật QR tải APK
+                    const apkQr = document.getElementById('mhub-app-apk-qr');
+                    if (apkQr) {
+                        const apkDownloadUrl = window.location.origin + '/download/app.apk';
+                        apkQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(apkDownloadUrl)}&color=16-185-129&bgcolor=15-23-42`;
+                    }
                 }
             } catch (e) {
                 console.warn('Lỗi lấy thông tin ghép nối:', e);
-                // Fallback cục bộ
                 const fallbackUrl = window.location.origin + '/cam';
                 updatePairingQrDisplay(fallbackUrl);
             }
         }
 
-        function closeDevicePairingModal() {
+        function closeMobileHubModal() {
             const modal = document.getElementById('device-pairing-modal');
             if (modal) modal.classList.add('hidden');
+        }
+
+        // Backward compatibility aliases
+        function openDevicePairingModal() { openMobileHubModal('qr'); }
+        function closeDevicePairingModal() { closeMobileHubModal(); }
+        function openAppDownloadModal() { openMobileHubModal('app'); }
+        function closeAppDownloadModal() { closeMobileHubModal(); }
+
+        function switchMobileHubTab(tab) {
+            const tabBtnQr = document.getElementById('mhub-tab-btn-qr');
+            const tabBtnRemote = document.getElementById('mhub-tab-btn-remote');
+            const tabBtnApp = document.getElementById('mhub-tab-btn-app');
+
+            const contentQr = document.getElementById('mhub-content-qr');
+            const contentRemote = document.getElementById('mhub-content-remote');
+            const contentApp = document.getElementById('mhub-content-app');
+
+            // Reset tab buttons
+            [tabBtnQr, tabBtnRemote, tabBtnApp].forEach(btn => {
+                if (btn) btn.className = 'py-2 px-1.5 rounded-xl transition flex items-center justify-center gap-1 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+            });
+            // Hide all tab contents
+            [contentQr, contentRemote, contentApp].forEach(content => {
+                if (content) content.classList.add('hidden');
+            });
+
+            if (tab === 'remote') {
+                if (tabBtnRemote) tabBtnRemote.className = 'py-2 px-1.5 rounded-xl transition flex items-center justify-center gap-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold shadow-sm';
+                if (contentRemote) contentRemote.classList.remove('hidden');
+            } else if (tab === 'app') {
+                if (tabBtnApp) tabBtnApp.className = 'py-2 px-1.5 rounded-xl transition flex items-center justify-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold shadow-sm';
+                if (contentApp) contentApp.classList.remove('hidden');
+            } else {
+                // Default: QR Scan
+                if (tabBtnQr) tabBtnQr.className = 'py-2 px-1.5 rounded-xl transition flex items-center justify-center gap-1 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-sm';
+                if (contentQr) contentQr.classList.remove('hidden');
+            }
+        }
+
+        function switchAppSubTab(sub) {
+            const btnApk = document.getElementById('mhub-app-sub-apk');
+            const btnIos = document.getElementById('mhub-app-sub-ios');
+            const contentApk = document.getElementById('mhub-app-content-apk');
+            const contentIos = document.getElementById('mhub-app-content-ios');
+
+            if (sub === 'ios') {
+                if (btnIos) btnIos.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold';
+                if (btnApk) btnApk.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+                if (contentIos) contentIos.classList.remove('hidden');
+                if (contentApk) contentApk.classList.add('hidden');
+            } else {
+                if (btnApk) btnApk.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold';
+                if (btnIos) btnIos.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+                if (contentApk) contentApk.classList.remove('hidden');
+                if (contentIos) contentIos.classList.add('hidden');
+            }
+        }
+
+        function copyMhubRemoteLink() {
+            const input = document.getElementById('mhub-remote-input-url');
+            if (!input || !input.value) return;
+            navigator.clipboard.writeText(input.value).then(() => {
+                showToast('Đã sao chép link 4G xem từ xa! Ba có thể dán vào trình duyệt điện thoại.', '📋');
+            }).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                showToast('Đã sao chép link 4G xem từ xa!', '📋');
+            });
         }
 
         function switchPairingNetworkTab(mode) {
