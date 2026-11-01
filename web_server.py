@@ -17,7 +17,7 @@ import requests
 import sounddevice as sd
 import secrets
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSONResponse, RedirectResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -543,6 +543,69 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                     }
                 )
         return JSONResponse({"status": "not_ready", "message": "Gói cài đặt MacBook đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
+
+    @app.get("/install-mac")
+    @app.get("/install.sh")
+    async def install_mac_script():
+        script = """#!/bin/bash
+set -e
+echo "=========================================================="
+echo "🍼 CÀI ĐẶT TỰ ĐỘNG BABYGUARD AI CHO MACOS (1-CLICK NATIVE)"
+echo "=========================================================="
+TARGET_DIR="/Applications"
+DEST_APP="$TARGET_DIR/BabyGuard AI.app"
+TEMP_ZIP="/tmp/BabyGuard_Mac.zip"
+
+echo "⬇️ Đang tải BabyGuard AI từ https://babyguard.site..."
+curl -fsSL -o "$TEMP_ZIP" "https://babyguard.site/download/BabyGuard_Mac.zip"
+
+echo "📦 Đang cài đặt vào Thư mục Ứng dụng (/Applications)..."
+if [ -d "$DEST_APP" ]; then
+    rm -rf "$DEST_APP"
+fi
+unzip -q -o "$TEMP_ZIP" -d "$TARGET_DIR"
+rm -f "$TEMP_ZIP"
+
+echo "🛡️ Đang gỡ bỏ cờ cách ly macOS Gatekeeper..."
+xattr -cr "$DEST_APP" 2>/dev/null || true
+xattr -dr com.apple.quarantine "$DEST_APP" 2>/dev/null || true
+chmod -R 755 "$DEST_APP" 2>/dev/null || true
+
+echo "🎉 Cài đặt hoàn tất! Đang khởi chạy BabyGuard AI..."
+open "$DEST_APP"
+"""
+        return PlainTextResponse(script, media_type="text/plain; charset=utf-8")
+
+    @app.get("/install-win.ps1")
+    async def install_win_script():
+        script = """Write-Host "==========================================================" -ForegroundColor Green
+Write-Host "🍼 CÀI ĐẶT TỰ ĐỘNG BABYGUARD AI CHO WINDOWS (1-CLICK)" -ForegroundColor Green
+Write-Host "==========================================================" -ForegroundColor Green
+$destDir = "$env:LOCALAPPDATA\\BabyGuard_Windows"
+$zipPath = "$env:TEMP\\BabyGuard_Windows.zip"
+
+Write-Host "⬇️ Đang tải BabyGuard AI từ máy chủ https://babyguard.site..." -ForegroundColor Cyan
+Invoke-WebRequest -Uri "https://babyguard.site/download/BabyGuard_Windows.zip" -OutFile $zipPath
+
+Write-Host "📦 Đang giải nén cài đặt..." -ForegroundColor Cyan
+if (Test-Path $destDir) { Remove-Item -Recurse -Force $destDir }
+Expand-Archive -Path $zipPath -DestinationPath $env:LOCALAPPDATA -Force
+Remove-Item -Force $zipPath
+
+Write-Host "🛡️ Gỡ bỏ cờ bảo mật SmartScreen..." -ForegroundColor Cyan
+Get-ChildItem -Path "$destDir" -Recurse | Unblock-File -ErrorAction SilentlyContinue
+
+Write-Host "📌 Đang tạo lối tắt Desktop..." -ForegroundColor Cyan
+$wsh = New-Object -ComObject WScript.Shell
+$shortcut = $wsh.CreateShortcut("$env:USERPROFILE\\Desktop\\BabyGuard AI.lnk")
+$shortcut.TargetPath = "$destDir\\BabyGuard AI.bat"
+$shortcut.WorkingDirectory = "$destDir"
+$shortcut.Save()
+
+Write-Host "🎉 Cài đặt thành công! Đang khởi động BabyGuard AI..." -ForegroundColor Green
+Start-Process "$destDir\\BabyGuard AI.bat"
+"""
+        return PlainTextResponse(script, media_type="text/plain; charset=utf-8")
 
     @app.get("/landing", response_class=HTMLResponse)
     @app.get("/huong-dan", response_class=HTMLResponse)
