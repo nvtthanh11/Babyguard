@@ -276,10 +276,57 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
-        is_local = is_local_request(request)
+        raw_host = request.headers.get("host", "").lower().split(":")[0]
+        landing_file = os.path.join(BASE_DIR, "docs", "index.html")
 
-        # 1. Nếu mở từ máy nội bộ gia đình -> VÀO THẲNG PHẦN MỀM
-        if is_local:
+        # =========================================================================
+        # 1. TÊN MIỀN BÁN HÀNG CÔNG KHAI: babyguard.site & www.babyguard.site
+        # TUYỆT ĐỐI 100% LUÔN LUÔN TRẢ VỀ TRANG BÁN HÀNG (LANDING PAGE docs/index.html)!
+        # KHÔNG BAO GIỜ HIỂN THỊ CAMERA NHÀ DÙ CÓ COOKIE HAY BẤT KỲ ĐIỀU KIỆN GÌ!
+        # =========================================================================
+        if raw_host in ("babyguard.site", "www.babyguard.site"):
+            if os.path.exists(landing_file):
+                return FileResponse(landing_file, media_type="text/html")
+            return HTMLResponse("<h1>BabyGuard AI Official Website</h1>", status_code=200)
+
+        # =========================================================================
+        # 2. TÊN MIỀN CAMERA TỪ XA CHO BA MẸ: cam.babyguard.site
+        # =========================================================================
+        if raw_host == "cam.babyguard.site":
+            cfg = load_config()
+            acc_key = get_access_key(cfg)
+            auth_cookie = request.cookies.get("babyguard_auth", "")
+            q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("auth", "") or request.query_params.get("token", "")
+
+            # Nếu có chìa khóa xác thực (đã ghép nối qua cookie hoặc link magic ?k=...)
+            if (auth_cookie and hmac.compare_digest(auth_cookie, acc_key)) or (q_key and hmac.compare_digest(q_key, acc_key)):
+                response = templates.TemplateResponse(
+                    request=request,
+                    name="index.html",
+                    context={"is_hub": True, "requires_pairing": False}
+                )
+                response.set_cookie(
+                    key="babyguard_auth",
+                    value=acc_key,
+                    max_age=365 * 86400,
+                    httponly=True,
+                    samesite="lax"
+                )
+                return response
+
+            # Nếu chưa ghép nối hoặc người lạ -> Chuyển về màn hình ghép nối bảo mật
+            return templates.TemplateResponse(
+                request=request,
+                name="index.html",
+                context={"is_hub": False, "requires_pairing": True}
+            )
+
+        # =========================================================================
+        # 3. TRUY CẬP CỤC BỘ TRÊN MÁY TÍNH NÔI BÉ / MẠNG WIFI NỘI BỘ (Local Network)
+        # (localhost / 127.0.0.1 / 192.168.x.x / 10.x.x.x)
+        # =========================================================================
+        is_local = is_local_request(request)
+        if is_local or raw_host in ("localhost", "127.0.0.1") or raw_host.startswith("192.168.") or raw_host.startswith("10."):
             cfg = load_config()
             acc_key = get_access_key(cfg)
             response = templates.TemplateResponse(
@@ -296,19 +343,9 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             )
             return response
 
-        # 2. Nếu khách có cookie xác thực tự động hợp lệ -> Vào thẳng camera
-        cfg = load_config()
-        acc_key = get_access_key(cfg)
-        auth_cookie = request.cookies.get("babyguard_auth", "")
-        if auth_cookie and hmac.compare_digest(auth_cookie, acc_key):
-            return templates.TemplateResponse(
-                request=request,
-                name="index.html",
-                context={"is_hub": True, "requires_pairing": False}
-            )
-
-        # 3. Toàn bộ khách lạ truy cập từ internet qua domain babyguard.site -> TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
-        landing_file = os.path.join(BASE_DIR, "docs", "index.html")
+        # =========================================================================
+        # 4. MẶC ĐỊNH AN TOÀN TUYỆT ĐỐI CHO MỌI HOST KHÁC:
+        # =========================================================================
         if os.path.exists(landing_file):
             return FileResponse(landing_file, media_type="text/html")
         return templates.TemplateResponse(
