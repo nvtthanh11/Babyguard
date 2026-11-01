@@ -2,12 +2,21 @@
   "version": "2.1.0",
   "name": "BabyGuard AI Commercial Edition",
   "release_date": "2026-11-01",
+  "official_domain": "https://babyguard.site",
+  "update_url": "https://babyguard.site/version.json",
   "features": [
     "Khung Nôi An Toàn 3D Neon cảm ứng trên điện thoại (chạm kéo 4 góc nôi)",
     "P2P WebRTC Direct Stream độ trễ 0s giữa 2 điện thoại",
     "Phân tích tiếng khóc & cử động thời gian thực offline trên điện thoại",
-    "Đồng bộ cập nhật tức thì qua mạng (Over-The-Air OTA)",
-    "Bảo toàn dữ liệu cữ ngủ, video, ảnh kỷ niệm & license khi nâng cấp"
+    "Tạo Video Kỷ Niệm âm nhạc tự động lồng nhạc Brahms Lullaby từ khoảnh khắc bé",
+    "Tự động kiểm tra & cập nhật phiên bản mới OTA từ máy chủ chính thức babyguard.site",
+    "Bảo toàn 100% dữ liệu cữ ngủ, video, ảnh kỷ niệm & bản quyền khi nâng cấp"
   ],
-  "download_url": "https://babyguard.io.vn/#download"
+  "download_url": "https://babyguard.site/#download",
+  "packages": {
+    "windows": "https://babyguard.site/download/BabyGuard_Windows.zip",
+    "mac_dmg": "https://babyguard.site/download/BabyGuard_Mac.dmg",
+    "mac_zip": "https://babyguard.site/download/BabyGuard_Mac.zip",
+    "universal": "https://babyguard.site/download/BabyGuard_AI.zip"
+  }
 }

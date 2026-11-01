@@ -1,6 +1,7 @@
 import os
 import io
 import zipfile
+import shutil
 import json
 import time
 import base64
@@ -337,6 +338,28 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             return FileResponse(sw_file, media_type="application/javascript")
         return JSONResponse({"status": "error", "message": "sw.js not found"}, status_code=404)
 
+    @app.api_route("/version.json", methods=["GET", "HEAD"])
+    async def get_version_json_manifest():
+        v_file = os.path.join(BASE_DIR, "version.json")
+        if os.path.exists(v_file):
+            return FileResponse(
+                v_file,
+                media_type="application/json",
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Access-Control-Allow-Origin": "*"
+                }
+            )
+        return JSONResponse(
+            {
+                "version": "2.1.0",
+                "name": "BabyGuard AI Commercial Edition",
+                "official_domain": "https://babyguard.site",
+                "download_url": "https://babyguard.site/#download"
+            },
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+
     @app.api_route("/download/app.apk", methods=["GET", "HEAD"])
     async def download_apk():
         apk_path = os.path.join(static_dir, "BabyGuard_AI.apk")
@@ -370,10 +393,13 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.api_route("/download/desktop-app", methods=["GET", "HEAD"])
     @app.api_route("/download/app.zip", methods=["GET", "HEAD"])
     @app.api_route("/download/BabyGuard_AI.zip", methods=["GET", "HEAD"])
+    @app.api_route("/download/update.zip", methods=["GET", "HEAD"])
     async def download_desktop_app():
         candidates = [
             os.path.join(static_dir, "BabyGuard_AI_v2.0_Commercial.zip"),
             os.path.join(BASE_DIR, "dist", "BabyGuard_AI_v2.0_Commercial.zip"),
+            os.path.join(static_dir, "BabyGuard_Windows.zip"),
+            os.path.join(BASE_DIR, "dist", "BabyGuard_Windows.zip"),
             os.path.join(BASE_DIR, "BabyGuard_AI_v1.0_Commercial.zip"),
             os.path.join(os.path.dirname(BASE_DIR), "BabyGuard_AI_v1.0_Commercial.zip")
         ]
@@ -708,22 +734,26 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         remote_info = None
         has_update = False
 
-        try:
-            resp = requests.get(
-                "https://raw.githubusercontent.com/nvtthanh11/Babyguard/main/version.json",
-                timeout=4
-            )
-            if resp.status_code == 200:
-                remote_info = resp.json()
-                remote_v = remote_info.get("version", current_v)
+        endpoints = [
+            "https://babyguard.site/version.json",
+            "https://cam.babyguard.site/version.json",
+            "https://raw.githubusercontent.com/nvtthanh11/Babyguard/main/version.json"
+        ]
+        for ep in endpoints:
+            try:
+                resp = requests.get(ep, timeout=4)
+                if resp.status_code == 200:
+                    remote_info = resp.json()
+                    remote_v = remote_info.get("version", current_v)
 
-                def to_tuple(v):
-                    return tuple(int(x) for x in str(v).replace("v", "").split(".") if x.isdigit())
+                    def to_tuple(v):
+                        return tuple(int(x) for x in str(v).replace("v", "").split(".") if x.isdigit())
 
-                if to_tuple(remote_v) > to_tuple(current_v):
-                    has_update = True
-        except Exception as e:
-            print(f"[Update Checker] Network note: {e}")
+                    if to_tuple(remote_v) > to_tuple(current_v):
+                        has_update = True
+                    break
+            except Exception as e:
+                continue
 
         return {
             "has_update": has_update,
@@ -731,7 +761,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "latest_version": remote_info.get("version", current_v) if remote_info else current_v,
             "release_date": remote_info.get("release_date", "") if remote_info else "",
             "features": remote_info.get("features", []) if remote_info else [],
-            "download_url": remote_info.get("download_url", "https://babyguard.io.vn/#download") if remote_info else ""
+            "download_url": remote_info.get("download_url", "https://babyguard.site/#download") if remote_info else "https://babyguard.site/#download"
         }
 
     @app.post("/api/system/perform_update")
@@ -757,44 +787,72 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             except Exception as e:
                 return {"success": False, "message": f"Lỗi khi thực hiện git pull: {str(e)}"}
 
+        download_candidates = [
+            "https://babyguard.site/download/BabyGuard_AI.zip",
+            "https://cam.babyguard.site/download/BabyGuard_AI.zip",
+            "https://babyguard.site/download/desktop-app",
+            "https://raw.githubusercontent.com/nvtthanh11/Babyguard/main/dist/BabyGuard_AI_v2.0_Commercial.zip"
+        ]
+
+        resp = None
+        target_url = ""
+        for url in download_candidates:
+            try:
+                r = requests.get(url, timeout=90, stream=True)
+                if r.status_code == 200:
+                    resp = r
+                    target_url = url
+                    break
+            except Exception:
+                continue
+
+        if not resp:
+            return {"success": False, "message": "Không thể kết nối máy chủ babyguard.site để tải bản cập nhật."}
+
         try:
-            update_zip_url = "https://raw.githubusercontent.com/nvtthanh11/Babyguard/main/dist/BabyGuard_AI_v2.0_Commercial.zip"
-            resp = requests.get(update_zip_url, timeout=60, stream=True)
-            if resp.status_code != 200:
-                update_zip_url = "https://babyguard.io.vn/download/desktop-app"
-                resp = requests.get(update_zip_url, timeout=60, stream=True)
+            temp_zip_path = os.path.join(BASE_DIR, "babyguard_update_temp.zip")
+            with open(temp_zip_path, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=65536):
+                    if chunk:
+                        f.write(chunk)
 
-            if resp.status_code == 200:
-                temp_zip_path = os.path.join(BASE_DIR, "babyguard_update_temp.zip")
-                with open(temp_zip_path, "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=65536):
-                        if chunk:
-                            f.write(chunk)
+            PROTECTED_ITEMS = {
+                "config.json", ".babyguard_license_state", "sleep_data.json",
+                "daily_delta_log.json", "baby_growth.json", "baby_growth_ai.json",
+                "baby_vaccines.json", "sepay_transactions.json", "recordings",
+                "snapshots", "moments", "logs", ".venv", "venv"
+            }
 
-                PROTECTED_ITEMS = {
-                    "config.json", ".babyguard_license_state", "sleep_data.json",
-                    "daily_delta_log.json", "baby_growth.json", "baby_growth_ai.json",
-                    "baby_vaccines.json", "sepay_transactions.json", "recordings",
-                    "snapshots", "moments", "logs", ".venv", "venv"
-                }
-
-                with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
-                    for member in zip_ref.namelist():
-                        top_part = member.split('/')[0]
-                        if top_part in PROTECTED_ITEMS or member in PROTECTED_ITEMS:
+            with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+                for member in zip_ref.namelist():
+                    norm = member.replace("\\", "/").strip("/")
+                    parts = norm.split('/')
+                    if not parts or parts[0] in PROTECTED_ITEMS:
+                        continue
+                    if parts[0] in ("BabyGuard_AI_v2.0_Commercial", "BabyGuard_Windows", "app_core"):
+                        if len(parts) > 1 and parts[1] in PROTECTED_ITEMS:
                             continue
+                        rel_sub = "/".join(parts[1:])
+                        if not rel_sub:
+                            continue
+                        target_file = os.path.join(BASE_DIR, rel_sub)
+                        if member.endswith("/"):
+                            os.makedirs(target_file, exist_ok=True)
+                        else:
+                            os.makedirs(os.path.dirname(target_file), exist_ok=True)
+                            with zip_ref.open(member) as src, open(target_file, "wb") as dst:
+                                shutil.copyfileobj(src, dst)
+                    else:
                         zip_ref.extract(member, BASE_DIR)
 
-                if os.path.exists(temp_zip_path):
-                    os.remove(temp_zip_path)
+            if os.path.exists(temp_zip_path):
+                os.remove(temp_zip_path)
 
-                return {
-                    "success": True,
-                    "method": "ota_zip",
-                    "message": "Đã nâng cấp hệ thống thành công! Dữ liệu cữ ngủ & bản quyền của gia đình được bảo toàn 100%."
-                }
-            else:
-                return {"success": False, "message": f"Không thể tải bản cập nhật (Mã lỗi {resp.status_code})"}
+            return {
+                "success": True,
+                "method": "ota_zip",
+                "message": "Đã nâng cấp hệ thống thành công từ babyguard.site! Toàn bộ dữ liệu cữ ngủ & bản quyền được bảo toàn 100%."
+            }
         except Exception as e:
             return {"success": False, "message": f"Lỗi cập nhật: {str(e)}"}
 

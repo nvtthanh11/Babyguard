@@ -15,6 +15,7 @@ from sleep_tracker import SleepTracker
 from gemini_verifier import GeminiHybridVerifier
 from tunnel_manager import TunnelManager
 from web_server import create_app
+from auto_updater import AutoUpdateWorker
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -255,12 +256,16 @@ def main():
                 "🍼 <b>BABYGUARD AI — KẾT NỐI TỪ XA ĐÃ SẴN SÀNG!</b>\n\n"
                 f"📱 <b>Link xem camera từ xa trên 4G/5G:</b>\n👉 <a href='{url}'>{url}</a>\n\n"
                 f"🏠 <b>Link xem tại nhà (WiFi):</b>\n👉 http://localhost:{port}\n\n"
-                "<i>Bố mẹ có thể bấm trực tiếp vào link trên điện thoại khi ở ngoài để xem bé mọi lúc mọi nơi!</i>"
+                "<i>Ba mẹ có thể bấm trực tiếp vào link trên điện thoại khi ở ngoài để xem bé mọi lúc mọi nơi!</i>"
             )
             alert_manager.send_telegram_text(msg)
 
     tunnel_manager = TunnelManager(CONFIG_PATH, port=port, on_tunnel_ready=on_tunnel_ready)
     tunnel_manager.start()
+
+    # 4.1 Auto Update Engine (Over-The-Air from official domain https://babyguard.site)
+    auto_updater = AutoUpdateWorker(base_dir=BASE_DIR, alert_manager=alert_manager)
+    auto_updater.start()
 
     # 5. Web Application
     app = create_app(
@@ -277,6 +282,7 @@ def main():
 
     def shutdown_handler(sig, frame):
         print("\n[BabyGuard AI] Đang tắt các tiến trình...")
+        auto_updater.stop()
         tunnel_manager.stop()
         vision_tracker.stop()
         audio_detector.stop()
@@ -292,6 +298,7 @@ def main():
         try:
             uvicorn.run(app, host=host, port=port, log_level="warning")
         finally:
+            auto_updater.stop()
             tunnel_manager.stop()
             vision_tracker.stop()
             audio_detector.stop()
@@ -322,6 +329,7 @@ def main():
             while True:
                 time.sleep(1)
         finally:
+            auto_updater.stop()
             tunnel_manager.stop()
             vision_tracker.stop()
             audio_detector.stop()

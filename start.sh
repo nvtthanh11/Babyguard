@@ -37,6 +37,7 @@ fi
 echo "🔍 Đang kiểm tra các thư viện AI cần thiết..."
 $APP_PYTHON -c "import fastapi, uvicorn, cv2, webview, ultralytics" 2>/dev/null
 if [ $? -ne 0 ]; then
+    osascript -e 'display notification "Hệ thống đang tự động chuẩn bị môi trường AI (chỉ 1-2 phút lần đầu)..." with title "BabyGuard AI" subtitle "Đang cấu hình thư viện"' 2>/dev/null || true
     echo "============================================================"
     echo "📦 ĐANG TỰ ĐỘNG CÀI ĐẶT THƯ VIỆN AI (CHỈ MẤT 1 - 2 PHÚT)..."
     echo "Hệ thống đang tự tải các gói cần thiết: FastAPI, OpenCV, WebView, Ultralytics..."

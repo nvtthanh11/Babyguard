@@ -34,6 +34,7 @@ CYTHON_MODULES = [
     "tunnel_manager.py",
     "music_player.py",
     "license_manager.py",
+    "auto_updater.py",
     "web_server.py"
 ]
 
@@ -222,22 +223,19 @@ def build_commercial_distribution():
     with open(os.path.join(contents_dir, "Info.plist"), "w", encoding="utf-8") as f:
         f.write(plist_xml)
 
-    # 6.3 Executable Launcher cho macOS
+    # 6.3 Executable Launcher cho macOS (Chạy Native, không mở cửa sổ Terminal shell)
     mac_launcher_script = """#!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../Resources" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
 
 # Tự động gỡ bỏ cờ cách ly của Apple nếu tải từ trình duyệt Chrome / Safari
-xattr -dr com.apple.quarantine "$DIR/../.." 2>/dev/null || true
-chmod +x ./start.sh ./stop.sh ./Cap_Nhat_BabyGuard.command ./Tat_BabyGuard.command 2>/dev/null || true
+xattr -cr "$DIR/../.." 2>/dev/null || true
+xattr -d com.apple.quarantine "$DIR/../.." 2>/dev/null || true
+chmod +x ./start.sh ./stop.sh 2>/dev/null || true
 
-# Mở Terminal để chạy start.sh với giao diện tự động kiểm tra cài đặt
-osascript <<EOF
-tell application "Terminal"
-    activate
-    do script "cd \\"$DIR\\" && ./start.sh"
-end tell
-EOF
+# Khởi chạy ứng dụng trực tiếp, tuyệt đối không bật cửa sổ Terminal shell
+mkdir -p "$DIR/logs"
+exec ./start.sh >> "$DIR/logs/app_launch.log" 2>&1
 """
     mac_bin = os.path.join(macos_dir, "BabyGuard AI")
     with open(mac_bin, "w", encoding="utf-8") as f:
@@ -250,7 +248,7 @@ EOF
         target_subdir = os.path.join(res_dir, rel) if rel != "." else res_dir
         os.makedirs(target_subdir, exist_ok=True)
         for file in files:
-            # TUYỆT ĐỐI KHÔNG COPY FILE .PY NGUỒN CỦA 14 MODULES ĐÃ BIÊN DỊCH
+            # TUYỆT ĐỐI KHÔNG COPY FILE .PY NGUỒN CỦA CÁC MODULES ĐÃ BIÊN DỊCH
             if file in CYTHON_MODULES or file.endswith(".bat"):
                 continue
             # main.py được biên dịch thành main.pyc (Bytecode), xóa sạch mã nguồn text
@@ -264,35 +262,8 @@ EOF
 
     print("   🔒 Đã loại bỏ 100% tệp mã nguồn .py khỏi macOS App Bundle (Chỉ còn Mach-O .so & .pyc).")
 
-    # 6.5 Thêm file Hướng dẫn & lệnh phụ cạnh App
-    guide_text = """============================================================
-🍼 BABYGUARD AI - BỘ CÀI ĐẶT DÀNH CHO MACBOOK & MAC MINI
-============================================================
-
-HƯỚNG DẪN CÀI ĐẶT & KHỞI CHẠY SIÊU TỐC TRONG 1 BƯỚC:
-
-1. Bấm đúp chuột vào tệp "BabyGuard AI.app" để khởi chạy!
-2. Hệ thống sẽ tự động kiểm tra môi trường, cài đặt các thư viện AI thiếu (chỉ mất 1-2 phút lần đầu).
-3. Cửa sổ ứng dụng BabyGuard AI sẽ tự động mở lên màn hình.
-
-💡 Để tiện sử dụng hàng ngày:
-Bạn có thể kéo tệp "BabyGuard AI.app" vào thư mục Applications (Ứng Dụng) trên Mac.
-
-Hỗ trợ kỹ thuật Telegram 24/7: @nvtthanh11
-============================================================
-"""
-    with open(os.path.join(MAC_STAGING, "HUONG_DAN_CAI_DAT_MAC.txt"), "w", encoding="utf-8") as f:
-        f.write(guide_text)
-
-    for cmd in ["Tat_BabyGuard.command", "Cap_Nhat_BabyGuard.command"]:
-        src_cmd = os.path.join(ROOT_DIR, cmd)
-        if os.path.exists(src_cmd):
-            dst_cmd = os.path.join(MAC_STAGING, cmd)
-            shutil.copyfile(src_cmd, dst_cmd)
-            os.chmod(dst_cmd, 0o755)
-
-    # 7. Đóng gói phân phối: BabyGuard_Mac.dmg, BabyGuard_Mac.zip, BabyGuard_Windows.zip
-    print("\n[7/7] 📦 Đang đóng gói tệp nén thương mại:")
+    # 7. Đóng gói phân phối tinh gọn (Zero Clutter): BabyGuard_Windows.zip, BabyGuard_Mac.dmg, BabyGuard_Mac.zip
+    print("\n[7/7] 📦 Đang đóng gói tệp cài đặt tinh gọn thương mại:")
     WIN_ZIP = os.path.join(DIST_ROOT, "BabyGuard_Windows.zip")
     MAC_ZIP = os.path.join(DIST_ROOT, "BabyGuard_Mac.zip")
     MAC_DMG = os.path.join(DIST_ROOT, "BabyGuard_Mac.dmg")
@@ -302,17 +273,78 @@ Hỗ trợ kỹ thuật Telegram 24/7: @nvtthanh11
     print(f"   3. Gói Mac ZIP:   {MAC_ZIP}")
     print(f"   4. Gói Mac DMG:   {MAC_DMG}")
 
-    # Đóng gói Windows ZIP
+    # ĐÓNG GÓI WINDOWS: Gọn gàng tuyệt đối - Chỉ 1 file .bat & 1 file txt ở thư mục gốc, toàn bộ file lõi giấu vào app_core/
     if os.path.exists(WIN_ZIP):
         os.remove(WIN_ZIP)
     with zipfile.ZipFile(WIN_ZIP, "w", zipfile.ZIP_DEFLATED) as zipf:
+        # File chạy chính ở gốc
+        win_launcher_content = """@echo off
+chcp 65001 >nul
+title BabyGuard AI - Tro Ly Ve Si & Bac Si Giac Ngu Cho Be
+cd /d "%~dp0app_core"
+call "Khoi_Dong_BabyGuard.bat"
+"""
+        zipf.writestr("BabyGuard_Windows/BabyGuard AI.bat", win_launcher_content)
+
+        # File hướng dẫn ở gốc
+        win_guide_content = """======================================================================
+🍼 BABYGUARD AI - TRỢ LÝ VỆ SĨ & BÁC SĨ GIẤC NGỦ THÔNG MINH CHO BÉ
+======================================================================
+
+HƯỚNG DẪN KHỞI ĐỘNG NHANH TRONG 1 BƯỚC:
+👉 Nhấp đúp chuột vào file: "BabyGuard AI.bat" để khởi động!
+
+LƯU Ý:
+- Lần đầu tiên chạy, hệ thống sẽ tự động cấu hình và chuẩn bị thư viện AI (chỉ mất 1 - 2 phút).
+- Mọi tệp vận hành lõi đã được lưu trữ an toàn trong thư mục "app_core". Ba mẹ không cần can thiệp hoặc di chuyển các tệp bên trong thư mục này.
+- Hệ thống sẽ tự động kiểm tra và nâng cấp phiên bản mới từ máy chủ chính thức https://babyguard.site.
+
+Tổng đài hỗ trợ kỹ thuật: 0943.435.433
+Website chính thức: https://babyguard.site
+======================================================================
+"""
+        zipf.writestr("BabyGuard_Windows/HUONG_DAN_SU_DUNG.txt", win_guide_content)
+
+        # Toàn bộ nội dung khác đưa gọn gàng vào app_core/
         for root, dirs, files in os.walk(COMMERCIAL_DIR):
             for file in files:
                 if file.endswith(".so") or file.endswith(".command") or file.endswith(".sh"):
                     continue
                 full_path = os.path.join(root, file)
                 rel_inside = os.path.relpath(full_path, COMMERCIAL_DIR)
-                zipf.write(full_path, os.path.join("BabyGuard_Windows", rel_inside))
+                zipf.write(full_path, os.path.join("BabyGuard_Windows", "app_core", rel_inside))
+
+    # ĐÓNG GÓI MAC DMG (Chuẩn Native: Chỉ có BabyGuard AI.app và symlink Applications)
+    if os.path.exists(MAC_DMG):
+        os.remove(MAC_DMG)
+    app_symlink = os.path.join(MAC_STAGING, "Applications")
+    if not os.path.exists(app_symlink):
+        try:
+            os.symlink("/Applications", app_symlink)
+        except Exception:
+            pass
+    try:
+        subprocess.run(["hdiutil", "create", "-volname", "BabyGuard AI", "-srcfolder", MAC_STAGING, "-ov", "-format", "UDZO", MAC_DMG], check=True, stdout=subprocess.DEVNULL)
+        print("   + Đã tạo BabyGuard_Mac.dmg chuẩn Native (chỉ App + Applications)!")
+    except Exception as e:
+        print(f"   ⚠️ Lỗi tạo DMG: {e}")
+    finally:
+        if os.path.islink(app_symlink):
+            os.remove(app_symlink)
+
+    # ĐÓNG GÓI MAC ZIP (Chuẩn App Bundle: Chỉ giải nén ra duy nhất BabyGuard AI.app)
+    if os.path.exists(MAC_ZIP):
+        os.remove(MAC_ZIP)
+    with zipfile.ZipFile(MAC_ZIP, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(MAC_APP):
+            for file in files:
+                full_path = os.path.join(root, file)
+                rel_inside = os.path.relpath(full_path, MAC_STAGING)
+                zinfo = zipfile.ZipInfo.from_file(full_path, rel_inside)
+                mode = os.stat(full_path).st_mode
+                zinfo.external_attr = (mode & 0xFFFF) << 16
+                with open(full_path, "rb") as src:
+                    zipf.writestr(zinfo, src.read())
 
     # Đóng gói Universal ZIP
     if os.path.exists(ZIP_OUTPUT):
@@ -324,45 +356,15 @@ Hỗ trợ kỹ thuật Telegram 24/7: @nvtthanh11
                 rel_inside = os.path.relpath(full_path, COMMERCIAL_DIR)
                 zipf.write(full_path, os.path.join("BabyGuard_AI_v2.0_Commercial", rel_inside))
 
-    # Đóng gói Mac DMG
-    if os.path.exists(MAC_DMG):
-        os.remove(MAC_DMG)
-    app_symlink = os.path.join(MAC_STAGING, "Applications")
-    if not os.path.exists(app_symlink):
-        try:
-            os.symlink("/Applications", app_symlink)
-        except Exception:
-            pass
-    try:
-        subprocess.run(["hdiutil", "create", "-volname", "BabyGuard AI", "-srcfolder", MAC_STAGING, "-ov", "-format", "UDZO", MAC_DMG], check=True, stdout=subprocess.DEVNULL)
-        print("   + Đã tạo BabyGuard_Mac.dmg thành công!")
-    except Exception as e:
-        print(f"   ⚠️ Lỗi tạo DMG: {e}")
-    finally:
-        if os.path.islink(app_symlink):
-            os.remove(app_symlink)
-
-    # Đóng gói Mac ZIP
-    if os.path.exists(MAC_ZIP):
-        os.remove(MAC_ZIP)
-    with zipfile.ZipFile(MAC_ZIP, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for root, dirs, files in os.walk(MAC_STAGING):
-            for file in files:
-                full_path = os.path.join(root, file)
-                rel_inside = os.path.relpath(full_path, MAC_STAGING)
-                archive_path = os.path.join("BabyGuard_Mac", rel_inside)
-                zinfo = zipfile.ZipInfo.from_file(full_path, archive_path)
-                mode = os.stat(full_path).st_mode
-                zinfo.external_attr = (mode & 0xFFFF) << 16
-                with open(full_path, "rb") as src:
-                    zipf.writestr(zinfo, src.read())
-
     # Sao chép vào thư mục static để phục vụ tải về trực tiếp
     static_dir = os.path.join(ROOT_DIR, "static")
     if os.path.exists(static_dir):
         for z in [ZIP_OUTPUT, WIN_ZIP, MAC_ZIP, MAC_DMG]:
             if os.path.exists(z):
                 shutil.copyfile(z, os.path.join(static_dir, os.path.basename(z)))
+        # Đồng thời tạo bản sao BabyGuard_AI.zip trong static
+        if os.path.exists(ZIP_OUTPUT):
+            shutil.copyfile(ZIP_OUTPUT, os.path.join(static_dir, "BabyGuard_AI.zip"))
 
     print("=" * 70)
     print("🎉 ĐÓNG GÓI THƯƠNG MẠI HOÀN TẤT THÀNH CÔNG!")
