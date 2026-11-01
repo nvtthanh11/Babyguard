@@ -12,8 +12,11 @@ except ImportError:
     try:
         from tensorflow.lite.python.interpreter import Interpreter
     except ImportError:
-        import tflite_runtime.interpreter as tflite
-        Interpreter = tflite.Interpreter
+        try:
+            import tflite_runtime.interpreter as tflite
+            Interpreter = tflite.Interpreter
+        except ImportError:
+            Interpreter = None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -70,10 +73,17 @@ class AudioCryDetector:
         self.labels = self._load_labels()
         
         # Initialize TFLite Interpreter
-        self.interpreter = Interpreter(model_path=self.model_path)
-        self.interpreter.allocate_tensors()
-        self.input_details = self.interpreter.get_input_details()
-        self.output_details = self.interpreter.get_output_details()
+        if Interpreter is not None:
+            try:
+                self.interpreter = Interpreter(model_path=self.model_path)
+                self.interpreter.allocate_tensors()
+                self.input_details = self.interpreter.get_input_details()
+                self.output_details = self.interpreter.get_output_details()
+            except Exception as e:
+                print(f"[AudioDetector] Warning: Could not initialize TFLite model: {e}")
+                self.interpreter = None
+        else:
+            self.interpreter = None
 
     def _load_labels(self):
         try:
@@ -170,8 +180,8 @@ class AudioCryDetector:
             vol = float(np.sqrt(np.mean(filtered_wave ** 2)))
             self.current_volume = vol
 
-            # Chỉ chạy inference khi năng lượng âm thanh vượt ngưỡng nền yên tĩnh
-            if vol > 0.0045:
+            # Chỉ chạy inference khi năng lượng âm thanh vượt ngưỡng nền yên tĩnh và model đã sẵn sàng
+            if vol > 0.0045 and self.interpreter is not None:
                 try:
                     self.interpreter.set_tensor(self.input_details[0]["index"], waveform)
                     self.interpreter.invoke()

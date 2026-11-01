@@ -83,7 +83,7 @@ def build_commercial_distribution():
         src = os.path.join(ROOT_DIR, folder)
         dst = os.path.join(COMMERCIAL_DIR, folder)
         if os.path.exists(src):
-            shutil.copytree(src, dst)
+            shutil.copytree(src, dst, ignore=shutil.ignore_patterns("*.zip", "*.tar.gz", "*.aab", "__pycache__", "*.pyc"))
             print(f"   + Đã sao chép thư mục: {folder}/")
 
     for f in SUPPORT_FILES:
@@ -168,6 +168,9 @@ def build_commercial_distribution():
     for target_zip in [ZIP_OUTPUT, WIN_ZIP, MAC_ZIP]:
         if os.path.exists(target_zip):
             os.remove(target_zip)
+        
+        folder_name = "BabyGuard_Windows" if target_zip == WIN_ZIP else ("BabyGuard_Mac" if target_zip == MAC_ZIP else "BabyGuard_AI_v2.0_Commercial")
+        
         with zipfile.ZipFile(target_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
             for root, dirs, files in os.walk(COMMERCIAL_DIR):
                 for file in files:
@@ -178,8 +181,9 @@ def build_commercial_distribution():
                     if target_zip == MAC_ZIP and file.endswith(".bat"):
                         continue
                     full_path = os.path.join(root, file)
-                    rel_path = os.path.relpath(full_path, DIST_ROOT)
-                    zipf.write(full_path, rel_path)
+                    rel_inside = os.path.relpath(full_path, COMMERCIAL_DIR)
+                    archive_path = os.path.join(folder_name, rel_inside)
+                    zipf.write(full_path, archive_path)
 
     # Sao chép vào thư mục static để phục vụ tải về trực tiếp
     static_dir = os.path.join(ROOT_DIR, "static")

@@ -89,10 +89,22 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         msg = f"BG_FAMILY_AUTH:{machine_id}:{pin}:{MASTER_SECRET.decode(errors='ignore')}".encode()
         return hmac.new(MASTER_SECRET, msg, hashlib.sha256).hexdigest()
 
-    def is_request_authenticated(request: Request, cfg: dict) -> bool:
+    def is_local_request(request: Request) -> bool:
+        """Kiểm tra request có thực sự bắt nguồn từ máy tính nội bộ / mạng WiFi gia đình hay không.
+        Nếu đi qua Cloudflare Tunnel (có header cf-ray / cf-connecting-ip / host babyguard.site) -> Chắc chắn là từ Internet."""
+        if request.headers.get("cf-ray") or request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for"):
+            return False
         host = request.headers.get("host", "").lower()
-        client_ip = request.client.host if request.client else ""
-        if "localhost" in host or "127.0.0.1" in host or client_ip in ["127.0.0.1", "::1"] or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100."):
+        if "babyguard.site" in host or "trycloudflare.com" in host:
+            return False
+        if "localhost" in host or "127.0.0.1" in host:
+            return True
+        if host.startswith("192.168.") or host.startswith("10.") or host.startswith("172."):
+            return True
+        return False
+
+    def is_request_authenticated(request: Request, cfg: dict) -> bool:
+        if is_local_request(request):
             return True
 
         acc_key = get_access_key(cfg)
@@ -200,13 +212,16 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("token", "")
         auth_cookie = request.cookies.get("babyguard_auth", "")
 
-        host = request.headers.get("host", "").lower()
-        is_local = "localhost" in host or "127.0.0.1" in host or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100.")
+        is_local = is_local_request(request)
 
         # Nếu có chìa khóa trong link, hoặc đã có cookie hợp lệ, hoặc là mạng nội bộ gia đình:
         # => MỞ THẲNG DASHBOARD XEM CAMERA NGAY LẬP TỨC TRONG 1 GIÂY, KHÔNG HỎI MẬT KHẨU!
         if is_local or (q_key and hmac.compare_digest(q_key, acc_key)) or (auth_cookie and hmac.compare_digest(auth_cookie, acc_key)):
-            response = templates.TemplateResponse(request=request, name="index.html")
+            response = templates.TemplateResponse(
+                request=request,
+                name="index.html",
+                context={"is_hub": True, "requires_pairing": False}
+            )
             response.set_cookie(
                 key="babyguard_auth",
                 value=acc_key,
@@ -216,45 +231,30 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             )
             return response
 
-        # Người lạ trên mạng gõ bừa vào /cam mà không có chìa khóa bí mật -> Đẩy về trang bán hàng
-        return RedirectResponse(url="/", status_code=302)
+        # Người lạ trên mạng gõ bừa vào /cam mà không có chìa khóa bí mật -> Đẩy về màn hình ghép nối /app
+        return RedirectResponse(url="/app", status_code=302)
 
     @app.get("/app")
     @app.get("/setup")
     @app.get("/dashboard")
     @app.get("/control")
     async def view_app_dashboard(request: Request):
-        """Cổng mở thẳng Giao diện Ứng dụng BabyGuard AI (Dành cho App điện thoại & Máy tính gia đình)."""
+        """Cổng mở Giao diện Ứng dụng BabyGuard AI (Phân biệt rõ: Máy tính nội bộ vs Điện thoại kết nối từ xa)."""
         cfg = load_config()
         acc_key = get_access_key(cfg)
-        response = templates.TemplateResponse(request=request, name="index.html")
-        response.set_cookie(
-            key="babyguard_auth",
-            value=acc_key,
-            max_age=365 * 86400,
-            httponly=True,
-            samesite="lax"
-        )
-        return response
+        is_local = is_local_request(request)
 
-    @app.get("/", response_class=HTMLResponse)
-    async def index(request: Request):
-        host = request.headers.get("host", "").lower()
-        # 1. Nếu mở từ máy nội bộ gia đình (localhost hoặc mạng WiFi ở nhà 192.168.x.x) -> VÀO THẲNG PHẦN MỀM
-        if "localhost" in host or "127.0.0.1" in host or host.startswith("192.168.") or host.startswith("10.") or host.startswith("100."):
-            return templates.TemplateResponse(request=request, name="index.html")
+        q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("auth", "") or request.query_params.get("token", "")
+        auth_cookie = request.cookies.get("babyguard_auth", "")
+        has_valid_key = (q_key and hmac.compare_digest(q_key, acc_key)) or (auth_cookie and hmac.compare_digest(auth_cookie, acc_key))
 
-        # 2. Nếu mở từ ỨNG DỤNG ĐIỆN THOẠI (App Android APK / PWA đã cài đặt) -> VÀO THẲNG PHẦN MỀM
-        is_app = (
-            request.query_params.get("source") in ["pwa", "app"] or
-            request.query_params.get("app") == "1" or
-            request.headers.get("X-Requested-With") == "vn.babyguard.ai" or
-            request.query_params.get("mode") == "standalone"
-        )
-        if is_app:
-            cfg = load_config()
-            acc_key = get_access_key(cfg)
-            response = templates.TemplateResponse(request=request, name="index.html")
+        # 1. Nếu mở từ máy nội bộ gia đình HOẶC có chìa khóa xác thực đúng:
+        if is_local or has_valid_key:
+            response = templates.TemplateResponse(
+                request=request,
+                name="index.html",
+                context={"is_hub": True, "requires_pairing": False}
+            )
             response.set_cookie(
                 key="babyguard_auth",
                 value=acc_key,
@@ -264,18 +264,57 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             )
             return response
 
-        # 3. Nếu bố mẹ truy cập babyguard.site mà trên máy đã lưu cookie xác thực tự động -> Vào thẳng camera
+        # 2. Khách mở từ điện thoại / ngoài mạng mà CHƯA CÓ CHÌA KHÓA:
+        # => Trả về giao diện index nhưng ở chế độ Pairing Screen (KHÔNG SET COOKIE BA'S MAC MINI!)
+        # Bảo vệ quyền riêng tư tuyệt đối cho gia đình ba!
+        return templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context={"is_hub": False, "requires_pairing": True}
+        )
+
+    @app.get("/", response_class=HTMLResponse)
+    async def index(request: Request):
+        is_local = is_local_request(request)
+
+        # 1. Nếu mở từ máy nội bộ gia đình -> VÀO THẲNG PHẦN MỀM
+        if is_local:
+            cfg = load_config()
+            acc_key = get_access_key(cfg)
+            response = templates.TemplateResponse(
+                request=request,
+                name="index.html",
+                context={"is_hub": True, "requires_pairing": False}
+            )
+            response.set_cookie(
+                key="babyguard_auth",
+                value=acc_key,
+                max_age=365 * 86400,
+                httponly=True,
+                samesite="lax"
+            )
+            return response
+
+        # 2. Nếu khách có cookie xác thực tự động hợp lệ -> Vào thẳng camera
         cfg = load_config()
         acc_key = get_access_key(cfg)
         auth_cookie = request.cookies.get("babyguard_auth", "")
         if auth_cookie and hmac.compare_digest(auth_cookie, acc_key):
-            return templates.TemplateResponse(request=request, name="index.html")
+            return templates.TemplateResponse(
+                request=request,
+                name="index.html",
+                context={"is_hub": True, "requires_pairing": False}
+            )
 
-        # 4. Toàn bộ khách lạ truy cập từ internet qua domain babyguard.site -> TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
+        # 3. Toàn bộ khách lạ truy cập từ internet qua domain babyguard.site -> TRANG BÁN HÀNG & GIỚI THIỆU SẢN PHẨM
         landing_file = os.path.join(BASE_DIR, "docs", "index.html")
         if os.path.exists(landing_file):
             return FileResponse(landing_file, media_type="text/html")
-        return templates.TemplateResponse(request=request, name="index.html")
+        return templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context={"is_hub": False, "requires_pairing": True}
+        )
 
     @app.get("/manifest.json")
     async def get_manifest():
@@ -419,6 +458,48 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "aab_size_mb": aab_size_mb,
             "aab_download_url": "/download/app.aab",
             "tunnel_url": tunnel_url
+        }
+
+    @app.get("/api/pairing-info")
+    async def get_pairing_info(request: Request):
+        """Trả về thông tin kết nối và đường dẫn mã QR ghép nối cho điện thoại của ba mẹ."""
+        cfg = load_config()
+        acc_key = get_access_key(cfg)
+        port = cfg.get("web_port", 8080)
+
+        # Lấy địa chỉ IP mạng nội bộ WiFi thực tế
+        primary_ip = "127.0.0.1"
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            primary_ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            pass
+
+        # Lấy link Cloudflare Tunnel xem từ xa ngoài WiFi nếu có
+        remote_url = cfg.get("remote_access_url", "")
+        if tunnel_manager and hasattr(tunnel_manager, "current_url") and tunnel_manager.current_url:
+            remote_url = tunnel_manager.current_url
+        elif tunnel_manager and hasattr(tunnel_manager, "get_url"):
+            t_url = tunnel_manager.get_url()
+            if t_url:
+                remote_url = t_url
+
+        local_pair_url = f"http://{primary_ip}:{port}/cam?key={acc_key}"
+        remote_pair_url = f"{remote_url}/cam?key={acc_key}" if remote_url else ""
+
+        return {
+            "success": True,
+            "baby_name": cfg.get("baby_name", "Bé Yêu"),
+            "access_key": acc_key,
+            "local_ip": primary_ip,
+            "local_port": port,
+            "local_pair_url": local_pair_url,
+            "remote_pair_url": remote_pair_url,
+            "has_remote": bool(remote_pair_url),
+            "active_pair_url": remote_pair_url if remote_pair_url else local_pair_url
         }
 
     def generate_frames(annotated: bool = True):

@@ -10,25 +10,40 @@ mkdir -p "$DIR/logs"
 
 # 1. Tìm phiên bản Python tương thích
 if [ -f "/opt/homebrew/bin/python3.11" ]; then
-    PYTHON_BIN="/opt/homebrew/bin/python3.11"
+    SYSTEM_PYTHON="/opt/homebrew/bin/python3.11"
 elif command -v python3.11 &> /dev/null; then
-    PYTHON_BIN="python3.11"
+    SYSTEM_PYTHON="python3.11"
 elif command -v python3 &> /dev/null; then
-    PYTHON_BIN="python3"
+    SYSTEM_PYTHON="python3"
 else
-    PYTHON_BIN="python"
+    SYSTEM_PYTHON="python"
 fi
 
-# 1.1 Kiểm tra thư viện AI, thiếu cái gì tự động cài cái đó
+# 1.1 Khởi tạo môi trường riêng .venv (Chống lỗi externally-managed-environment trên macOS Sonoma/Sequoia)
+if [ ! -d "$DIR/.venv" ]; then
+    echo "📦 Đang khởi tạo môi trường chạy riêng biệt cho BabyGuard AI..."
+    $SYSTEM_PYTHON -m venv "$DIR/.venv" 2>/dev/null
+fi
+
+if [ -f "$DIR/.venv/bin/python" ]; then
+    APP_PYTHON="$DIR/.venv/bin/python"
+    APP_PIP="$DIR/.venv/bin/pip"
+else
+    APP_PYTHON="$SYSTEM_PYTHON"
+    APP_PIP="$SYSTEM_PYTHON -m pip"
+fi
+
+# 1.2 Kiểm tra thư viện AI, thiếu cái gì tự động cài cái đó
 echo "🔍 Đang kiểm tra các thư viện AI cần thiết..."
-$PYTHON_BIN -c "import fastapi, uvicorn, cv2, webview" 2>/dev/null
+$APP_PYTHON -c "import fastapi, uvicorn, cv2, webview, ultralytics" 2>/dev/null
 if [ $? -ne 0 ]; then
     echo "============================================================"
     echo "📦 ĐANG TỰ ĐỘNG CÀI ĐẶT THƯ VIỆN AI (CHỈ MẤT 1 - 2 PHÚT)..."
-    echo "Hệ thống đang tự tải các gói cần thiết: FastAPI, OpenCV, WebView..."
+    echo "Hệ thống đang tự tải các gói cần thiết: FastAPI, OpenCV, WebView, Ultralytics..."
     echo "============================================================"
-    $PYTHON_BIN -m pip install -r requirements.txt
-    $PYTHON_BIN -m pip install pywebview pyobjc-framework-WebKit
+    $APP_PIP install --upgrade pip
+    $APP_PIP install -r requirements.txt
+    $APP_PIP install pywebview pyobjc-framework-WebKit
 fi
 
 # 2. Tìm công cụ xem từ xa Cloudflared
@@ -66,4 +81,4 @@ echo "------------------------------------------------------------"
 
 # 5. Khởi chạy Ứng dụng BabyGuard AI (Native Window)
 echo "🚀 Đang mở Cửa sổ Ứng dụng BabyGuard AI..."
-$PYTHON_BIN main.py
+$APP_PYTHON main.py

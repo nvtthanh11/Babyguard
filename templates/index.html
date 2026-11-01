@@ -27,6 +27,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -278,9 +279,14 @@
                 <span>📖</span>
                 <span class="hidden sm:inline">Hướng Dẫn</span>
             </button>
-            <button onclick="openDevicePairingModal()" class="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-teal-500/30 text-xs font-semibold text-teal-300 transition" title="Kết nối với nôi bé ở nhà hoặc đổi thiết bị">
+            <button onclick="openDevicePairingModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-teal-500/20 to-cyan-500/20 hover:from-teal-500/35 hover:to-cyan-500/35 border border-teal-500/40 text-xs font-bold text-teal-300 transition active:scale-95 shadow-sm" title="Hiển thị mã QR để kết nối điện thoại ba mẹ">
+                <span>📱</span>
+                <span class="hidden sm:inline">Kết Nối ĐT (QR)</span>
+                <span class="sm:hidden font-extrabold">QR</span>
+            </button>
+            <button onclick="confirmUnpair()" id="header-unpair-btn" class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-slate-700 text-xs font-semibold text-slate-400 hover:text-slate-200 transition" title="Đổi máy chủ / Ngắt kết nối nôi hiện tại">
                 <span>🔄</span>
-                <span>Ghép Nối</span>
+                <span class="hidden sm:inline">Đổi Nôi</span>
             </button>
             <a id="header-remote-link" href="#" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-cyan-500/30 text-xs font-semibold text-cyan-300 transition" title="Link xem camera từ xa trên 4G/5G">
                 <span>🌐</span>
@@ -2708,18 +2714,14 @@
             </div>
 
             <!-- Navigation Tabs for Download -->
-            <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900/90 rounded-2xl border border-slate-800 text-xs font-semibold">
+            <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900/90 rounded-2xl border border-slate-800 text-xs font-semibold">
                 <button onclick="switchAppTab('apk')" id="app-tab-btn-apk" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                     <span>🤖</span>
-                    <span>Android APK</span>
-                </button>
-                <button onclick="switchAppTab('ios')" id="app-tab-btn-ios" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
-                    <span>🍎</span>
-                    <span>iPhone iOS</span>
+                    <span>Android APK (Cài Nhanh)</span>
                 </button>
                 <button onclick="switchAppTab('chplay')" id="app-tab-btn-chplay" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
                     <span>🏪</span>
-                    <span>CH Play</span>
+                    <span>CH Play (Gói AAB)</span>
                 </button>
             </div>
 
@@ -2768,37 +2770,7 @@
                 </div>
             </div>
 
-            <!-- TAB 2: IPHONE (IOS PWA) -->
-            <div id="app-tab-content-ios" class="space-y-3.5 text-xs hidden">
-                <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
-                    <div class="flex items-center gap-2 text-indigo-400 font-bold">
-                        <span>🍎</span>
-                        <span>Dành Cho iPhone & iPad (Apple iOS):</span>
-                    </div>
-                    <p class="text-[11px] text-slate-300 leading-relaxed">
-                        Hệ điều hành iOS không hỗ trợ cài file .apk ngoài, nhưng Apple hỗ trợ công nghệ <b>PWA Toàn Màn Hình</b> mượt mà không kém gì app App Store:
-                    </p>
-                    <div class="space-y-2.5 pt-1 text-[11px] text-slate-200">
-                        <div class="flex items-start gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                            <span class="font-bold text-emerald-400">1.</span>
-                            <span>Mở trình duyệt <b>Safari</b> trên iPhone và truy cập link từ xa của ba.</span>
-                        </div>
-                        <div class="flex items-start gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                            <span class="font-bold text-emerald-400">2.</span>
-                            <span>Bấm nút <b>Chia sẻ</b> (biểu tượng hình vuông có mũi tên trỏ lên ở đáy màn hình Safari).</span>
-                        </div>
-                        <div class="flex items-start gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                            <span class="font-bold text-emerald-400">3.</span>
-                            <span>Cuộn xuống và chọn <b>"Thêm vào Màn hình chính" (Add to Home Screen)</b> -> Nhấn <b>"Thêm" (Add)</b>.</span>
-                        </div>
-                    </div>
-                    <p class="text-[11px] text-emerald-400 font-semibold pt-1">
-                        ✨ Biểu tượng BabyGuard AI sẽ xuất hiện trên màn hình iPhone, bấm vào là chạy toàn màn hình y hệt ứng dụng gốc!
-                    </p>
-                </div>
-            </div>
-
-            <!-- TAB 3: GOOGLE PLAY STORE (CH PLAY) -->
+            <!-- TAB 2: GOOGLE PLAY STORE (CH PLAY) -->
             <div id="app-tab-content-chplay" class="space-y-3.5 text-xs hidden">
                 <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
                     <div class="flex items-center gap-2 text-amber-400 font-bold">
@@ -3026,7 +2998,102 @@
         </div>
     </div>
 
-    <!-- Modal: Ghép Nối Nôi Bé / Chuyển Đổi Thiết Bị (Device Pairing) -->
+    <!-- ========================================================================= -->
+    <!-- MÀN HÌNH GHÉP NỐI ĐIỆN THOẠI (DÀNH CHO ĐIỆN THOẠI CHƯA KẾT NỐI CAMERA NÔI) -->
+    <!-- ========================================================================= -->
+    <div id="mobile-pairing-screen" class="fixed inset-0 z-50 bg-slate-950 flex flex-col justify-between p-4 sm:p-6 overflow-y-auto {% if not requires_pairing %}hidden{% endif %}">
+        <div class="max-w-md w-full mx-auto space-y-5 my-auto">
+            <!-- Logo & Brand -->
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-teal-500/20 to-emerald-500/20 border border-teal-500/30 flex items-center justify-center text-3xl mx-auto shadow-inner">
+                    🍼
+                </div>
+                <h1 class="text-xl sm:text-2xl font-black text-slate-100 tracking-tight">BabyGuard<span class="text-teal-400">.AI</span></h1>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-bold">
+                    <span>🛡️</span>
+                    <span>Bảo Mật Quyền Riêng Tư 100%</span>
+                </div>
+            </div>
+
+            <!-- Main Pairing Card -->
+            <div class="bg-cardbg border border-bordercol rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
+                <div class="text-center space-y-1">
+                    <h2 class="text-base font-bold text-slate-100">Kết Nối Camera Phòng Bé</h2>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Hình ảnh camera chỉ truyền trực tiếp từ máy tính phòng bé tới điện thoại của ba mẹ. Vui lòng quét mã QR trên máy tính để kết nối.
+                    </p>
+                </div>
+
+                <!-- Tabs: Quét Mã QR vs Nhập Link Thủ Công -->
+                <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs font-semibold">
+                    <button id="mobile-pair-tab-scan" onclick="switchMobilePairTab('scan')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                        <span>📷</span>
+                        <span>Quét Mã QR</span>
+                    </button>
+                    <button id="mobile-pair-tab-input" onclick="switchMobilePairTab('input')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                        <span>🔗</span>
+                        <span>Nhập Link Nôi</span>
+                    </button>
+                </div>
+
+                <!-- TAB 1: QR CODE CAMERA SCANNER -->
+                <div id="mobile-pair-content-scan" class="space-y-3">
+                    <div id="mobile-qr-scanner-box" class="w-full bg-slate-950 rounded-2xl border-2 border-dashed border-teal-500/40 p-4 text-center space-y-3">
+                        <div id="mobile-qr-reader" class="overflow-hidden rounded-xl"></div>
+                        <div id="mobile-qr-placeholder" class="py-6 space-y-2">
+                            <span class="text-4xl block">📷</span>
+                            <p class="text-xs text-slate-300 font-semibold">Bấm nút bên dưới để mở Camera điện thoại</p>
+                            <p class="text-[11px] text-slate-400">Hướng ống kính vào mã QR trên màn hình máy tính của ba</p>
+                        </div>
+                    </div>
+                    <button id="btn-start-mobile-scanner" onclick="startMobileQrScanner()" class="w-full py-3 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                        <span>📷</span>
+                        <span id="btn-mobile-scanner-text">Bật Camera Quét Mã QR Máy Tính</span>
+                    </button>
+                </div>
+
+                <!-- TAB 2: MANUAL URL INPUT -->
+                <div id="mobile-pair-content-input" class="space-y-3 hidden">
+                    <div class="space-y-1.5">
+                        <label class="block text-slate-300 text-xs font-semibold">Địa chỉ Link nôi của bé:</label>
+                        <input type="text" id="input-mobile-hub-url" placeholder="http://192.168.1.15:8080/cam?key=..." class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-xs">
+                        <p class="text-[10px] text-slate-400">
+                            💡 Ba bấm nút "📱 Kết Nối ĐT (QR)" trên máy tính rồi bấm "Sao Chép Link" và dán vào đây.
+                        </p>
+                    </div>
+                    <button onclick="connectManualMobileHubUrl()" class="w-full py-3 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                        <span>🚀</span>
+                        <span>Lưu & Kết Nối Ngay</span>
+                    </button>
+                </div>
+
+                <!-- 3 Steps Instructions -->
+                <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                    <div class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
+                        <span>📋</span>
+                        <span>3 Bước kết nối cực dễ:</span>
+                    </div>
+                    <ol class="space-y-1.5 text-[11px] text-slate-300 list-decimal list-inside pl-1 leading-relaxed">
+                        <li>Mở phần mềm <b>BabyGuard AI</b> trên máy tính đặt ở phòng bé.</li>
+                        <li>Bấm nút <b>"📱 Kết Nối ĐT (QR)"</b> ở góc trên máy tính để hiện Mã QR.</li>
+                        <li>Dùng nút <b>"Bật Camera Quét Mã QR"</b> ở trên để quét là xong!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Footer links -->
+            <div class="text-center text-xs text-slate-500 space-y-1">
+                <p>Chưa cài phần mềm trên máy tính? <a href="https://babyguard.site" target="_blank" class="text-teal-400 underline font-semibold">Tải bản Windows & Mac tại babyguard.site</a></p>
+                <button onclick="dismissMobilePairingScreen()" class="text-[11px] text-slate-600 hover:text-slate-400 underline pt-1">
+                    Bỏ qua & Xem chế độ xem thử (Demo)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL: KẾT NỐI ĐIỆN THOẠI BA MẸ (HIỂN THỊ MÃ QR TRÊN MÁY TÍNH)             -->
+    <!-- ========================================================================= -->
     <div id="device-pairing-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden" onclick="if(event.target===this)closeDevicePairingModal()">
         <div class="bg-cardbg border border-bordercol rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
             <!-- Top Close Button -->
@@ -3037,40 +3104,86 @@
             <!-- Header -->
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-500/20 to-cyan-500/20 border border-teal-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
-                    🔄
+                    📱
                 </div>
                 <div>
-                    <h3 class="font-extrabold text-base text-slate-100">Ghép Nối Nôi Của Bé</h3>
-                    <p class="text-xs text-slate-400">Kết nối ứng dụng với máy tính đặt tại phòng bé</p>
+                    <h3 class="font-extrabold text-base text-slate-100">Kết Nối Điện Thoại Ba Mẹ</h3>
+                    <p class="text-xs text-slate-400">Xem trực tiếp camera nôi bé trên Android & iPhone</p>
                 </div>
             </div>
 
-            <!-- Instructions -->
-            <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
-                <p class="text-slate-300 leading-relaxed text-[11px]">
-                    Nếu bạn đang mở app trên điện thoại và muốn kết nối với nôi bé tại nhà, hãy nhập đường link hiển thị trên màn hình máy tính của bạn:
-                </p>
-                <div>
-                    <label class="block text-slate-400 text-[11px] font-semibold mb-1">Địa chỉ Link Nôi của bạn:</label>
-                    <input type="text" id="input-custom-device-url" placeholder="https://babyguard.site hoặc http://192.168.1.15:8080" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-xs">
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="space-y-2 pt-1 text-xs">
-                <button onclick="saveCustomDeviceUrl()" class="w-full py-2.5 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/20 transition active:scale-95 flex items-center justify-center gap-2">
-                    <span>💾</span>
-                    <span>Lưu & Kết Nối Tới Nôi</span>
+            <!-- Network Selection Tabs -->
+            <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs font-semibold">
+                <button id="net-tab-btn-local" onclick="switchPairingNetworkTab('local')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                    <span>🏠</span>
+                    <span>WiFi Tại Nhà</span>
                 </button>
+                <button id="net-tab-btn-remote" onclick="switchPairingNetworkTab('remote')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                    <span>🌐</span>
+                    <span>Xem Từ Xa (4G/5G)</span>
+                </button>
+            </div>
+
+            <!-- QR Code Box -->
+            <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-3">
+                <div class="w-52 h-52 sm:w-56 sm:h-56 mx-auto bg-slate-900 rounded-2xl border-2 border-teal-500/30 p-2 flex items-center justify-center shadow-xl">
+                    <img id="device-pairing-qr-img" src="/static/icons/icon-192.png" alt="Mã QR Kết Nối Điện Thoại" class="w-full h-full object-contain rounded-xl">
+                </div>
+                <div class="space-y-1">
+                    <p class="text-xs font-bold text-teal-300 flex items-center justify-center gap-1.5">
+                        <span>⚡</span>
+                        <span>Mở Camera điện thoại hoặc App quét mã trên</span>
+                    </p>
+                    <p id="pairing-qr-network-desc" class="text-[11px] text-slate-400">
+                        Kết nối trực tiếp qua mạng WiFi nội bộ gia đình (Siêu nhanh, không tốn 4G)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Full Pairing URL & Copy -->
+            <div class="space-y-1.5">
+                <label class="block text-slate-400 text-[11px] font-semibold">Đường link kết nối (Đã mã hóa bảo mật):</label>
                 <div class="flex gap-2">
-                    <button onclick="resetToDefaultDevice()" class="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 font-semibold text-[11px] transition">
-                        🔄 Khôi Phục Mặc Định
-                    </button>
-                    <button onclick="closeDevicePairingModal()" class="py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] transition">
-                        Hủy
+                    <input type="text" id="input-pairing-full-url" readonly class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-teal-300 select-all outline-none">
+                    <button onclick="copyPairingLink()" class="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-xs transition active:scale-95 shrink-0 flex items-center gap-1">
+                        <span>📋</span>
+                        <span>Sao Chép</span>
                     </button>
                 </div>
             </div>
+
+            <!-- 3 Steps Guide -->
+            <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+                <h5 class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
+                    <span>📋</span>
+                    <span>3 Bước kết nối nhanh trên điện thoại:</span>
+                </h5>
+                <ol class="space-y-1.5 text-[11px] text-slate-300 list-decimal list-inside pl-1 leading-relaxed">
+                    <li>Mở ứng dụng <b>BabyGuard AI</b> trên điện thoại Android (hoặc mở Camera/Zalo trên iPhone).</li>
+                    <li>Hướng camera điện thoại quét <b>Mã QR</b> ở trên.</li>
+                    <li>Điện thoại sẽ tự động kết nối và hiển thị camera nôi bé ngay lập tức!</li>
+                </ol>
+            </div>
+
+            <!-- Custom Server Overrides -->
+            <details class="text-[11px] text-slate-400 border border-slate-800/80 rounded-xl p-2.5">
+                <summary class="cursor-pointer font-semibold text-slate-300 hover:text-white">
+                    ⚙️ Tùy chỉnh đổi máy chủ kết nối thủ công
+                </summary>
+                <div class="pt-2 space-y-2">
+                    <input type="text" id="input-custom-device-url" placeholder="http://192.168.1.15:8080" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-mono text-xs">
+                    <div class="flex gap-2">
+                        <button onclick="saveCustomDeviceUrl()" class="flex-1 py-1.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-xs">
+                            Lưu Link Thủ Công
+                        </button>
+                        <button onclick="resetToDefaultDevice()" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs">
+                            Khôi Phục
+                        </button>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -3634,7 +3747,7 @@
         }
 
         function switchAppTab(tabName) {
-            ['apk', 'ios', 'chplay'].forEach(t => {
+            ['apk', 'chplay'].forEach(t => {
                 const content = document.getElementById(`app-tab-content-${t}`);
                 const btn = document.getElementById(`app-tab-btn-${t}`);
                 if (content) content.classList.add('hidden');
@@ -4524,6 +4637,12 @@
             }
             closeSetupWizard();
             if (typeof fetchConfig === 'function') fetchConfig();
+            // Tự động mở Modal Kết Nối Điện Thoại (QR) để ba mẹ quét mã kết nối ngay!
+            setTimeout(() => {
+                if (typeof openDevicePairingModal === 'function') {
+                    openDevicePairingModal();
+                }
+            }, 600);
         }
 
         // Handle Instant Switch Toggle
@@ -7118,19 +7237,226 @@
             }
         }
 
-        function openDevicePairingModal() {
+        // =========================================================================
+        // PHONE PAIRING & QR SCANNER (KẾT NỐI ĐIỆN THOẠI & QUÉT MÃ QR BẢO MẬT)
+        // =========================================================================
+        window._pairingInfo = null;
+        window._currentPairingNetTab = 'local';
+        let _mobileHtml5QrScanner = null;
+
+        async function openDevicePairingModal() {
             const modal = document.getElementById('device-pairing-modal');
             if (!modal) return;
             modal.classList.remove('hidden');
-            const input = document.getElementById('input-custom-device-url');
-            if (input) {
-                input.value = localStorage.getItem('babyguard_custom_server') || window.location.origin;
+
+            try {
+                const res = await fetch('/api/pairing-info');
+                const data = await res.json();
+                if (data && data.success) {
+                    window._pairingInfo = data;
+                    // Mặc định chọn tab nội bộ WiFi (hoặc remote nếu đang ở ngoài)
+                    const isRemoteOnly = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !window.location.hostname.startsWith('192.168.');
+                    switchPairingNetworkTab(isRemoteOnly && data.has_remote ? 'remote' : 'local');
+                }
+            } catch (e) {
+                console.warn('Lỗi lấy thông tin ghép nối:', e);
+                // Fallback cục bộ
+                const fallbackUrl = window.location.origin + '/cam';
+                updatePairingQrDisplay(fallbackUrl);
             }
         }
 
         function closeDevicePairingModal() {
             const modal = document.getElementById('device-pairing-modal');
             if (modal) modal.classList.add('hidden');
+        }
+
+        function switchPairingNetworkTab(mode) {
+            window._currentPairingNetTab = mode;
+            const btnLocal = document.getElementById('net-tab-btn-local');
+            const btnRemote = document.getElementById('net-tab-btn-remote');
+            const desc = document.getElementById('pairing-qr-network-desc');
+
+            let targetUrl = '';
+            const info = window._pairingInfo || {};
+
+            if (mode === 'remote') {
+                if (btnRemote) {
+                    btnRemote.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold';
+                }
+                if (btnLocal) {
+                    btnLocal.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+                }
+                if (info.has_remote && info.remote_pair_url) {
+                    targetUrl = info.remote_pair_url;
+                    if (desc) desc.innerText = 'Kết nối từ xa bằng 4G/5G qua đường truyền Cloudflare mã hóa.';
+                } else {
+                    targetUrl = info.local_pair_url || (window.location.origin + '/cam');
+                    if (desc) desc.innerText = '⚠️ Chưa bật Cloudflare Tunnel. Đang hiển thị kết nối qua mạng WiFi tại nhà.';
+                }
+            } else {
+                if (btnLocal) {
+                    btnLocal.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
+                }
+                if (btnRemote) {
+                    btnRemote.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+                }
+                targetUrl = info.local_pair_url || (window.location.origin + '/cam');
+                if (desc) desc.innerText = 'Kết nối trực tiếp qua mạng WiFi nội bộ gia đình (Siêu mượt, không tốn data 4G).';
+            }
+
+            updatePairingQrDisplay(targetUrl);
+        }
+
+        function updatePairingQrDisplay(url) {
+            if (!url) return;
+            const qrImg = document.getElementById('device-pairing-qr-img');
+            const urlInput = document.getElementById('input-pairing-full-url');
+            if (urlInput) urlInput.value = url;
+            if (qrImg) {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(url)}&color=13-148-136&bgcolor=15-23-42`;
+            }
+        }
+
+        function copyPairingLink() {
+            const input = document.getElementById('input-pairing-full-url');
+            if (!input || !input.value) return;
+            navigator.clipboard.writeText(input.value).then(() => {
+                showToast('Đã sao chép link kết nối nôi bé! Ba có thể gửi qua Zalo/Telegram.', '📋');
+            }).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                showToast('Đã sao chép link kết nối!', '📋');
+            });
+        }
+
+        // =========================================================================
+        // MOBILE PAIRING SCREEN (GIAO DIỆN GHÉP NỐI TRÊN ĐIỆN THOẠI)
+        // =========================================================================
+        function switchMobilePairTab(tab) {
+            const tabScan = document.getElementById('mobile-pair-tab-scan');
+            const tabInput = document.getElementById('mobile-pair-tab-input');
+            const contentScan = document.getElementById('mobile-pair-content-scan');
+            const contentInput = document.getElementById('mobile-pair-content-input');
+
+            if (tab === 'scan') {
+                if (tabScan) tabScan.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
+                if (tabInput) tabInput.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+                if (contentScan) contentScan.classList.remove('hidden');
+                if (contentInput) contentInput.classList.add('hidden');
+            } else {
+                if (tabInput) tabInput.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
+                if (tabScan) tabScan.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+                if (contentInput) contentInput.classList.remove('hidden');
+                if (contentScan) contentScan.classList.add('hidden');
+                stopMobileQrScanner();
+            }
+        }
+
+        function startMobileQrScanner() {
+            const placeholder = document.getElementById('mobile-qr-placeholder');
+            const btnText = document.getElementById('btn-mobile-scanner-text');
+
+            if (typeof Html5Qrcode === 'undefined') {
+                showToast('Đang tải bộ quét Camera, vui lòng đợi 2 giây...', '⏳');
+                setTimeout(() => {
+                    if (typeof Html5Qrcode !== 'undefined') startMobileQrScanner();
+                    else showToast('Không thể kích hoạt Camera. Vui lòng dùng tab Nhập Link.', '⚠️');
+                }, 2000);
+                return;
+            }
+
+            if (_mobileHtml5QrScanner) {
+                stopMobileQrScanner();
+                return;
+            }
+
+            if (placeholder) placeholder.classList.add('hidden');
+            if (btnText) btnText.innerText = 'Đang bật Camera điện thoại...';
+
+            _mobileHtml5QrScanner = new Html5Qrcode("mobile-qr-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            _mobileHtml5QrScanner.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText, decodedResult) => {
+                    handleScannedMobileUrl(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignore parse frame errors
+                }
+            ).then(() => {
+                if (btnText) btnText.innerText = '🔴 Dừng Camera Quét Mã';
+            }).catch(err => {
+                console.error("Lỗi bật camera:", err);
+                if (placeholder) placeholder.classList.remove('hidden');
+                if (btnText) btnText.innerText = 'Bật Camera Quét Mã QR Máy Tính';
+                _mobileHtml5QrScanner = null;
+                showToast('Không có quyền mở Camera. Vui lòng cấp quyền hoặc nhập Link thủ công.', '⚠️');
+            });
+        }
+
+        function stopMobileQrScanner() {
+            if (_mobileHtml5QrScanner) {
+                _mobileHtml5QrScanner.stop().then(() => {
+                    _mobileHtml5QrScanner.clear();
+                    _mobileHtml5QrScanner = null;
+                    const placeholder = document.getElementById('mobile-qr-placeholder');
+                    const btnText = document.getElementById('btn-mobile-scanner-text');
+                    if (placeholder) placeholder.classList.remove('hidden');
+                    if (btnText) btnText.innerText = 'Bật Camera Quét Mã QR Máy Tính';
+                }).catch(e => {
+                    _mobileHtml5QrScanner = null;
+                });
+            }
+        }
+
+        function handleScannedMobileUrl(rawText) {
+            if (!rawText) return;
+            let url = rawText.trim();
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            stopMobileQrScanner();
+            showToast('✅ Đã tìm thấy camera nôi bé! Đang kết nối...', '🚀');
+            localStorage.setItem('babyguard_custom_server', url);
+            setTimeout(() => {
+                window.location.href = url;
+            }, 800);
+        }
+
+        function connectManualMobileHubUrl() {
+            const input = document.getElementById('input-mobile-hub-url');
+            if (!input) return;
+            let val = input.value.trim();
+            if (!val) {
+                showToast('Vui lòng dán đường link kết nối máy tính của bạn', '⚠️');
+                return;
+            }
+            if (!val.startsWith('http://') && !val.startsWith('https://')) {
+                val = 'http://' + val;
+            }
+            val = val.replace(/\/+$/, '');
+            localStorage.setItem('babyguard_custom_server', val);
+            showToast('Đang kết nối tới nôi của bé...', '🚀');
+            setTimeout(() => {
+                window.location.href = val;
+            }, 600);
+        }
+
+        function dismissMobilePairingScreen() {
+            const screen = document.getElementById('mobile-pairing-screen');
+            if (screen) screen.classList.add('hidden');
+            stopMobileQrScanner();
+        }
+
+        function confirmUnpair() {
+            if (confirm("Ba mẹ có muốn ngắt kết nối với nôi bé hiện tại để ghép nối sang máy tính khác không?")) {
+                localStorage.removeItem('babyguard_custom_server');
+                document.cookie = "babyguard_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                window.location.href = "/app?nopair=1";
+            }
         }
 
         function saveCustomDeviceUrl() {
@@ -7164,12 +7490,19 @@
         (function checkPairedDevice() {
             try {
                 const customServer = localStorage.getItem('babyguard_custom_server');
+                if (customServer) {
+                    const unpairBtn = document.getElementById('header-unpair-btn');
+                    if (unpairBtn) {
+                        unpairBtn.classList.remove('hidden');
+                        unpairBtn.classList.add('flex');
+                    }
+                }
                 if (customServer && !window.location.search.includes('nopair') && !window.location.search.includes('paired')) {
                     const cleanCustom = customServer.replace(/\/+$/, '').toLowerCase();
                     const cleanOrigin = window.location.origin.replace(/\/+$/, '').toLowerCase();
                     if (cleanCustom !== cleanOrigin && cleanCustom.startsWith('http')) {
                         console.log('Redirecting to paired home device:', cleanCustom);
-                        window.location.href = cleanCustom + '/?paired=1';
+                        window.location.href = cleanCustom + (cleanCustom.includes('?') ? '&paired=1' : '/?paired=1');
                     }
                 }
             } catch (e) {

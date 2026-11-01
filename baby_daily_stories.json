@@ -96,6 +96,18 @@
       "source_type": "Gemini AI",
       "date": "2026-10-31",
       "created_at": "07:00 - 31/10/2026"
+    },
+    "2026-11-01": {
+      "title": "Sư Tử Và Chú Chuột Nhỏ",
+      "category": "Ngụ Ngôn Thế Giới (Aesop / Andersen)",
+      "source": "Truyện ngụ ngôn Aesop",
+      "quote": "Lòng tốt dù nhỏ bé cũng có thể tạo nên điều kỳ diệu.",
+      "content": "Một chú sư tử dũng mãnh đang ngủ say thì bị chú chuột nhỏ đánh thức. Thay vì ăn thịt, sư tử đã tha cho chuột, và sau này, chính chú chuột nhỏ đã dùng hàm răng sắc nhọn của mình để cứu sư tử thoát khỏi lưới của thợ săn. Câu chuyện nhắc nhở rằng, không ai là quá nhỏ bé để làm việc tốt và không ai là quá lớn lao để cần đến sự giúp đỡ.",
+      "parenting_lesson": "Ba mẹ hãy dạy con rằng mỗi người đều có giá trị riêng và lòng nhân ái là sức mạnh lớn nhất. Hãy làm gương bằng cách đối xử tử tế với mọi người xung quanh để con cảm nhận được tình yêu thương từ chính hành động của ba mẹ.",
+      "baby_talk_prompt": "Bé A Siu ngoan ơi, thế giới này rộng lớn và xinh đẹp lắm, con hãy cứ lớn lên thật dịu dàng và biết yêu thương mọi người như chú chuột nhỏ nhé, ba mẹ sẽ luôn ở đây che chở và yêu thương con.",
+      "source_type": "Gemini AI",
+      "date": "2026-11-01",
+      "created_at": "07:00 - 01/11/2026"
     }
   }
 }
