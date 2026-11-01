@@ -323,6 +323,13 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             return FileResponse(manifest_file, media_type="application/manifest+json")
         return JSONResponse({"status": "error", "message": "manifest.json not found"}, status_code=404)
 
+    @app.get("/.well-known/assetlinks.json")
+    async def get_assetlinks():
+        assetlinks_file = os.path.join(static_dir, ".well-known", "assetlinks.json")
+        if os.path.exists(assetlinks_file):
+            return FileResponse(assetlinks_file, media_type="application/json")
+        return JSONResponse({"status": "error", "message": "assetlinks.json not found"}, status_code=404)
+
     @app.get("/sw.js")
     async def get_service_worker():
         sw_file = os.path.join(static_dir, "sw.js")

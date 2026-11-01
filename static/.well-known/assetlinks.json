@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "vn.babyguard.ai",
+    "sha256_cert_fingerprints": [
+      "1B:AA:39:B9:DB:63:9C:03:AF:A7:87:F0:B6:55:43:99:2E:0B:D1:8A:8D:97:8D:4B:68:56:DA:39:CC:20:06:44"
+    ]
+  }
+}]
