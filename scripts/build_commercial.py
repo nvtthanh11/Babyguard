@@ -262,16 +262,101 @@ exec ./start.sh >> "$DIR/logs/app_launch.log" 2>&1
 
     print("   🔒 Đã loại bỏ 100% tệp mã nguồn .py khỏi macOS App Bundle (Chỉ còn Mach-O .so & .pyc).")
 
-    # 7. Đóng gói phân phối tinh gọn (Zero Clutter): BabyGuard_Windows.zip, BabyGuard_Mac.dmg, BabyGuard_Mac.zip
+    # 6.5 Ký mã số Ad-hoc Code Signing theo tiêu chuẩn Apple macOS
+    print("   🔑 Đang thực hiện ký số Apple Mach-O (Ad-hoc Code Signing)...")
+    try:
+        subprocess.run(["codesign", "--force", "--deep", "-s", "-", MAC_APP], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print("   + Đã ký số ad-hoc bảo mật chuẩn macOS (Bundle & Mach-O Binaries)!")
+    except Exception as e:
+        print(f"   ⚠️ Cảnh báo ký số: {e}")
+
+    # 6.6 Tạo script kích hoạt 1-click & hướng dẫn bảo mật cho người dùng Mac
+    mac_cmd_launcher = """#!/bin/bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+echo "🍼 Đang kích hoạt BabyGuard AI..."
+xattr -cr "$DIR/BabyGuard AI.app" 2>/dev/null || true
+xattr -cr "/Applications/BabyGuard AI.app" 2>/dev/null || true
+if [ -d "$DIR/BabyGuard AI.app" ]; then
+    open "$DIR/BabyGuard AI.app"
+elif [ -d "/Applications/BabyGuard AI.app" ]; then
+    open "/Applications/BabyGuard AI.app"
+fi
+"""
+    cmd_path = os.path.join(MAC_STAGING, "Mo_BabyGuard_AI.command")
+    with open(cmd_path, "w", encoding="utf-8") as f:
+        f.write(mac_cmd_launcher)
+    os.chmod(cmd_path, 0o755)
+
+    mac_txt_guide = """======================================================================
+🍼 BABYGUARD AI - TRỢ LÝ VỆ SĨ & BÁC SĨ GIẤC NGỦ THÔNG MINH CHO BÉ
+======================================================================
+
+HƯỚNG DẪN CÀI ĐẶT & KÍCH HOẠT NHANH TRÊN MACOS:
+
+1. Kéo biểu tượng "BabyGuard AI.app" thả vào thư mục "Applications".
+2. Khởi chạy ứng dụng:
+   - Cách 1 (Khuyên dùng): Nhấp đúp vào file "Mo_BabyGuard_AI.command" để khởi chạy 1-click mượt mà.
+   - Cách 2: Nhấp chuột phải (hoặc giữ phím Control + Click) vào "BabyGuard AI.app" -> Chọn "Open" (Mở) -> Bấm "Open".
+   - Cách 3: Nếu macOS hiện bảng thông báo bảo mật "Apple could not verify...", ba mẹ chỉ cần:
+     Vào Cài đặt hệ thống (System Settings) -> Quyền riêng tư & Bảo mật (Privacy & Security) -> Cuộn xuống và bấm nút "Vẫn mở" (Open Anyway).
+
+Tổng đài hỗ trợ kỹ thuật: 0943.435.433
+Website chính thức: https://babyguard.site
+======================================================================
+"""
+    with open(os.path.join(MAC_STAGING, "HUONG_DAN_CAI_DAT_MAC.txt"), "w", encoding="utf-8") as f:
+        f.write(mac_txt_guide)
+
+    # 7. Đóng gói phân phối tinh gọn: Windows ZIP, Mac PKG, Mac DMG, Mac ZIP
     print("\n[7/7] 📦 Đang đóng gói tệp cài đặt tinh gọn thương mại:")
     WIN_ZIP = os.path.join(DIST_ROOT, "BabyGuard_Windows.zip")
     MAC_ZIP = os.path.join(DIST_ROOT, "BabyGuard_Mac.zip")
     MAC_DMG = os.path.join(DIST_ROOT, "BabyGuard_Mac.dmg")
+    MAC_PKG = os.path.join(DIST_ROOT, "BabyGuard_Mac.pkg")
 
     print(f"   1. Gói Universal: {ZIP_OUTPUT}")
     print(f"   2. Gói Windows:   {WIN_ZIP}")
-    print(f"   3. Gói Mac ZIP:   {MAC_ZIP}")
+    print(f"   3. Gói Mac PKG:   {MAC_PKG} (Bypass Gatekeeper)")
     print(f"   4. Gói Mac DMG:   {MAC_DMG}")
+    print(f"   5. Gói Mac ZIP:   {MAC_ZIP}")
+
+    # ĐÓNG GÓI MAC PKG (Trình cài đặt Apple Native - Tự động xóa quarantine bằng postinstall)
+    PKG_STAGING = os.path.join(DIST_ROOT, "pkg_staging")
+    if os.path.exists(PKG_STAGING):
+        shutil.rmtree(PKG_STAGING)
+    pkg_root = os.path.join(PKG_STAGING, "root")
+    pkg_scripts = os.path.join(PKG_STAGING, "scripts")
+    os.makedirs(os.path.join(pkg_root, "Applications"), exist_ok=True)
+    os.makedirs(pkg_scripts, exist_ok=True)
+
+    shutil.copytree(MAC_APP, os.path.join(pkg_root, "Applications", "BabyGuard AI.app"), symlinks=True)
+
+    postinstall_path = os.path.join(pkg_scripts, "postinstall")
+    postinstall_script = """#!/bin/bash
+xattr -cr "/Applications/BabyGuard AI.app" 2>/dev/null || true
+xattr -dr com.apple.quarantine "/Applications/BabyGuard AI.app" 2>/dev/null || true
+chmod -R 755 "/Applications/BabyGuard AI.app" 2>/dev/null || true
+codesign --force --deep -s - "/Applications/BabyGuard AI.app" 2>/dev/null || true
+exit 0
+"""
+    with open(postinstall_path, "w", encoding="utf-8") as f:
+        f.write(postinstall_script)
+    os.chmod(postinstall_path, 0o755)
+
+    if os.path.exists(MAC_PKG):
+        os.remove(MAC_PKG)
+    try:
+        subprocess.run([
+            "pkgbuild",
+            "--root", pkg_root,
+            "--scripts", pkg_scripts,
+            "--identifier", "site.babyguard.ai",
+            "--version", "2.1.0",
+            MAC_PKG
+        ], check=True, stdout=subprocess.DEVNULL)
+        print("   + Đã tạo BabyGuard_Mac.pkg chuẩn Installer (Tự động bypass Gatekeeper)!")
+    except Exception as e:
+        print(f"   ⚠️ Lỗi tạo PKG: {e}")
 
     # ĐÓNG GÓI WINDOWS: Gọn gàng tuyệt đối - Chỉ 1 file .bat & 1 file txt ở thư mục gốc, toàn bộ file lõi giấu vào app_core/
     if os.path.exists(WIN_ZIP):
@@ -359,19 +444,25 @@ Website chính thức: https://babyguard.site
     # Sao chép vào thư mục static để phục vụ tải về trực tiếp
     static_dir = os.path.join(ROOT_DIR, "static")
     if os.path.exists(static_dir):
-        for z in [ZIP_OUTPUT, WIN_ZIP, MAC_ZIP, MAC_DMG]:
+        down_dir = os.path.join(static_dir, "download")
+        os.makedirs(down_dir, exist_ok=True)
+        for z in [ZIP_OUTPUT, WIN_ZIP, MAC_ZIP, MAC_DMG, MAC_PKG]:
             if os.path.exists(z):
                 shutil.copyfile(z, os.path.join(static_dir, os.path.basename(z)))
+                shutil.copyfile(z, os.path.join(down_dir, os.path.basename(z)))
         # Đồng thời tạo bản sao BabyGuard_AI.zip trong static
         if os.path.exists(ZIP_OUTPUT):
             shutil.copyfile(ZIP_OUTPUT, os.path.join(static_dir, "BabyGuard_AI.zip"))
+            shutil.copyfile(ZIP_OUTPUT, os.path.join(down_dir, "BabyGuard_AI.zip"))
 
     print("=" * 70)
     print("🎉 ĐÓNG GÓI THƯƠNG MẠI HOÀN TẤT THÀNH CÔNG!")
     print(f"📁 Thư mục phát hành: {COMMERCIAL_DIR}")
     print(f"📦 1. Tệp Windows:   {WIN_ZIP} ({os.path.getsize(WIN_ZIP) / (1024*1024):.2f} MB)")
-    print(f"📦 2. Tệp Mac DMG:   {MAC_DMG} ({os.path.getsize(MAC_DMG) / (1024*1024):.2f} MB)")
-    print(f"📦 3. Tệp Mac ZIP:   {MAC_ZIP} ({os.path.getsize(MAC_ZIP) / (1024*1024):.2f} MB)")
+    if os.path.exists(MAC_PKG):
+        print(f"📦 2. Tệp Mac PKG:   {MAC_PKG} ({os.path.getsize(MAC_PKG) / (1024*1024):.2f} MB)")
+    print(f"📦 3. Tệp Mac DMG:   {MAC_DMG} ({os.path.getsize(MAC_DMG) / (1024*1024):.2f} MB)")
+    print(f"📦 4. Tệp Mac ZIP:   {MAC_ZIP} ({os.path.getsize(MAC_ZIP) / (1024*1024):.2f} MB)")
     print("=" * 70)
 
 

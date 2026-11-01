@@ -21,6 +21,8 @@ sleep_data.json
 daily_delta_log.json
 *.zip
 *.dmg
+*.pkg
+static/download/
 
 # Sensitive personal configurations (Keep config.example.json)
 config.json

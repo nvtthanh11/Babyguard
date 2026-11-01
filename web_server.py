@@ -477,6 +477,28 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                 )
         return JSONResponse({"status": "not_ready", "message": "Gói cài đặt Windows đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
 
+    @app.api_route("/download/mac-pkg", methods=["GET", "HEAD"])
+    @app.api_route("/download/BabyGuard_Mac.pkg", methods=["GET", "HEAD"])
+    async def download_mac_pkg():
+        candidates = [
+            os.path.join(static_dir, "BabyGuard_Mac.pkg"),
+            os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.pkg"),
+            os.path.join(static_dir, "download", "BabyGuard_Mac.pkg")
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                return FileResponse(
+                    c,
+                    media_type="application/octet-stream",
+                    filename="BabyGuard_Mac.pkg",
+                    headers={
+                        "Content-Disposition": "attachment; filename=BabyGuard_Mac.pkg",
+                        "Cache-Control": "no-cache",
+                        "X-Content-Type-Options": "nosniff"
+                    }
+                )
+        return JSONResponse({"status": "not_ready", "message": "Bản cài đặt macOS PKG đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
+
     @app.api_route("/download/mac-app", methods=["GET", "HEAD"])
     @app.api_route("/download/BabyGuard_Mac.dmg", methods=["GET", "HEAD"])
     @app.api_route("/download/BabyGuard_Mac.zip", methods=["GET", "HEAD"])
