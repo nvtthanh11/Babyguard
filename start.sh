@@ -81,4 +81,11 @@ echo "------------------------------------------------------------"
 
 # 5. Khởi chạy Ứng dụng BabyGuard AI (Native Window)
 echo "🚀 Đang mở Cửa sổ Ứng dụng BabyGuard AI..."
-$APP_PYTHON main.py
+if [ -f "$DIR/main.pyc" ]; then
+    $APP_PYTHON "$DIR/main.pyc"
+elif [ -f "$DIR/main.py" ]; then
+    $APP_PYTHON "$DIR/main.py"
+else
+    echo "❌ Lỗi: Không tìm thấy tệp thực thi main.pyc hoặc main.py!"
+    read -p "Nhấn phím bất kỳ để đóng..."
+fi

@@ -415,22 +415,44 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         return JSONResponse({"status": "not_ready", "message": "Gói cài đặt Windows đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
 
     @app.api_route("/download/mac-app", methods=["GET", "HEAD"])
+    @app.api_route("/download/BabyGuard_Mac.dmg", methods=["GET", "HEAD"])
     @app.api_route("/download/BabyGuard_Mac.zip", methods=["GET", "HEAD"])
-    async def download_mac_app():
+    async def download_mac_app(request: Request):
+        req_path = request.url.path
+        if req_path.endswith(".zip"):
+            zip_candidates = [
+                os.path.join(static_dir, "BabyGuard_Mac.zip"),
+                os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.zip")
+            ]
+            for c in zip_candidates:
+                if os.path.exists(c):
+                    return FileResponse(
+                        c,
+                        media_type="application/zip",
+                        filename="BabyGuard_Mac.zip",
+                        headers={
+                            "Content-Disposition": "attachment; filename=BabyGuard_Mac.zip",
+                            "Cache-Control": "no-cache",
+                            "X-Content-Type-Options": "nosniff"
+                        }
+                    )
+        # Ưu tiên DMG cho Mac (chuẩn Native macOS 1-Click) hoặc ZIP nếu không có
         candidates = [
+            os.path.join(static_dir, "BabyGuard_Mac.dmg"),
+            os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.dmg"),
             os.path.join(static_dir, "BabyGuard_Mac.zip"),
-            os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.zip"),
-            os.path.join(static_dir, "BabyGuard_AI_v2.0_Commercial.zip"),
-            os.path.join(BASE_DIR, "dist", "BabyGuard_AI_v2.0_Commercial.zip")
+            os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.zip")
         ]
         for c in candidates:
             if os.path.exists(c):
+                fname = os.path.basename(c)
+                mtype = "application/x-apple-diskimage" if fname.endswith(".dmg") else "application/zip"
                 return FileResponse(
                     c,
-                    media_type="application/zip",
-                    filename="BabyGuard_Mac.zip",
+                    media_type=mtype,
+                    filename=fname,
                     headers={
-                        "Content-Disposition": "attachment; filename=BabyGuard_Mac.zip",
+                        "Content-Disposition": f"attachment; filename={fname}",
                         "Cache-Control": "no-cache",
                         "X-Content-Type-Options": "nosniff"
                     }
