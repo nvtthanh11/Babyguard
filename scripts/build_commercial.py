@@ -56,7 +56,8 @@ SUPPORT_FILES = [
     "stop.sh",
     "requirements.txt",
     "config.example.json",
-    "sepay_config.json"
+    "sepay_config.json",
+    "version.json"
 ]
 
 

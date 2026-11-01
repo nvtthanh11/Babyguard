@@ -1,5 +1,5 @@
-// BabyGuard AI Service Worker (PWA Offline Shell & Fast Assets Caching)
-const CACHE_NAME = 'babyguard-v1.0';
+// BabyGuard AI Service Worker (PWA Offline Shell & Instant OTA Auto-Update)
+const CACHE_NAME = 'babyguard-v2.1';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -39,9 +39,32 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // Network-First for Navigation (HTML pages) to ensure instant Over-The-Air updates
+  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for other static assets
   e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request);
+    caches.match(e.request).then((cachedRes) => {
+      const fetchPromise = fetch(e.request).then((networkRes) => {
+        if (networkRes && networkRes.status === 200) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkRes.clone()));
+        }
+        return networkRes;
+      }).catch(() => cachedRes);
+      return cachedRes || fetchPromise;
     })
   );
 });

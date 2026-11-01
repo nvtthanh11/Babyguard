@@ -1,0 +1,13 @@
+{
+  "version": "2.1.0",
+  "name": "BabyGuard AI Commercial Edition",
+  "release_date": "2026-11-01",
+  "features": [
+    "Khung Nôi An Toàn 3D Neon cảm ứng trên điện thoại (chạm kéo 4 góc nôi)",
+    "P2P WebRTC Direct Stream độ trễ 0s giữa 2 điện thoại",
+    "Phân tích tiếng khóc & cử động thời gian thực offline trên điện thoại",
+    "Đồng bộ cập nhật tức thì qua mạng (Over-The-Air OTA)",
+    "Bảo toàn dữ liệu cữ ngủ, video, ảnh kỷ niệm & license khi nâng cấp"
+  ],
+  "download_url": "https://babyguard.io.vn/#download"
+}

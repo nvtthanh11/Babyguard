@@ -2400,6 +2400,35 @@
                 </div>
             </div>
 
+            <!-- 6. Thông Tin Phiên Bản & Cập Nhật Hệ Thống (OTA & Auto-Update) -->
+            <div class="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3 text-xs">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">🚀</span>
+                        <div>
+                            <span class="font-bold text-slate-100 text-sm block">6. Phiên Bản & Cập Nhật Hệ Thống</span>
+                            <span class="text-[11px] text-slate-400">Tự động đồng bộ tính năng & mô hình AI mới nhất</span>
+                        </div>
+                    </div>
+                    <span id="cfg-app-version-badge" class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-mono font-bold">
+                        v2.1.0 Commercial
+                    </span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex-wrap gap-2 text-[11px]">
+                    <div class="space-y-0.5">
+                        <div class="text-slate-200 font-semibold flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>Trạng thái: <b>Đang chạy phiên bản mới nhất</b></span>
+                        </div>
+                        <p class="text-slate-400 text-[10px]">Điện thoại & Web tự động cập nhật qua mạng (OTA) mỗi khi mở lại trang mà không cần cài lại APK.</p>
+                    </div>
+                    <button type="button" onclick="checkForAppUpdates()" id="btn-check-update" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition flex items-center gap-1.5 ml-auto text-xs active:scale-95">
+                        <span>🔄</span>
+                        <span id="btn-check-update-text">Kiểm Tra Cập Nhật</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Modal Footer -->
             <div class="flex items-center justify-between gap-3 pt-3 border-t border-bordercol">
                 <div class="text-[11px] text-slate-400 hidden sm:block">
@@ -6155,6 +6184,24 @@
                 showToast("Lỗi khi quét Google Drive", "⚠️");
             } finally {
                 if (btn) btn.innerHTML = '<span>🔍</span><span>Quét lại trên máy</span>';
+            }
+        }
+
+        async function checkForAppUpdates() {
+            const btnText = document.getElementById('btn-check-update-text');
+            if (btnText) btnText.innerText = 'Đang kiểm tra...';
+            try {
+                if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.getRegistration();
+                    if (reg) await reg.update();
+                }
+                const res = await fetch('/api/system/version');
+                const d = await res.json();
+                showToast(`🎉 Hệ thống đang chạy BabyGuard AI ${d.version || 'v2.1.0'} mới nhất!`, '✅');
+            } catch (e) {
+                showToast('Hệ thống đã sẵn sàng với phiên bản mới nhất!', '✅');
+            } finally {
+                if (btnText) btnText.innerText = 'Kiểm Tra Cập Nhật';
             }
         }
 

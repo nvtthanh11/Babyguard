@@ -657,6 +657,17 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             }
         }
 
+    @app.get("/api/system/version")
+    def get_system_version():
+        v_file = os.path.join(BASE_DIR, "version.json")
+        if os.path.exists(v_file):
+            try:
+                with open(v_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {"version": "2.1.0", "status": "latest", "name": "BabyGuard AI Commercial Edition"}
+
     @app.get("/api/tunnel-status")
     def get_tunnel_status():
         cfg = load_config()
