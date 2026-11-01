@@ -385,7 +385,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                     filename="BabyGuard_AI_v2.0_Commercial.zip",
                     headers={
                         "Content-Disposition": "attachment; filename=BabyGuard_AI_v2.0_Commercial.zip",
-                        "Cache-Control": "no-cache"
+                        "Cache-Control": "no-cache",
+                        "X-Content-Type-Options": "nosniff"
                     }
                 )
         return JSONResponse({"status": "not_ready", "message": "Gói cài đặt máy tính đang được chuẩn bị. Vui lòng tải lại sau giây lát!"}, status_code=404)
@@ -407,7 +408,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                     filename="BabyGuard_Windows.zip",
                     headers={
                         "Content-Disposition": "attachment; filename=BabyGuard_Windows.zip",
-                        "Cache-Control": "no-cache"
+                        "Cache-Control": "no-cache",
+                        "X-Content-Type-Options": "nosniff"
                     }
                 )
         return JSONResponse({"status": "not_ready", "message": "Gói cài đặt Windows đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
@@ -429,7 +431,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                     filename="BabyGuard_Mac.zip",
                     headers={
                         "Content-Disposition": "attachment; filename=BabyGuard_Mac.zip",
-                        "Cache-Control": "no-cache"
+                        "Cache-Control": "no-cache",
+                        "X-Content-Type-Options": "nosniff"
                     }
                 )
         return JSONResponse({"status": "not_ready", "message": "Gói cài đặt MacBook đang được chuẩn bị. Vui lòng thử lại sau giây lát!"}, status_code=404)
