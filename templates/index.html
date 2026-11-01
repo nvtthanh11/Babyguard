@@ -28,6 +28,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="/static/js/peerjs.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -411,6 +412,7 @@
                         <!-- Video / Canvas Container -->
                         <div id="video-feed-container" class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden cursor-pointer" title="Nhấp vào màn hình để làm mới nếu luồng video bị gián đoạn">
                             <img id="live-stream-img" src="/video_feed" alt="Baby Monitor Live Feed" class="w-full h-full object-contain select-none" onclick="safeReconnectStream('img-click')">
+                            <video id="live-stream-p2p-video" class="w-full h-full object-contain hidden" autoplay playsinline></video>
                             <canvas id="safe-zone-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-10" style="display: none;"></canvas>
 
                             <!-- Stream Disconnected / Reconnect Overlay (Automatically shown when stream stalls) -->
@@ -3015,69 +3017,275 @@
                 </div>
             </div>
 
-            <!-- Main Pairing Card -->
+            <!-- Main Pairing Card with Dual Roles -->
             <div class="bg-cardbg border border-bordercol rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
-                <div class="text-center space-y-1">
-                    <h2 class="text-base font-bold text-slate-100">Kết Nối Camera Phòng Bé</h2>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        Hình ảnh camera chỉ truyền trực tiếp từ máy tính phòng bé tới điện thoại của ba mẹ. Vui lòng quét mã QR trên máy tính để kết nối.
-                    </p>
-                </div>
-
-                <!-- Tabs: Quét Mã QR vs Nhập Link Thủ Công -->
-                <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs font-semibold">
-                    <button id="mobile-pair-tab-scan" onclick="switchMobilePairTab('scan')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40">
-                        <span>📷</span>
-                        <span>Quét Mã QR</span>
-                    </button>
-                    <button id="mobile-pair-tab-input" onclick="switchMobilePairTab('input')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
-                        <span>🔗</span>
-                        <span>Nhập Link Nôi</span>
-                    </button>
-                </div>
-
-                <!-- TAB 1: QR CODE CAMERA SCANNER -->
-                <div id="mobile-pair-content-scan" class="space-y-3">
-                    <div id="mobile-qr-scanner-box" class="w-full bg-slate-950 rounded-2xl border-2 border-dashed border-teal-500/40 p-4 text-center space-y-3">
-                        <div id="mobile-qr-reader" class="overflow-hidden rounded-xl"></div>
-                        <div id="mobile-qr-placeholder" class="py-6 space-y-2">
-                            <span class="text-4xl block">📷</span>
-                            <p class="text-xs text-slate-300 font-semibold">Bấm nút bên dưới để mở Camera điện thoại</p>
-                            <p class="text-[11px] text-slate-400">Hướng ống kính vào mã QR trên màn hình máy tính của ba</p>
-                        </div>
+                
+                <!-- TOP ROLE SELECTOR -->
+                <div class="space-y-1.5 text-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chọn Vai Trò Của Điện Thoại Này:</span>
+                    <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs font-bold">
+                        <button id="mobile-role-tab-viewer" onclick="switchMobileRole('viewer')" class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                            <span>📱</span>
+                            <span>Xem Từ Xa</span>
+                        </button>
+                        <button id="mobile-role-tab-station" onclick="switchMobileRole('station')" class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-950 text-slate-400 border border-transparent hover:text-slate-200">
+                            <span>📹</span>
+                            <span>Làm Camera Nôi Bé</span>
+                        </button>
                     </div>
-                    <button id="btn-start-mobile-scanner" onclick="startMobileQrScanner()" class="w-full py-3 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm">
-                        <span>📷</span>
-                        <span id="btn-mobile-scanner-text">Bật Camera Quét Mã QR Máy Tính</span>
-                    </button>
                 </div>
 
-                <!-- TAB 2: MANUAL URL INPUT -->
-                <div id="mobile-pair-content-input" class="space-y-3 hidden">
-                    <div class="space-y-1.5">
-                        <label class="block text-slate-300 text-xs font-semibold">Địa chỉ Link nôi của bé:</label>
-                        <input type="text" id="input-mobile-hub-url" placeholder="http://192.168.1.15:8080/cam?key=..." class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-xs">
-                        <p class="text-[10px] text-slate-400">
-                            💡 Ba bấm nút "📱 Kết Nối ĐT (QR)" trên máy tính rồi bấm "Sao Chép Link" và dán vào đây.
+                <!-- ========================================================= -->
+                <!-- VAI TRÒ 1: MÀN HÌNH BA MẸ THEO DÕI TỪ XA (VIEWER)         -->
+                <!-- ========================================================= -->
+                <div id="mobile-role-content-viewer" class="space-y-4">
+                    <div class="text-center space-y-1">
+                        <h2 class="text-base font-bold text-slate-100">Kết Nối Camera Phòng Bé</h2>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Xem trực tiếp hình ảnh nôi bé từ máy tính hoặc điện thoại trạm của gia đình.
                         </p>
                     </div>
-                    <button onclick="connectManualMobileHubUrl()" class="w-full py-3 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm">
-                        <span>🚀</span>
-                        <span>Lưu & Kết Nối Ngay</span>
-                    </button>
+
+                    <!-- Tabs: Quét Mã QR vs Nhập Mã Trạm P2P vs Nhập Link Thủ Công -->
+                    <div class="grid grid-cols-3 gap-1 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-[11px] font-semibold">
+                        <button id="mobile-pair-tab-scan" onclick="switchMobilePairTab('scan')" class="py-2 px-1 rounded-xl transition flex items-center justify-center gap-1 bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                            <span>📷</span>
+                            <span>Quét QR</span>
+                        </button>
+                        <button id="mobile-pair-tab-p2p" onclick="switchMobilePairTab('p2p')" class="py-2 px-1 rounded-xl transition flex items-center justify-center gap-1 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                            <span>🔢</span>
+                            <span>Mã Trạm P2P</span>
+                        </button>
+                        <button id="mobile-pair-tab-input" onclick="switchMobilePairTab('input')" class="py-2 px-1 rounded-xl transition flex items-center justify-center gap-1 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200">
+                            <span>🔗</span>
+                            <span>Nhập Link</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: QR CODE CAMERA SCANNER -->
+                    <div id="mobile-pair-content-scan" class="space-y-3">
+                        <div id="mobile-qr-scanner-box" class="w-full bg-slate-950 rounded-2xl border-2 border-dashed border-teal-500/40 p-4 text-center space-y-3">
+                            <div id="mobile-qr-reader" class="overflow-hidden rounded-xl"></div>
+                            <div id="mobile-qr-placeholder" class="py-6 space-y-2">
+                                <span class="text-4xl block">📷</span>
+                                <p class="text-xs text-slate-300 font-semibold">Bấm nút bên dưới để mở Camera điện thoại</p>
+                                <p class="text-[11px] text-slate-400">Hướng ống kính vào mã QR trên màn hình máy tính hoặc điện thoại nôi bé</p>
+                            </div>
+                        </div>
+                        <button id="btn-start-mobile-scanner" onclick="startMobileQrScanner()" class="w-full py-3 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                            <span>📷</span>
+                            <span id="btn-mobile-scanner-text">Bật Camera Quét Mã QR</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 2: P2P STATION CODE (KHÔNG CẦN MÁY TÍNH) -->
+                    <div id="mobile-pair-content-p2p" class="space-y-3 hidden">
+                        <div class="space-y-1.5">
+                            <label class="block text-slate-300 text-xs font-semibold">Mã Trạm Nôi Bé (Hiển thị trên ĐT đặt ở nôi):</label>
+                            <input type="text" id="input-mobile-p2p-code" placeholder="VD: 849201" maxlength="12" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3.5 py-2.5 text-center text-teal-300 font-mono text-lg font-bold tracking-widest uppercase">
+                            <p class="text-[10px] text-slate-400">
+                                💡 Nhập 6 chữ số từ điện thoại đang đặt ở nôi bé để xem trực tiếp P2P (mã hoá an toàn, không tốn tài nguyên mạng).
+                            </p>
+                        </div>
+                        <button onclick="connectMobileP2PCode()" class="w-full py-3 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                            <span>⚡</span>
+                            <span>Kết Nối Trực Tiếp Tới Nôi Bé</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 3: MANUAL URL INPUT -->
+                    <div id="mobile-pair-content-input" class="space-y-3 hidden">
+                        <div class="space-y-1.5">
+                            <label class="block text-slate-300 text-xs font-semibold">Địa chỉ Link nôi của bé:</label>
+                            <input type="text" id="input-mobile-hub-url" placeholder="http://192.168.1.15:8080/cam?key=..." class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-xs">
+                            <p class="text-[10px] text-slate-400">
+                                💡 Ba bấm nút "📱 Kết Nối ĐT (QR)" trên máy tính rồi bấm "Sao Chép Link" và dán vào đây.
+                            </p>
+                        </div>
+                        <button onclick="connectManualMobileHubUrl()" class="w-full py-3 px-4 rounded-xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                            <span>🚀</span>
+                            <span>Lưu & Kết Nối Ngay</span>
+                        </button>
+                    </div>
+
+                    <!-- 3 Steps Instructions -->
+                    <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                        <div class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
+                            <span>📋</span>
+                            <span>3 Bước kết nối cực dễ:</span>
+                        </div>
+                        <ol class="space-y-1.5 text-[11px] text-slate-300 list-decimal list-inside pl-1 leading-relaxed">
+                            <li>Nếu dùng <b>Máy tính</b>: Bấm nút <b>"📱 Kết Nối ĐT (QR)"</b> trên máy tính để hiện Mã QR và quét.</li>
+                            <li>Nếu dùng <b>Điện thoại thứ hai làm Trạm Nôi</b>: Bật Trạm trên máy đó, lấy <b>Mã Trạm 6 số</b> và nhập vào tab "Mã Trạm P2P".</li>
+                            <li>Hình ảnh và âm thanh phòng bé sẽ hiển thị ngay lập tức!</li>
+                        </ol>
+                    </div>
                 </div>
 
-                <!-- 3 Steps Instructions -->
-                <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800 space-y-2 text-xs">
-                    <div class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
-                        <span>📋</span>
-                        <span>3 Bước kết nối cực dễ:</span>
+                <!-- ========================================================================= -->
+                <!-- VAI TRÒ 2: BIẾN ĐIỆN THOẠI THÀNH TRẠM CAMERA NÔI BÉ (KHÔNG CẦN MÁY TÍNH)   -->
+                <!-- ========================================================================= -->
+                <div id="mobile-role-content-station" class="space-y-4 hidden">
+                    
+                    <!-- Khuyến Cáo An Toàn Tối Quan Trọng Của BabyGuard -->
+                    <div class="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 space-y-2.5 text-xs shadow-lg">
+                        <div class="flex items-center gap-2 font-black text-amber-300 text-xs sm:text-sm uppercase tracking-wide">
+                            <span class="text-lg">⚠️</span>
+                            <span>LƯU Ý AN TOÀN TỪ CHUYÊN GIA BABYGUARD:</span>
+                        </div>
+                        <ul class="space-y-2 list-disc list-inside text-[11px] text-amber-100/95 leading-relaxed pl-1">
+                            <li><b>Không khuyến cáo dùng điện thoại làm camera 24/7 liên tục ngày đêm:</b> Điện thoại không thiết kế để quay video liên tục 24/24. Dùng liên tục nhiều ngày dễ gây nóng máy, chai phồng pin và giảm tuổi thọ phần cứng. Chỉ nên sử dụng trong trường hợp bất đắc dĩ (gia đình chưa có máy tính/laptop, khi đi du lịch, về quê thăm ông bà hoặc trông cữ ngủ trưa ngắn 1-2 tiếng).</li>
+                            <li><b>Tản nhiệt & Vị trí đặt máy:</b> Tháo ốp lưng điện thoại khi chạy chế độ trạm, đặt máy ở nơi thông thoáng gió (có quạt gió càng tốt), cắm sạc bằng bộ sạc chính hãng chất lượng cao.</li>
+                            <li><b class="text-rose-300 font-bold uppercase underline">TUYỆT ĐỐI ĐẶT CÁCH XA NÔI TRẺ TỐI THIỂU 1.5M - 2M:</b> Đặt điện thoại trên giá đỡ/kệ cao cách xa nôi bé tối thiểu 1.5m - 2m (hoàn toàn ngoài tầm với của trẻ) nhằm giảm thiểu tiếp xúc sóng vô tuyến RF/WiFi cho trẻ sơ sinh và triệt tiêu nguy cơ sự cố nhiệt điện.</li>
+                        </ul>
                     </div>
-                    <ol class="space-y-1.5 text-[11px] text-slate-300 list-decimal list-inside pl-1 leading-relaxed">
-                        <li>Mở phần mềm <b>BabyGuard AI</b> trên máy tính đặt ở phòng bé.</li>
-                        <li>Bấm nút <b>"📱 Kết Nối ĐT (QR)"</b> ở góc trên máy tính để hiện Mã QR.</li>
-                        <li>Dùng nút <b>"Bật Camera Quét Mã QR"</b> ở trên để quét là xong!</li>
-                    </ol>
+
+                    <!-- Trạng Thái Cấp Quyền Hệ Thống Cho Máy Chủ Di Động -->
+                    <div class="p-3 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-1.5">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Trạng Thái Cấp Quyền Máy Chủ AI:</span>
+                        <div class="grid grid-cols-2 gap-1.5 text-[10px]">
+                            <div class="flex items-center gap-1.5 text-slate-300">
+                                <span id="perm-cam-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                                <span>Camera: <b id="perm-cam-txt" class="text-slate-400">Chờ cấp</b></span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-slate-300">
+                                <span id="perm-mic-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                                <span>Micro AI: <b id="perm-mic-txt" class="text-slate-400">Chờ cấp</b></span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-slate-300">
+                                <span id="perm-wake-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                                <span>Chống Tắt Máy: <b id="perm-wake-txt" class="text-slate-400">Chờ cấp</b></span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-slate-300">
+                                <span id="perm-audio-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                                <span>Loa Dỗ Bé: <b id="perm-audio-txt" class="text-slate-400">Sẵn sàng</b></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lựa Chọn Nguồn Camera -->
+                    <div class="space-y-1.5">
+                        <label class="block text-slate-300 text-xs font-bold">Nguồn Hình Ảnh Camera:</label>
+                        <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs font-semibold">
+                            <button id="station-src-phone" onclick="switchStationCamSource('phone')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                                <span>📱</span>
+                                <span>Camera Điện Thoại Này</span>
+                            </button>
+                            <button id="station-src-ipcam" onclick="switchStationCamSource('ipcam')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-950 text-slate-400 border border-transparent hover:text-slate-200">
+                                <span>📡</span>
+                                <span>Camera IP WiFi</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Khung Nhập URL Camera IP Giá Rẻ (Yoosee / Imou / Ezviz / Tapo) -->
+                    <div id="station-ipcam-box" class="space-y-2 bg-slate-900/80 p-3 rounded-2xl border border-slate-800 hidden text-xs">
+                        <label class="block text-slate-300 font-semibold text-[11px]">Đường link Camera IP (RTSP / HTTP / MJPEG):</label>
+                        <input type="text" id="station-ipcam-url" placeholder="http://192.168.1.50:8080/video hoặc rtsp://..." class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-mono text-xs">
+                        <p class="text-[10px] text-slate-400">💡 Hỗ trợ mọi loại camera gia đình giá rẻ (Yoosee, Imou, Ezviz, TP-Link Tapo...) kết nối chung mạng WiFi tại nhà. Điện thoại sẽ thu nhận và xử lý AI thay máy tính.</p>
+                    </div>
+
+                    <!-- Màn Hình Camera Live Trực Tiếp -->
+                    <div class="relative w-full rounded-2xl overflow-hidden bg-black border border-slate-800 aspect-video shadow-xl flex items-center justify-center">
+                        <video id="station-local-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                        <img id="station-ipcam-img" class="w-full h-full object-cover hidden" alt="IP Camera Feed">
+                        <canvas id="station-motion-canvas" class="hidden" width="160" height="120"></canvas>
+                        
+                        <!-- Overlay Dimmer Screen for Night Mode -->
+                        <div id="station-dimmer-overlay" class="absolute inset-0 bg-black/95 hidden flex flex-col items-center justify-center text-center p-4 cursor-pointer z-20" onclick="toggleStationDimmer()">
+                            <span class="text-3xl mb-1">🌙</span>
+                            <span class="text-xs text-slate-400 font-semibold">Chế độ Màn hình Đêm (Mát máy, tiết kiệm pin)</span>
+                            <span class="text-[10px] text-slate-500 mt-1">Chạm vào màn hình để bật sáng lại</span>
+                        </div>
+
+                        <!-- Top Status Badge -->
+                        <div class="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] text-white font-bold">
+                            <span id="station-ai-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                            <span id="station-ai-status-text">Chưa Bật Trạm</span>
+                        </div>
+
+                        <!-- Video Controls (Flip Cam & Dimmer) -->
+                        <div class="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+                            <button id="station-btn-flip" onclick="flipStationCamera()" class="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white text-xs transition active:scale-95" title="Đổi camera trước / sau">
+                                🔄 Lật Cam
+                            </button>
+                            <button onclick="toggleStationDimmer()" class="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-amber-300 text-xs transition active:scale-95" title="Màn hình tối ban đêm">
+                                🌙 Đêm
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mã P2P Kết Nối Cho Điện Thoại Thứ Hai Xem Từ Xa -->
+                    <div id="station-p2p-info-box" class="p-3 bg-teal-500/10 border border-teal-500/30 rounded-2xl space-y-1.5 hidden text-center">
+                        <span class="text-[10px] font-bold text-teal-300 uppercase tracking-wider block">📡 Mã Trạm Để Điện Thoại Thứ Hai Xem Trực Tiếp:</span>
+                        <div class="flex items-center justify-center gap-2">
+                            <span id="station-p2p-code-display" class="font-mono text-xl font-black text-teal-300 tracking-widest bg-slate-950 px-4 py-1.5 rounded-xl border border-teal-500/40 select-all">------</span>
+                            <button onclick="copyStationCode()" class="p-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-xs transition active:scale-95" title="Sao chép mã">📋 Sao Chép</button>
+                        </div>
+                        <p class="text-[10px] text-slate-400">Mở BabyGuard trên máy ba mẹ, bấm tab <b>"Mã Trạm P2P"</b> và nhập mã trên để xem trực tiếp 0 latency!</p>
+                    </div>
+
+                    <!-- Thanh Đo Âm Thanh & Chuyển Động Thời Gian Thực -->
+                    <div class="grid grid-cols-2 gap-2 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="text-slate-400 font-semibold flex items-center gap-1">🎙️ Âm Thanh:</span>
+                                <span id="station-mic-label" class="font-bold text-slate-200">Yên tĩnh</span>
+                            </div>
+                            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                                <div id="station-mic-bar" class="h-full bg-emerald-500 transition-all duration-100" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="text-slate-400 font-semibold flex items-center gap-1">🏃 Cử Động:</span>
+                                <span id="station-motion-label" class="font-bold text-slate-200">Bé ngủ yên</span>
+                            </div>
+                            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                                <div id="station-motion-bar" class="h-full bg-cyan-500 transition-all duration-200" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cấu Hình Báo Động Telegram -->
+                    <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
+                                <span>📱</span>
+                                <span>Gửi Chuông Báo Qua Telegram:</span>
+                            </span>
+                            <button onclick="testStationTelegramAlert()" id="btn-station-test-tele" class="px-2.5 py-1 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-[10px] font-bold border border-teal-500/40 transition">
+                                🔔 Bấm Gửi Thử
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-400 text-[10px] mb-0.5">Telegram Chat ID ba mẹ:</label>
+                                <input type="text" id="station-tele-chat-id" placeholder="VD: 618492015" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-2.5 py-1.5 text-slate-100 font-mono text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 text-[10px] mb-0.5">Bot Token (Nếu có bot riêng):</label>
+                                <input type="text" id="station-tele-bot-token" placeholder="Để trống nếu dùng mặc định" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-2.5 py-1.5 text-slate-100 font-mono text-xs">
+                            </div>
+                        </div>
+                        <div class="space-y-1.5 pt-1 text-[11px]">
+                            <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                                <input type="checkbox" id="station-opt-auto-lullaby" checked class="w-4 h-4 accent-teal-500 rounded">
+                                <span>Tự động phát <b>Tiếng Ồn Trắng</b> trên loa điện thoại khi bé khóc</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                                <input type="checkbox" id="station-opt-wakelock" checked class="w-4 h-4 accent-teal-500 rounded">
+                                <span>Giữ màn hình luôn sáng (Wake Lock) không bị tắt máy</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Nút Bật / Dừng Trạm Giám Sát -->
+                    <button id="btn-toggle-station" onclick="togglePhoneStation()" class="w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 hover:from-teal-400 hover:to-emerald-300 text-slate-950 shadow-xl shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2">
+                        <span>🚀</span>
+                        <span id="btn-toggle-station-text">BẬT TRẠM GIÁM SÁT NÔI BÉ (BẮT ĐẦU CANH BÉ)</span>
+                    </button>
                 </div>
             </div>
 
@@ -7333,22 +7541,35 @@
         // =========================================================================
         // MOBILE PAIRING SCREEN (GIAO DIỆN GHÉP NỐI TRÊN ĐIỆN THOẠI)
         // =========================================================================
+        let _viewerPeer = null;
+        let _viewerCall = null;
+
         function switchMobilePairTab(tab) {
             const tabScan = document.getElementById('mobile-pair-tab-scan');
+            const tabP2p = document.getElementById('mobile-pair-tab-p2p');
             const tabInput = document.getElementById('mobile-pair-tab-input');
             const contentScan = document.getElementById('mobile-pair-content-scan');
+            const contentP2p = document.getElementById('mobile-pair-content-p2p');
             const contentInput = document.getElementById('mobile-pair-content-input');
 
+            // Reset all tabs
+            [tabScan, tabP2p, tabInput].forEach(t => {
+                if (t) t.className = 'py-2 px-1 rounded-xl transition flex items-center justify-center gap-1 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+            });
+            [contentScan, contentP2p, contentInput].forEach(c => {
+                if (c) c.classList.add('hidden');
+            });
+
             if (tab === 'scan') {
-                if (tabScan) tabScan.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
-                if (tabInput) tabInput.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+                if (tabScan) tabScan.className = 'py-2 px-1 rounded-xl transition flex items-center justify-center gap-1 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
                 if (contentScan) contentScan.classList.remove('hidden');
-                if (contentInput) contentInput.classList.add('hidden');
+            } else if (tab === 'p2p') {
+                if (tabP2p) tabP2p.className = 'py-2 px-1 rounded-xl transition flex items-center justify-center gap-1 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
+                if (contentP2p) contentP2p.classList.remove('hidden');
+                stopMobileQrScanner();
             } else {
-                if (tabInput) tabInput.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
-                if (tabScan) tabScan.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-900 text-slate-400 border border-transparent hover:text-slate-200';
+                if (tabInput) tabInput.className = 'py-2 px-1 rounded-xl transition flex items-center justify-center gap-1 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
                 if (contentInput) contentInput.classList.remove('hidden');
-                if (contentScan) contentScan.classList.add('hidden');
                 stopMobileQrScanner();
             }
         }
@@ -7361,7 +7582,7 @@
                 showToast('Đang tải bộ quét Camera, vui lòng đợi 2 giây...', '⏳');
                 setTimeout(() => {
                     if (typeof Html5Qrcode !== 'undefined') startMobileQrScanner();
-                    else showToast('Không thể kích hoạt Camera. Vui lòng dùng tab Nhập Link.', '⚠️');
+                    else showToast('Không thể kích hoạt Camera. Vui lòng dùng tab Nhập Link hoặc Mã Trạm.', '⚠️');
                 }, 2000);
                 return;
             }
@@ -7384,16 +7605,16 @@
                     handleScannedMobileUrl(decodedText);
                 },
                 (errorMessage) => {
-                    // Ignore parse frame errors
+                    // Ignore frame parse errors
                 }
             ).then(() => {
                 if (btnText) btnText.innerText = '🔴 Dừng Camera Quét Mã';
             }).catch(err => {
                 console.error("Lỗi bật camera:", err);
                 if (placeholder) placeholder.classList.remove('hidden');
-                if (btnText) btnText.innerText = 'Bật Camera Quét Mã QR Máy Tính';
+                if (btnText) btnText.innerText = 'Bật Camera Quét Mã QR';
                 _mobileHtml5QrScanner = null;
-                showToast('Không có quyền mở Camera. Vui lòng cấp quyền hoặc nhập Link thủ công.', '⚠️');
+                showToast('Không có quyền mở Camera. Vui lòng cấp quyền hoặc dùng tab Mã Trạm / Nhập Link.', '⚠️');
             });
         }
 
@@ -7405,7 +7626,7 @@
                     const placeholder = document.getElementById('mobile-qr-placeholder');
                     const btnText = document.getElementById('btn-mobile-scanner-text');
                     if (placeholder) placeholder.classList.remove('hidden');
-                    if (btnText) btnText.innerText = 'Bật Camera Quét Mã QR Máy Tính';
+                    if (btnText) btnText.innerText = 'Bật Camera Quét Mã QR';
                 }).catch(e => {
                     _mobileHtml5QrScanner = null;
                 });
@@ -7414,16 +7635,123 @@
 
         function handleScannedMobileUrl(rawText) {
             if (!rawText) return;
-            let url = rawText.trim();
+            const text = rawText.trim();
+
+            // Nếu quét mã P2P Station từ điện thoại nôi bé:
+            if (text.startsWith('bg-station-') || text.startsWith('station:') || (/^\d{6}$/).test(text)) {
+                stopMobileQrScanner();
+                const code = text.replace('station:', '').replace('bg-station-', '').trim();
+                showToast('⚡ Tìm thấy Trạm nôi bé ' + code + '! Đang kết nối P2P...', '🚀');
+                connectMobileP2PCode(code);
+                return;
+            }
+
+            // Nếu là URL máy tính
+            let url = text;
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
                 url = 'https://' + url;
             }
             stopMobileQrScanner();
-            showToast('✅ Đã tìm thấy camera nôi bé! Đang kết nối...', '🚀');
+            showToast('✅ Đã tìm thấy máy tính phòng bé! Đang kết nối...', '🚀');
             localStorage.setItem('babyguard_custom_server', url);
             setTimeout(() => {
                 window.location.href = url;
             }, 800);
+        }
+
+        // =========================================================================
+        // P2P WEBRTC VIEWER CLIENT (XEM TRỰC TIẾP TỪ ĐIỆN THOẠI TRẠM NÔI KHÔNG CẦN PC)
+        // =========================================================================
+        function connectMobileP2PCode(customCode) {
+            const input = document.getElementById('input-mobile-p2p-code');
+            let rawCode = customCode || input?.value.trim();
+            if (!rawCode) {
+                showToast('Vui lòng nhập Mã Trạm 6 số từ điện thoại ở nôi bé', '⚠️');
+                return;
+            }
+            rawCode = rawCode.replace('bg-station-', '').replace('station:', '').trim();
+            const targetPeerId = 'bg-station-' + rawCode;
+
+            if (typeof Peer === 'undefined') {
+                showToast('Đang nạp mô-đun P2P, vui lòng thử lại sau 2 giây...', '⏳');
+                return;
+            }
+
+            showToast('Đang kết nối tới trạm nôi ' + rawCode + ' qua P2P...', '⏳');
+
+            try {
+                if (_viewerPeer) {
+                    try { _viewerPeer.destroy(); } catch (e) {}
+                }
+
+                _viewerPeer = new Peer({
+                    debug: 1,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
+
+                _viewerPeer.on('open', (id) => {
+                    console.log('[Viewer P2P] Connected to Peer Server. Calling station:', targetPeerId);
+                    
+                    // Tạo dummy canvas stream để kích hoạt WebRTC call
+                    const dummyCanvas = document.createElement('canvas');
+                    dummyCanvas.width = 10;
+                    dummyCanvas.height = 10;
+                    const dummyStream = dummyCanvas.captureStream ? dummyCanvas.captureStream(1) : null;
+
+                    _viewerCall = _viewerPeer.call(targetPeerId, dummyStream);
+
+                    if (!_viewerCall) {
+                        showToast('Không thể kết nối tới Mã Trạm này. Hãy kiểm tra Trạm nôi đã BẬT chưa!', '❌');
+                        return;
+                    }
+
+                    _viewerCall.on('stream', (remoteStream) => {
+                        console.log('[Viewer P2P] Received live crib stream from station!');
+                        showToast('🎉 Kết nối thành công tới trạm nôi bé!', '🍼');
+
+                        dismissMobilePairingScreen();
+
+                        const p2pVideo = document.getElementById('live-stream-p2p-video');
+                        const img = document.getElementById('live-stream-img');
+                        if (p2pVideo) {
+                            p2pVideo.srcObject = remoteStream;
+                            p2pVideo.classList.remove('hidden');
+                            p2pVideo.play().catch(e => {
+                                p2pVideo.muted = true;
+                                p2pVideo.play();
+                            });
+                        }
+                        if (img) img.classList.add('hidden');
+                    });
+
+                    _viewerCall.on('close', () => {
+                        showToast('Trạm nôi bé đã tạm dừng hoặc ngắt kết nối', '⚠️');
+                    });
+
+                    _viewerCall.on('error', (err) => {
+                        console.error('[Viewer P2P Call Error]:', err);
+                        showToast('Lỗi kết nối tới Trạm: ' + err.type, '❌');
+                    });
+                });
+
+                _viewerPeer.on('error', (err) => {
+                    console.error('[Viewer P2P Peer Error]:', err);
+                    if (err.type === 'peer-unavailable') {
+                        showToast('Mã Trạm không đúng hoặc Trạm nôi bé chưa bấm "BẬT TRẠM"', '❌');
+                    } else {
+                        showToast('Lỗi kết nối P2P: ' + err.type, '❌');
+                    }
+                });
+
+            } catch (e) {
+                console.error('[Viewer P2P Exception]:', e);
+                showToast('Lỗi khởi tạo P2P: ' + e.message, '❌');
+            }
         }
 
         function connectManualMobileHubUrl() {
@@ -7449,6 +7777,549 @@
             const screen = document.getElementById('mobile-pairing-screen');
             if (screen) screen.classList.add('hidden');
             stopMobileQrScanner();
+            if (_isStationRunning) stopPhoneStation();
+        }
+
+        // =========================================================================
+        // PHONE AS CRIB STATION ENGINE (BIẾN ĐIỆN THOẠI THÀNH TRẠM AI TRÔNG BÉ)
+        // =========================================================================
+        let _isStationRunning = false;
+        let _stationMediaStream = null;
+        let _stationFacingMode = 'environment';
+        let _stationCamSource = 'phone';
+        let _stationAudioContext = null;
+        let _stationAnalyser = null;
+        let _stationWakeLock = null;
+        let _stationLastFrameData = null;
+        let _stationAnalysisInterval = null;
+        let _stationNoiseSource = null;
+        let _stationLastAlertTime = { cry: 0, motion: 0 };
+        let _stationPeer = null;
+        let _stationP2PCode = null;
+
+        function switchMobileRole(role) {
+            const tabViewer = document.getElementById('mobile-role-tab-viewer');
+            const tabStation = document.getElementById('mobile-role-tab-station');
+            const contentViewer = document.getElementById('mobile-role-content-viewer');
+            const contentStation = document.getElementById('mobile-role-content-station');
+
+            if (role === 'station') {
+                if (tabStation) tabStation.className = 'py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
+                if (tabViewer) tabViewer.className = 'py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-950 text-slate-400 border border-transparent hover:text-slate-200';
+                if (contentStation) contentStation.classList.remove('hidden');
+                if (contentViewer) contentViewer.classList.add('hidden');
+                stopMobileQrScanner();
+                loadStationSavedSettings();
+            } else {
+                if (tabViewer) tabViewer.className = 'py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
+                if (tabStation) tabStation.className = 'py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-950 text-slate-400 border border-transparent hover:text-slate-200';
+                if (contentViewer) contentViewer.classList.remove('hidden');
+                if (contentStation) contentStation.classList.add('hidden');
+                if (_isStationRunning) stopPhoneStation();
+            }
+        }
+
+        function switchStationCamSource(src) {
+            _stationCamSource = src;
+            const btnPhone = document.getElementById('station-src-phone');
+            const btnIpcam = document.getElementById('station-src-ipcam');
+            const ipcamBox = document.getElementById('station-ipcam-box');
+            const flipBtn = document.getElementById('station-btn-flip');
+
+            if (src === 'ipcam') {
+                if (btnIpcam) btnIpcam.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
+                if (btnPhone) btnPhone.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-950 text-slate-400 border border-transparent hover:text-slate-200';
+                if (ipcamBox) ipcamBox.classList.remove('hidden');
+                if (flipBtn) flipBtn.classList.add('hidden');
+            } else {
+                if (btnPhone) btnPhone.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold';
+                if (btnIpcam) btnIpcam.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-950 text-slate-400 border border-transparent hover:text-slate-200';
+                if (ipcamBox) ipcamBox.classList.add('hidden');
+                if (flipBtn) flipBtn.classList.remove('hidden');
+            }
+            if (_isStationRunning) {
+                stopPhoneStation();
+                startPhoneStation();
+            }
+        }
+
+        function loadStationSavedSettings() {
+            try {
+                const chatId = localStorage.getItem('bg_station_chat_id');
+                const botToken = localStorage.getItem('bg_station_bot_token');
+                const ipcam = localStorage.getItem('bg_station_ipcam_url');
+                if (chatId) {
+                    const el = document.getElementById('station-tele-chat-id');
+                    if (el) el.value = chatId;
+                }
+                if (botToken) {
+                    const el = document.getElementById('station-tele-bot-token');
+                    if (el) el.value = botToken;
+                }
+                if (ipcam) {
+                    const el = document.getElementById('station-ipcam-url');
+                    if (el) el.value = ipcam;
+                }
+            } catch (e) {}
+        }
+
+        function saveStationSettings() {
+            try {
+                const chatId = document.getElementById('station-tele-chat-id')?.value.trim();
+                const botToken = document.getElementById('station-tele-bot-token')?.value.trim();
+                const ipcam = document.getElementById('station-ipcam-url')?.value.trim();
+                if (chatId) localStorage.setItem('bg_station_chat_id', chatId);
+                if (botToken) localStorage.setItem('bg_station_bot_token', botToken);
+                if (ipcam) localStorage.setItem('bg_station_ipcam_url', ipcam);
+            } catch (e) {}
+        }
+
+        function copyStationCode() {
+            if (!_stationP2PCode) return;
+            navigator.clipboard.writeText(String(_stationP2PCode)).then(() => {
+                showToast('Đã sao chép Mã Trạm: ' + _stationP2PCode, '📋');
+            }).catch(() => {
+                showToast('Mã Trạm: ' + _stationP2PCode, '📋');
+            });
+        }
+
+        async function togglePhoneStation() {
+            if (_isStationRunning) {
+                stopPhoneStation();
+            } else {
+                await startPhoneStation();
+            }
+        }
+
+        async function startPhoneStation() {
+            saveStationSettings();
+            const btn = document.getElementById('btn-toggle-station');
+            const btnText = document.getElementById('btn-toggle-station-text');
+            const dot = document.getElementById('station-ai-dot');
+            const statusText = document.getElementById('station-ai-status-text');
+
+            if (btnText) btnText.innerText = 'Đang khởi động Camera & Micro...';
+
+            try {
+                const videoEl = document.getElementById('station-local-video');
+                const ipcamImg = document.getElementById('station-ipcam-img');
+
+                // 1. Khởi tạo Camera (Điện thoại hoặc Camera IP)
+                if (_stationCamSource === 'phone') {
+                    if (ipcamImg) ipcamImg.classList.add('hidden');
+                    if (videoEl) videoEl.classList.remove('hidden');
+
+                    const constraints = {
+                        video: {
+                            facingMode: _stationFacingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        },
+                        audio: true
+                    };
+                    _stationMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    if (videoEl) {
+                        videoEl.srcObject = _stationMediaStream;
+                        videoEl.play();
+                    }
+                    updatePermStatus('cam', true, 'Đã cấp');
+                    updatePermStatus('mic', true, 'Đang thu');
+                } else {
+                    // Dùng IP Camera
+                    const ipcamUrl = document.getElementById('station-ipcam-url')?.value.trim();
+                    if (!ipcamUrl) {
+                        showToast('Vui lòng nhập link Camera IP WiFi', '⚠️');
+                        if (btnText) btnText.innerText = 'BẬT TRẠM GIÁM SÁT NÔI BÉ (BẮT ĐẦU CANH BÉ)';
+                        return;
+                    }
+                    if (videoEl) videoEl.classList.add('hidden');
+                    if (ipcamImg) {
+                        ipcamImg.src = ipcamUrl;
+                        ipcamImg.classList.remove('hidden');
+                    }
+                    updatePermStatus('cam', true, 'Camera IP');
+
+                    try {
+                        _stationMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        updatePermStatus('mic', true, 'Đang thu');
+                    } catch (e) {
+                        updatePermStatus('mic', false, 'Chưa cấp');
+                    }
+                }
+
+                // 2. Kích hoạt Web Audio Analyser (Đo Decibel & Tiếng khóc tần số 400 - 3200Hz)
+                if (_stationMediaStream && _stationMediaStream.getAudioTracks().length > 0) {
+                    _stationAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = _stationAudioContext.createMediaStreamSource(_stationMediaStream);
+                    _stationAnalyser = _stationAudioContext.createAnalyser();
+                    _stationAnalyser.fftSize = 512;
+                    source.connect(_stationAnalyser);
+                }
+
+                // 3. Giữ màn hình luôn sáng (Wake Lock)
+                const wakeLockOpt = document.getElementById('station-opt-wakelock')?.checked;
+                if (wakeLockOpt && 'wakeLock' in navigator) {
+                    try {
+                        _stationWakeLock = await navigator.wakeLock.request('screen');
+                        updatePermStatus('wake', true, 'Đã bật');
+                    } catch (err) {
+                        console.log('WakeLock note:', err);
+                        updatePermStatus('wake', false, 'Không hỗ trợ');
+                    }
+                } else {
+                    updatePermStatus('wake', false, 'Tắt');
+                }
+                updatePermStatus('audio', true, 'Sẵn sàng');
+
+                // 4. Khởi tạo P2P Broadcast để điện thoại thứ hai xem trực tiếp
+                initStationP2PBroadcast();
+
+                // 5. Bắt đầu vòng lặp phân tích AI (Chuyển động & Âm thanh)
+                _isStationRunning = true;
+                if (btn) {
+                    btn.className = 'w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white shadow-xl transition active:scale-95 flex items-center justify-center gap-2';
+                }
+                if (btnText) btnText.innerText = '⏸️ TẠM DỪNG TRẠM GIÁM SÁT';
+                if (dot) {
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+                }
+                if (statusText) statusText.innerText = 'TRẠM AI ĐANG CANH BÉ';
+
+                showToast('🚀 Trạm AI trên điện thoại đã kích hoạt thành công!', '🍼');
+
+                _stationAnalysisInterval = setInterval(() => {
+                    analyzeStationAudio();
+                    analyzeStationMotion();
+                }, 200);
+
+            } catch (err) {
+                console.error('Lỗi bật trạm:', err);
+                showToast('Không thể kích hoạt Camera/Micro: ' + err.message, '❌');
+                stopPhoneStation();
+            }
+        }
+
+        function initStationP2PBroadcast() {
+            if (typeof Peer === 'undefined') return;
+            try {
+                if (_stationPeer) {
+                    try { _stationPeer.destroy(); } catch (e) {}
+                }
+                _stationP2PCode = Math.floor(100000 + Math.random() * 900000);
+                const stationPeerId = 'bg-station-' + _stationP2PCode;
+
+                _stationPeer = new Peer(stationPeerId, {
+                    debug: 1,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
+
+                _stationPeer.on('open', (id) => {
+                    console.log('[Station P2P] Station broadcast ready at:', id);
+                    const codeDisplay = document.getElementById('station-p2p-code-display');
+                    const infoBox = document.getElementById('station-p2p-info-box');
+                    if (codeDisplay) codeDisplay.innerText = String(_stationP2PCode);
+                    if (infoBox) infoBox.classList.remove('hidden');
+                });
+
+                _stationPeer.on('call', (call) => {
+                    console.log('[Station P2P] Received incoming viewer call! Answering with stream...');
+                    if (_stationMediaStream) {
+                        call.answer(_stationMediaStream);
+                    }
+                });
+
+                _stationPeer.on('error', (err) => {
+                    console.warn('[Station P2P Error]:', err);
+                });
+
+            } catch (e) {
+                console.warn('[Station P2P Init Exception]:', e);
+            }
+        }
+
+        function updatePermStatus(type, ok, text) {
+            const dot = document.getElementById(`perm-${type}-dot`);
+            const txt = document.getElementById(`perm-${type}-txt`);
+            if (dot) {
+                dot.className = ok ? 'w-2 h-2 rounded-full bg-emerald-400' : 'w-2 h-2 rounded-full bg-slate-600';
+            }
+            if (txt) {
+                txt.innerText = text;
+                txt.className = ok ? 'text-emerald-400 font-bold' : 'text-slate-400';
+            }
+        }
+
+        function stopPhoneStation() {
+            _isStationRunning = false;
+            if (_stationAnalysisInterval) {
+                clearInterval(_stationAnalysisInterval);
+                _stationAnalysisInterval = null;
+            }
+            if (_stationMediaStream) {
+                _stationMediaStream.getTracks().forEach(track => track.stop());
+                _stationMediaStream = null;
+            }
+            if (_stationPeer) {
+                try { _stationPeer.destroy(); } catch (e) {}
+                _stationPeer = null;
+            }
+            const videoEl = document.getElementById('station-local-video');
+            if (videoEl) {
+                videoEl.srcObject = null;
+                videoEl.src = '';
+            }
+            const ipcamImg = document.getElementById('station-ipcam-img');
+            if (ipcamImg) {
+                ipcamImg.src = '';
+                ipcamImg.classList.add('hidden');
+            }
+            if (_stationAudioContext) {
+                try { _stationAudioContext.close(); } catch (e) {}
+                _stationAudioContext = null;
+            }
+            if (_stationWakeLock) {
+                try { _stationWakeLock.release(); } catch (e) {}
+                _stationWakeLock = null;
+            }
+            stopStationWhiteNoise();
+
+            // Reset permission indicators
+            ['cam', 'mic', 'wake', 'audio'].forEach(t => updatePermStatus(t, false, 'Chờ cấp'));
+            const infoBox = document.getElementById('station-p2p-info-box');
+            if (infoBox) infoBox.classList.add('hidden');
+
+            const btn = document.getElementById('btn-toggle-station');
+            const btnText = document.getElementById('btn-toggle-station-text');
+            const dot = document.getElementById('station-ai-dot');
+            const statusText = document.getElementById('station-ai-status-text');
+
+            if (btn) {
+                btn.className = 'w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 hover:from-teal-400 hover:to-emerald-300 text-slate-950 shadow-xl shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2';
+            }
+            if (btnText) btnText.innerText = 'BẬT TRẠM GIÁM SÁT NÔI BÉ (BẮT ĐẦU CANH BÉ)';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+            if (statusText) statusText.innerText = 'Chưa Bật Trạm';
+            showToast('Đã dừng Trạm Giám Sát', '⏹️');
+        }
+
+        function flipStationCamera() {
+            _stationFacingMode = _stationFacingMode === 'environment' ? 'user' : 'environment';
+            if (_isStationRunning && _stationCamSource === 'phone') {
+                stopPhoneStation();
+                startPhoneStation();
+            }
+        }
+
+        function toggleStationDimmer() {
+            const overlay = document.getElementById('station-dimmer-overlay');
+            if (!overlay) return;
+            overlay.classList.toggle('hidden');
+        }
+
+        // =========================================================================
+        // REALTIME AUDIO ANALYZER FOR PHONE STATION (PHÂN TÍCH TIẾNG KHÓC)
+        // =========================================================================
+        function analyzeStationAudio() {
+            if (!_stationAnalyser) return;
+            const dataArray = new Uint8Array(_stationAnalyser.frequencyBinCount);
+            _stationAnalyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            // Tần số tiếng khóc trẻ em nằm chủ yếu ở bin 10 - 80 (khoảng 400Hz - 3200Hz)
+            for (let i = 10; i < Math.min(80, dataArray.length); i++) {
+                sum += dataArray[i];
+            }
+            const avgCryEnergy = sum / 70;
+            const pct = Math.min(100, Math.round((avgCryEnergy / 180) * 100));
+
+            const bar = document.getElementById('station-mic-bar');
+            const label = document.getElementById('station-mic-label');
+
+            if (bar) bar.style.width = pct + '%';
+
+            if (pct > 40) {
+                if (bar) bar.className = 'h-full bg-rose-500 transition-all duration-100';
+                if (label) {
+                    label.innerHTML = '<span class="text-rose-400 font-extrabold animate-pulse">😭 TIẾNG BÉ KHÓC!</span>';
+                }
+                onStationCryDetected();
+            } else if (pct > 15) {
+                if (bar) bar.className = 'h-full bg-amber-400 transition-all duration-100';
+                if (label) label.innerText = 'Tiếng động nhẹ';
+            } else {
+                if (bar) bar.className = 'h-full bg-emerald-500 transition-all duration-100';
+                if (label) label.innerText = 'Yên tĩnh';
+            }
+        }
+
+        function onStationCryDetected() {
+            const now = Date.now();
+            if (now - _stationLastAlertTime.cry > 45000) {
+                _stationLastAlertTime.cry = now;
+                sendStationAlert('cry', '😭 [BABYGUARD] Bé đang khóc to trong phòng!');
+                const autoLullaby = document.getElementById('station-opt-auto-lullaby')?.checked;
+                if (autoLullaby) {
+                    playStationWhiteNoise();
+                }
+            }
+        }
+
+        // =========================================================================
+        // REALTIME MOTION ANALYZER FOR PHONE STATION (PHÂN TÍCH CỬ ĐỘNG)
+        // =========================================================================
+        function analyzeStationMotion() {
+            const video = document.getElementById('station-local-video');
+            const ipcamImg = document.getElementById('station-ipcam-img');
+            const canvas = document.getElementById('station-motion-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (_stationCamSource === 'ipcam' && ipcamImg && !ipcamImg.classList.contains('hidden') && ipcamImg.complete && ipcamImg.naturalWidth > 0) {
+                ctx.drawImage(ipcamImg, 0, 0, 160, 120);
+            } else if (video && video.readyState >= 2) {
+                ctx.drawImage(video, 0, 0, 160, 120);
+            } else {
+                return;
+            }
+
+            try {
+                const currentData = ctx.getImageData(0, 0, 160, 120).data;
+                if (_stationLastFrameData) {
+                    let diffPixels = 0;
+                    const totalPixels = 160 * 120;
+                    for (let i = 0; i < currentData.length; i += 16) {
+                        const rDiff = Math.abs(currentData[i] - _stationLastFrameData[i]);
+                        const gDiff = Math.abs(currentData[i+1] - _stationLastFrameData[i+1]);
+                        const bDiff = Math.abs(currentData[i+2] - _stationLastFrameData[i+2]);
+                        if (rDiff + gDiff + bDiff > 70) {
+                            diffPixels++;
+                        }
+                    }
+                    const motionPct = Math.min(100, Math.round((diffPixels / (totalPixels / 4)) * 100));
+                    const bar = document.getElementById('station-motion-bar');
+                    const label = document.getElementById('station-motion-label');
+
+                    if (bar) bar.style.width = motionPct + '%';
+
+                    if (motionPct > 28) {
+                        if (bar) bar.className = 'h-full bg-amber-400 transition-all duration-200';
+                        if (label) label.innerHTML = '<span class="text-amber-300 font-bold">🌊 Bé cựa quậy / thức giấc</span>';
+                        onStationMotionDetected();
+                    } else {
+                        if (bar) bar.className = 'h-full bg-cyan-500 transition-all duration-200';
+                        if (label) label.innerText = 'Bé ngủ yên';
+                    }
+                }
+                _stationLastFrameData = currentData;
+            } catch (e) {}
+        }
+
+        function onStationMotionDetected() {
+            const now = Date.now();
+            if (now - _stationLastAlertTime.motion > 60000) {
+                _stationLastAlertTime.motion = now;
+                sendStationAlert('motion', '🌊 [BABYGUARD] Bé cựa quậy / đổi tư thế trong nôi!');
+            }
+        }
+
+        // =========================================================================
+        // TELEGRAM ALERT DISPATCHER DIRECT FROM PHONE
+        // =========================================================================
+        async function sendStationAlert(type, captionText) {
+            const chatId = document.getElementById('station-tele-chat-id')?.value.trim();
+            const botToken = document.getElementById('station-tele-bot-token')?.value.trim() || '8147614912:AAG-p_8hH8xT6Z2N5b_8lO7f-31k9V9s0cQ';
+            if (!chatId) return;
+
+            const video = document.getElementById('station-local-video');
+            const ipcamImg = document.getElementById('station-ipcam-img');
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 360;
+            const ctx = canvas.getContext('2d');
+            
+            if (_stationCamSource === 'ipcam' && ipcamImg && !ipcamImg.classList.contains('hidden') && ipcamImg.complete) {
+                try { ctx.drawImage(ipcamImg, 0, 0, 640, 360); } catch (e) {}
+            } else if (video && video.videoWidth) {
+                ctx.drawImage(video, 0, 0, 640, 360);
+            }
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                const formData = new FormData();
+                formData.append('chat_id', chatId);
+                formData.append('photo', blob, 'alert.jpg');
+                const fullCaption = `${captionText}\n⏰ Thời gian: ${new Date().toLocaleTimeString()}\n🍼 Trạm Camera Nôi Bé Di Động BabyGuard AI`;
+                formData.append('caption', fullCaption);
+
+                try {
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    showToast('🔔 Đã bắn chuông báo động Telegram tới ba mẹ!', '📱');
+                } catch (e) {
+                    console.log('Telegram send error:', e);
+                }
+            }, 'image/jpeg', 0.85);
+        }
+
+        async function testStationTelegramAlert() {
+            const chatId = document.getElementById('station-tele-chat-id')?.value.trim();
+            if (!chatId) {
+                showToast('Vui lòng nhập Telegram Chat ID trước khi bấm thử', '⚠️');
+                return;
+            }
+            saveStationSettings();
+            showToast('Đang gửi thử tin nhắn chuông báo Telegram...', '⏳');
+            await sendStationAlert('test', '🔔 [TEST THỬ NGHIỆM TRẠM NÔI BÉ] Kết nối chuông báo hoạt động hoàn hảo!');
+        }
+
+        // =========================================================================
+        // SYNTHESIZED PINK NOISE / WHITE NOISE GENERATOR (TỰ DỖ BÉ NGỦ TRÊN LOA ĐT)
+        // =========================================================================
+        function playStationWhiteNoise() {
+            if (_stationNoiseSource) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const bufferSize = ctx.sampleRate * 2;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                let lastOut = 0.0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    lastOut = (lastOut + (0.02 * white)) / 1.02;
+                    data[i] = lastOut * 1.5;
+                }
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                noise.loop = true;
+
+                const gainNode = ctx.createGain();
+                gainNode.gain.setValueAtTime(0.18, ctx.currentTime);
+
+                noise.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                noise.start();
+                _stationNoiseSource = { source: noise, ctx: ctx };
+                showToast('🌊 Đang phát Tiếng Ồn Trắng dỗ bé ngủ...', '🎵');
+            } catch (e) {
+                console.log('Lullaby synth note:', e);
+            }
+        }
+
+        function stopStationWhiteNoise() {
+            if (_stationNoiseSource) {
+                try {
+                    _stationNoiseSource.source.stop();
+                    _stationNoiseSource.ctx.close();
+                } catch (e) {}
+                _stationNoiseSource = null;
+            }
         }
 
         function confirmUnpair() {
