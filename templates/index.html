@@ -1639,6 +1639,10 @@
                         <span>☑️</span>
                         <span id="btn-select-mode-text">Chọn Nhiều</span>
                     </button>
+                    <button onclick="createMontageVideo(false)" id="btn-create-montage-auto" class="px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-500/20 transition active:scale-95" title="Ghép các khoảnh khắc đẹp nhất thành video kỷ niệm 60s có nhạc ru">
+                        <span>🎬</span>
+                        <span>Tạo Video Kỷ Niệm</span>
+                    </button>
                     <button onclick="takeManualSnapshot()" id="btn-take-snapshot-moments" class="px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg transition active:scale-95">
                         <span>📸</span>
                         <span>Chụp Ngay</span>
@@ -1664,6 +1668,10 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button onclick="createMontageVideo(true)" id="btn-batch-video" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-500/20 transition active:scale-95">
+                        <span>🎬</span>
+                        <span>Ghép Video Đã Chọn</span>
+                    </button>
                     <button onclick="batchDownloadMoments()" id="btn-batch-download" class="px-4 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition active:scale-95">
                         <span>⬇️</span>
                         <span>Tải về (ZIP)</span>
@@ -3462,6 +3470,36 @@
             </details>
         </div>
     </div>
+        </div>
+    </div>
+
+    <!-- Modal: Trình Phát Video Kỷ Niệm (Montage / Milestone Reel Player) -->
+    <div id="montage-video-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-cardbg border border-purple-500/40 rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl space-y-4 relative">
+            <button onclick="closeMontageModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm transition">✕</button>
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🎬</span>
+                <div>
+                    <h3 class="font-extrabold text-base sm:text-lg text-white">Video Kỷ Niệm Hành Trình Khôn Lớn</h3>
+                    <p class="text-[11px] text-purple-400 font-medium">Bé A Siu • Lồng nhạc ru Brahms Lullaby chuẩn HD</p>
+                </div>
+            </div>
+
+            <div class="rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center border border-slate-800 shadow-inner">
+                <video id="montage-modal-video" controls autoplay playsinline class="w-full h-full object-contain"></video>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1 text-xs">
+                <span id="montage-modal-info" class="text-slate-400 text-[11px]">Đang phát video kỷ niệm</span>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <a id="montage-modal-download-btn" href="#" download class="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                        <span>⬇️ Tải MP4</span>
+                    </a>
+                    <button onclick="sendCurrentMontageToTelegram()" id="montage-modal-telegram-btn" class="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-sky-500/20 transition active:scale-95">
+                        <span>✈️ Gửi Telegram</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -5707,6 +5745,103 @@
             } catch (e) {
                 console.error(e);
                 showToast("Lỗi khi tải tệp ZIP", "⚠️");
+            }
+        }
+
+        let currentMontageFilename = '';
+
+        async function createMontageVideo(useSelected = false) {
+            let filenames = [];
+            if (useSelected) {
+                filenames = Array.from(selectedMoments);
+                if (filenames.length < 2) {
+                    showToast("Vui lòng chọn ít nhất 2 ảnh để ghép video!", "ℹ️");
+                    return;
+                }
+            }
+
+            const toastMsg = useSelected
+                ? `Đang dùng AI và FFmpeg ghép ${filenames.length} khoảnh khắc kèm nhạc ru Brahms Lullaby...`
+                : "Đang tự động chọn lọc các khoảnh khắc đẹp nhất ghép video kèm nhạc ru...";
+            showToast(toastMsg, "🎬", 8000);
+
+            try {
+                const res = await fetch('/api/moments/create-video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filenames: filenames,
+                        title: "Bé A Siu - Hành Trình Khôn Lớn",
+                        include_music: true,
+                        send_telegram: false
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`🎉 Tạo video thành công (${data.count} ảnh, ${data.duration}s)!`, "🎬");
+                    openMontageModal(data.video_url, data.filename, data.count, data.duration, data.size_mb);
+                    if (typeof fetchRecordings === 'function') fetchRecordings(false);
+                } else {
+                    showToast("Lỗi tạo video: " + (data.error || "Không rõ"), "⚠️");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Lỗi kết nối khi tạo video kỷ niệm", "⚠️");
+            }
+        }
+
+        function openMontageModal(videoUrl, filename, count, duration, sizeMb) {
+            currentMontageFilename = filename;
+            const modal = document.getElementById('montage-video-modal');
+            const vid = document.getElementById('montage-modal-video');
+            const dl = document.getElementById('montage-modal-download-btn');
+            const info = document.getElementById('montage-modal-info');
+
+            if (vid) {
+                vid.src = videoUrl + '?t=' + Date.now();
+                vid.play().catch(() => {});
+            }
+            if (dl) {
+                dl.href = videoUrl;
+                dl.download = filename;
+            }
+            if (info) {
+                info.innerText = `Thời lượng: ${duration}s • ${count} khoảnh khắc • ${sizeMb} MB`;
+            }
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeMontageModal() {
+            const modal = document.getElementById('montage-video-modal');
+            const vid = document.getElementById('montage-modal-video');
+            if (vid) vid.pause();
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function sendCurrentMontageToTelegram() {
+            if (!currentMontageFilename) return;
+            const btn = document.getElementById('montage-modal-telegram-btn');
+            if (btn) btn.disabled = true;
+            showToast("Đang gửi video kỷ niệm sang Telegram của ba mẹ...", "✈️");
+            try {
+                const res = await fetch('/api/recordings/send-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filename: currentMontageFilename,
+                        caption: "🎬 <b>THƯỚC PHIM KỶ NIỆM BÉ A SIU</b>\n✨ BabyGuard AI đã ghép những khoảnh khắc đáng yêu nhất của con gửi tặng ba mẹ!"
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Đã gửi video qua Telegram thành công!", "🎉");
+                } else {
+                    showToast("Lỗi gửi Telegram: " + (data.error || "Chưa bật Bot"), "⚠️");
+                }
+            } catch (e) {
+                showToast("Lỗi khi gửi Telegram", "⚠️");
+            } finally {
+                if (btn) btn.disabled = false;
             }
         }
 

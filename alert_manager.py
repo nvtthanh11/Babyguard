@@ -354,17 +354,19 @@ class AlertManager:
         threading.Thread(target=_send, daemon=True).start()
         return True
 
-    def send_telegram_video(self, video_path: str, caption: str, event_type: str = "danger"):
+    def send_telegram_video(self, video_path: str, caption: str, event_type: str = "danger", force: bool = False):
         bot_token = self.config.get("telegram_bot_token", "").strip()
         enabled = self.config.get("telegram_enabled", False)
         send_video = self.config.get("telegram_send_video", False)
         recipients = self._get_recipient_list()
 
-        if not enabled or not send_video or not bot_token or not recipients:
+        if not enabled or not bot_token or not recipients:
+            return
+        if not force and not send_video:
             return
 
-        # Never send video for routine motion
-        if event_type == "motion":
+        # Never send video for routine motion unless explicitly forced
+        if event_type == "motion" and not force:
             return
 
         def _send():

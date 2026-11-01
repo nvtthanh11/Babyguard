@@ -1319,6 +1319,65 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
+    @app.post("/api/moments/create-video")
+    async def create_moments_video(request: Request):
+        try:
+            data = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
+            filenames = data.get("filenames", [])
+            title = data.get("title", "Bé A Siu - Hành Trình Khôn Lớn")
+            include_music = data.get("include_music", True)
+            send_telegram = data.get("send_telegram", False)
+
+            # Resolve paths
+            image_paths = []
+            if filenames:
+                for fn in filenames:
+                    safe_fn = os.path.basename(fn)
+                    p = os.path.join(moments_dir, safe_fn)
+                    if os.path.exists(p):
+                        image_paths.append(p)
+
+            # Create video via video_recorder
+            res = video_recorder.create_montage_video(
+                image_paths=image_paths if image_paths else None,
+                title=title,
+                include_music=include_music
+            )
+
+            # Optionally send to Telegram
+            if send_telegram and alert_manager and alert_manager.is_configured():
+                mp4_path = os.path.join(video_recorder.recordings_dir, res["filename"])
+                caption = f"🎬 <b>VIDEO KỶ NIỆM HÀNH TRÌNH KHÔN LỚN CỦA BÉ A SIU</b>\n✨ Được tạo tự động từ {res['count']} khoảnh khắc đẹp nhất kèm nhạc ru Brahms Lullaby êm dịu."
+                alert_manager.send_telegram_video(mp4_path, caption, event_type="montage", force=True)
+                res["telegram_sent"] = True
+            else:
+                res["telegram_sent"] = False
+
+            return JSONResponse(res)
+        except Exception as e:
+            return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+    @app.post("/api/recordings/send-telegram")
+    async def send_recording_to_telegram(request: Request):
+        try:
+            data = await request.json()
+            filename = os.path.basename(data.get("filename", ""))
+            if not filename:
+                return JSONResponse({"success": False, "error": "Thiếu tên tệp video"}, status_code=400)
+
+            p = os.path.join(video_recorder.recordings_dir, filename)
+            if not os.path.exists(p):
+                return JSONResponse({"success": False, "error": "Tệp video không tồn tại"}, status_code=404)
+
+            caption = data.get("caption", "🎬 <b>VIDEO KỶ NIỆM BÉ A SIU</b>\nBabyGuard AI đã gửi thước phim kỷ niệm của con đến ba mẹ!")
+            if alert_manager and alert_manager.is_configured():
+                alert_manager.send_telegram_video(p, caption, event_type="montage", force=True)
+                return JSONResponse({"success": True, "message": "Đã gửi video qua Telegram thành công!"})
+            else:
+                return JSONResponse({"success": False, "error": "Chưa kích hoạt hoặc chưa cấu hình Telegram Bot"}, status_code=400)
+        except Exception as e:
+            return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
     @app.get("/api/download/full-package")
     def download_full_package():
         zip_path = os.path.join(BASE_DIR, "BabyGuard_AI_v1.0_Commercial.zip")

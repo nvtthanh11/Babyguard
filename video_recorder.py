@@ -242,7 +242,9 @@ class VideoRecorder:
             has_thumb = os.path.exists(os.path.join(self.recordings_dir, thumb_name))
             
             evt = "Sự kiện"
-            if "cry" in base:
+            if "montage" in base:
+                evt = "🎬 Video Kỷ Niệm"
+            elif "cry" in base:
                 evt = "Tiếng khóc"
             elif "motion" in base:
                 evt = "Cử động"
@@ -258,3 +260,137 @@ class VideoRecorder:
                 "event_type": evt
             })
         return records
+
+    def create_montage_video(self, image_paths: list = None, title: str = "Bé A Siu - Hành Trình Khôn Lớn", include_music: bool = True) -> dict:
+        """
+        Ghép các khoảnh khắc đáng yêu thành video MP4 kỷ niệm (Montage/Timelapse)
+        kèm nhạc ru nhẹ nhàng và phụ đề thông tin ngày tháng.
+        """
+        if not image_paths:
+            moments_dir = os.path.join(BASE_DIR, "moments")
+            all_moments = sorted(glob.glob(os.path.join(moments_dir, "moment_*.jpg")), key=os.path.getmtime, reverse=True)
+            image_paths = all_moments[:24]
+
+        valid_paths = [p for p in image_paths if os.path.exists(p)]
+        if len(valid_paths) < 2:
+            raise ValueError("Cần ít nhất 2 ảnh để tạo video kỷ niệm.")
+
+        # Sort chronologically for nice progression
+        valid_paths.sort(key=os.path.getmtime)
+
+        now = datetime.now()
+        ts_str = now.strftime("%Y%m%d_%H%M%S")
+        tmp_dir = os.path.join(self.recordings_dir, f"_tmp_montage_{ts_str}")
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        slides = []
+        try:
+            for idx, p in enumerate(valid_paths):
+                img = cv2.imread(p)
+                if img is None:
+                    continue
+
+                # 1280x720 canvas with dark gradient
+                canvas = np.zeros((720, 1280, 3), dtype=np.uint8)
+                for y in range(720):
+                    val = int(14 + (y / 720) * 18)
+                    canvas[y, :] = (val + 4, val, val)
+
+                # Scale preserving aspect ratio inside (1200, 620)
+                h, w = img.shape[:2]
+                scale = min(1200.0 / w, 620.0 / h)
+                nw, nh = int(w * scale), int(h * scale)
+                resized = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA)
+
+                x_off = (1280 - nw) // 2
+                y_off = 24 + (620 - nh) // 2
+                canvas[y_off:y_off+nh, x_off:x_off+nw] = resized
+
+                # Bottom banner overlay
+                cv2.rectangle(canvas, (0, 650), (1280, 720), (10, 10, 18), -1)
+                cv2.line(canvas, (0, 650), (1280, 650), (124, 58, 237), 2)
+
+                mtime = os.path.getmtime(p)
+                dt_str = datetime.fromtimestamp(mtime).strftime("%d/%m/%Y %H:%M")
+                caption_left = f"{title}"
+                caption_right = f"Khoanh khac: {dt_str}  |  BabyGuard AI"
+
+                cv2.putText(canvas, caption_left, (36, 688), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2, cv2.LINE_AA)
+                cv2.putText(canvas, caption_right, (36, 708), cv2.FONT_HERSHEY_SIMPLEX, 0.50, (148, 163, 184), 1, cv2.LINE_AA)
+
+                slide_file = os.path.join(tmp_dir, f"slide_{idx:03d}.jpg")
+                cv2.imwrite(slide_file, canvas, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                slides.append(slide_file)
+
+            if len(slides) < 2:
+                raise ValueError("Không thể xử lý đủ ảnh hợp lệ để tạo video.")
+
+            # Create FFmpeg concat list
+            duration_per_slide = 2.5
+            concat_txt = os.path.join(tmp_dir, "concat.txt")
+            with open(concat_txt, "w") as f:
+                for s in slides:
+                    f.write(f"file '{s}'\nduration {duration_per_slide}\n")
+                f.write(f"file '{slides[-1]}'\n")
+
+            total_duration = len(slides) * duration_per_slide
+            out_base = f"montage_{ts_str}.mp4"
+            out_mp4 = os.path.join(self.recordings_dir, out_base)
+            out_thumb = os.path.join(self.recordings_dir, f"montage_{ts_str}.jpg")
+
+            # Save middle slide as thumbnail
+            mid_idx = len(slides) // 2
+            shutil.copyfile(slides[mid_idx], out_thumb)
+
+            music_file = os.path.join(BASE_DIR, "music", "Nhac_ru_Brahms_Lullaby.wav")
+            has_music = include_music and os.path.exists(music_file)
+
+            # Build FFmpeg command
+            cmd = [
+                "ffmpeg", "-y",
+                "-f", "concat", "-safe", "0", "-i", concat_txt
+            ]
+
+            if has_music:
+                cmd.extend([
+                    "-stream_loop", "-1", "-i", music_file,
+                    "-vf", "format=yuv420p",
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-t", str(total_duration),
+                    "-af", f"afade=t=in:st=0:d=1,afade=t=out:st={max(0, total_duration - 2)}:d=2"
+                ])
+            else:
+                cmd.extend([
+                    "-vf", "format=yuv420p",
+                    "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+                    "-t", str(total_duration)
+                ])
+
+            cmd.append(out_mp4)
+
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if res.returncode != 0 or not os.path.exists(out_mp4):
+                err = res.stderr.decode("utf-8", errors="ignore")[:300]
+                raise RuntimeError(f"FFmpeg error ({res.returncode}): {err}")
+
+            size_mb = round(os.path.getsize(out_mp4) / (1024 * 1024), 2)
+            print(f"[VideoRecorder] 🎬 Tạo video kỷ niệm thành công: {out_base} ({size_mb} MB, {len(slides)} ảnh)")
+
+            return {
+                "success": True,
+                "filename": out_base,
+                "video_url": f"/api/recordings/{out_base}",
+                "thumbnail_url": f"/api/recordings/montage_{ts_str}.jpg",
+                "duration": round(total_duration, 1),
+                "count": len(slides),
+                "size_mb": size_mb,
+                "timestamp": now.strftime("%H:%M:%S - %d/%m/%Y")
+            }
+
+        finally:
+            # Clean up temp frames
+            try:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+            except Exception:
+                pass
