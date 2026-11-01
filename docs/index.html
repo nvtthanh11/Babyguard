@@ -82,7 +82,7 @@
       animation: marqueeScrollLeft 50s linear infinite;
       will-change: transform;
     }
-    .marquee-track-stories:hover {
+    .marquee-track-stories:hover, .marquee-track-stories:active {
       animation-play-state: paused !important;
     }
 
@@ -92,7 +92,7 @@
       animation: marqueeScrollLeft 60s linear infinite;
       will-change: transform;
     }
-    .marquee-track-telegram:hover {
+    .marquee-track-telegram:hover, .marquee-track-telegram:active {
       animation-play-state: paused !important;
     }
 
@@ -127,19 +127,19 @@
     }
   </style>
 </head>
-<body class="bg-white text-slate-800 font-sans antialiased selection:bg-brand-500/20 selection:text-brand-700">
+<body class="bg-white text-slate-800 font-sans antialiased selection:bg-brand-500/20 selection:text-brand-700 pb-28 lg:pb-0">
 
   <!-- TOP SLOGAN BANNER (REFINED & CRISP) -->
-  <aside aria-label="Slogan Sứ Mệnh" class="bg-gradient-to-r from-slate-950 via-brand-950 to-slate-950 text-white text-xs py-2.5 px-4 border-b border-brand-500/20 sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
-      <div class="flex items-center gap-2">
-        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-        <span class="font-black text-amber-300 uppercase tracking-wider text-[11px]">Slogan Sứ Mệnh:</span>
-        <span class="font-extrabold text-white text-xs sm:text-sm">"Thà báo nhầm còn hơn bỏ sót."</span>
+  <aside aria-label="Slogan Sứ Mệnh" class="bg-gradient-to-r from-slate-950 via-brand-950 to-slate-950 text-white text-xs py-2 px-3 sm:py-2.5 sm:px-4 border-b border-brand-500/20 relative sm:sticky sm:top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2 text-center sm:text-left">
+      <div class="flex items-center justify-center sm:justify-start gap-2">
+        <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="font-black text-amber-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Slogan Sứ Mệnh:</span>
+        <span class="font-extrabold text-white text-[11px] sm:text-xs">"Thà báo nhầm còn hơn bỏ sót."</span>
       </div>
-      <div class="flex items-center gap-3 text-[11px] text-slate-300">
+      <div class="flex items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-slate-300">
         <span class="hidden md:inline">Bảo vệ bé 24/7 • Bắn tin tức thì qua Telegram của ba mẹ</span>
-        <a href="#download" class="px-3.5 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black transition shadow-sm">
+        <a href="#download" class="px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black transition shadow-sm text-[10px] sm:text-xs">
           🎁 Đăng ký 50 Suất Miễn Phí →
         </a>
       </div>
@@ -147,19 +147,19 @@
   </aside>
 
   <!-- NAVIGATION BAR (PROFESSIONAL & CLEAN) -->
-  <nav class="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-[41px] z-40 transition-all">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+  <nav class="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 sm:top-[38px] z-30 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-20 flex items-center justify-between">
       
       <!-- LOGO -->
-      <a href="#" class="flex items-center gap-3 group">
-        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 to-accent-teal flex items-center justify-center text-2xl shadow-md shadow-brand-500/20 group-hover:scale-105 transition transform">
+      <a href="#" class="flex items-center gap-2.5 sm:gap-3 group">
+        <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-brand-600 to-accent-teal flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-brand-500/20 group-hover:scale-105 transition transform">
           🍼
         </div>
         <div>
-          <span class="font-black text-xl text-slate-900 tracking-tight flex items-center gap-1.5">
+          <span class="font-black text-lg sm:text-xl text-slate-900 tracking-tight flex items-center gap-1.5">
             BabyGuard <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-accent-teal">AI</span>
           </span>
-          <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Trợ Lý Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé</p>
+          <p class="hidden xs:block text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider">Trợ Lý Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé</p>
         </div>
       </a>
 
@@ -174,13 +174,13 @@
 
       <!-- CTA & MOBILE TOGGLE -->
       <div class="flex items-center gap-2 sm:gap-3">
-        <button onclick="openDownloadModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 text-white font-bold text-xs sm:text-sm shadow-md glow-purple transition transform active:scale-95">
+        <button onclick="openDownloadModal()" class="hidden xs:inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 text-white font-bold text-xs sm:text-sm shadow-md glow-purple transition transform active:scale-95">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
           <span>Tải Về Ngay</span>
         </button>
 
         <!-- Hamburger Button -->
-        <button id="mobile-menu-btn" onclick="toggleMobileNav()" class="lg:hidden p-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 transition" aria-label="Menu">
+        <button id="mobile-menu-btn" onclick="toggleMobileNav()" class="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 transition" aria-label="Menu">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
         </button>
       </div>
@@ -329,7 +329,7 @@
   </header>
 
   <!-- SECTION 1: LÁ THƯ TỪ NGƯỜI BA SÁNG LẬP (ĐƯỢC ĐƯA LÊN ĐẦU TIÊN THEO YÊU CẦU) -->
-  <section id="author-story" class="py-20 bg-slate-950 text-white relative overflow-hidden border-b border-slate-800">
+  <section id="author-story" class="py-12 sm:py-20 bg-slate-950 text-white relative overflow-hidden border-b border-slate-800">
     <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#8b5cf6_1px,transparent_1px)] [background-size:24px_24px]"></div>
     
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-10">
@@ -397,7 +397,7 @@
   </section>
 
   <!-- SECTION 2: DÒNG THỜI GIAN BÁO CÁO TELEGRAM THỰC TẾ (TỰ ĐỘNG CUỘN - MARQUEE LIÊN TỤC) -->
-  <section id="telegram-stream" class="py-20 bg-slate-900 text-white relative overflow-hidden border-b border-slate-800">
+  <section id="telegram-stream" class="py-12 sm:py-20 bg-slate-900 text-white relative overflow-hidden border-b border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
       
       <div class="text-center max-w-3xl mx-auto space-y-3">
@@ -681,14 +681,14 @@
 
       <div class="text-center text-xs text-slate-400 flex items-center justify-center gap-2">
         <span class="inline-block w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
-        <span>Dòng tin tự động cuộn liên tục • <strong>Rê chuột vào bất kỳ ô nào để dừng đọc thoải mái</strong></span>
+        <span>Dòng tin tự động cuộn liên tục • <strong><span class="hidden sm:inline">Rê chuột</span><span class="sm:hidden">Chạm</span> vào bất kỳ ô nào để dừng đọc</strong></span>
       </div>
 
     </div>
   </section>
 
   <!-- SECTION 3: CÂU CHUYỆN MỖI NGÀY CHO BÉ (TỰ ĐỘNG CUỘN MARQUEE) -->
-  <section id="daily-stories" class="py-20 bg-gradient-to-b from-brand-50/50 via-white to-slate-50 border-b border-slate-200 overflow-hidden">
+  <section id="daily-stories" class="py-12 sm:py-20 bg-gradient-to-b from-brand-50/50 via-white to-slate-50 border-b border-slate-200 overflow-hidden">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <div class="text-center max-w-3xl mx-auto space-y-3">
@@ -710,7 +710,7 @@
           <!-- STORY SET 1 -->
           
           <!-- Story 1 -->
-          <div class="w-[330px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+          <div class="w-[280px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl">
                 🌱
@@ -727,7 +727,7 @@
           </div>
 
           <!-- Story 2 -->
-          <div class="w-[330px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+          <div class="w-[280px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-2xl">
                 🍂
@@ -744,7 +744,7 @@
           </div>
 
           <!-- Story 3 -->
-          <div class="w-[330px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+          <div class="w-[280px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl">
                 🍎
@@ -761,7 +761,7 @@
           </div>
 
           <!-- Story 4 -->
-          <div class="w-[330px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+          <div class="w-[280px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-700 flex items-center justify-center text-2xl">
                 ✨
@@ -778,7 +778,7 @@
           </div>
 
           <!-- Story 5 -->
-          <div class="w-[330px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+          <div class="w-[280px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl">
                 🌊
@@ -797,7 +797,7 @@
           <!-- STORY SET 2 (FOR SEAMLESS INFINITE LOOP) -->
           
           <!-- Story 1 Duplicate -->
-          <div class="w-[330px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+          <div class="w-[280px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl">
                 🌱
@@ -814,7 +814,7 @@
           </div>
 
           <!-- Story 2 Duplicate -->
-          <div class="w-[330px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+          <div class="w-[280px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-2xl">
                 🍂
@@ -831,7 +831,7 @@
           </div>
 
           <!-- Story 3 Duplicate -->
-          <div class="w-[330px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
+          <div class="w-[280px] sm:w-[360px] shrink-0 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col justify-between">
             <div class="space-y-3">
               <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl">
                 🍎
@@ -852,14 +852,14 @@
 
       <div class="text-center text-xs text-slate-400 flex items-center justify-center gap-2">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>Kho truyện tự động cuộn liên tục • <strong>Rê chuột vào để dừng đọc cùng bé yêu</strong></span>
+        <span>Kho truyện tự động cuộn liên tục • <strong><span class="hidden sm:inline">Rê chuột</span><span class="sm:hidden">Chạm</span> vào để dừng đọc cùng bé yêu</strong></span>
       </div>
 
     </div>
   </section>
 
   <!-- SECTION 4: TÍNH NĂNG VƯỢT TRỘI (5S CIRCULAR ROTATING CAROUSEL VỚI ZOOM 130% KHI HOVER) -->
-  <section id="features" class="py-24 bg-white border-b border-slate-200">
+  <section id="features" class="py-14 sm:py-24 bg-white border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <div class="text-center max-w-3xl mx-auto space-y-3">
@@ -997,7 +997,7 @@
   </section>
 
   <!-- SECTION 6: BẢNG GIÁ & CHÍNH SÁCH 50 SLOT MIỄN PHÍ -->
-  <section id="pricing" class="py-24 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white relative">
+  <section id="pricing" class="py-14 sm:py-24 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white relative">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <div class="text-center max-w-3xl mx-auto space-y-3">
@@ -1076,7 +1076,7 @@
   </section>
 
   <!-- SECTION 7: HƯỚNG DẪN CÀI ĐẶT 3 BƯỚC TINH GỌN (KHÔNG CẦN CÀI MẠNG PHỨC TẠP) -->
-  <section id="guide" class="py-24 bg-white border-b border-slate-200">
+  <section id="guide" class="py-14 sm:py-24 bg-white border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
       
       <div class="text-center max-w-3xl mx-auto space-y-3">
@@ -1162,7 +1162,7 @@
   </section>
 
   <!-- SECTION 8: 40+ ĐÁNH GIÁ THỰC TẾ TỪ CÁC NGƯỜI BA & NGƯỜI MẸ (THỐNG NHẤT XÀI CHỮ BA) -->
-  <section id="testimonials" class="py-24 bg-slate-50 border-b border-slate-200">
+  <section id="testimonials" class="py-14 sm:py-24 bg-slate-50 border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
       
       <div class="text-center max-w-3xl mx-auto space-y-3">
@@ -1384,7 +1384,7 @@
   </section>
 
   <!-- SECTION 9: HỎI ĐÁP THƯỜNG GẶP (FAQ) -->
-  <section id="faq" class="py-20 bg-white border-b border-slate-200">
+  <section id="faq" class="py-12 sm:py-20 bg-white border-b border-slate-200">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <div class="text-center space-y-2">
@@ -1428,7 +1428,7 @@
   </section>
 
   <!-- SECTION 10: TRUNG TÂM TẢI VỀ ĐA NỀN TẢNG (CALL TO ACTION) -->
-  <section id="download" class="py-20 bg-gradient-to-tr from-brand-950 via-slate-950 to-slate-900 text-white relative">
+  <section id="download" class="py-12 sm:py-20 bg-gradient-to-tr from-brand-950 via-slate-950 to-slate-900 text-white relative">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <div class="text-center space-y-4 max-w-3xl mx-auto">
@@ -1933,6 +1933,29 @@
     }
 
     // =========================================================================
+    // SMART MOBILE BOTTOM BAR: AUTO-HIDE ON SCROLL DOWN, REVEAL ON SCROLL UP
+    // =========================================================================
+    function dismissMobileBottomBar() {
+      const bar = document.getElementById('mobile-sticky-bottom-bar');
+      if (bar) bar.style.display = 'none';
+    }
+
+    let _lastScrollY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      const bar = document.getElementById('mobile-sticky-bottom-bar');
+      if (!bar || bar.style.display === 'none') return;
+      const currentScrollY = window.scrollY;
+      // Khi vuốt xuống để đọc bài: tự động trượt thanh xuống ẩn đi để mở rộng tầm nhìn
+      if (currentScrollY > _lastScrollY && currentScrollY > 150) {
+        bar.style.transform = 'translateY(180%)';
+      } else {
+        // Khi vuốt lên hoặc dừng lại: hiện lại thanh mượt mà
+        bar.style.transform = 'translateY(0)';
+      }
+      _lastScrollY = currentScrollY;
+    }, { passive: true });
+
+    // =========================================================================
     // CHECKOUT MODAL LOGIC (SEPAY VIETQR / INTERNATIONAL CHECKOUT)
     // =========================================================================
     function openCheckoutModal() {
@@ -2083,9 +2106,12 @@
     </div>
   </div>
 
-  <!-- STICKY MOBILE DOWNLOAD BAR (FIXED BOTTOM ON MOBILE) -->
-  <div class="lg:hidden fixed bottom-3 inset-x-3 z-40">
-    <div class="bg-slate-900/95 backdrop-blur-xl border border-brand-500/40 rounded-2xl p-2.5 shadow-2xl flex items-center justify-between gap-3">
+  <!-- STICKY MOBILE DOWNLOAD BAR (SMART AUTO-HIDE ON SCROLL DOWN) -->
+  <div id="mobile-sticky-bottom-bar" class="lg:hidden fixed bottom-3 inset-x-3 z-40 transition-transform duration-300" style="bottom: max(0.75rem, env(safe-area-inset-bottom, 12px));">
+    <div class="bg-slate-900/95 backdrop-blur-xl border border-brand-500/40 rounded-2xl p-2.5 shadow-2xl flex items-center justify-between gap-3 relative">
+      <button onclick="dismissMobileBottomBar()" class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs flex items-center justify-center shadow-md active:scale-90 transition" title="Đóng thanh này">
+        ✕
+      </button>
       <div class="pl-2">
         <div class="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -2093,7 +2119,7 @@
         </div>
         <div class="text-xs text-white font-black">Bảo Vệ Giấc Ngủ Bé 24/7</div>
       </div>
-      <button onclick="openDownloadModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 via-purple-600 to-indigo-600 text-white font-black text-xs shadow-lg glow-purple active:scale-95 transition flex items-center gap-1.5">
+      <button onclick="openDownloadModal()" class="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-brand-600 via-purple-600 to-indigo-600 text-white font-black text-xs shadow-lg glow-purple active:scale-95 transition flex items-center gap-1.5 shrink-0">
         <span>⬇️ TẢI VỀ NGAY</span>
       </button>
     </div>
