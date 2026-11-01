@@ -223,6 +223,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                 name="index.html",
                 context={"is_hub": True, "requires_pairing": False}
             )
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
             response.set_cookie(
                 key="babyguard_auth",
                 value=acc_key,
@@ -256,6 +258,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                 name="index.html",
                 context={"is_hub": True, "requires_pairing": False}
             )
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
             response.set_cookie(
                 key="babyguard_auth",
                 value=acc_key,
@@ -305,6 +309,8 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                     name="index.html",
                     context={"is_hub": True, "requires_pairing": False}
                 )
+                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                response.headers["Pragma"] = "no-cache"
                 response.set_cookie(
                     key="babyguard_auth",
                     value=acc_key,

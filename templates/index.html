@@ -7898,11 +7898,6 @@
         // =========================================================================
         // PHONE PAIRING & QR SCANNER (KẾT NỐI ĐIỆN THOẠI & QUÉT MÃ QR BẢO MẬT)
         // =========================================================================
-        window._pairingInfo = null;
-        window._currentPairingNetTab = 'local';
-        let _mobileHtml5QrScanner = null;
-
-        // =========================================================================
         // UNIFIED MOBILE HUB & PHONE PAIRING (KẾT NỐI ĐIỆN THOẠI TOÀN DIỆN)
         // =========================================================================
         window._pairingInfo = null;
@@ -7967,6 +7962,7 @@
         function closeDevicePairingModal() { closeMobileHubModal(); }
         function openAppDownloadModal() { openMobileHubModal('app'); }
         function closeAppDownloadModal() { closeMobileHubModal(); }
+        function refreshCloudflareTunnel() { openMobileHubModal('remote'); }
 
         function switchMobileHubTab(tab) {
             const tabBtnQr = document.getElementById('mhub-tab-btn-qr');
