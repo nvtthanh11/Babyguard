@@ -2427,6 +2427,23 @@
                         <span id="btn-check-update-text">Kiểm Tra Cập Nhật</span>
                     </button>
                 </div>
+
+                <!-- Update Available Alert Box (Hiện ra khi có phiên bản mới) -->
+                <div id="cfg-update-alert-box" class="p-3 rounded-xl bg-purple-500/15 border border-purple-500/30 text-xs hidden space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-purple-300 flex items-center gap-1.5">
+                            <span>🎉</span>
+                            <span id="cfg-update-alert-title">Có phiên bản mới!</span>
+                        </span>
+                        <span id="cfg-update-alert-version" class="text-[10px] text-purple-300 font-mono font-bold bg-purple-500/20 px-2 py-0.5 rounded-full">v...</span>
+                    </div>
+                    <ul id="cfg-update-features-list" class="text-[11px] text-slate-300 list-disc list-inside space-y-0.5"></ul>
+                    <div class="flex items-center gap-2 pt-1">
+                        <button type="button" onclick="performAppUpdateNow()" id="btn-perform-update" class="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold rounded-lg text-xs transition active:scale-95 shadow">
+                            ⚡ Nâng Cấp Ngay (1-Click)
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Modal Footer -->
@@ -6195,13 +6212,55 @@
                     const reg = await navigator.serviceWorker.getRegistration();
                     if (reg) await reg.update();
                 }
-                const res = await fetch('/api/system/version');
+                const res = await fetch('/api/system/check_update');
                 const d = await res.json();
-                showToast(`🎉 Hệ thống đang chạy BabyGuard AI ${d.version || 'v2.1.0'} mới nhất!`, '✅');
+
+                const box = document.getElementById('cfg-update-alert-box');
+                const title = document.getElementById('cfg-update-alert-title');
+                const vBadge = document.getElementById('cfg-update-alert-version');
+                const fList = document.getElementById('cfg-update-features-list');
+
+                if (d.has_update) {
+                    if (box) box.classList.remove('hidden');
+                    if (title) title.innerText = `Đã có bản cập nhật mới (${d.latest_version})!`;
+                    if (vBadge) vBadge.innerText = d.latest_version;
+                    if (fList && d.features && d.features.length) {
+                        fList.innerHTML = d.features.map(f => `<li>${f}</li>`).join('');
+                    }
+                    showToast(`🔔 Đã có bản cập nhật mới ${d.latest_version}!`, '🎉');
+                } else {
+                    if (box) box.classList.add('hidden');
+                    showToast(`✅ Ba đang sử dụng bản BabyGuard AI ${d.current_version || 'v2.1.0'} mới nhất!`, '✨');
+                }
             } catch (e) {
                 showToast('Hệ thống đã sẵn sàng với phiên bản mới nhất!', '✅');
             } finally {
                 if (btnText) btnText.innerText = 'Kiểm Tra Cập Nhật';
+            }
+        }
+
+        async function performAppUpdateNow() {
+            const btn = document.getElementById('btn-perform-update');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Đang nâng cấp hệ thống...';
+            }
+            try {
+                const res = await fetch('/api/system/perform_update', { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    showToast(d.message || "Đã nâng cấp thành công!", "🎉");
+                    setTimeout(() => location.reload(), 2500);
+                } else {
+                    showToast(d.message || "Không thể tự động nâng cấp", "⚠️");
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối khi cập nhật", "❌");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = '⚡ Nâng Cấp Ngay (1-Click)';
+                }
             }
         }
 

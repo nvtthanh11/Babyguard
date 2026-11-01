@@ -49,6 +49,8 @@ SUPPORT_FILES = [
     "User_Guide_EN.md",
     "Khoi_Dong_BabyGuard.bat",
     "Khoi_Dong_BabyGuard.command",
+    "Cap_Nhat_BabyGuard.bat",
+    "Cap_Nhat_BabyGuard.command",
     "Start_BabyGuard.command",
     "Tat_BabyGuard.command",
     "Stop_BabyGuard.command",

@@ -668,6 +668,111 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
                 pass
         return {"version": "2.1.0", "status": "latest", "name": "BabyGuard AI Commercial Edition"}
 
+    @app.get("/api/system/check_update")
+    def check_system_update():
+        local_info = {"version": "2.1.0"}
+        v_file = os.path.join(BASE_DIR, "version.json")
+        if os.path.exists(v_file):
+            try:
+                with open(v_file, "r", encoding="utf-8") as f:
+                    local_info = json.load(f)
+            except Exception:
+                pass
+
+        current_v = local_info.get("version", "2.1.0")
+        remote_info = None
+        has_update = False
+
+        try:
+            resp = requests.get(
+                "https://raw.githubusercontent.com/nvtthanh11/Babyguard/main/version.json",
+                timeout=4
+            )
+            if resp.status_code == 200:
+                remote_info = resp.json()
+                remote_v = remote_info.get("version", current_v)
+
+                def to_tuple(v):
+                    return tuple(int(x) for x in str(v).replace("v", "").split(".") if x.isdigit())
+
+                if to_tuple(remote_v) > to_tuple(current_v):
+                    has_update = True
+        except Exception as e:
+            print(f"[Update Checker] Network note: {e}")
+
+        return {
+            "has_update": has_update,
+            "current_version": current_v,
+            "latest_version": remote_info.get("version", current_v) if remote_info else current_v,
+            "release_date": remote_info.get("release_date", "") if remote_info else "",
+            "features": remote_info.get("features", []) if remote_info else [],
+            "download_url": remote_info.get("download_url", "https://babyguard.io.vn/#download") if remote_info else ""
+        }
+
+    @app.post("/api/system/perform_update")
+    def perform_system_update():
+        git_dir = os.path.join(BASE_DIR, ".git")
+        if os.path.exists(git_dir):
+            try:
+                proc = subprocess.run(
+                    ["git", "pull", "origin", "main"],
+                    cwd=BASE_DIR,
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                if proc.returncode == 0:
+                    return {
+                        "success": True,
+                        "method": "git",
+                        "message": "Đã cập nhật hệ thống thành công qua Git! Vui lòng khởi động lại BabyGuard để áp dụng bản mới."
+                    }
+                else:
+                    return {"success": False, "message": f"Lỗi Git: {proc.stderr[:100]}"}
+            except Exception as e:
+                return {"success": False, "message": f"Lỗi khi thực hiện git pull: {str(e)}"}
+
+        try:
+            update_zip_url = "https://raw.githubusercontent.com/nvtthanh11/Babyguard/main/dist/BabyGuard_AI_v2.0_Commercial.zip"
+            resp = requests.get(update_zip_url, timeout=60, stream=True)
+            if resp.status_code != 200:
+                update_zip_url = "https://babyguard.io.vn/download/desktop-app"
+                resp = requests.get(update_zip_url, timeout=60, stream=True)
+
+            if resp.status_code == 200:
+                temp_zip_path = os.path.join(BASE_DIR, "babyguard_update_temp.zip")
+                with open(temp_zip_path, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=65536):
+                        if chunk:
+                            f.write(chunk)
+
+                PROTECTED_ITEMS = {
+                    "config.json", ".babyguard_license_state", "sleep_data.json",
+                    "daily_delta_log.json", "baby_growth.json", "baby_growth_ai.json",
+                    "baby_vaccines.json", "sepay_transactions.json", "recordings",
+                    "snapshots", "moments", "logs", ".venv", "venv"
+                }
+
+                with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+                    for member in zip_ref.namelist():
+                        top_part = member.split('/')[0]
+                        if top_part in PROTECTED_ITEMS or member in PROTECTED_ITEMS:
+                            continue
+                        zip_ref.extract(member, BASE_DIR)
+
+                if os.path.exists(temp_zip_path):
+                    os.remove(temp_zip_path)
+
+                return {
+                    "success": True,
+                    "method": "ota_zip",
+                    "message": "Đã nâng cấp hệ thống thành công! Dữ liệu cữ ngủ & bản quyền của gia đình được bảo toàn 100%."
+                }
+            else:
+                return {"success": False, "message": f"Không thể tải bản cập nhật (Mã lỗi {resp.status_code})"}
+        except Exception as e:
+            return {"success": False, "message": f"Lỗi cập nhật: {str(e)}"}
+
     @app.get("/api/tunnel-status")
     def get_tunnel_status():
         cfg = load_config()
