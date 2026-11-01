@@ -57,6 +57,12 @@
     .hero-title {
       text-wrap: balance;
     }
+    h1, h2, h3, h4, h5 {
+      text-wrap: balance;
+    }
+    p {
+      text-wrap: pretty;
+    }
     
     /* Hide scrollbars */
     .no-scrollbar::-webkit-scrollbar {
@@ -211,18 +217,18 @@
           
           <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-brand-200 text-brand-700 text-xs font-bold shadow-sm">
             <span class="flex h-2.5 w-2.5 rounded-full bg-accent-emerald animate-pulse"></span>
-            <span>Tự Động Bắn Tin Nhắn & Ảnh Chụp Qua Telegram Của Ba Mẹ 24/7</span>
+            <span>Tự Động Bắn Tin Nhắn & Ảnh Chụp Qua Telegram Của <span class="whitespace-nowrap">Ba Mẹ 24/7</span></span>
           </div>
 
           <h1 class="hero-title text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-black text-slate-900 tracking-tight leading-[1.24] pb-1">
-            <span>Không Chỉ Quan Sát Bé —</span><br>
+            <span class="inline-block">Không Chỉ Quan Sát Bé —</span>
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-indigo-600 to-accent-teal inline-block mt-1 py-1.5 px-1">
               Cùng Ba Mẹ Nuôi Dạy Con Lớn Khôn
             </span>
           </h1>
 
           <p class="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-            Hệ sinh thái AI toàn diện: Biến bất kỳ chiếc webcam máy tính bình dân nào thành <strong>mắt thần phát hiện nằm sấp, che ngạt mặt, đo nhịp thở không chạm</strong> và gửi ảnh trực tiếp về Telegram. Đặc biệt, mỗi ngày mang đến <strong>một câu chuyện nhân văn sâu sắc</strong> giúp ba mẹ thắt chặt tình cảm gia đình.
+            Hệ sinh thái AI toàn diện: Biến bất kỳ chiếc webcam máy tính bình dân nào thành <strong>mắt thần phát hiện nằm sấp, che ngạt mặt, đo nhịp thở không chạm</strong> và gửi ảnh trực tiếp về Telegram. Đặc biệt, mỗi ngày mang đến <strong>một câu chuyện nhân văn sâu sắc</strong> giúp <span class="whitespace-nowrap">ba mẹ</span> thắt chặt tình cảm gia đình.
           </p>
 
           <div class="p-3.5 bg-amber-50/90 border border-amber-200/90 rounded-2xl max-w-xl mx-auto lg:mx-0 text-left flex items-start gap-3 text-xs text-amber-900 shadow-sm">
@@ -377,7 +383,7 @@
             <em>"Tôi không bao giờ quên được cái ngày đầu tiên hệ thống vận hành. Đang giữa buổi họp căng thẳng ở công ty, điện thoại trong túi tôi rung lên một tiếng 'ting' nhẹ. Mở Telegram ra, trước mắt tôi là bức ảnh con yêu đang ngủ say sưa, đường thở thông thoáng 100% kèm dòng chữ: <strong>'Nhịp thở 34 BPM - Con đang ngủ rất ngoan, ba yên tâm làm việc nhé!'</strong>. Giây phút ấy, khóe mắt tôi cay xè. Mọi áp lực cơm áo gạo tiền, mọi mệt mỏi của một ngày dường như tan biến hết."</em>
           </p>
           <p>
-            <em>"Tôi hoàn thiện BabyGuard AI và chia sẻ phần mềm này đến bạn với một tâm niệm giản dị: Bất kỳ đứa trẻ nào, dù sinh ra trong một gia đình khá giả hay một tổ ấm lao động bình dị, cũng đều có quyền được bảo vệ an toàn tuyệt đối. Và ba mẹ không bao giờ phải gánh thêm một đồng chi phí đắt đỏ nào nữa. Kim chỉ nam duy nhất của tôi khi viết từng dòng code: <strong>'Thà báo nhầm còn hơn bỏ sót'</strong> — để con luôn bình an và ba luôn trọn vẹn an lòng bươn chải vì gia đình."</em>
+            <em>"Tôi hoàn thiện BabyGuard AI và chia sẻ phần mềm này đến bạn với một tâm niệm giản dị: Bất kỳ đứa trẻ nào, dù sinh ra trong một gia đình khá giả hay một tổ ấm lao động bình dị, cũng đều có quyền được bảo vệ an toàn tuyệt đối. Và <span class="whitespace-nowrap">ba mẹ</span> không bao giờ phải gánh thêm một đồng chi phí đắt đỏ nào nữa. Kim chỉ nam duy nhất của tôi khi viết từng dòng code: <strong>'Thà báo nhầm còn hơn bỏ sót'</strong> — để con luôn bình an và ba luôn trọn vẹn an lòng bươn chải vì gia đình."</em>
           </p>
         </div>
 
@@ -405,10 +411,11 @@
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 text-sky-300 text-xs font-black uppercase tracking-wider border border-sky-500/30">
           <span>⚡</span> Cập Nhật Realtime 24/7
         </div>
-        <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
-          Nhật Ký Telegram Thực Tế — Đi Làm Xa Vẫn Trọn Vẹn An Tâm
+        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
+          <span class="inline-block">Nhật Ký Telegram Thực Tế —</span>
+          <span class="inline-block">Đi Làm Xa Vẫn Trọn Vẹn An Tâm</span>
         </h2>
-        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
           Đa dạng tin nhắn: từ ảnh check-in nhanh, cảnh báo khẩn cấp kèm phác đồ sơ cứu chuẩn quốc tế, đến biểu đồ tổng kết giấc ngủ của bác sĩ AI ghim đầu nhóm mỗi sáng.
         </p>
       </div>
@@ -696,11 +703,12 @@
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-100 text-brand-700 text-xs font-black uppercase tracking-wider">
           <span>🌱</span> Đồng Hành Nuôi Dạy Con Khôn Lớn
         </div>
-        <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          Xóa Tan Nỗi Lo: "Không Biết Trò Chuyện Gì Cùng Con"
+        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+          <span class="inline-block">Xóa Tan Nỗi Lo:</span>
+          <span class="inline-block">"Không Biết Trò Chuyện Gì Cùng Con"</span>
         </h2>
-        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
-          Sau một ngày dài mệt mỏi, nhiều bậc cha mẹ muốn tâm sự cùng con nhưng lại lúng túng không biết nói gì. <strong>BabyGuard AI đồng hành cùng ba mẹ</strong>: Mỗi ngày gửi đến một câu chuyện ngụ ngôn giàu tính nhân văn, giúp rèn luyện đạo đức, lòng biết ơn và sự kiên trì cho bé từ thuở ấu thơ.
+        <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+          Sau một ngày dài mệt mỏi, nhiều bậc cha mẹ muốn tâm sự cùng con nhưng lại lúng túng không biết nói gì. <strong>BabyGuard AI đồng hành cùng <span class="whitespace-nowrap">ba mẹ:</span></strong> Mỗi ngày gửi đến một câu chuyện ngụ ngôn giàu tính nhân văn, giúp rèn luyện đạo đức, lòng biết ơn và sự kiên trì cho bé từ thuở ấu thơ.
         </p>
       </div>
 
@@ -867,8 +875,9 @@
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-100 text-brand-700 text-xs font-black uppercase tracking-wider">
           <span>⚡</span> Đột Phá Công Nghệ Camera AI
         </div>
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
-          Tính Năng Vượt Trội Mắt Thần Bảo Vệ Bé
+        <h2 class="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+          <span class="inline-block">Tính Năng Vượt Trội</span>
+          <span class="inline-block">Mắt Thần Bảo Vệ Bé</span>
         </h2>
       </div>
 
@@ -909,8 +918,11 @@
       
       <div class="text-center max-w-3xl mx-auto space-y-2">
         <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest">Đối Chiếu Thực Tế Khách Quan</h2>
-        <h3 class="text-3xl font-extrabold text-slate-900">BabyGuard AI vs Các Dòng Camera Khác</h3>
-        <p class="text-slate-600 text-xs sm:text-sm">So sánh công khai về an toàn sinh mạng, chi phí kinh tế và tính bảo mật hình ảnh riêng tư cho con.</p>
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+          <span class="inline-block">BabyGuard AI</span>
+          <span class="inline-block">vs Các Dòng Camera Khác</span>
+        </h3>
+        <p class="text-slate-600 text-xs sm:text-sm max-w-xl mx-auto">So sánh công khai về an toàn sinh mạng, chi phí kinh tế và tính bảo mật hình ảnh riêng tư cho con.</p>
       </div>
 
       <!-- PRIVACY WARNING CALLOUT -->
@@ -1152,8 +1164,11 @@
         <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black uppercase tracking-wider border border-emerald-500/30">
           🎁 Tri Ân Gia Đình Trẻ Việt Nam
         </div>
-        <h3 class="text-3xl sm:text-4xl font-black text-white">Chính Sách Sở Hữu Trọn Đời</h3>
-        <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+        <h3 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-tight">
+          <span class="inline-block">Chính Sách</span>
+          <span class="inline-block">Sở Hữu Trọn Đời</span>
+        </h3>
+        <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
           Chúng tôi thấu hiểu áp lực cơm áo gạo tiền của những người làm cha mẹ. Vì vậy BabyGuard AI áp dụng mức phí hỗ trợ tối đa cho các gia đình Việt Nam:
         </p>
       </div>
@@ -1231,9 +1246,12 @@
         <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-black uppercase tracking-wider border border-brand-200">
           📖 Hướng Dẫn Sử Dụng & Cài Đặt
         </div>
-        <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900">Bắt Đầu Giám Sát Bé Chỉ Trong 3 Bước Siêu Dễ</h3>
-        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
-          Không cần biết kỹ thuật IT phức tạp. Chỉ cần 1 máy tính (Macbook/Laptop/Mini PC) và 1 điện thoại là ba mẹ có ngay hệ thống AI giám sát y tế cao cấp cho bé yêu!
+        <h3 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight">
+          <span class="inline-block">Bắt Đầu Giám Sát Bé</span>
+          <span class="inline-block">Chỉ Trong 3 Bước Siêu Dễ</span>
+        </h3>
+        <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+          Không cần biết kỹ thuật IT phức tạp. Chỉ cần 1 máy tính (Macbook/Laptop/Mini PC) và 1 điện thoại là <span class="whitespace-nowrap">ba mẹ</span> có ngay hệ thống AI giám sát y tế cao cấp cho <span class="whitespace-nowrap">bé yêu!</span>
         </p>
       </div>
 
@@ -1289,7 +1307,10 @@
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black uppercase">
             ⚡ Khởi Chạy Siêu Tốc Trong 60 Giây
           </div>
-          <h4 class="text-xl sm:text-2xl font-black text-white">Chỉ 49.000đ - Sở Hữu Trọn Đời Không Phí Tháng</h4>
+          <h4 class="text-xl sm:text-2xl font-black text-white leading-tight">
+            <span class="inline-block">Chỉ 49.000đ —</span>
+            <span class="inline-block">Sở Hữu Trọn Đời Không Phí Tháng</span>
+          </h4>
           <p class="text-slate-300 text-xs sm:text-sm max-w-xl">
             Tận dụng chính máy tính và điện thoại cũ của gia đình, không cần mua camera ngoại đắt đỏ 8 - 12 triệu. An tâm tuyệt đối vì dữ liệu xử lý tại chỗ, không lộ video riêng tư.
           </p>
@@ -1318,10 +1339,11 @@
           <span>⭐⭐⭐⭐⭐</span>
           <span class="text-slate-700 font-extrabold text-xs">4.9 / 5.0 Từ Hơn 1.200 Ba Mẹ Tin Dùng</span>
         </div>
-        <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900">
-          Cộng Đồng Ba Mẹ Nói Gì Về BabyGuard AI?
+        <h3 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight">
+          <span class="inline-block">Cộng Đồng Ba Mẹ</span>
+          <span class="inline-block">Nói Gì Về BabyGuard AI?</span>
         </h3>
-        <p class="text-slate-600 text-sm leading-relaxed">
+        <p class="text-slate-600 text-sm leading-relaxed max-w-2xl mx-auto">
           Những phản hồi chân thực từ các người ba làm kỹ thuật, tài xế công nghệ, nhân viên văn phòng và các người mẹ bỉm sữa trên khắp mọi miền đất nước:
         </p>
       </div>
@@ -1537,7 +1559,9 @@
       
       <div class="text-center space-y-2">
         <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest">Thắc Mắc Của Phụ Huynh</h2>
-        <h3 class="text-3xl font-extrabold text-slate-900">Câu Hỏi Thường Gặp</h3>
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+          Giải Đáp Câu Hỏi Thường Gặp
+        </h3>
       </div>
 
       <div class="space-y-5 text-sm">
@@ -1583,10 +1607,12 @@
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black uppercase tracking-wider border border-emerald-500/30">
           🚀 Sẵn Sàng Đồng Hành Cùng Bé Yêu
         </div>
-        <h3 class="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-          <span>Tải BabyGuard AI — </span><span class="text-amber-300 inline-block whitespace-nowrap">Chọn Bản Cài Đặt</span> <span>Cho Thiết Bị Của Bạn</span>
+        <h3 class="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-white tracking-tight leading-tight">
+          <span class="inline-block">Tải BabyGuard AI —</span>
+          <span class="text-amber-300 inline-block">Chọn Bản Cài Đặt</span>
+          <span class="inline-block">Cho Thiết Bị Của Bạn</span>
         </h3>
-        <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+        <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
           Dùng thử trọn vẹn 14 ngày miễn phí. Tự động nhận diện camera gia đình, kết nối báo động Telegram tức thì và bảo mật 100% cục bộ tại nhà.
         </p>
       </div>
@@ -2170,7 +2196,10 @@
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
           <span>🛡️</span> Bản Quyền Vĩnh Viễn BabyGuard AI
         </div>
-        <h3 class="text-2xl font-black text-white">Mở Khóa Trọn Đời - 49.000 VNĐ</h3>
+        <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">
+          <span class="inline-block">Mở Khóa Trọn Đời —</span>
+          <span class="text-emerald-400 inline-block">49.000 VNĐ</span>
+        </h3>
         <p class="text-xs text-slate-300 leading-relaxed">
           Chỉ thanh toán 1 lần duy nhất. Không phí duy trì hàng tháng. Hệ thống tự động kích hoạt bảo vệ bé 24/7.
         </p>
@@ -2299,7 +2328,10 @@
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold">
           <span>🍼</span> Tải Về Ứng Dụng BabyGuard AI
         </div>
-        <h3 class="text-2xl font-black text-white">Chọn Bản Cài Đặt Cho Thiết Bị Của Bạn</h3>
+        <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">
+          <span class="inline-block">Chọn Bản Cài Đặt</span>
+          <span class="inline-block">Cho Thiết Bị Của Bạn</span>
+        </h3>
         <p class="text-xs text-slate-300 leading-relaxed">
           Dùng thử 14 ngày miễn phí trọn vẹn mọi tính năng. Sau 14 ngày thanh toán 49k dùng vĩnh viễn trọn đời.
         </p>
