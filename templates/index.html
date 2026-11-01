@@ -479,7 +479,7 @@
                                     <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>
                                     </svg>
-                                    <span class="hidden lg:inline font-medium">Chỉnh Khung</span>
+                                    <span class="inline text-[11px] sm:text-xs font-semibold">Khung Nôi</span>
                                 </button>
                                 <!-- Refresh Stream Button -->
                                 <button onclick="reconnectStream()" class="h-9 w-9 sm:w-auto sm:px-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium flex items-center justify-center gap-1.5" title="Làm mới luồng video khi bị đứng">
@@ -3186,31 +3186,49 @@
                     </div>
 
                     <!-- Màn Hình Camera Live Trực Tiếp -->
-                    <div class="relative w-full rounded-2xl overflow-hidden bg-black border border-slate-800 aspect-video shadow-xl flex items-center justify-center">
+                    <div id="station-video-container" class="relative w-full rounded-2xl overflow-hidden bg-black border border-slate-800 aspect-video shadow-xl flex items-center justify-center">
                         <video id="station-local-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
                         <img id="station-ipcam-img" class="w-full h-full object-cover hidden" alt="IP Camera Feed">
                         <canvas id="station-motion-canvas" class="hidden" width="160" height="120"></canvas>
                         
+                        <!-- Overlay Khung Nôi An Toàn (Crib Safe Zone Canvas) -->
+                        <canvas id="station-crib-canvas" class="absolute inset-0 w-full h-full z-10 pointer-events-none touch-none"></canvas>
+
+                        <!-- Station Crib Editor Controls Bar (Hiện khi chạm '📐 Khung Nôi') -->
+                        <div id="station-crib-editor-bar" class="absolute bottom-2 left-2 right-2 z-30 bg-slate-950/90 border border-teal-500/50 rounded-xl px-3 py-1.5 flex items-center justify-between backdrop-blur-md hidden text-xs shadow-2xl">
+                            <span class="text-[11px] text-teal-300 font-bold flex items-center gap-1">
+                                <span>👆</span><span>Chạm kéo 4 góc nôi</span>
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="resetStationCribPolygon()" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] hover:bg-slate-700 active:scale-95 transition">Mặc định</button>
+                                <button onclick="saveStationCribEdit()" class="px-3 py-1 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 text-[11px] font-black active:scale-95 transition">Xong ✅</button>
+                            </div>
+                        </div>
+
                         <!-- Overlay Dimmer Screen for Night Mode -->
-                        <div id="station-dimmer-overlay" class="absolute inset-0 bg-black/95 hidden flex flex-col items-center justify-center text-center p-4 cursor-pointer z-20" onclick="toggleStationDimmer()">
+                        <div id="station-dimmer-overlay" class="absolute inset-0 bg-black/95 hidden flex flex-col items-center justify-center text-center p-4 cursor-pointer z-40" onclick="toggleStationDimmer()">
                             <span class="text-3xl mb-1">🌙</span>
                             <span class="text-xs text-slate-400 font-semibold">Chế độ Màn hình Đêm (Mát máy, tiết kiệm pin)</span>
                             <span class="text-[10px] text-slate-500 mt-1">Chạm vào màn hình để bật sáng lại</span>
                         </div>
 
                         <!-- Top Status Badge -->
-                        <div class="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] text-white font-bold">
+                        <div class="absolute top-2 left-2 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] text-white font-bold">
                             <span id="station-ai-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
                             <span id="station-ai-status-text">Chưa Bật Trạm</span>
                         </div>
 
-                        <!-- Video Controls (Flip Cam & Dimmer) -->
-                        <div class="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+                        <!-- Video Controls (Flip Cam, Safe Zone & Dimmer) -->
+                        <div class="absolute top-2 right-2 z-20 flex items-center gap-1.5">
+                            <button id="station-btn-crib" onclick="toggleStationCribEdit()" class="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-teal-500/40 text-teal-300 text-xs transition active:scale-95 flex items-center gap-1 font-medium" title="Căn chỉnh khung nôi an toàn">
+                                <span>📐</span>
+                                <span class="text-[11px]">Khung Nôi</span>
+                            </button>
                             <button id="station-btn-flip" onclick="flipStationCamera()" class="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white text-xs transition active:scale-95" title="Đổi camera trước / sau">
-                                🔄 Lật Cam
+                                🔄
                             </button>
                             <button onclick="toggleStationDimmer()" class="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-amber-300 text-xs transition active:scale-95" title="Màn hình tối ban đêm">
-                                🌙 Đêm
+                                🌙
                             </button>
                         </div>
                     </div>
@@ -7793,9 +7811,21 @@
         let _stationLastFrameData = null;
         let _stationAnalysisInterval = null;
         let _stationNoiseSource = null;
-        let _stationLastAlertTime = { cry: 0, motion: 0 };
+        let _stationLastAlertTime = { cry: 0, motion: 0, outOfCrib: 0 };
         let _stationPeer = null;
         let _stationP2PCode = null;
+
+        // Station Crib Safe Zone Variables (Khung Nôi An Toàn Trên Điện Thoại)
+        let _stationCribPolygon = [
+            [0.18, 0.20], // 1. Trên-Trái
+            [0.82, 0.20], // 2. Trên-Phải
+            [0.82, 0.86], // 3. Dưới-Phải
+            [0.18, 0.86]  // 4. Dưới-Trái
+        ];
+        let _isStationCribEditing = false;
+        let _stationDragCornerIdx = -1;
+        let _stationOutOfCribMotion = false;
+        let _stationCribEventsBound = false;
 
         function switchMobileRole(role) {
             const tabViewer = document.getElementById('mobile-role-tab-viewer');
@@ -7843,11 +7873,324 @@
             }
         }
 
+        // =========================================================================
+        // PHONE STATION CRIB SAFE ZONE ENGINE (CANVAS NÔI 3D & CHẠM KÉO 4 GÓC)
+        // =========================================================================
+        function isPointInStationCrib(nx, ny) {
+            let inside = false;
+            const vs = _stationCribPolygon;
+            for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+                const xi = vs[i][0], yi = vs[i][1];
+                const xj = vs[j][0], yj = vs[j][1];
+                const intersect = ((yi > ny) !== (yj > ny))
+                    && (nx < (xj - xi) * (ny - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function resizeStationCribCanvas() {
+            const canvas = document.getElementById('station-crib-canvas');
+            const container = document.getElementById('station-video-container');
+            if (!canvas || !container) return;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            if (w > 0 && h > 0) {
+                if (canvas.width !== w || canvas.height !== h) {
+                    canvas.width = w;
+                    canvas.height = h;
+                }
+            }
+        }
+
+        function drawStationCribZone() {
+            const canvas = document.getElementById('station-crib-canvas');
+            if (!canvas) return;
+            resizeStationCribCanvas();
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            if (w === 0 || h === 0) return;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const pts = _stationCribPolygon.map(p => ({
+                x: p[0] * w,
+                y: p[1] * h
+            }));
+
+            const isAlert = _stationOutOfCribMotion;
+            const strokeColor = isAlert ? '#EF4444' : '#10B981';
+            const glowColor = isAlert ? 'rgba(239, 68, 68, 0.85)' : 'rgba(16, 185, 129, 0.85)';
+
+            // 1. Nếu đang chỉnh tay: làm mờ nền bên ngoài khung nôi
+            if (_isStationCribEditing) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 2. Viền phối cảnh 3D Dạ Quang Khung Nôi
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+                ctx.lineTo(pts[i].x, pts[i].y);
+            }
+            ctx.closePath();
+
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = _isStationCribEditing ? 3 : 2.5;
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = _isStationCribEditing ? 12 : 8;
+            ctx.stroke();
+
+            // Đường chéo chữ X mờ bên trong nôi
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = isAlert ? 'rgba(239, 68, 68, 0.35)' : 'rgba(16, 185, 129, 0.35)';
+            ctx.lineWidth = 1;
+            ctx.moveTo(pts[0].x, pts[0].y);
+            ctx.lineTo(pts[2].x, pts[2].y);
+            ctx.moveTo(pts[1].x, pts[1].y);
+            ctx.lineTo(pts[3].x, pts[3].y);
+            ctx.stroke();
+            ctx.restore();
+
+            // 3. Góc L (Corner Brackets) tăng hiệu ứng 3D công nghệ
+            const bracketLen = Math.min(w, h) * 0.07;
+            ctx.save();
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'round';
+            pts.forEach((pt, idx) => {
+                const prev = pts[(idx + 3) % 4];
+                const next = pts[(idx + 1) % 4];
+                const dPrev = { x: prev.x - pt.x, y: prev.y - pt.y };
+                const dNext = { x: next.x - pt.x, y: next.y - pt.y };
+                const lenPrev = Math.hypot(dPrev.x, dPrev.y) || 1;
+                const lenNext = Math.hypot(dNext.x, dNext.y) || 1;
+
+                ctx.beginPath();
+                ctx.moveTo(pt.x + (dPrev.x / lenPrev) * bracketLen, pt.y + (dPrev.y / lenPrev) * bracketLen);
+                ctx.lineTo(pt.x, pt.y);
+                ctx.lineTo(pt.x + (dNext.x / lenNext) * bracketLen, pt.y + (dNext.y / lenNext) * bracketLen);
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            // 4. Nhãn thẻ trung tâm: 🛡️ KHUNG NÔI AN TOÀN hoặc ⚠️ LĂN NGOÀI KHUNG NÔI!
+            const centerX = (pts[0].x + pts[1].x + pts[2].x + pts[3].x) / 4;
+            const topY = Math.min(pts[0].y, pts[1].y);
+            const badgeLabel = isAlert ? '⚠️ LĂN NGOÀI KHUNG NÔI!' : '🛡️ KHUNG NÔI AN TOÀN';
+            
+            ctx.save();
+            ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            const textMetrics = ctx.measureText(badgeLabel);
+            const tagW = textMetrics.width + 16;
+            const tagH = 20;
+            const tagX = Math.max(6, Math.min(w - tagW - 6, centerX - tagW / 2));
+            const tagY = Math.max(6, topY + 6);
+
+            ctx.fillStyle = isAlert ? 'rgba(239, 68, 68, 0.95)' : 'rgba(15, 23, 42, 0.85)';
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(tagX, tagY, tagW, tagH, 6);
+            else ctx.rect(tagX, tagY, tagW, tagH);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(badgeLabel, tagX + 8, tagY + 14);
+            ctx.restore();
+
+            // 5. Nếu đang chỉnh tay: vẽ 4 núm kéo tròn cỡ lớn cho ngón tay chạm
+            if (_isStationCribEditing) {
+                const CORNER_NAMES = [
+                    "1. Trên-Trái",
+                    "2. Trên-Phải",
+                    "3. Dưới-Phải",
+                    "4. Dưới-Trái"
+                ];
+                pts.forEach((pt, i) => {
+                    const isHovered = (_stationDragCornerIdx === i);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, isHovered ? 16 : 12, 0, Math.PI * 2);
+                    ctx.fillStyle = isHovered ? '#34D399' : '#10B981';
+                    ctx.shadowColor = '#000000';
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Thẻ tên góc
+                    ctx.save();
+                    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                    const cLabel = CORNER_NAMES[i];
+                    const cMetrics = ctx.measureText(cLabel);
+                    const cW = cMetrics.width + 12;
+                    const cH = 18;
+                    let cX = pt.x - cW / 2;
+                    let cY = (i === 0 || i === 1) ? pt.y - 24 : pt.y + 14;
+                    if (cX < 4) cX = 4;
+                    if (cX + cW > w - 4) cX = w - cW - 4;
+
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                    ctx.strokeStyle = '#10B981';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    if (ctx.roundRect) ctx.roundRect(cX, cY, cW, cH, 4);
+                    else ctx.rect(cX, cY, cW, cH);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillText(cLabel, cX + 6, cY + 13);
+                    ctx.restore();
+                });
+            }
+        }
+
+        function getStationCanvasPointer(e) {
+            const canvas = document.getElementById('station-crib-canvas');
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                mx: clientX - rect.left,
+                my: clientY - rect.top,
+                nx: Math.max(0.02, Math.min(0.98, (clientX - rect.left) / canvas.width)),
+                ny: Math.max(0.02, Math.min(0.98, (clientY - rect.top) / canvas.height))
+            };
+        }
+
+        function onStationPointerStart(e) {
+            if (!_isStationCribEditing) return;
+            if (e.touches) e.preventDefault();
+            const canvas = document.getElementById('station-crib-canvas');
+            if (!canvas) return;
+            const p = getStationCanvasPointer(e);
+            const w = canvas.width;
+            const h = canvas.height;
+
+            _stationDragCornerIdx = -1;
+            let minDist = 48; // 48px hit target cho ngón tay
+            _stationCribPolygon.forEach((pt, i) => {
+                const dist = Math.hypot(p.mx - pt[0] * w, p.my - pt[1] * h);
+                if (dist < minDist) {
+                    minDist = dist;
+                    _stationDragCornerIdx = i;
+                }
+            });
+            if (_stationDragCornerIdx !== -1) {
+                drawStationCribZone();
+            }
+        }
+
+        function onStationPointerMove(e) {
+            if (!_isStationCribEditing || _stationDragCornerIdx === -1) return;
+            if (e.touches) e.preventDefault();
+            const p = getStationCanvasPointer(e);
+            _stationCribPolygon[_stationDragCornerIdx] = [
+                Math.round(p.nx * 1000) / 1000,
+                Math.round(p.ny * 1000) / 1000
+            ];
+            drawStationCribZone();
+        }
+
+        function onStationPointerEnd() {
+            if (_stationDragCornerIdx !== -1) {
+                _stationDragCornerIdx = -1;
+                drawStationCribZone();
+            }
+        }
+
+        function setupStationCribEvents() {
+            if (_stationCribEventsBound) return;
+            const sCanvas = document.getElementById('station-crib-canvas');
+            if (!sCanvas) return;
+            sCanvas.addEventListener('mousedown', onStationPointerStart);
+            sCanvas.addEventListener('mousemove', onStationPointerMove);
+            window.addEventListener('mouseup', onStationPointerEnd);
+
+            sCanvas.addEventListener('touchstart', onStationPointerStart, { passive: false });
+            sCanvas.addEventListener('touchmove', onStationPointerMove, { passive: false });
+            window.addEventListener('touchend', onStationPointerEnd);
+            window.addEventListener('touchcancel', onStationPointerEnd);
+
+            window.addEventListener('resize', () => {
+                resizeStationCribCanvas();
+                drawStationCribZone();
+            });
+            _stationCribEventsBound = true;
+        }
+
+        function toggleStationCribEdit() {
+            _isStationCribEditing = !_isStationCribEditing;
+            const canvas = document.getElementById('station-crib-canvas');
+            const bar = document.getElementById('station-crib-editor-bar');
+            const btn = document.getElementById('station-btn-crib');
+
+            if (canvas) {
+                if (_isStationCribEditing) {
+                    canvas.classList.remove('pointer-events-none');
+                    canvas.classList.add('pointer-events-auto');
+                } else {
+                    canvas.classList.add('pointer-events-none');
+                    canvas.classList.remove('pointer-events-auto');
+                }
+            }
+            if (bar) {
+                if (_isStationCribEditing) bar.classList.remove('hidden');
+                else bar.classList.add('hidden');
+            }
+            if (btn) {
+                if (_isStationCribEditing) {
+                    btn.className = 'p-2 rounded-xl bg-teal-500 text-slate-950 font-black text-xs transition active:scale-95 flex items-center gap-1 shadow-lg shadow-teal-500/30';
+                } else {
+                    btn.className = 'p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-teal-500/40 text-teal-300 text-xs transition active:scale-95 font-medium flex items-center gap-1';
+                }
+            }
+            drawStationCribZone();
+        }
+
+        function saveStationCribEdit() {
+            try {
+                localStorage.setItem('bg_station_crib_polygon', JSON.stringify(_stationCribPolygon));
+                showToast('Đã lưu Khung Nôi An Toàn cho điện thoại!', '📐');
+            } catch (e) {}
+            toggleStationCribEdit();
+        }
+
+        function resetStationCribPolygon() {
+            _stationCribPolygon = [
+                [0.18, 0.20],
+                [0.82, 0.20],
+                [0.82, 0.86],
+                [0.18, 0.86]
+            ];
+            drawStationCribZone();
+            showToast('Đã khôi phục khung nôi về mặc định', '🔄');
+        }
+
         function loadStationSavedSettings() {
             try {
                 const chatId = localStorage.getItem('bg_station_chat_id');
                 const botToken = localStorage.getItem('bg_station_bot_token');
                 const ipcam = localStorage.getItem('bg_station_ipcam_url');
+                const savedPoly = localStorage.getItem('bg_station_crib_polygon');
                 if (chatId) {
                     const el = document.getElementById('station-tele-chat-id');
                     if (el) el.value = chatId;
@@ -7860,7 +8203,18 @@
                     const el = document.getElementById('station-ipcam-url');
                     if (el) el.value = ipcam;
                 }
+                if (savedPoly) {
+                    const parsed = JSON.parse(savedPoly);
+                    if (Array.isArray(parsed) && parsed.length === 4) {
+                        _stationCribPolygon = parsed;
+                    }
+                }
             } catch (e) {}
+            setupStationCribEvents();
+            setTimeout(() => {
+                resizeStationCribCanvas();
+                drawStationCribZone();
+            }, 250);
         }
 
         function saveStationSettings() {
@@ -7920,6 +8274,10 @@
                     _stationMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
                     if (videoEl) {
                         videoEl.srcObject = _stationMediaStream;
+                        videoEl.onloadedmetadata = () => {
+                            resizeStationCribCanvas();
+                            drawStationCribZone();
+                        };
                         videoEl.play();
                     }
                     updatePermStatus('cam', true, 'Đã cấp');
@@ -7935,6 +8293,10 @@
                     if (videoEl) videoEl.classList.add('hidden');
                     if (ipcamImg) {
                         ipcamImg.src = ipcamUrl;
+                        ipcamImg.onload = () => {
+                            resizeStationCribCanvas();
+                            drawStationCribZone();
+                        };
                         ipcamImg.classList.remove('hidden');
                     }
                     updatePermStatus('cam', true, 'Camera IP');
@@ -7974,7 +8336,11 @@
                 // 4. Khởi tạo P2P Broadcast để điện thoại thứ hai xem trực tiếp
                 initStationP2PBroadcast();
 
-                // 5. Bắt đầu vòng lặp phân tích AI (Chuyển động & Âm thanh)
+                // 5. Kích hoạt Khung Nôi An Toàn và Vòng lặp phân tích AI (Chuyển động & Âm thanh)
+                setupStationCribEvents();
+                resizeStationCribCanvas();
+                drawStationCribZone();
+
                 _isStationRunning = true;
                 if (btn) {
                     btn.className = 'w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white shadow-xl transition active:scale-95 flex items-center justify-center gap-2';
@@ -7990,6 +8356,7 @@
                 _stationAnalysisInterval = setInterval(() => {
                     analyzeStationAudio();
                     analyzeStationMotion();
+                    drawStationCribZone();
                 }, 200);
 
             } catch (err) {
@@ -8056,6 +8423,7 @@
 
         function stopPhoneStation() {
             _isStationRunning = false;
+            _stationOutOfCribMotion = false;
             if (_stationAnalysisInterval) {
                 clearInterval(_stationAnalysisInterval);
                 _stationAnalysisInterval = null;
@@ -8087,6 +8455,8 @@
                 _stationWakeLock = null;
             }
             stopStationWhiteNoise();
+            resizeStationCribCanvas();
+            drawStationCribZone();
 
             // Reset permission indicators
             ['cam', 'mic', 'wake', 'audio'].forEach(t => updatePermStatus(t, false, 'Chờ cấp'));
@@ -8170,7 +8540,7 @@
         }
 
         // =========================================================================
-        // REALTIME MOTION ANALYZER FOR PHONE STATION (PHÂN TÍCH CỬ ĐỘNG)
+        // REALTIME MOTION ANALYZER FOR PHONE STATION (PHÂN TÍCH CỬ ĐỘNG & VÙNG NÔI)
         // =========================================================================
         function analyzeStationMotion() {
             const video = document.getElementById('station-local-video');
@@ -8190,27 +8560,47 @@
             try {
                 const currentData = ctx.getImageData(0, 0, 160, 120).data;
                 if (_stationLastFrameData) {
-                    let diffPixels = 0;
-                    const totalPixels = 160 * 120;
+                    let totalDiff = 0;
+                    let insideDiff = 0;
+                    let outsideDiff = 0;
+                    const totalSampledPixels = 160 * 120 / 4; // 4800 pixels mẫu
                     for (let i = 0; i < currentData.length; i += 16) {
                         const rDiff = Math.abs(currentData[i] - _stationLastFrameData[i]);
                         const gDiff = Math.abs(currentData[i+1] - _stationLastFrameData[i+1]);
                         const bDiff = Math.abs(currentData[i+2] - _stationLastFrameData[i+2]);
                         if (rDiff + gDiff + bDiff > 70) {
-                            diffPixels++;
+                            totalDiff++;
+                            const pixelIdx = i / 4;
+                            const px = pixelIdx % 160;
+                            const py = Math.floor(pixelIdx / 160);
+                            const nx = px / 160;
+                            const ny = py / 120;
+                            if (isPointInStationCrib(nx, ny)) {
+                                insideDiff++;
+                            } else {
+                                outsideDiff++;
+                            }
                         }
                     }
-                    const motionPct = Math.min(100, Math.round((diffPixels / (totalPixels / 4)) * 100));
+                    const motionPct = Math.min(100, Math.round((totalDiff / totalSampledPixels) * 100));
+                    const outsidePct = Math.min(100, Math.round((outsideDiff / totalSampledPixels) * 100));
                     const bar = document.getElementById('station-motion-bar');
                     const label = document.getElementById('station-motion-label');
 
                     if (bar) bar.style.width = motionPct + '%';
 
-                    if (motionPct > 28) {
+                    if (outsidePct > 4) {
+                        _stationOutOfCribMotion = true;
+                        if (bar) bar.className = 'h-full bg-rose-500 transition-all duration-200';
+                        if (label) label.innerHTML = '<span class="text-rose-400 font-extrabold animate-pulse">⚠️ LĂN NGOÀI KHUNG NÔI!</span>';
+                        onStationOutOfCribDetected();
+                    } else if (motionPct > 28) {
+                        _stationOutOfCribMotion = false;
                         if (bar) bar.className = 'h-full bg-amber-400 transition-all duration-200';
                         if (label) label.innerHTML = '<span class="text-amber-300 font-bold">🌊 Bé cựa quậy / thức giấc</span>';
                         onStationMotionDetected();
                     } else {
+                        _stationOutOfCribMotion = false;
                         if (bar) bar.className = 'h-full bg-cyan-500 transition-all duration-200';
                         if (label) label.innerText = 'Bé ngủ yên';
                     }
@@ -8224,6 +8614,14 @@
             if (now - _stationLastAlertTime.motion > 60000) {
                 _stationLastAlertTime.motion = now;
                 sendStationAlert('motion', '🌊 [BABYGUARD] Bé cựa quậy / đổi tư thế trong nôi!');
+            }
+        }
+
+        function onStationOutOfCribDetected() {
+            const now = Date.now();
+            if (now - (_stationLastAlertTime.outOfCrib || 0) > 45000) {
+                _stationLastAlertTime.outOfCrib = now;
+                sendStationAlert('out_of_crib', '⚠️ [BABYGUARD] CẢNH BÁO: Bé có dấu hiệu cựa quậy hoặc lăn ra ngoài Khung Nôi An Toàn!');
             }
         }
 
@@ -8247,6 +8645,32 @@
             } else if (video && video.videoWidth) {
                 ctx.drawImage(video, 0, 0, 640, 360);
             }
+
+            // Vẽ viền Khung Nôi An Toàn lên ảnh bằng chứng gửi Telegram
+            try {
+                ctx.save();
+                ctx.beginPath();
+                const pts = _stationCribPolygon.map(p => ({ x: p[0] * 640, y: p[1] * 360 }));
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.closePath();
+                ctx.strokeStyle = (type === 'out_of_crib') ? '#EF4444' : '#10B981';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = (type === 'out_of_crib') ? 'rgba(239, 68, 68, 0.9)' : 'rgba(15, 23, 42, 0.85)';
+                ctx.strokeStyle = (type === 'out_of_crib') ? '#EF4444' : '#10B981';
+                ctx.lineWidth = 1;
+                const tagText = (type === 'out_of_crib') ? '⚠️ LĂN NGOÀI NÔI' : '🛡️ KHUNG NÔI';
+                if (ctx.roundRect) ctx.roundRect(pts[0].x, Math.max(6, pts[0].y - 20), 100, 18, 4);
+                else ctx.rect(pts[0].x, Math.max(6, pts[0].y - 20), 100, 18);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.fillText(tagText, pts[0].x + 6, Math.max(18, pts[0].y - 7));
+                ctx.restore();
+            } catch (err) {}
 
             canvas.toBlob(async (blob) => {
                 if (!blob) return;
