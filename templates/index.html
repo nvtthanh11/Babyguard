@@ -7148,11 +7148,22 @@
         // =========================================================================
         let lastStreamReconnectTime = 0;
         let streamWatchdogTimer = null;
+        let _lastStreamFingerprint = null;
+        let _streamStallCounter = 0;
+        let _streamBlackCounter = 0;
+        const _watchdogCanvas = document.createElement('canvas');
+        _watchdogCanvas.width = 12;
+        _watchdogCanvas.height = 12;
+        let _watchdogCtx = null;
+        try {
+            _watchdogCtx = _watchdogCanvas.getContext('2d', { willReadFrequently: true });
+        } catch (e) {
+            _watchdogCtx = null;
+        }
 
         function safeReconnectStream(source = 'manual') {
             const now = Date.now();
-            if (now - lastStreamReconnectTime < 1200) {
-                // Tránh gọi dồn dập nhiều lần cùng lúc khi đổi tab
+            if (now - lastStreamReconnectTime < 1000) {
                 return;
             }
             lastStreamReconnectTime = now;
@@ -7164,8 +7175,34 @@
             const overlay = document.getElementById('stream-reconnect-overlay');
             if (img) {
                 const ts = Date.now();
-                img.src = '/video_feed?t=' + ts;
-                console.log(`[Camera Stream] Reconnecting video feed via ${source}:`, ts);
+                const newUrl = '/video_feed?t=' + ts;
+                console.log(`[Camera Stream] Làm mới luồng camera (${source}):`, ts);
+
+                // Khởi tạo ảnh mới ngầm để tránh hiện tượng nháy màn hình đen khi tải lại
+                const preloader = new Image();
+                let swapped = false;
+                preloader.onload = () => {
+                    if (!swapped) {
+                        swapped = true;
+                        img.src = newUrl;
+                        if (overlay) overlay.classList.add('hidden');
+                    }
+                };
+                preloader.onerror = () => {
+                    if (!swapped) {
+                        swapped = true;
+                        img.src = newUrl;
+                    }
+                };
+                // Timeout an toàn sau 800ms nếu onload không kích hoạt trên luồng multipart MJPEG
+                setTimeout(() => {
+                    if (!swapped) {
+                        swapped = true;
+                        img.src = newUrl;
+                    }
+                }, 800);
+                preloader.src = newUrl;
+
                 if (source === 'img-click' || source === 'manual' || source === 'overlay-click') {
                     showToast(currentLang === 'en' ? 'Camera stream refreshing...' : 'Đang làm mới luồng camera...', '🔄');
                 }
@@ -7175,38 +7212,75 @@
             }
         }
 
-        // Tự động kiểm tra luồng camera mỗi 3.5 giây (Watchdog Heartbeat)
+        // Tự động kiểm tra luồng camera định kỳ (Smart Watchdog Chống Đen Màn Hình & Chống Đứng Hình)
         function startStreamWatchdog() {
             if (streamWatchdogTimer) clearInterval(streamWatchdogTimer);
-            streamWatchdogTimer = setInterval(async () => {
-                if (document.hidden) return; // Nếu đang ẩn tab thì không quét để tiết kiệm pin
+            streamWatchdogTimer = setInterval(() => {
+                if (document.hidden) return; // Tab ẩn thì dừng quét để tối ưu pin và RAM
                 const img = document.getElementById('live-stream-img');
                 const overlay = document.getElementById('stream-reconnect-overlay');
-                
-                try {
-                    // Kiểm tra nhanh xem 1 ảnh JPEG tĩnh có lấy được không
-                    const testImg = new Image();
-                    testImg.onload = () => {
-                        // Backend vẫn khỏe, nếu ảnh chính bị đen hoặc ngắt kết nối thì tự phục hồi
-                        if (img && img.naturalWidth === 0 && img.complete) {
-                            console.warn('[Watchdog] Ảnh stream chính bị gián đoạn, tự động nạp lại...');
-                            if (overlay) overlay.classList.remove('hidden');
-                            safeReconnectStream('watchdog-auto');
-                        } else if (overlay && !overlay.classList.contains('hidden') && img && img.naturalWidth > 0) {
-                            overlay.classList.add('hidden');
+                if (!img) return;
+
+                // 1. Phân tích điểm ảnh trên Canvas để phát hiện tức thì nếu màn hình bị tối đen hoặc đứng hình
+                if (_watchdogCtx && img.complete && img.naturalWidth > 0) {
+                    try {
+                        _watchdogCtx.drawImage(img, 0, 0, 12, 12);
+                        const p = _watchdogCtx.getImageData(0, 0, 12, 12).data;
+                        let totalBrightness = 0;
+                        let hash = 0;
+                        for (let i = 0; i < p.length; i += 4) {
+                            const b = p[i] + p[i + 1] + p[i + 2];
+                            totalBrightness += b;
+                            hash = ((hash << 5) - hash + b) | 0;
                         }
-                    };
-                    testImg.onerror = () => {
-                        if (overlay) overlay.classList.remove('hidden');
-                    };
-                    testImg.src = '/api/current_frame.jpg?t=' + Date.now();
-                } catch (e) {
-                    // ignore
+                        const avgBrightness = totalBrightness / (12 * 12 * 3);
+
+                        // Phát hiện màn hình bị tối đen hoàn toàn (avgBrightness < 0.8)
+                        if (avgBrightness < 0.8) {
+                            _streamBlackCounter++;
+                            if (_streamBlackCounter >= 2) { // ~4s liên tiếp đen
+                                console.warn('[Watchdog] ⚠️ Phát hiện khung hình bị đen hoàn toàn, tự động kích hoạt phục hồi camera...');
+                                _streamBlackCounter = 0;
+                                safeReconnectStream('auto-black-recovery');
+                                return;
+                            }
+                        } else {
+                            _streamBlackCounter = 0;
+                        }
+
+                        // Phát hiện luồng MJPEG bị đơ / đứng hình (hash không thay đổi dù camera đang quay)
+                        if (hash === _lastStreamFingerprint && hash !== 0) {
+                            _streamStallCounter++;
+                            if (_streamStallCounter >= 4) { // ~8s đứng hình
+                                console.warn('[Watchdog] ⚠️ Luồng video bị đơ không nhận khung hình mới, đang tự động kết nối lại...');
+                                _streamStallCounter = 0;
+                                safeReconnectStream('auto-frozen-recovery');
+                                return;
+                            }
+                        } else {
+                            _streamStallCounter = 0;
+                            _lastStreamFingerprint = hash;
+                        }
+                    } catch (e) {
+                        // Canvas taint or error: fallback to image ping
+                    }
                 }
-            }, 3500);
+
+                // 2. Thử nghiệm kết nối nhẹ nhàng tới API khung hình tĩnh
+                const pingImg = new Image();
+                pingImg.onload = () => {
+                    if (overlay && !overlay.classList.contains('hidden')) {
+                        overlay.classList.add('hidden');
+                    }
+                };
+                pingImg.onerror = () => {
+                    if (overlay) overlay.classList.remove('hidden');
+                };
+                pingImg.src = '/api/current_frame.jpg?t=' + Date.now();
+            }, 2200);
         }
 
-        // Auto-reconnect camera on error or when waking from sleep/tab focus
+        // Tự động kết nối lại khi tải trang, mở tab lại hoặc bật sáng màn hình điện thoại
         window.addEventListener('DOMContentLoaded', () => {
             const img = document.getElementById('live-stream-img');
             const overlay = document.getElementById('stream-reconnect-overlay');
@@ -7215,11 +7289,10 @@
                     if (overlay) overlay.classList.add('hidden');
                 };
                 img.onerror = () => {
-                    console.warn('[Camera] Luồng video bị gián đoạn, tự động kết nối lại sau 1s...');
-                    if (overlay) overlay.classList.remove('hidden');
+                    console.warn('[Camera] Luồng video bị gián đoạn, tự động nạp lại sau 500ms...');
                     setTimeout(() => {
                         safeReconnectStream('onerror');
-                    }, 1000);
+                    }, 500);
                 };
             }
             startStreamWatchdog();

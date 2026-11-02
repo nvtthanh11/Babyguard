@@ -317,6 +317,45 @@ class AlertManager:
 
         return f'\n🔗 <b><a href="{url}">👉 BẤM XEM CAMERA NGAY (1 GIÂY)</a></b>'
 
+    @staticmethod
+    def _chunk_telegram_text(text: str, max_chars: int = 3850) -> list:
+        """Chia nhỏ thông điệp dài an toàn theo chuẩn 4,096 ký tự của Telegram, ưu tiên ngắt theo đoạn."""
+        if len(text) <= max_chars:
+            return [text]
+
+        # 1. Nếu có phần câu chuyện ý nghĩa, ưu tiên tách làm tin nhắn riêng biệt
+        story_delims = [
+            "\n📖 <b>5. 1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA CHO CON:</b>\n",
+            "\n📖 <b>1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA CHO CON:</b>\n"
+        ]
+        for delim in story_delims:
+            if delim in text:
+                parts = text.split(delim, 1)
+                part1 = parts[0].strip()
+                part2 = "📖 <b>1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA CHO CON:</b>\n" + parts[1].strip()
+                result = []
+                for p in [part1, part2]:
+                    if len(p) <= max_chars:
+                        result.append(p)
+                    else:
+                        result.extend(AlertManager._chunk_telegram_text(p, max_chars))
+                return result
+
+        # 2. Tách theo đoạn văn \n\n
+        chunks = []
+        current = ""
+        paragraphs = text.split("\n\n")
+        for para in paragraphs:
+            if len(current) + len(para) + 2 <= max_chars:
+                current = (current + "\n\n" + para) if current else para
+            else:
+                if current:
+                    chunks.append(current.strip())
+                current = para
+        if current:
+            chunks.append(current.strip())
+        return chunks if chunks else [text[:max_chars]]
+
     def send_telegram_text(self, text: str, pin: bool = False, tag_recipients: bool = False) -> bool:
         bot_token = self.config.get("telegram_bot_token", "").strip()
         enabled = self.config.get("telegram_enabled", False)
@@ -331,23 +370,40 @@ class AlertManager:
         def _send():
             url_send = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             url_pin = f"https://api.telegram.org/bot{bot_token}/pinChatMessage"
+            url_unpin_all = f"https://api.telegram.org/bot{bot_token}/unpinAllChatMessages"
+            url_unpin_one = f"https://api.telegram.org/bot{bot_token}/unpinChatMessage"
+
             for r in recipients:
                 try:
-                    send_text = text
+                    target_text = text
                     if tag_recipients:
                         tag = f"🔔 <b>[GỬI TỚI {r.get('name', 'BỐ MẸ').upper()}]</b>"
-                        send_text = f"{tag}\n{send_text}"
+                        target_text = f"{tag}\n{target_text}"
 
-                    data = {"chat_id": r["chat_id"], "text": send_text, "parse_mode": "HTML", "disable_web_page_preview": False}
-                    resp = requests.post(url_send, json=data, timeout=12)
-                    if resp.status_code == 200:
-                        mid = resp.json().get("result", {}).get("message_id")
-                        if pin and mid:
-                            try:
-                                requests.post(url_pin, json={"chat_id": r["chat_id"], "message_id": mid, "disable_notification": False}, timeout=8)
-                                print(f"[AlertManager] 📌 Đã ghim tin nhắn Báo cáo #{mid} trên Telegram của {r['name']}")
-                            except Exception as pe:
-                                print(f"[AlertManager] Không thể ghim tin nhắn: {pe}")
+                    chunks = AlertManager._chunk_telegram_text(target_text, max_chars=3850)
+                    for idx, chunk in enumerate(chunks):
+                        data = {"chat_id": r["chat_id"], "text": chunk, "parse_mode": "HTML", "disable_web_page_preview": False}
+                        resp = requests.post(url_send, json=data, timeout=12)
+                        if resp.status_code == 200:
+                            mid = resp.json().get("result", {}).get("message_id")
+                            # Chỉ ghim tin nhắn đầu tiên (Báo cáo chính) và xóa sạch các tin ghim cũ
+                            if pin and idx == 0 and mid:
+                                try:
+                                    try:
+                                        requests.post(url_unpin_all, json={"chat_id": r["chat_id"]}, timeout=6)
+                                    except Exception:
+                                        pass
+                                    try:
+                                        requests.post(url_unpin_one, json={"chat_id": r["chat_id"]}, timeout=6)
+                                    except Exception:
+                                        pass
+
+                                    requests.post(url_pin, json={"chat_id": r["chat_id"], "message_id": mid, "disable_notification": False}, timeout=8)
+                                    print(f"[AlertManager] 📌 Đã xóa ghim cũ và ghim tin Báo cáo mới nhất #{mid} trên Telegram của {r['name']}")
+                                except Exception as pe:
+                                    print(f"[AlertManager] Không thể ghim tin nhắn: {pe}")
+                        else:
+                            print(f"[AlertManager] Telegram sendMessage error: {resp.status_code} - {resp.text[:120]}")
                 except Exception as e:
                     print(f"[AlertManager] Failed to send Telegram text to {r['name']}: {e}")
 

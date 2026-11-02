@@ -1190,7 +1190,27 @@ Trả về đúng định dạng JSON:
         age_display = sleep_summary.get("age_display", "1 tháng tuổi")
         total_sleep = float(sleep_summary.get("total_sleep_today_hours", 0.0))
         total_awake = float(sleep_summary.get("total_awake_today_hours", 0.0))
-        camera_offline = round(max(0.0, 24.0 - (total_sleep + total_awake)), 1)
+        tracked_hours = round(total_sleep + total_awake, 1)
+
+        yesterday = sleep_summary.get("yesterday_sleep", {})
+        y_sleep = float(yesterday.get("total_sleep_hours", 0.0)) if yesterday else 0.0
+        y_nap = float(yesterday.get("longest_nap_minutes", 0.0)) if yesterday else 0.0
+        y_score = int(yesterday.get("sleep_score", 85)) if yesterday else 85
+
+        # Nếu phiên theo dõi mới bắt đầu (< 3.0h) và có chu kỳ hôm qua đầy đủ, lấy dữ liệu chu kỳ 24h trọn vẹn
+        cycle_label = "chu kỳ 24h qua (tính từ 07:00 sáng hôm qua)"
+        longest_nap = float(sleep_summary.get("longest_nap_minutes", 0.0))
+        sleep_score = int(sleep_summary.get("sleep_score", 85))
+
+        if tracked_hours < 3.0 and y_sleep > 2.0:
+            total_sleep = y_sleep
+            total_awake = float(yesterday.get("total_awake_hours", 4.0))
+            tracked_hours = round(total_sleep + total_awake, 1)
+            longest_nap = y_nap
+            sleep_score = y_score
+            cycle_label = f"chu kỳ 24h gần nhất ({yesterday.get('date', 'ngày hôm qua')})"
+
+        camera_offline = round(max(0.0, 24.0 - tracked_hours), 1)
         
         crying_count = int(sleep_summary.get("crying_count", 0))
         cough_count = int(sleep_summary.get("cough_count", 0))
@@ -1198,11 +1218,6 @@ Trả về đúng định dạng JSON:
         apnea_count = int(sleep_summary.get("apnea_count", 0))
         growth = sleep_summary.get("growth_data", {})
         growth_str = f"Cân nặng: {growth.get('weight_kg', 'Chưa nhập')} kg | Chiều cao: {growth.get('height_cm', 'Chưa nhập')} cm ({growth.get('weight_status', 'Đang cập nhật')})"
-
-        yesterday = sleep_summary.get("yesterday_sleep", {})
-        y_sleep = yesterday.get("total_sleep_hours")
-        y_nap = yesterday.get("longest_nap_minutes")
-        y_score = yesterday.get("sleep_score")
 
         delta_summary = sleep_summary.get("delta_summary", {})
         hourly_clusters = delta_summary.get("hourly_clusters", {})
@@ -1216,33 +1231,38 @@ Trả về đúng định dạng JSON:
         cluster_text = "\n".join(notable_clusters) if notable_clusters else "  • Các khung giờ phân bổ êm ả, không phát hiện cụm triệu chứng tập trung."
 
         sleep_tracking_metric_str = (
-            f"- Chu kỳ đo 24h: Tính từ 07:00 sáng hôm trước đến 07:00 sáng hôm nay (Chuẩn AAP/AASM).\n"
-            f"- Thời gian ngủ ghi nhận qua camera trong chu kỳ 24h: {total_sleep} giờ (cữ dài nhất: {sleep_summary.get('longest_nap_minutes', 0)} phút)."
+            f"- Chu kỳ đo: {cycle_label} (Chuẩn AAP/AASM).\n"
+            f"- Thời gian ngủ ghi nhận qua camera: {total_sleep} giờ (cữ dài nhất: {longest_nap} phút).\n"
+            f"- Thời gian thức chơi / vận động trong tầm camera: {total_awake} giờ.\n"
+            f"- Thời gian máy tính tạm tắt / không bật camera theo dõi: ~{camera_offline} giờ."
         )
 
         prompt = f"""
 Bạn là Bác sĩ Nhi khoa Chuyên gia về Sơ sinh & Giấc ngủ Trẻ em (Pediatrician & Sleep Specialist) của hệ thống BabyGuard AI.
-Dưới đây là hồ sơ bệnh án sinh học thực tế của em bé {baby_name} ({age_display}) trong chu kỳ 24h (đo từ 07:00 sáng hôm qua đến 07:00 sáng hôm nay theo chuẩn AAP/AASM):
+Dưới đây là hồ sơ dữ liệu sinh học thực tế của em bé {baby_name} ({age_display}) trong {cycle_label}:
 
-1. DỮ LIỆU ĐO LƯỜNG SINH HỌC 24H:
+1. DỮ LIỆU ĐO LƯỜNG SINH HỌC:
 {sleep_tracking_metric_str}
-- Thời gian thức chơi / vận động trong tầm camera: {total_awake} giờ
-- Thời gian ngoài tầm camera (được bố mẹ bế ra ngoài, bú sữa, tắm, chơi...): ~{camera_offline} giờ
 - Tỷ lệ Ngủ sâu (NREM): {sleep_summary.get("deep_ratio_pct", 55)}% | Ngủ động (REM): {sleep_summary.get("rem_ratio_pct", 45)}%
-- Cữ ngủ liền mạch dài nhất: {sleep_summary.get("longest_nap_minutes", 0)} phút
-- Điểm chất lượng giấc ngủ: {sleep_summary.get("sleep_score", 85)}/100
+- Cữ ngủ liền mạch dài nhất: {longest_nap} phút
+- Điểm chất lượng giấc ngủ: {sleep_score}/100
 - Số lần giật mình sinh lý Moro/REM: {sleep_summary.get("rem_twitch_count", 0)} lần
 - Nhịp thở quang học lồng ngực trung bình: {avg_bpm} BPM (Cảnh báo nguy cơ ngưng thở: {apnea_count} lần)
-- Thống kê âm thanh AI: {crying_count} lần quấy khóc, {cough_count} cơn ho / tiếng thở dốc / nguy cơ sặc sữa.
+- Thống kê âm thanh AI: {crying_count} lần quấy khóc, {cough_count} cơn ho / tiếng thở dốc.
 - Chỉ số thể trạng & tăng trưởng: {growth_str}
 
 2. PHÂN TÍCH CỤM BIẾN ĐỘNG THEO TỪNG KHUNG GIỜ (HOURLY CLUSTERS):
 {cluster_text}
-(LƯU Ý Y KHOA: Tuyệt đối không chia bình quân số lần ho/sặc ra 24h. Cần phân tích cụm thời điểm bé bị ho/sặc dồn dập, ví dụ ho nhiều lúc nửa đêm về sáng thường do trào ngược dạ dày thực quản GERD, sữa trào ngược khi nằm ngang hoặc nhiệt độ phòng giảm lạnh).
 
-Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG cho bố mẹ với các yêu cầu bắt buộc:
-A. PHÂN TÍCH CHU KỲ 24H: Đo từ 07:00 sáng theo chuẩn AAP/AASM, phân tích thời gian ngủ nôi vs ngoài camera ({camera_offline}h) dựa trên nhu cầu ngủ 14-17h của trẻ sơ sinh.
-B. ĐÁNH GIÁ CỤM BIẾN ĐỘNG & HÔ HẤP: Nhận xét nhịp thở {avg_bpm} BPM và cụm biến động ho/sặc, hướng dẫn mẹ phòng ngừa trào ngược (vỗ ợ hơi, bế dựng 15-20p sau bú).
+LƯU Ý Y KHOA QUAN TRỌNG VỀ ĐỘ CHÍNH XÁC:
+1. VỀ THỜI GIAN MÁY TÍNH TẮT (~{camera_offline}h): Đây là khoảng thời gian máy tính/camera của gia đình tạm tắt (phụ huynh tắt máy, hoặc bế bé ra phòng khách chơi, tắm rửa). TUYỆT ĐỐI KHÔNG SUY DIỄN rằng bé không ngủ, bị bế ẵm 24/24 hay phụ thuộc bố mẹ. Hãy tập trung đánh giá chất lượng cữ ngủ {total_sleep}h ghi nhận được qua camera.
+2. VỀ CƠN HO: Nếu số lần ho ít (1-2 lần trong ngày), đây là phản xạ sinh lý tự nhiên bình thường để làm sạch đường hô hấp trên của trẻ sơ sinh, TUYỆT ĐỐI KHÔNG kết luận hoặc làm bố mẹ lo lắng về bệnh trào ngược GERD. Chỉ khi có cụm ho dồn dập hoặc nôn trớ sữa nhiều lần mới lưu ý trào ngược sinh lý.
+3. VỀ THỂ TRẠNG: Đối chiếu theo bảng chuẩn WHO một cách khoa học, khách quan, mang tính khích lệ và đồng hành cùng bố mẹ.
+4. VĂN PHONG: Chuẩn mực y khoa, ấm áp, tạo sự an tâm và tin cậy cho phụ huynh.
+
+Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG cho bố mẹ:
+A. PHÂN TÍCH GIẤC NGỦ: Đánh giá thời lượng {total_sleep}h ngủ, độ sâu NREM/REM và khả năng nối giấc của bé.
+B. HÔ HẤP & TIÊU HÓA: Nhận xét nhịp thở {avg_bpm} BPM và hướng dẫn vỗ ợ hơi sau bú.
 C. ĐÁNH GIÁ THỂ TRẠNG THEO CHUẨN WHO: Nhận xét cân nặng, chiều cao đối chiếu trung vị WHO.
 D. LỜI KHUYÊN & LỊCH SINH HOẠT HÔM NAY: Wake Window tối ưu cho trẻ lứa tuổi này, quy tắc ngủ an toàn ABC của AAP.
 E. TRÍCH DẪN NGUỒN CHÍNH THỐNG: AAP, AASM, WHO.
@@ -1250,8 +1270,8 @@ E. TRÍCH DẪN NGUỒN CHÍNH THỐNG: AAP, AASM, WHO.
 Trả về đúng định dạng JSON:
 {{
   "headline_vi": "Tiêu đề báo cáo ngắn gọn, ấm áp",
-  "summary_vi": "Phân tích cụ thể chu kỳ 24h từ 07:00 sáng và nhịp sinh học của bé (3-4 câu tiếng Việt)",
-  "respiratory_and_reflux_vi": "Nhận xét chi tiết về nhịp thở và phân tích cụm ho/sặc sữa theo khung giờ (3-4 câu tiếng Việt)",
+  "summary_vi": "Phân tích cụ thể chu kỳ ngủ và nhịp sinh học của bé (3-4 câu tiếng Việt)",
+  "respiratory_and_reflux_vi": "Nhận xét chi tiết về nhịp thở và phân tích hô hấp (3-4 câu tiếng Việt)",
   "growth_analysis_vi": "Đánh giá chiều cao, cân nặng đối chiếu bảng chuẩn WHO (2-3 câu tiếng Việt)",
   "schedule_advice_vi": "Lịch sinh hoạt và gợi ý canh cửa sổ thức (Wake Window) hôm nay (2-3 câu tiếng Việt)",
   "tips_vi": ["Lời khuyên thực tế 1", "Lời khuyên thực tế 2", "Lời khuyên thực tế 3"],
@@ -1288,15 +1308,16 @@ Trả về đúng định dạng JSON:
             if notable_clusters:
                 cluster_tele_part = "• <i>Phân tích cụm thời gian biến động:</i>\n" + "\n".join(notable_clusters[:3]) + "\n"
 
+            unmonitored_text = f"• Thời gian máy tính tắt / không theo dõi: <b>~{camera_offline}h</b>\n" if camera_offline > 0.5 else ""
             tele_msg = (
                 f"🩺 <b>BÁO CÁO NHI KHOA BUỔI SÁNG (07:00) — {baby_name.upper()}</b>\n"
-                f"👶 <i>Độ tuổi: {age_display} | Chu kỳ 24h neo 07:00 AM (Chuẩn AAP/AASM)</i>\n"
+                f"👶 <i>Độ tuổi: {age_display} | Chu kỳ 24h (Chuẩn AAP/AASM)</i>\n"
                 f"━━━━━━━━━━━━━━━━━━━\n\n"
-                f"📊 <b>1. GIÁM SÁT GIẤC NGỦ 24H:</b>\n"
+                f"📊 <b>1. GIÁM SÁT GIẤC NGỦ:</b>\n"
                 f"• Ghi nhận qua Camera: <b>{total_sleep}h ngủ</b> | <b>{total_awake}h thức</b>\n"
-                f"• Ngoài tầm quan sát: ~<b>{camera_offline}h</b> (bế chơi, bú sữa, tắm...)\n"
+                f"{unmonitored_text}"
+                f"• Cữ dài nhất: <b>{longest_nap} phút</b> | Điểm giấc ngủ AI: <b>{sleep_score}/100</b>\n"
                 f"• Chu kỳ: <b>{sleep_summary.get('deep_ratio_pct', 55)}% NREM</b> (Sâu) | <b>{sleep_summary.get('rem_ratio_pct', 45)}% REM</b> (Động)\n"
-                f"• Điểm giấc ngủ AI: <b>{sleep_summary.get('sleep_score', 85)}/100</b>\n"
                 f"👉 <i>{summary_vi}</i>\n\n"
                 f"🫁 <b>2. HÔ HẤP, HO & PHÒNG CHỐNG SẶC SỮA:</b>\n"
                 f"• Nhịp thở khi ngủ: <b>{avg_bpm} BPM</b> (Chuẩn sơ sinh: 30 - 60 BPM)\n"

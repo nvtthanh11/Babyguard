@@ -690,6 +690,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
     def generate_frames(annotated: bool = True):
         last_good_bytes = None
+        consecutive_errors = 0
         while True:
             try:
                 frame = vision_tracker.get_latest_frame(annotated=annotated)
@@ -697,6 +698,14 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                     ret, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                     if ret:
                         last_good_bytes = buffer.tobytes()
+                        consecutive_errors = 0
+                elif last_good_bytes is None:
+                    # Nếu camera chưa có frame nào hoặc đang mở, tạo frame thông báo trạng thái thay vì gửi rỗng
+                    placeholder = vision_tracker._make_disconnected_frame("Đang kết nối camera...") if hasattr(vision_tracker, "_make_disconnected_frame") else None
+                    if placeholder is not None:
+                        ret, buffer = cv2.imencode(".jpg", placeholder, [cv2.IMWRITE_JPEG_QUALITY, 75])
+                        if ret:
+                            last_good_bytes = buffer.tobytes()
 
                 if last_good_bytes is not None:
                     yield (b"--frame\r\n"
@@ -706,6 +715,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             except (GeneratorExit, BrokenPipeError, ConnectionResetError):
                 break
             except Exception:
+                consecutive_errors += 1
+                if consecutive_errors > 100:
+                    break
                 time.sleep(0.05)
 
     @app.get("/video_feed")
@@ -1250,6 +1262,13 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                                 is_crying=aud_st.get("is_crying", False),
                                 age_months=age_m
                             )
+                            # Nếu vừa lật ngày mới mà thời gian ngủ < 2h và có dữ liệu 24h ngày hôm qua, dùng ngày hôm qua làm dữ liệu trọn vẹn
+                            if snap.get("total_sleep_today_hours", 0) < 2.0 and getattr(sleep_tracker, "daily_history", None) and len(sleep_tracker.daily_history) > 0:
+                                prev_day = sleep_tracker.daily_history[0]
+                                snap["total_sleep_today_hours"] = prev_day.get("total_sleep_hours", snap.get("total_sleep_today_hours", 0))
+                                snap["total_awake_today_hours"] = prev_day.get("total_awake_hours", snap.get("total_awake_today_hours", 0))
+                                snap["longest_nap_minutes"] = prev_day.get("longest_nap_minutes", snap.get("longest_nap_minutes", 0))
+                                snap["sleep_score"] = prev_day.get("sleep_score", snap.get("sleep_score", 85))
                             print("[WebServer] ⏰ ĐÚNG 07:00 SÁNG: Kích hoạt Bác Sĩ AI tổng hợp bệnh án 24h...")
                             _trigger_morning_ai_sleep_report(snap)
 

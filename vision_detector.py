@@ -2247,8 +2247,8 @@ class VisionTracker:
             ret, frame = cap.read()
             if not ret or frame is None or frame.size == 0:
                 consecutive_bad_frames += 1
-                if consecutive_bad_frames > 20: # ~1.5 giây tín hiệu rớt
-                    print("[VisionTracker] Mất tín hiệu hình ảnh. Đang tự động kết nối lại...")
+                if consecutive_bad_frames > 45: # ~2.5 - 3.0 giây mất tín hiệu liên tục mới ngắt kết nối
+                    print("[VisionTracker] Mất tín hiệu hình ảnh liên tục. Đang tự động kết nối lại...")
                     if cap:
                         cap.release()
                     cap = None

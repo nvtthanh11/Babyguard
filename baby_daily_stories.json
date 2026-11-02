@@ -111,6 +111,20 @@
       "date": "2026-11-01",
       "created_at": "20:55 - 01/11/2026",
       "source_type": "Curated Library"
+    },
+    "2026-11-02": {
+      "title": "Chú Kiến Nhỏ Và Ngọn Núi Đá Cao",
+      "category": "Ngụ Ngôn Thế Giới & Tinh Thần Bền Bỉ",
+      "source": "Kho tàng ngụ ngôn dân gian thế giới",
+      "quote": "Những bước chân nhỏ bé nhưng kiên trì sẽ đi đến tận cùng của thế giới.",
+      "content": "Vào một buổi sáng mùa thu trong trẻo, khi những giọt sương mai còn đọng trên chiếc lá cỏ non xanh biếc, chú kiến nhỏ tên là Típ bước ra khỏi tổ và ngước nhìn ngọn núi đá sừng sững trước mặt. Đối với một sinh hình bé xíu như Típ, ngọn núi cao ngất trời ấy trông giống như một bức tường khổng lồ chắn ngang đường đi, ngăn cách chú với thung lũng hoa thơm quả ngọt ở phía bên kia. Những người bạn lớn hơn như châu chấu hay cào cào đều lắc đầu ái ngại, khuyên Típ nên từ bỏ ý định đi qua ngọn núi vì điều đó là bất khả thi đối với một kẻ có đôi chân ngắn ngủi.\n\nThế nhưng, Típ không hề nản lòng trước thử thách to lớn ấy. Chú tự nhủ rằng ngọn núi dù cao đến đâu cũng được tạo nên từ những hạt cát nhỏ, và bản thân mình hoàn toàn có thể chinh phục nó bằng chính đôi chân kiên trì của mình. Ngay lập tức, Típ bắt đầu hành trình gian nan. Chú bò lên từng khe đá gồ ghề, đối mặt với những cơn gió mạnh thổi thốc từ trên cao xuống khiến chú suýt ngã nhào. Có những lúc mệt lả đi vì sức nặng của chiếc lá mồi trên lưng, Típ chỉ biết dừng lại một nhịp để lấy lại hơi thở rồi lại tiếp tục bước đi mà không một lời kêu ca.\n\nMỗi ngày qua đi, dù quãng đường đi được chỉ bằng một ngón tay, Típ chưa từng dừng lại hay buông xuôi ý định. Sự bền bỉ của chú đã thu hút sự chú ý của các loài vật xung quanh. Họ dần từ bỏ thái độ hoài nghi ban đầu để chuyển sang cổ vũ, thán phục tinh thần vượt khó không bao giờ khuất phục trước nghịch cảnh của chú kiến nhỏ. Típ hiểu rằng sự nỗ lực tích lũy từng chút một mỗi ngày chính là chìa khóa mở ra cánh cửa thành công, biến những điều không thể thành có thể.\n\nCuối cùng, sau bao nhiêu ngày tháng nhẫn nại vượt qua gian khó, Típ cũng đặt chân lên được đỉnh núi cao nhất. Từ trên cao nhìn xuống, thung lũng rực rỡ sắc màu hiện ra trước mắt như một phần thưởng xứng đáng cho ý chí kiên cường. Câu chuyện về chú kiến Típ đã trở thành biểu tượng tuyệt đẹp cho lòng kiên trì và tinh thần vượt khó, nhắc nhở chúng ta rằng không có ngọn núi nào quá cao nếu ta có đủ sự bền bỉ để bước đi từng bước nhỏ mỗi ngày.",
+      "parenting_lesson": "1. Cơ sở tâm lý học phát triển EQ: Trẻ nhỏ hình thành tính kiên trì thông qua việc quan sát và trải nghiệm cách người lớn đối mặt với thử thách. Sự kiên nhẫn không phải là bản năng mà là một kỹ năng sống được nuôi dưỡng từ những phản ứng bình tĩnh trước thất bại.\n2. Hành động thực tế ba mẹ nêu gương hàng ngày: Ba mẹ hãy kiên nhẫn cùng con trong từng cột mốc phát triển, không nản lòng khi con quấy khóc hay chậm lớn, đồng thời luôn khen ngợi sự nỗ lực nhỏ nhất của con để xây dựng sự tự tin.",
+      "baby_talk_prompt": "Bé A Siu yêu dấu của ba mẹ! Con hãy nhìn chú kiến nhỏ kiên trì leo núi nhé. Dù con còn rất nhỏ, mỗi ngày lớn lên của con đều là một hành trình tuyệt vời. Ba mẹ tin rằng con sẽ luôn mạnh mẽ, bền bỉ và vượt qua mọi thử thách trên đường đời. Ngủ ngoan con nhé!",
+      "source_type": "Gemini AI",
+      "date": "2026-11-02",
+      "created_at": "07:00 - 02/11/2026",
+      "theme_id": "perseverance",
+      "theme_name": "Thứ Hai: Lòng Kiên Trì & Tinh Thần Vượt Khó"
     }
   },
   "theme_history": [
@@ -122,6 +136,15 @@
       "story_title": "Thomas Edison Và Ngọn Đèn Tò Mò Thắp Sáng Cả Thế Giới",
       "source": "Giai Thoại Danh Nhân & Lòng Hiếu Kỳ Vĩ Đại",
       "category": "Khám Phá Thế Giới & Trí Tò Mò Khoa Học"
+    },
+    {
+      "date": "2026-11-02",
+      "day_name": "Thứ Hai",
+      "theme_id": "perseverance",
+      "theme_name": "Lòng Kiên Trì & Tinh Thần Vượt Khó",
+      "story_title": "Chú Kiến Nhỏ Và Ngọn Núi Đá Cao",
+      "source": "Kho tàng ngụ ngôn dân gian thế giới",
+      "category": "Ngụ Ngôn Thế Giới & Tinh Thần Bền Bỉ"
     }
   ]
 }
