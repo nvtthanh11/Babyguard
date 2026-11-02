@@ -1202,6 +1202,7 @@ Trả về đúng định dạng JSON:
         longest_nap = float(sleep_summary.get("longest_nap_minutes", 0.0))
         sleep_score = int(sleep_summary.get("sleep_score", 85))
         avg_bpm = float(sleep_summary.get("avg_bpm", 38.5))
+        delta_summary = sleep_summary.get("delta_summary", {})
 
         if tracked_hours < 3.0 and y_sleep > 2.0:
             total_sleep = y_sleep
