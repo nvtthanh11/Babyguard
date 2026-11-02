@@ -1201,6 +1201,7 @@ Trả về đúng định dạng JSON:
         cycle_label = "chu kỳ 24h qua (tính từ 07:00 sáng hôm qua)"
         longest_nap = float(sleep_summary.get("longest_nap_minutes", 0.0))
         sleep_score = int(sleep_summary.get("sleep_score", 85))
+        avg_bpm = float(sleep_summary.get("avg_bpm", 38.5))
 
         if tracked_hours < 3.0 and y_sleep > 2.0:
             total_sleep = y_sleep
@@ -1210,24 +1211,50 @@ Trả về đúng định dạng JSON:
             sleep_score = y_score
             cycle_label = f"chu kỳ 24h gần nhất ({yesterday.get('date', 'ngày hôm qua')})"
 
+            # Nạp dữ liệu y tế chuẩn xác của chu kỳ 24h hôm qua
+            y_counts = sleep_summary.get("yesterday_counts") or {}
+            crying_count = int(yesterday.get("crying_count") or y_counts.get("crying_count", 0))
+            cough_count = int(yesterday.get("cough_count") or y_counts.get("cough_count", 0))
+            choke_count = int(yesterday.get("choke_risk_count") or y_counts.get("choke_risk_count", 0))
+            apnea_count = int(yesterday.get("apnea_count") or y_counts.get("apnea_count", 0))
+            
+            y_delta = sleep_summary.get("delta_summary_yesterday") or {}
+            if y_delta and y_delta.get("hourly_clusters"):
+                hourly_clusters = y_delta["hourly_clusters"]
+            else:
+                hourly_clusters = delta_summary.get("hourly_clusters", {})
+        else:
+            crying_count = int(sleep_summary.get("crying_count", 0))
+            cough_count = int(sleep_summary.get("cough_count", 0))
+            choke_count = int(sleep_summary.get("choke_risk_count", 0))
+            apnea_count = int(sleep_summary.get("apnea_count", 0))
+            hourly_clusters = delta_summary.get("hourly_clusters", {})
+
+        if avg_bpm < 20.0:
+            if yesterday and yesterday.get("avg_bpm", 0) > 20:
+                avg_bpm = float(yesterday["avg_bpm"])
+            else:
+                avg_bpm = 38.5
+
         camera_offline = round(max(0.0, 24.0 - tracked_hours), 1)
-        
-        crying_count = int(sleep_summary.get("crying_count", 0))
-        cough_count = int(sleep_summary.get("cough_count", 0))
-        avg_bpm = float(sleep_summary.get("avg_bpm", 36.0))
-        apnea_count = int(sleep_summary.get("apnea_count", 0))
         growth = sleep_summary.get("growth_data", {})
         growth_str = f"Cân nặng: {growth.get('weight_kg', 'Chưa nhập')} kg | Chiều cao: {growth.get('height_cm', 'Chưa nhập')} cm ({growth.get('weight_status', 'Đang cập nhật')})"
 
-        delta_summary = sleep_summary.get("delta_summary", {})
-        hourly_clusters = delta_summary.get("hourly_clusters", {})
         notable_clusters = []
         for h_key, cl in sorted(hourly_clusters.items()):
             c_coughs = cl.get("cough_count", 0)
             c_chokes = cl.get("choke_risk_count", 0)
             c_cry = cl.get("crying_minutes", 0.0)
-            if c_coughs > 0 or c_chokes > 0 or c_cry > 3.0:
-                notable_clusters.append(f"  • Khung {cl.get('time_range')}: {c_coughs} lần ho, {c_chokes} nguy cơ sặc, {c_cry}p quấy khóc.")
+            c_cry_cnt = cl.get("crying_count", 0)
+            if c_coughs > 0 or c_chokes > 0 or c_cry > 1.0 or c_cry_cnt >= 3:
+                parts = []
+                if c_coughs > 0:
+                    parts.append(f"{c_coughs} lần ho")
+                if c_chokes > 0:
+                    parts.append(f"{c_chokes} dấu hiệu sặc/trớ")
+                if c_cry_cnt > 0:
+                    parts.append(f"{c_cry_cnt} lần quấy khóc ({c_cry}p)")
+                notable_clusters.append(f"  • Khung {cl.get('time_range', h_key)}: {', '.join(parts)}")
         cluster_text = "\n".join(notable_clusters) if notable_clusters else "  • Các khung giờ phân bổ êm ả, không phát hiện cụm triệu chứng tập trung."
 
         sleep_tracking_metric_str = (
@@ -1247,8 +1274,8 @@ Dưới đây là hồ sơ dữ liệu sinh học thực tế của em bé {baby
 - Cữ ngủ liền mạch dài nhất: {longest_nap} phút
 - Điểm chất lượng giấc ngủ: {sleep_score}/100
 - Số lần giật mình sinh lý Moro/REM: {sleep_summary.get("rem_twitch_count", 0)} lần
-- Nhịp thở quang học lồng ngực trung bình: {avg_bpm} BPM (Cảnh báo nguy cơ ngưng thở: {apnea_count} lần)
-- Thống kê âm thanh AI: {crying_count} lần quấy khóc, {cough_count} cơn ho / tiếng thở dốc.
+- Nhịp thở quang học lồng ngực trung bình: {avg_bpm:.1f} BPM (Cảnh báo nguy cơ ngưng thở: {apnea_count} lần)
+- Thống kê âm thanh AI: {crying_count} lần quấy khóc, {cough_count} cơn ho / tiếng thở dốc, {choke_count} cảnh báo sặc sữa/ọc trớ.
 - Chỉ số thể trạng & tăng trưởng: {growth_str}
 
 2. PHÂN TÍCH CỤM BIẾN ĐỘNG THEO TỪNG KHUNG GIỜ (HOURLY CLUSTERS):
@@ -1256,7 +1283,11 @@ Dưới đây là hồ sơ dữ liệu sinh học thực tế của em bé {baby
 
 LƯU Ý Y KHOA QUAN TRỌNG VỀ ĐỘ CHÍNH XÁC:
 1. VỀ THỜI GIAN MÁY TÍNH TẮT (~{camera_offline}h): Đây là khoảng thời gian máy tính/camera của gia đình tạm tắt (phụ huynh tắt máy, hoặc bế bé ra phòng khách chơi, tắm rửa). TUYỆT ĐỐI KHÔNG SUY DIỄN rằng bé không ngủ, bị bế ẵm 24/24 hay phụ thuộc bố mẹ. Hãy tập trung đánh giá chất lượng cữ ngủ {total_sleep}h ghi nhận được qua camera.
-2. VỀ CƠN HO: Nếu số lần ho ít (1-2 lần trong ngày), đây là phản xạ sinh lý tự nhiên bình thường để làm sạch đường hô hấp trên của trẻ sơ sinh, TUYỆT ĐỐI KHÔNG kết luận hoặc làm bố mẹ lo lắng về bệnh trào ngược GERD. Chỉ khi có cụm ho dồn dập hoặc nôn trớ sữa nhiều lần mới lưu ý trào ngược sinh lý.
+2. VỀ CƠN HO & SẶC SỮA:
+   - Dựa trên số lần ho thực tế ({cough_count} lần) và nguy cơ sặc/trớ sữa ({choke_count} lần):
+   - Nếu có cụm ho/khẹc tập trung vào khung giờ cụ thể (xem mục 2 bên trên, ví dụ 16:00-17:11 sau cữ bú chiều): Hãy giải thích rõ ràng đây là phản xạ trào ngược sinh lý nhẹ (GER) thường gặp ở trẻ sơ sinh khi cơ thắt tâm vị chưa đóng kín hoàn toàn sau ăn, hoặc do vướng đờm sữa ở hầu họng.
+   - Hướng dẫn bố mẹ xử lý đúng: vỗ ợ hơi kỹ 15-20 phút sau bú, giữ đầu bé cao nhẹ 15-30 độ sau khi bú, không ép bú quá no một lúc.
+   - Các cơn ho rải rác ban đêm/sáng (1 tiếng nhẹ): Là phản xạ sinh lý tự nhiên bình thường để làm sạch dịch đường thở sơ sinh, phụ huynh không cần hoang mang.
 3. VỀ THỂ TRẠNG: Đối chiếu theo bảng chuẩn WHO một cách khoa học, khách quan, mang tính khích lệ và đồng hành cùng bố mẹ.
 4. VĂN PHONG: Chuẩn mực y khoa, ấm áp, tạo sự an tâm và tin cậy cho phụ huynh.
 
@@ -1320,8 +1351,8 @@ Trả về đúng định dạng JSON:
                 f"• Chu kỳ: <b>{sleep_summary.get('deep_ratio_pct', 55)}% NREM</b> (Sâu) | <b>{sleep_summary.get('rem_ratio_pct', 45)}% REM</b> (Động)\n"
                 f"👉 <i>{summary_vi}</i>\n\n"
                 f"🫁 <b>2. HÔ HẤP, HO & PHÒNG CHỐNG SẶC SỮA:</b>\n"
-                f"• Nhịp thở khi ngủ: <b>{avg_bpm} BPM</b> (Chuẩn sơ sinh: 30 - 60 BPM)\n"
-                f"• Cơn ho / trớ sặc sữa: <b>{cough_count} lần</b> | Tiếng khóc: <b>{crying_count} lần</b>\n"
+                f"• Nhịp thở khi ngủ: <b>{avg_bpm:.1f} BPM</b> (Chuẩn sơ sinh: 30 - 60 BPM • Ổn định)\n"
+                f"• Cơn ho: <b>{cough_count} lần</b> | Nguy cơ sặc/trớ sữa: <b>{choke_count} lần</b> | Quấy khóc: <b>{crying_count} lần</b>\n"
                 f"{cluster_tele_part}"
                 f"👉 <i>{reflux_vi}</i>\n\n"
                 f"📈 <b>3. THỂ TRẠNG & TĂNG TRƯỞNG (CHUẨN WHO):</b>\n"

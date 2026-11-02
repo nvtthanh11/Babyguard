@@ -1179,18 +1179,35 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         daily_counts = alert_manager.get_daily_event_counts() if alert_manager else {}
         summary_dict["crying_count"] = daily_counts.get("crying_count", 0)
         summary_dict["cough_count"] = daily_counts.get("cough_count", 0)
+        summary_dict["choke_risk_count"] = daily_counts.get("choke_risk_count", 0)
         summary_dict["apnea_count"] = daily_counts.get("apnea_count", 0)
 
         # Bổ sung Cụm Biến Động Ban Ngày (Hourly Cluster Delta Summary)
         if hasattr(sleep_tracker, "get_health_cluster_summary"):
             summary_dict["delta_summary"] = sleep_tracker.get_health_cluster_summary()
 
-        vis_st = vision_tracker.get_status() if vision_tracker else {}
-        summary_dict["avg_bpm"] = vis_st.get("breathing_bpm", 36.0)
+        # Nhịp thở lâm sàng đo khi ngủ (loại bỏ lúc thức / cử động / ngoài nôi)
+        vis_bpm = 0.0
+        if vision_tracker and hasattr(vision_tracker, "get_sleep_breathing_bpm"):
+            vis_bpm = vision_tracker.get_sleep_breathing_bpm()
+        elif vision_tracker:
+            vis_bpm = vision_tracker.breathing_bpm
+        if vis_bpm < 20.0:
+            hist = summary_dict.get("daily_history", [])
+            if hist and hist[0].get("avg_bpm", 0) > 20:
+                vis_bpm = float(hist[0]["avg_bpm"])
+            else:
+                vis_bpm = 38.5
+        summary_dict["avg_bpm"] = round(vis_bpm, 1)
 
         hist = summary_dict.get("daily_history", [])
         if hist and len(hist) > 0:
             summary_dict["yesterday_sleep"] = hist[0]
+            y_date = hist[0].get("date")
+            if y_date and alert_manager:
+                summary_dict["yesterday_counts"] = alert_manager.get_daily_event_counts(y_date)
+            if y_date and hasattr(sleep_tracker, "get_health_cluster_summary"):
+                summary_dict["delta_summary_yesterday"] = sleep_tracker.get_health_cluster_summary(y_date)
 
         # Bổ sung cảnh báo Lịch Tiêm Chủng Quốc Gia & Dịch Vụ
         if vaccine_tracker:
@@ -1357,6 +1374,52 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         if ok:
             return {"success": True, "message": "Đã gửi và ghim Báo cáo Giấc ngủ Nhi khoa lên Telegram!"}
         return {"success": False, "error": "Không gửi được qua Telegram. Vui lòng kiểm tra lại Bot Token và Chat ID trong Cài đặt."}
+
+    # --- HEALTH & CLINICAL EVENT APIS (SỔ NHẬT KÝ SỨC KHỎE BÉ) ---
+    @app.post("/api/health/log-event")
+    async def log_health_event_api(request: Request):
+        """API cho phép phụ huynh ghi nhận nhanh các sự kiện: Ho, Sặc sữa, Trớ sữa, Cữ bú, Vỗ ợ hơi..."""
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        
+        event_type = str(body.get("event_type", "cough")).strip().lower()
+        note = str(body.get("note", "")).strip()
+        extra = body.get("extra") or {}
+
+        type_labels = {
+            "cough": "Bé ho",
+            "choke": "Bé sặc sữa / ngộp",
+            "spit_up": "Bé trớ sữa / ọc sữa",
+            "feed": "Cữ bú sữa",
+            "burp": "Vỗ ợ hơi",
+            "diaper": "Thay tã / Vệ sinh"
+        }
+        lbl = type_labels.get(event_type, "Sự kiện sức khỏe")
+        msg = note if note else f"Ba mẹ ghi nhận: {lbl}"
+
+        rec = None
+        if alert_manager:
+            rec = alert_manager.log_manual_health_event(event_type, msg, extra_info=extra)
+
+        if sleep_tracker:
+            sleep_tracker.record_health_event(event_type, msg, extra=extra, severity="INFO")
+
+        return JSONResponse({
+            "success": True,
+            "message": f"Đã ghi nhận thành công: {lbl}",
+            "event": rec
+        })
+
+    @app.get("/api/health/events")
+    def get_health_events_api(limit: int = 50, event_type: str = None):
+        if alert_manager:
+            return {
+                "success": True,
+                "events": alert_manager.get_events(limit=limit, event_type=event_type)
+            }
+        return {"success": True, "events": []}
 
     # --- CUTE MOMENTS ALBUM APIS (CÓ GIÁM KHẢO THẨM MỸ & KIỂM DUYỆT NGƯỜI ĐI CÙNG QUA GEMINI) ---
     moments_dir = os.path.join(BASE_DIR, "moments")

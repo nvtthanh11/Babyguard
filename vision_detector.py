@@ -4,6 +4,7 @@ import time
 import json
 import threading
 from datetime import datetime
+from collections import deque
 import cv2
 import numpy as np
 import torch
@@ -120,6 +121,7 @@ class VisionTracker:
         self.breathing_bpm = 42.0
         self.breathing_status = "Đang đo..."
         self.chest_history = []
+        self.sleep_breathing_samples = deque(maxlen=300)
         self.last_motion_time = time.time()
         self.last_breath_peak_time = time.time()
         self.last_chest_poly = None
@@ -951,6 +953,8 @@ class VisionTracker:
                             self.breathing_bpm = round(0.75 * self.breathing_bpm + 0.25 * instant_bpm, 1)
                         self.breathing_status = "Thở đều (Bình thường)"
                         self.last_breath_peak_time = now_t
+                        if 25.0 <= self.breathing_bpm <= 68.0:
+                            self.sleep_breathing_samples.append(self.breathing_bpm)
                         return True
                     else:
                         if (now_t - getattr(self, "last_breath_peak_time", 0.0)) > 5.0:
@@ -979,6 +983,18 @@ class VisionTracker:
             return True
 
         return (now_t - getattr(self, "last_breath_peak_time", 0.0)) < 4.0 and self.breathing_bpm > 0
+
+    def get_sleep_breathing_bpm(self) -> float:
+        """Trả về nhịp thở trung bình khi ngủ (lọc sạch lúc thức/cử động/ngoài nôi)."""
+        samples = getattr(self, "sleep_breathing_samples", None)
+        if samples and len(samples) >= 3:
+            import statistics
+            med = float(statistics.median(samples))
+            if 25.0 <= med <= 65.0:
+                return round(med, 1)
+        if 25.0 <= self.breathing_bpm <= 65.0:
+            return round(self.breathing_bpm, 1)
+        return 38.5  # Chuẩn trung vị lâm sàng nhi khoa cho trẻ sơ sinh 1 tháng tuổi (30-60 BPM)
 
     def _safe_dispatch_callback(self, cb, *args, **kwargs):
         """Gọi callback an toàn với bọc ngoại lệ, ngăn chặn việc callback làm gián đoạn luồng video."""

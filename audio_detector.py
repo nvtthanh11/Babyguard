@@ -23,19 +23,22 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class AudioCryDetector:
     def __init__(self, model_path: str, device_index: int = None, sample_rate: int = 16000, 
-                 cry_threshold: float = 0.30, cough_threshold: float = 0.25,
-                 on_cry_callback=None, on_cough_callback=None, audio_callback=None,
-                 cry_alert_enabled: bool = True, cough_alert_enabled: bool = True):
+                 cry_threshold: float = 0.30, cough_threshold: float = 0.25, choke_threshold: float = 0.20,
+                 on_cry_callback=None, on_cough_callback=None, on_choke_callback=None, audio_callback=None,
+                 cry_alert_enabled: bool = True, cough_alert_enabled: bool = True, choke_alert_enabled: bool = True):
         self.model_path = model_path
         self.sample_rate = sample_rate
         self.cry_threshold = cry_threshold
         self.cough_threshold = cough_threshold
+        self.choke_threshold = choke_threshold
         self.on_cry_callback = on_cry_callback
         self.on_cough_callback = on_cough_callback
+        self.on_choke_callback = on_choke_callback
         self.audio_callback = audio_callback
         self.device_index = device_index
         self.cry_alert_enabled = cry_alert_enabled
         self.cough_alert_enabled = cough_alert_enabled
+        self.choke_alert_enabled = choke_alert_enabled
         
         # Audio buffer (holds 15600 samples = ~0.975s for YAMNet)
         self.buffer_size = 15600
@@ -51,6 +54,7 @@ class AudioCryDetector:
         self.raw_cry_probability = 0.0
         self.cry_probability = 0.0
         self.cough_probability = 0.0
+        self.choke_probability = 0.0
         self.cry_consecutive_frames = 0
         self.top_sound_label = "Yên tĩnh"
         self.is_running = False
@@ -60,8 +64,10 @@ class AudioCryDetector:
         # Target classes in YAMNet (0-indexed)
         # 11: Screaming, 19: Crying, sobbing, 20: Baby cry, infant cry, 21: Whimper, 22: Wail, moan
         self.target_classes = [11, 19, 20, 21, 22]
-        # 39: Gasp, 42: Cough, 43: Throat clearing
-        self.cough_classes = [39, 42, 43]
+        # Nhóm Ho & Viêm Họng: 42: Cough, 43: Throat clearing, 37: Wheeze
+        self.cough_classes = [42, 43, 37]
+        # Nhóm Sặc Sữa & Nguy Cơ Ngạt: 39: Gasp, 41: Snort, 34: Grunt
+        self.choke_classes = [39, 41, 34]
         # Speech & vocal classes (tiếng người lớn nói chuyện, dỗ bé)
         self.speech_classes = [0, 1, 2, 3, 5, 65]
         # Laughter / Giggle / Baby laughter (13, 14, 15, 16)
@@ -156,12 +162,21 @@ class AudioCryDetector:
 
     @staticmethod
     def _calibrate_cough(raw_score: float) -> float:
-        if raw_score <= 0.08:
+        if raw_score <= 0.035:
             return 0.0
-        elif raw_score <= 0.25:
-            return (raw_score - 0.08) / 0.17 * 0.70
+        elif raw_score <= 0.18:
+            return (raw_score - 0.035) / 0.145 * 0.70
         else:
-            return min(1.0, 0.70 + (raw_score - 0.25) * 1.0)
+            return min(1.0, 0.70 + (raw_score - 0.18) * 1.0)
+
+    @staticmethod
+    def _calibrate_choke(raw_score: float) -> float:
+        if raw_score <= 0.035:
+            return 0.0
+        elif raw_score <= 0.18:
+            return (raw_score - 0.035) / 0.145 * 0.70
+        else:
+            return min(1.0, 0.70 + (raw_score - 0.18) * 1.0)
 
     def _inference_loop(self):
         """Background thread running YAMNet inference 2 times per second with DSP Bandpass & Envelope Follower."""
@@ -181,7 +196,7 @@ class AudioCryDetector:
             self.current_volume = vol
 
             # Chỉ chạy inference khi năng lượng âm thanh vượt ngưỡng nền yên tĩnh và model đã sẵn sàng
-            if vol > 0.0045 and self.interpreter is not None:
+            if vol > 0.0035 and self.interpreter is not None:
                 try:
                     self.interpreter.set_tensor(self.input_details[0]["index"], waveform)
                     self.interpreter.invoke()
@@ -191,6 +206,7 @@ class AudioCryDetector:
                     raw_cry = float(max(scores[c] for c in self.target_classes))
                     infant_cry = float(scores[20])  # YAMNet class 20: Baby cry, infant cry
                     raw_cough = float(max(scores[c] for c in self.cough_classes))
+                    raw_choke = float(max(scores[c] for c in self.choke_classes))
                     raw_speech = float(max(scores[c] for c in self.speech_classes))
                     raw_laugh = float(max(scores[c] for c in self.laughter_classes))
                     raw_music = float(max(scores[c] for c in self.music_classes))
@@ -198,8 +214,6 @@ class AudioCryDetector:
                     self.raw_cry_probability = raw_cry
 
                     # BỘ LỌC CHỐNG BÁO ĐỘNG GIẢ TIẾNG NGƯỜI LỚN NÓI CHUYỆN:
-                    # Khi người lớn trò chuyện, YAMNet thường rò rỉ nhẹ sang class 21 (Whimper) hoặc 22 (Wail) ~ 0.12 - 0.16.
-                    # Nếu tiếng nói rõ ràng (raw_speech >= 0.20) và lớn hơn hoặc xấp xỉ tiếng khóc, đồng thời không có infant_cry đặc hiệu:
                     is_adult_speech = (raw_speech >= 0.20) and (raw_speech >= raw_cry * 0.90) and (infant_cry < 0.12)
 
                     if is_adult_speech:
@@ -214,6 +228,7 @@ class AudioCryDetector:
                             self.cry_consecutive_frames = max(0, self.cry_consecutive_frames - 1)
 
                     cal_cough = self._calibrate_cough(raw_cough)
+                    cal_choke = self._calibrate_choke(raw_choke)
 
                     # --- PEAK-HOLD ENVELOPE FOLLOWER ---
                     if cal_cry > self.cry_probability:
@@ -230,13 +245,32 @@ class AudioCryDetector:
                         if self.cough_probability < 0.05:
                             self.cough_probability = 0.0
 
+                    if cal_choke > self.choke_probability:
+                        self.choke_probability = 0.85 * cal_choke + 0.15 * self.choke_probability
+                    else:
+                        self.choke_probability = max(0.0, self.choke_probability - 0.05)
+                        if self.choke_probability < 0.05:
+                            self.choke_probability = 0.0
+
                     # --- GÁN NHÃN ÂM THANH PHÒNG NGỦ CHÍNH XÁC ---
                     if is_adult_speech:
                         top_label = "Tiếng trò chuyện"
                     elif self.cry_probability >= self.cry_threshold and self.cry_consecutive_frames >= 2:
                         top_label = "Bé đang khóc" if (raw_cry >= 0.25 or infant_cry >= 0.15) else "Bé khóc thút thít"
-                    elif self.cough_probability >= 0.30 or raw_cough >= 0.20:
-                        top_label = "Tiếng thở gấp" if scores[39] >= 0.20 else "Tiếng ho / sặc"
+                    elif self.choke_probability >= self.choke_threshold or raw_choke >= 0.16:
+                        if scores[39] >= 0.10:
+                            top_label = "Tiếng thở hắt / sặc sữa"
+                        elif scores[41] >= 0.12:
+                            top_label = "Tiếng khụt khịt / sữa lên mũi"
+                        else:
+                            top_label = "Tiếng rặn ọ ẹ / khó chịu"
+                    elif self.cough_probability >= self.cough_threshold or raw_cough >= 0.16:
+                        if scores[43] >= 0.12:
+                            top_label = "Tiếng khẹc họng vướng sữa"
+                        elif scores[37] >= 0.15:
+                            top_label = "Tiếng thở khò khè / rít"
+                        else:
+                            top_label = "Tiếng ho của bé"
                     elif raw_laugh >= 0.25:
                         top_label = "Tiếng bé cười"
                     elif raw_speech >= 0.22:
@@ -257,12 +291,16 @@ class AudioCryDetector:
                     if self.cough_alert_enabled and self.cough_probability >= self.cough_threshold and self.on_cough_callback:
                         self.on_cough_callback(self.cough_probability, vol, top_label)
 
+                    if self.choke_alert_enabled and self.choke_probability >= self.choke_threshold and self.on_choke_callback:
+                        self.on_choke_callback(self.choke_probability, vol, top_label)
+
                 except Exception as e:
                     print(f"[AudioDetector] Inference error: {e}")
             else:
                 self.cry_consecutive_frames = 0
                 self.cry_probability = max(0.0, self.cry_probability - 0.05)
                 self.cough_probability = max(0.0, self.cough_probability - 0.05)
+                self.choke_probability = max(0.0, self.choke_probability - 0.05)
                 self.top_sound_label = "Yên tĩnh"
 
             # Sleep remaining time to maintain ~2Hz frequency
@@ -336,5 +374,7 @@ class AudioCryDetector:
             "is_crying": bool(self.cry_probability >= self.cry_threshold and getattr(self, "cry_consecutive_frames", 0) >= 2),
             "cough_probability": round(self.cough_probability * 100, 1),
             "is_coughing": self.cough_probability >= self.cough_threshold,
+            "choke_probability": round(getattr(self, "choke_probability", 0.0) * 100, 1),
+            "is_choking": getattr(self, "choke_probability", 0.0) >= getattr(self, "choke_threshold", 0.20),
             "top_sound": self.top_sound_label
         }

@@ -494,6 +494,39 @@
                         </div>
                     </div>
 
+                    <!-- Quick Parent Health Log Bar (Ghi nhận nhanh sự kiện lâm sàng) -->
+                    <div class="p-3 sm:p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 shadow-lg">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+                                <span>Ghi Nhận Y Tế Nhanh:</span>
+                            </span>
+                            <span class="text-[11px] text-slate-400 hidden lg:inline">Bấm 1 chạm để lưu vào sổ khám bệnh & báo cáo Gemini</span>
+                        </div>
+                        <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
+                            <button onclick="quickLogHealthEvent('cough')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold border border-slate-700/70 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận cơn ho của bé">
+                                <span>💨</span>
+                                <span>Bé Ho</span>
+                            </button>
+                            <button onclick="quickLogHealthEvent('choke')" class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 text-xs font-semibold border border-amber-500/30 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận bé bị sặc sữa / ngộp">
+                                <span>🥛</span>
+                                <span>Sặc Sữa</span>
+                            </button>
+                            <button onclick="quickLogHealthEvent('spit_up')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 active:scale-95 text-rose-300 text-xs font-semibold border border-rose-500/30 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận bé trớ / ọc sữa sau bú">
+                                <span>🍼</span>
+                                <span>Trớ Sữa</span>
+                            </button>
+                            <button onclick="quickLogHealthEvent('feed')" class="px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 active:scale-95 text-cyan-300 text-xs font-semibold border border-cyan-500/30 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận cữ bú sữa">
+                                <span>🍼</span>
+                                <span>Cữ Bú</span>
+                            </button>
+                            <button onclick="quickLogHealthEvent('burp')" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận vỗ ợ hơi cho bé">
+                                <span>👶</span>
+                                <span>Vỗ Ợ Hơi</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Quick Vitals Under Video: 2 Cột Cân Đối (Chuyển Động Hô Hấp & Âm Thanh Phòng) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <!-- Card: Chuyển Động Hô Hấp Lồng Ngực (Contactless Optical Chest Motion) -->
@@ -4315,6 +4348,37 @@
                 toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
                 toast.classList.remove('opacity-100', 'translate-y-0');
             }, 3000);
+        }
+
+        // Quick Parent Health Event Logger
+        async function quickLogHealthEvent(eventType, note = '') {
+            const icons = {
+                'cough': '💨',
+                'choke': '🥛',
+                'spit_up': '🍼',
+                'feed': '🍼',
+                'burp': '👶',
+                'diaper': '🧷'
+            };
+            const icon = icons[eventType] || '📝';
+            try {
+                const res = await fetch('/api/health/log-event', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({event_type: eventType, note: note})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message || 'Đã ghi nhận sự kiện y tế thành công!', icon);
+                    if (typeof fetchSleepData === 'function' && activeTab === 'sleep') {
+                        fetchSleepData();
+                    }
+                } else {
+                    showToast(data.error || 'Không thể ghi nhận', '⚠️');
+                }
+            } catch (e) {
+                showToast('Lỗi kết nối khi ghi nhận sự kiện', '⚠️');
+            }
         }
 
         // =========================================================================

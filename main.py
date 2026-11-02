@@ -113,6 +113,7 @@ def main():
         frame = vision_tracker.get_latest_frame(annotated=True)
         ai_note = gemini_verifier.last_consultation.get("summary_vi", "Cần kiểm tra bé ngay!")
         msg = f"CẢNH BÁO KHẨN CẤP: Mặt bé bị che khuất! ({ai_note})"
+        sleep_tracker.record_health_event("covered_face", msg, severity="WARNING")
         if alert_manager.trigger_event(
             event_type="covered_face",
             message=msg,
@@ -124,6 +125,7 @@ def main():
     def on_danger_zone():
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = "CẢNH BÁO NGUY HIỂM: Bé đang lăn/di chuyển sát mép giường (nguy cơ ngã)!"
+        sleep_tracker.record_health_event("danger_zone", msg, severity="WARNING")
         if alert_manager.trigger_event(
             event_type="danger_zone",
             message=msg,
@@ -137,6 +139,7 @@ def main():
             return
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = "CẢNH BÁO KHẨN CẤP: Không phát hiện nhịp thở lồng ngực bé quá 20 giây!"
+        sleep_tracker.record_health_event("apnea", msg, severity="URGENT")
         if alert_manager.trigger_event(
             event_type="apnea",
             message=msg,
@@ -177,7 +180,7 @@ def main():
         moments_dir=os.path.join(BASE_DIR, "moments")
     )
 
-    # 3. Audio Cry & Cough Detector
+    # 3. Audio Cry, Cough & Choke Detector
     def on_cry(prob, volume, top_label):
         cur_cfg = load_config()
         # Tự động phát mềm Tiếng Ồn Trắng / Nhạc Không Lời khi bé khóc (kể cả khi tắt báo động còi)
@@ -196,6 +199,7 @@ def main():
 
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = f"Phát hiện tiếng khóc / la hét em bé ({top_label})"
+        sleep_tracker.record_health_event("cry", msg, {"confidence": f"{prob*100:.1f}%", "duration_minutes": 1.0})
         if alert_manager.trigger_event(
             event_type="cry",
             message=msg,
@@ -212,7 +216,8 @@ def main():
         if not config.get("cough_alert_enabled", True):
             return
         frame = vision_tracker.get_latest_frame(annotated=True)
-        msg = f"CẢNH BÁO: Phát hiện bé ho / sặc sữa ({top_label})!"
+        msg = f"CẢNH BÁO: Phát hiện bé ho ({top_label})!"
+        sleep_tracker.record_health_event("cough", msg, {"confidence": f"{prob*100:.1f}%", "volume": f"{volume*100:.1f}%"}, severity="INFO")
         if alert_manager.trigger_event(
             event_type="cough",
             message=msg,
@@ -220,21 +225,42 @@ def main():
             extra_info={
                 "Độ tin cậy AI": f"{prob*100:.1f}%",
                 "Âm lượng": f"{volume*100:.1f}%",
-                "Hành động": "Kiểm tra xem bé có bị trớ sặc sữa không"
+                "Hành động": "Quan sát xem bé có bị khẹc họng hoặc trào ngược sữa không"
             }
         ):
             video_recorder.trigger_recording("cough", msg, on_complete_callback=handle_video_completion)
+
+    def on_choke(prob, volume, top_label):
+        if not config.get("choke_alert_enabled", True):
+            return
+        frame = vision_tracker.get_latest_frame(annotated=True)
+        msg = f"CẢNH BÁO KHẨN: Phát hiện dấu hiệu bé sặc sữa / ọc trớ ({top_label})!"
+        sleep_tracker.record_health_event("choke", msg, {"confidence": f"{prob*100:.1f}%", "volume": f"{volume*100:.1f}%"}, severity="WARNING")
+        if alert_manager.trigger_event(
+            event_type="choke",
+            message=msg,
+            frame=frame,
+            extra_info={
+                "Độ tin cậy AI": f"{prob*100:.1f}%",
+                "Âm lượng": f"{volume*100:.1f}%",
+                "Hành động": "Kiểm tra ngay: Nghiêng đầu bé sang một bên, vỗ lưng nhẹ hoặc dùng dụng cụ hút sạch sữa trớ"
+            }
+        ):
+            video_recorder.trigger_recording("choke", msg, on_complete_callback=handle_video_completion)
 
     audio_detector = AudioCryDetector(
         model_path=YAMNET_MODEL_PATH,
         device_index=config.get("audio_device_index", None),
         cry_threshold=config.get("cry_threshold", 0.30),
         cough_threshold=config.get("cough_threshold", 0.25),
+        choke_threshold=config.get("choke_threshold", 0.20),
         on_cry_callback=on_cry,
         on_cough_callback=on_cough,
+        on_choke_callback=on_choke,
         audio_callback=video_recorder.add_audio_samples,
         cry_alert_enabled=config.get("cry_alert_enabled", True),
-        cough_alert_enabled=config.get("cough_alert_enabled", True)
+        cough_alert_enabled=config.get("cough_alert_enabled", True),
+        choke_alert_enabled=config.get("choke_alert_enabled", True)
     )
     music_player.attach_audio_detector(audio_detector)
 

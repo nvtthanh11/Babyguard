@@ -18,12 +18,100 @@ class AlertManager:
         os.makedirs(self.snapshots_dir, exist_ok=True)
         
         self.last_alert_time = {}
-        self.events = []
+        self.events_path = os.path.join(BASE_DIR, "health_events.json")
         self.lock = threading.Lock()
+        self.events = self._load_events()
         self._bot_update_offset = 0
         self.recent_bot_contacts = []
         self.first_aid_data = self._load_first_aid_protocols()
         threading.Thread(target=self._bot_auto_reply_loop, daemon=True).start()
+
+    def _load_events(self) -> list:
+        events = []
+        if os.path.exists(self.events_path):
+            try:
+                with open(self.events_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        events = data
+            except Exception as e:
+                print(f"[AlertManager] Lỗi đọc health_events.json: {e}")
+
+        # Tự động backfill từ recordings/*.mp4 nếu danh sách trống hoặc chưa đủ dữ liệu
+        if len(events) < 20:
+            rec_events = self._backfill_events_from_recordings()
+            if rec_events:
+                existing_epochs = {round(e.get("epoch", 0)) for e in events}
+                for re in rec_events:
+                    if round(re.get("epoch", 0)) not in existing_epochs:
+                        events.append(re)
+                events.sort(key=lambda x: x.get("epoch", 0), reverse=True)
+                self._save_events_list(events)
+
+        return events[:1500]
+
+    def _save_events_list(self, ev_list: list):
+        try:
+            with open(self.events_path, "w", encoding="utf-8") as f:
+                json.dump(ev_list[:1500], f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[AlertManager] Lỗi lưu health_events.json: {e}")
+
+    def _save_events(self):
+        self._save_events_list(self.events)
+
+    def _backfill_events_from_recordings(self) -> list:
+        rec_dir = os.path.join(BASE_DIR, "recordings")
+        if not os.path.exists(rec_dir):
+            return []
+        import glob
+        mp4s = glob.glob(os.path.join(rec_dir, "*.mp4"))
+        now = time.time()
+        cutoff_7d = now - 7 * 86400
+
+        emojis = {
+            "cry": "CẢNH BÁO BÉ KHÓC",
+            "cough": "CẢNH BÁO: BÉ HO",
+            "choke": "CẢNH BÁO KHẨN: NGUY CƠ SẶC SỮA / ỌC TRỚ",
+            "spit_up": "GHI NHẬN: BÉ TRỚ SỮA / NÔN TRỚ",
+            "apnea": "CẢNH BÁO KHẨN CẤP: NGUY CƠ NGƯNG THỞ",
+            "motion": "BÉ CỬ ĐỘNG / THỨC GIẤC",
+            "prone": "NGUY HIỂM: BÉ NẰM SẤP / ÚP MẶT",
+            "covered_face": "NGUY CƠ NGẠT: MẶT BÉ BỊ CHE KHUẤT",
+            "covered": "NGUY CƠ NGẠT: MẶT BÉ BỊ CHE KHUẤT",
+            "danger": "CẢNH BÁO: BÉ LĂN SÁT MÉP GIƯỜNG"
+        }
+
+        rec_events = []
+        for f in mp4s:
+            base = os.path.basename(f)
+            parts = base.split("_")
+            if len(parts) >= 3:
+                ts_str = f"{parts[0]}_{parts[1]}"
+                try:
+                    dt = datetime.strptime(ts_str, "%Y%m%d_%H%M%S")
+                    ep = dt.timestamp()
+                    if ep < cutoff_7d:
+                        continue
+                    raw_t = parts[2].split(".")[0].lower()
+                    ev_type = "covered_face" if raw_t == "covered" else raw_t
+                    title = emojis.get(ev_type, "THÔNG BÁO")
+                    snap_name = f"{parts[0]}_{parts[1]}_{raw_t}.jpg"
+                    rec_events.append({
+                        "id": len(rec_events) + 1,
+                        "type": ev_type,
+                        "title": title,
+                        "message": f"Ghi nhận video sự kiện {title.lower()}",
+                        "timestamp": dt.strftime("%H:%M:%S - %d/%m/%Y"),
+                        "epoch": ep,
+                        "snapshot_url": f"/api/snapshots/{snap_name}",
+                        "video_url": f"/api/recordings/{base}",
+                        "extra": {"source": "video_recording"}
+                    })
+                except Exception:
+                    pass
+        rec_events.sort(key=lambda x: x["epoch"], reverse=True)
+        return rec_events
 
     def _load_first_aid_protocols(self) -> dict:
         """Tải cơ sở dữ liệu phác đồ sơ cứu chuẩn quốc tế (AHA / AAP / WHO) phục vụ RAG cục bộ."""
@@ -444,12 +532,10 @@ class AlertManager:
 
     def trigger_event(self, event_type: str, message: str, frame=None, extra_info: dict = None):
         """
-        event_type: 'cry', 'motion', 'prone'
+        Kích hoạt sự kiện cảnh báo y tế & an toàn:
+        - LUÔN LUÔN ghi nhận vào Sổ Nhật Ký Y Tế (health_events.json) để đảm bảo số liệu chu kỳ 24h chuẩn 100%.
+        - Cooldown chỉ áp dụng cho việc gửi tin nhắn Telegram & phát âm thanh báo động loa ngoài để không làm phiền ba mẹ.
         """
-        if not self._can_alert(event_type):
-            return False
-
-        self.last_alert_time[event_type] = time.time()
         now = datetime.now()
         ts_str = now.strftime("%Y%m%d_%H%M%S")
         display_time = now.strftime("%H:%M:%S - %d/%m/%Y")
@@ -466,7 +552,9 @@ class AlertManager:
         # Build notification message
         emojis = {
             "cry": "🚨 <b>[CẢNH BÁO BÉ KHÓC]</b>",
-            "cough": "🥛 <b>[CẢNH BÁO: BÉ HO / SẶC SỮA]</b>",
+            "cough": "💨 <b>[CẢNH BÁO: BÉ HO]</b>",
+            "choke": "🥛 <b>[CẢNH BÁO KHẨN: NGUY CƠ SẶC SỮA / ỌC TRỚ]</b>",
+            "spit_up": "🍼 <b>[GHI NHẬN: BÉ TRỚ SỮA / NÔN TRỚ]</b>",
             "apnea": "🆘 <b>[CẢNH BÁO KHẨN CẤP: NGUY CƠ NGƯNG THỞ]</b>",
             "motion": "⚠️ <b>[BÉ CỬ ĐỘNG / THỨC GIẤC]</b>",
             "prone": "⛔ <b>[NGUY HIỂM: BÉ NẰM SẤP / ÚP MẶT]</b>",
@@ -490,7 +578,7 @@ class AlertManager:
         # Gắn link xem trực tiếp rút gọn
         caption += self._get_compact_view_link()
 
-        # Record event in log
+        # 1. LUÔN GHI NHẬN VÀO NHẬT KÝ Y TẾ LÂU DÀI
         event_record = {
             "id": len(self.events) + 1,
             "type": event_type,
@@ -504,8 +592,16 @@ class AlertManager:
         
         with self.lock:
             self.events.insert(0, event_record)
-            if len(self.events) > 100:
-                self.events.pop()
+            if len(self.events) > 1500:
+                self.events = self.events[:1500]
+            self._save_events()
+
+        # 2. KIỂM TRA COOLDOWN: Chỉ áp dụng khi gửi Telegram hoặc kêu chuông trên Mac
+        if not self._can_alert(event_type):
+            print(f"[AlertManager] Event logged: [{event_type.upper()}] (Telegram/Sound cooldown active) {message}")
+            return True
+
+        self.last_alert_time[event_type] = time.time()
 
         # Alert outputs: Chỉ kêu chuông cảnh báo âm thanh trên Mac khi có nguy hiểm mạnh
         self._play_mac_sound(event_type)
@@ -514,36 +610,96 @@ class AlertManager:
             if self._should_notify_telegram(event_type):
                 self._send_telegram(snapshot_path, caption)
 
-        print(f"[AlertManager] Event triggered: [{event_type.upper()}] {message}")
+        print(f"[AlertManager] Event triggered & alerted: [{event_type.upper()}] {message}")
         return True
 
-    def get_daily_event_counts(self) -> dict:
-        """Đếm chính xác số sự kiện ho/sặc sữa, khóc, ngạt... trong vòng 24 giờ qua."""
+    def log_manual_health_event(self, event_type: str, message: str, extra_info: dict = None) -> dict:
+        """Ghi nhận sự kiện sức khỏe thủ công do ba mẹ bấm trên Web UI hoặc điện thoại."""
+        now = datetime.now()
+        display_time = now.strftime("%H:%M:%S - %d/%m/%Y")
+        emojis = {
+            "feed": "🍼 [CỬ BÚ SỮA]",
+            "spit_up": "🥛 [BÉ TRỚ SỮA / ỌC SỮA]",
+            "choke": "⚠️ [BÉ SẶC SỮA]",
+            "cough": "💨 [BÉ HO]",
+            "burp": "👶 [VỖ Ợ HƠI]",
+            "diaper": "🧷 [THAY TÃ / ĐI VỆ SINH]"
+        }
+        title = emojis.get(event_type, "📝 [GHI CHÚ SỨC KHỎE]")
+        event_record = {
+            "id": len(self.events) + 1,
+            "type": event_type,
+            "title": title,
+            "message": message,
+            "timestamp": display_time,
+            "epoch": time.time(),
+            "snapshot_url": None,
+            "extra": extra_info or {"source": "manual_parent_log"}
+        }
+        with self.lock:
+            self.events.insert(0, event_record)
+            if len(self.events) > 1500:
+                self.events = self.events[:1500]
+            self._save_events()
+        print(f"[AlertManager] Manual health event logged: [{event_type}] {message}")
+        return event_record
+
+    @staticmethod
+    def get_event_cycle_date(epoch: float) -> str:
+        """Trả về chu kỳ 24h neo 07:00 sáng (Chuẩn AAP/AASM) của một timestamp epoch."""
+        dt = datetime.fromtimestamp(epoch)
+        if dt.hour < 7:
+            from datetime import timedelta
+            return (dt.date() - timedelta(days=1)).isoformat()
+        return dt.date().isoformat()
+
+    def get_daily_event_counts(self, cycle_date: str = None) -> dict:
+        """
+        Đếm chính xác số sự kiện ho/sặc sữa, khóc, ngạt...
+        - Nếu có cycle_date (YYYY-MM-DD): đếm chính xác theo chu kỳ 24h neo 07:00 sáng.
+        - Nếu không có: đếm trong 24 giờ qua.
+        """
         now = time.time()
-        day_sec = 86400
         counts = {
             "crying_count": 0,
             "cough_count": 0,
+            "choke_risk_count": 0,
+            "spit_up_count": 0,
             "apnea_count": 0,
             "prone_count": 0,
             "covered_face_count": 0
         }
         with self.lock:
             for ev in self.events:
-                if (now - ev.get("epoch", now)) <= day_sec:
-                    t = ev.get("type", "")
-                    if t == "cry":
-                        counts["crying_count"] += 1
-                    elif t == "cough":
-                        counts["cough_count"] += 1
-                    elif t == "apnea":
-                        counts["apnea_count"] += 1
-                    elif t == "prone":
-                        counts["prone_count"] += 1
-                    elif t == "covered_face":
-                        counts["covered_face_count"] += 1
+                ep = ev.get("epoch", now)
+                if cycle_date:
+                    if self.get_event_cycle_date(ep) != cycle_date:
+                        continue
+                else:
+                    if (now - ep) > 86400:
+                        continue
+
+                t = ev.get("type", "").lower()
+                if t == "cry":
+                    counts["crying_count"] += 1
+                elif t == "cough":
+                    counts["cough_count"] += 1
+                elif t == "choke":
+                    counts["choke_risk_count"] += 1
+                elif t == "spit_up":
+                    counts["spit_up_count"] += 1
+                    counts["choke_risk_count"] += 1
+                elif t == "apnea":
+                    counts["apnea_count"] += 1
+                elif t == "prone":
+                    counts["prone_count"] += 1
+                elif t in ("covered_face", "covered"):
+                    counts["covered_face_count"] += 1
         return counts
 
-    def get_events(self, limit: int = 30):
+    def get_events(self, limit: int = 50, event_type: str = None):
         with self.lock:
+            if event_type:
+                filtered = [e for e in self.events if e.get("type") == event_type]
+                return filtered[:limit]
             return self.events[:limit]

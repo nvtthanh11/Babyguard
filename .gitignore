@@ -19,6 +19,7 @@ moments/*
 !moments/.gitkeep
 sleep_data.json
 daily_delta_log.json
+health_events.json
 *.zip
 *.dmg
 *.pkg
