@@ -204,6 +204,7 @@
       <a href="#pricing" onclick="toggleMobileNav()" class="block py-2 px-3 rounded-lg hover:bg-slate-50 text-emerald-700 font-bold">🎁 Bảng Giá 49k</a>
       <a href="#testimonials" onclick="toggleMobileNav()" class="block py-2 px-3 rounded-lg hover:bg-slate-50">⭐ Đánh Giá Ba Mẹ</a>
       <a href="#faq" onclick="toggleMobileNav()" class="block py-2 px-3 rounded-lg hover:bg-slate-50">❓ Hỏi Đáp</a>
+      <a href="/policy" class="block py-2 px-3 rounded-lg hover:bg-slate-50 text-slate-700 font-medium">🛡️ Điều Khoản & Chính Sách</a>
     </div>
   </nav>
 
@@ -1816,6 +1817,27 @@
     </div>
   </section>
 
+  <!-- MEDICAL & SAFETY DISCLAIMER BANNER (CHUẨN QUỐC TẾ AAP, FDA & NGHỊ ĐỊNH 98/2021) -->
+  <section class="bg-slate-900/90 border-t border-b border-slate-800 py-8 text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+        <div class="space-y-1.5 max-w-4xl">
+          <div class="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+            <span>🩺</span>
+            <span>Tuyên Bố Miễn Trừ Trách Nhiệm Y Tế (Medical Disclaimer)</span>
+          </div>
+          <p class="text-slate-300 text-xs leading-relaxed">
+            Hệ thống <b>BabyGuard AI</b> là phần mềm hỗ trợ giám sát an toàn và theo dõi thói quen sinh hoạt của trẻ (Wellness & Safety Monitor), <b>không phải thiết bị y tế chẩn đoán chuyên dụng</b> và không thay thế cho sự giám sát, chăm sóc trực tiếp của cha mẹ hay người giám hộ. Các chỉ số nhịp thở quang học, phân tích tiếng khóc, cơn ho và chu kỳ giấc ngủ mang tính chất hỗ trợ tham khảo thói quen theo các khuyến cáo y khoa quốc tế (AAP, AASM, WHO).
+          </p>
+        </div>
+        <a href="/policy#medical-disclaimer" class="whitespace-nowrap px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5 self-start md:self-auto">
+          <span>Xem Chính Sách Đầy Đủ</span>
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- FOOTER CHUYÊN NGHIỆP -->
   <footer class="bg-slate-950 text-slate-300 py-14 border-t border-slate-900 text-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
@@ -1851,13 +1873,14 @@
         </div>
 
         <div class="md:col-span-4 space-y-3">
-          <h5 class="text-white font-bold text-sm">Chính Sách & Hỗ Trợ</h5>
+          <h5 class="text-white font-bold text-sm">Chính Sách & Pháp Lý</h5>
           <ul class="space-y-2 text-slate-300">
-            <li><a href="#pricing" class="hover:text-white transition">Chính sách 50 suất miễn phí</a></li>
-            <li><a href="#pricing" class="hover:text-white transition">Gói bản quyền vĩnh viễn 49.000 VNĐ</a></li>
+            <li><a href="/policy#medical-disclaimer" class="text-amber-400 hover:text-amber-300 font-semibold transition flex items-center gap-1.5"><span>🩺</span> <span>Khuyến Cáo Y Tế & Miễn Trừ Trách Nhiệm</span></a></li>
+            <li><a href="/policy#privacy-policy" class="text-emerald-400 hover:text-emerald-300 font-semibold transition flex items-center gap-1.5"><span>🛡️</span> <span>Chính Sách Bảo Mật Trẻ Em (COPPA)</span></a></li>
+            <li><a href="/policy#terms-of-service" class="hover:text-white transition flex items-center gap-1.5"><span>📜</span> <span>Điều Khoản Dịch Vụ & Bản Quyền</span></a></li>
+            <li><a href="/policy#refund-support" class="hover:text-white transition flex items-center gap-1.5"><span>💳</span> <span>Chính Sách Dùng Thử 14 Ngày & Hoàn Tiền</span></a></li>
             <li><a href="https://github.com/nvtthanh11/Babyguard" target="_blank" class="hover:text-white transition">Mã nguồn dự án trên GitHub</a></li>
-            <li><a href="https://t.me/nvtthanh11" target="_blank" class="hover:text-white transition">Kênh hỗ trợ kỹ thuật Telegram</a></li>
-            <li class="text-slate-400 pt-1">Cam kết 100% bảo mật dữ liệu riêng tư tại chỗ</li>
+            <li><a href="https://t.me/nvtthanh11" target="_blank" class="hover:text-white transition">Kênh hỗ trợ kỹ thuật Telegram 24/7</a></li>
           </ul>
         </div>
 
@@ -1867,11 +1890,11 @@
         <div>
           Bản quyền © 2026 BabyGuard AI. Phát triển với sự tận tâm vì trẻ em Việt Nam.
         </div>
-        <div class="flex gap-4">
-          <a href="#author-story" class="hover:text-slate-200 transition">Tâm Sự Người Ba</a>
-          <a href="#daily-stories" class="hover:text-slate-200 transition">Câu Chuyện</a>
-          <a href="#features" class="hover:text-slate-200 transition">Tính Năng</a>
-          <a href="#download" class="hover:text-slate-200 transition">Tải Bản Cài Đặt</a>
+        <div class="flex flex-wrap gap-4">
+          <a href="/policy#medical-disclaimer" class="text-amber-400 hover:text-amber-300 transition">Miễn Trừ Y Tế</a>
+          <a href="/policy#privacy-policy" class="text-emerald-400 hover:text-emerald-300 transition">Bảo Mật Quyền Riêng Tư</a>
+          <a href="/policy#terms-of-service" class="hover:text-slate-200 transition">Điều Khoản</a>
+          <a href="/policy#refund-support" class="hover:text-slate-200 transition">Hoàn Tiền</a>
           <a href="https://github.com/nvtthanh11/Babyguard" target="_blank" class="hover:text-slate-200 transition">GitHub</a>
         </div>
       </div>

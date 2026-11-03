@@ -622,6 +622,20 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             return FileResponse(doc_path, media_type="text/html")
         return templates.TemplateResponse(request=request, name="index.html")
 
+    @app.get("/policy", response_class=HTMLResponse)
+    @app.get("/privacy", response_class=HTMLResponse)
+    @app.get("/terms", response_class=HTMLResponse)
+    @app.get("/disclaimer", response_class=HTMLResponse)
+    @app.get("/chinh-sach", response_class=HTMLResponse)
+    async def policy_and_terms_page(request: Request):
+        policy_path = os.path.join(BASE_DIR, "docs", "policy.html")
+        if os.path.exists(policy_path):
+            return FileResponse(policy_path, media_type="text/html")
+        doc_path = os.path.join(BASE_DIR, "docs", "index.html")
+        if os.path.exists(doc_path):
+            return FileResponse(doc_path, media_type="text/html")
+        return templates.TemplateResponse(request=request, name="index.html")
+
     @app.get("/api/app-info")
     async def get_app_info():
         apk_path = os.path.join(static_dir, "BabyGuard_AI.apk")

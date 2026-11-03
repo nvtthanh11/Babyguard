@@ -30,6 +30,7 @@ config.json
 !config.example.json
 .babyguard_license_state
 dist/
+*.xlsx
 
 # Test and debug fixtures
 tests/samples/
