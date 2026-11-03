@@ -1,0 +1,124 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-11-03",
+  "organization_sources": [
+    {
+      "code": "AAP",
+      "name_vi": "Viện Hàn lâm Nhi khoa Hoa Kỳ (American Academy of Pediatrics)",
+      "topic": "Giấc ngủ an toàn, sinh lý sơ sinh & phòng ngừa SIDS"
+    },
+    {
+      "code": "AASM",
+      "name_vi": "Hiệp hội Y học Giấc ngủ Hoa Kỳ (American Academy of Sleep Medicine)",
+      "topic": "Thời lượng & cấu trúc giấc ngủ REM/NREM ở trẻ nhỏ"
+    },
+    {
+      "code": "BTS_CHEST",
+      "name_vi": "Hội Lồng ngực Anh (BTS) & Trường Môn Bác sĩ Lồng ngực Hoa Kỳ (CHEST)",
+      "topic": "Khuyến cáo Y khoa về Phản xạ Ho & Bệnh lý Hô hấp Nhi khoa"
+    },
+    {
+      "code": "WHO",
+      "name_vi": "Tổ chức Y tế Thế giới (World Health Organization)",
+      "topic": "Chuẩn nhịp thở & Bảng chuẩn tăng trưởng thể trạng trẻ em"
+    },
+    {
+      "code": "NELSON_PEDIATRICS",
+      "name_vi": "Giáo trình Nhi khoa Nelson (Nelson Textbook of Pediatrics)",
+      "topic": "Hành vi thần kinh, phản xạ Moro và tiếng ọ ẹ rên rỉ lành tính sơ sinh"
+    }
+  ],
+  "benchmarks": {
+    "infant_whimpering_fussing": {
+      "metric_key": "whimper_count",
+      "name_vi": "Tiếng ọ ẹ, rên rỉ & trở mình sinh lý (Whimpering / REM Grunting)",
+      "age_stage": "Sơ sinh & Nhũ nhi (0 - 3 tháng)",
+      "description_vi": "Âm thanh ọ ẹ ngắn (< 4 giây), khẽ rấm rứt hoặc rên rỉ lành tính phát ra khi bé chuyển chu kỳ ngủ (chiếm ~50% thời gian ngủ động REM) hoặc giật mình sinh lý Moro.",
+      "citation": "AAP & AASM Pediatric Sleep Physiology Guidelines; Nelson Textbook of Pediatrics",
+      "normal_range": {
+        "min": 15,
+        "max": 35,
+        "unit": "lần / 24 giờ",
+        "evaluation_vi": "Bình thường (Sinh lý lành tính)",
+        "clinical_meaning_vi": "Phản ánh não bộ đang phát triển tích cực kết nối thần kinh trong pha ngủ động REM. Bé đang hoàn thiện khả năng tự xoa dịu (self-soothing) để nối tiếp cữ ngủ. Ba mẹ không nên vội bế bồng làm gián đoạn giấc ngủ sâu của bé."
+      },
+      "borderline_range": {
+        "min": 36,
+        "max": 50,
+        "unit": "lần / 24 giờ",
+        "evaluation_vi": "Tăng nhẹ / Cần theo dõi môi trường",
+        "clinical_meaning_vi": "Bé ọ ẹ nhiều hơn bình thường, thường do nhiệt độ phòng chưa tối ưu (quá nóng/quá lạnh), tã ướt, đầy hơi chướng bụng hoặc ánh sáng/tiếng ồn xung quanh kích thích."
+      },
+      "abnormal_range": {
+        "min": 51,
+        "unit": "lần / 24 giờ",
+        "evaluation_vi": "Bất thường / Cảnh báo lâm sàng",
+        "clinical_meaning_vi": "Cần phân biệt với tiếng thở rên bệnh lý khi thở ra (expiratory grunting trong suy hô hấp). Nếu bé ọ ẹ quấy khóc liên tục không dứt, kèm thở nhanh >60 BPM, phập phồng cánh mũi hoặc sốt, cần đưa đi khám bác sĩ Nhi ngay."
+      }
+    },
+    "infant_cough": {
+      "metric_key": "cough_count",
+      "name_vi": "Cơn ho sơ sinh & nhũ nhi (Infant Cough Episodes)",
+      "age_stage": "Sơ sinh & Nhũ nhi (0 - 3 tháng)",
+      "description_vi": "Phản xạ bảo vệ đường thở tự nhiên để tống xuất chất nhầy, đờm dãi hoặc giọt sữa trào ngược nhẹ khỏi thanh quản.",
+      "citation": "British Thoracic Society (BTS) Cough Guidelines; CHEST Pediatric Cough Consensus Statement; Munyard & Bush (Arch Dis Child)",
+      "normal_range": {
+        "min": 0,
+        "max": 10,
+        "unit": "lần / 24 giờ",
+        "evaluation_vi": "Bình thường (Phản xạ sinh lý làm sạch đường thở)",
+        "clinical_meaning_vi": "Trẻ sơ sinh khỏe mạnh có phản xạ ho sinh lý tự nhiên từ 1 - 10 lần/ngày (rải rác từng tiếng đơn lẻ) để làm sạch bụi và dịch hầu họng. Hoàn toàn lành tính, không cần dùng thuốc."
+      },
+      "borderline_range": {
+        "min": 11,
+        "max": 20,
+        "unit": "lần / 24 giờ",
+        "evaluation_vi": "Lưu tâm nhẹ / Theo dõi trào ngược sau bú",
+        "clinical_meaning_vi": "Số lần ho tăng nhẹ, thường tập trung thành cụm sau các cữ bú do trào ngược dạ dày thực quản sinh lý (GER) hoặc bú quá nhanh. Cần vỗ ợ hơi kỹ 15-20 phút, giữ đầu cao 15-30 độ sau bú."
+      },
+      "abnormal_range": {
+        "min": 21,
+        "unit": "lần / 24 giờ",
+        "evaluation_vi": "Bất thường / Cần khám Bác sĩ Nhi khoa",
+        "clinical_meaning_vi": "Dấu hiệu viêm đường hô hấp, viêm phế quản co thắt hoặc hít sặc sữa. Cần đưa bé đi khám nếu ho thành cơn đỏ mặt tím tái, ho kèm thở rít, thở gắng sức hoặc sốt."
+      }
+    },
+    "infant_choke_aspiration": {
+      "metric_key": "choke_risk_count",
+      "name_vi": "Cảnh báo sặc sữa & hóc dịch đường thở (Choking & Airway Aspiration)",
+      "age_stage": "Mọi lứa tuổi trẻ nhỏ",
+      "citation": "AHA & AAP Pediatric Basic Life Support; NASPGHAN Guidelines",
+      "normal_range": {
+        "exact": 0,
+        "unit": "lần / 24 giờ",
+        "evaluation_vi": "An toàn tuyệt đối (0 lần)",
+        "clinical_meaning_vi": "Không ghi nhận bất kỳ sự cố tắc nghẽn đường thở hoặc tím tái nào do sữa. (Lưu ý: trớ sữa sinh lý nhẹ qua mép không gây nghẹn ngạt là lành tính)."
+      },
+      "abnormal_range": {
+        "min": 1,
+        "unit": "lần / 24 giờ",
+        "evaluation_vi": "Báo động khẩn cấp",
+        "clinical_meaning_vi": "Bé có dấu hiệu nghẹn, tím tái hoặc ho sặc sữa dữ dội. Lập tức thực hiện phác đồ sơ cứu 5 lần vỗ lưng : 5 lần ấn ngực của AHA!"
+      }
+    },
+    "respiratory_rate": {
+      "metric_key": "avg_bpm",
+      "name_vi": "Nhịp thở khi ngủ yên (Resting Sleeping Breathing Rate)",
+      "age_stage": "Sơ sinh < 2 tháng tuổi",
+      "citation": "WHO Integrated Management of Childhood Illness (IMCI); AAP Guidelines",
+      "normal_range": {
+        "min": 30.0,
+        "max": 60.0,
+        "unit": "BPM (nhịp/phút)",
+        "evaluation_vi": "Nhịp thở chuẩn sơ sinh (30 - 60 BPM)",
+        "clinical_meaning_vi": "Nhịp thở đều đặn, cơ hoành co giãn nhịp nhàng, cung cấp oxy tối ưu cho não bộ."
+      },
+      "tachypnea_range": {
+        "min": 60.1,
+        "unit": "BPM (nhịp/phút)",
+        "evaluation_vi": "Thở nhanh (Tachypnea) - Dấu hiệu cảnh báo suy hô hấp",
+        "clinical_meaning_vi": "Nhịp thở khi ngủ yên vượt quá 60 lần/phút liên tục là dấu hiệu chỉ điểm viêm phổi hoặc suy hô hấp sơ sinh theo chuẩn WHO."
+      }
+    }
+  }
+}

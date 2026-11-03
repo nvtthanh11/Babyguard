@@ -329,6 +329,19 @@ def main():
         ):
             video_recorder.trigger_recording("choke", msg, on_complete_callback=handle_video_completion)
 
+    def on_whimper(whimper_entry):
+        """Ghi nhận âm thầm tiếng ọ ẹ / trở mình sinh lý REM để đối chiếu quy chuẩn quốc tế (AAP/Nelson)."""
+        msg = whimper_entry.get("note", "Bé ọ ẹ / trở mình (Sinh lý)")
+        dur = whimper_entry.get("duration_seconds", 1.0)
+        vol = whimper_entry.get("volume", 0.0)
+        sleep_tracker.record_health_event(
+            "whimper",
+            msg,
+            {"duration_seconds": dur, "volume": f"{vol*100:.1f}%"},
+            severity="INFO"
+        )
+        alert_manager.trigger_event("whimper", msg, extra_info=whimper_entry)
+
     audio_detector = AudioCryDetector(
         model_path=YAMNET_MODEL_PATH,
         device_index=config.get("audio_device_index", None),
@@ -338,6 +351,7 @@ def main():
         on_cry_callback=on_cry,
         on_cough_callback=on_cough,
         on_choke_callback=on_choke,
+        on_whimper_callback=on_whimper,
         audio_callback=video_recorder.add_audio_samples,
         cry_alert_enabled=config.get("cry_alert_enabled", True),
         cough_alert_enabled=config.get("cough_alert_enabled", True),

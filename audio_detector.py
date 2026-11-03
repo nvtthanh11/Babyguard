@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 class AudioCryDetector:
     def __init__(self, model_path: str, device_index: int = None, sample_rate: int = 16000, 
                  cry_threshold: float = 0.30, cough_threshold: float = 0.25, choke_threshold: float = 0.20,
-                 on_cry_callback=None, on_cough_callback=None, on_choke_callback=None, audio_callback=None,
+                 on_cry_callback=None, on_cough_callback=None, on_choke_callback=None, on_whimper_callback=None, audio_callback=None,
                  cry_alert_enabled: bool = True, cough_alert_enabled: bool = True, choke_alert_enabled: bool = True):
         self.model_path = model_path
         self.sample_rate = sample_rate
@@ -35,6 +35,7 @@ class AudioCryDetector:
         self.on_cry_callback = on_cry_callback
         self.on_cough_callback = on_cough_callback
         self.on_choke_callback = on_choke_callback
+        self.on_whimper_callback = on_whimper_callback
         self.audio_callback = audio_callback
         self.device_index = device_index
         self.cry_alert_enabled = cry_alert_enabled
@@ -274,6 +275,11 @@ class AudioCryDetector:
                                         }
                                         self.acoustic_event_log.append(whimper_entry)
                                         print(f"[AudioDetector] 👶 Bé vừa ọ ẹ nhẹ {total_sound_dur:.1f}s (Sinh lý REM, không báo động)")
+                                        if self.on_whimper_callback:
+                                            try:
+                                                self.on_whimper_callback(whimper_entry)
+                                            except Exception as we:
+                                                print(f"[AudioDetector] Lỗi on_whimper_callback: {we}")
                                     self.cry_start_time = None
                                     self.continuous_cry_seconds = 0.0
                                     self.cry_consecutive_frames = 0
@@ -419,14 +425,20 @@ class AudioCryDetector:
                         total_sound_dur = self.last_sound_active_time - self.cry_start_time
                         if 0.4 <= total_sound_dur < self.min_sustained_cry_seconds:
                             self.whimper_history.append(now_t)
-                            self.acoustic_event_log.append({
+                            wh_item = {
                                 "time": time.strftime("%H:%M:%S"),
                                 "epoch": now_t,
                                 "type": "whimper",
                                 "duration_seconds": round(total_sound_dur, 1),
                                 "volume": round(float(vol), 4),
                                 "note": f"Bé ọ ẹ nhẹ {total_sound_dur:.1f}s (Sinh lý REM)"
-                            })
+                            }
+                            self.acoustic_event_log.append(wh_item)
+                            if self.on_whimper_callback:
+                                try:
+                                    self.on_whimper_callback(wh_item)
+                                except Exception as we:
+                                    print(f"[AudioDetector] Lỗi on_whimper_callback: {we}")
                         self.cry_start_time = None
                         self.continuous_cry_seconds = 0.0
                 self.cry_consecutive_frames = 0

@@ -1184,6 +1184,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             summary_dict["delta_summary"] = delta_summary
 
         delta_tots = delta_summary.get("daily_totals", {}) if delta_summary else {}
+        summary_dict["whimper_count"] = max(int(daily_counts.get("whimper_count", 0)), int(delta_tots.get("whimper_count", 0)))
         summary_dict["crying_count"] = max(int(daily_counts.get("crying_count", 0)), int(delta_tots.get("crying_count", 0)))
         summary_dict["cough_count"] = max(int(daily_counts.get("cough_count", 0)), int(delta_tots.get("cough_count", 0)))
         summary_dict["choke_risk_count"] = max(int(daily_counts.get("choke_risk_count", 0)), int(delta_tots.get("choke_risk_count", 0)))
@@ -1203,6 +1204,20 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                 vis_bpm = 38.5
         summary_dict["avg_bpm"] = round(vis_bpm, 1)
 
+        # Đối chiếu Quy chuẩn Y khoa Quốc tế (AAP, AASM, BTS, CHEST, WHO, Nelson Pediatrics)
+        try:
+            import clinical_evaluator
+            summary_dict["clinical_benchmarks"] = clinical_evaluator.evaluate_full_daily_health(
+                whimper_count=summary_dict["whimper_count"],
+                cough_count=summary_dict["cough_count"],
+                choke_count=summary_dict["choke_risk_count"],
+                avg_bpm=summary_dict["avg_bpm"],
+                age_days=age_info.get("total_days", 34)
+            )
+        except Exception as c_err:
+            print(f"[WebServer] Lỗi tính clinical_benchmarks: {c_err}")
+            summary_dict["clinical_benchmarks"] = {}
+
         hist = summary_dict.get("daily_history", [])
         if hist and len(hist) > 0:
             summary_dict["yesterday_sleep"] = hist[0]
@@ -1216,6 +1231,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                 summary_dict["delta_summary_yesterday"] = y_delta
             y_tots = y_delta.get("daily_totals", {}) if y_delta else {}
             summary_dict["yesterday_counts"] = {
+                "whimper_count": max(int(y_counts.get("whimper_count", 0)), int(y_tots.get("whimper_count", 0))),
                 "crying_count": max(int(y_counts.get("crying_count", 0)), int(y_tots.get("crying_count", 0))),
                 "cough_count": max(int(y_counts.get("cough_count", 0)), int(y_tots.get("cough_count", 0))),
                 "choke_risk_count": max(int(y_counts.get("choke_risk_count", 0)), int(y_tots.get("choke_risk_count", 0))),
@@ -1328,10 +1344,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             is_crying=aud_st.get("is_crying", False),
             age_months=age_m
         )
-        b_date = cfg.get("baby_birth_date", "2026-09-05")
-        summary["age_info"] = calculate_exact_age(b_date)
-        summary["baby_name"] = cfg.get("baby_name", "Bé")
-        return summary
+        return _enrich_summary_with_health_metrics(summary)
 
     @app.post("/api/sleep/analyze-ai")
     def analyze_sleep_with_ai():

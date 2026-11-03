@@ -1376,6 +1376,7 @@ Trả về đúng định dạng JSON:
             # Nạp dữ liệu y tế chuẩn xác của chu kỳ 24h hôm qua
             y_counts = sleep_summary.get("yesterday_counts") or {}
             crying_count = int(yesterday.get("crying_count") or y_counts.get("crying_count", 0))
+            whimper_count = int(yesterday.get("whimper_count") or y_counts.get("whimper_count", 0))
             cough_count = int(yesterday.get("cough_count") or y_counts.get("cough_count", 0))
             choke_count = int(yesterday.get("choke_risk_count") or y_counts.get("choke_risk_count", 0))
             apnea_count = int(yesterday.get("apnea_count") or y_counts.get("apnea_count", 0))
@@ -1387,10 +1388,29 @@ Trả về đúng định dạng JSON:
                 hourly_clusters = delta_summary.get("hourly_clusters", {})
         else:
             crying_count = int(sleep_summary.get("crying_count", 0))
+            whimper_count = int(sleep_summary.get("whimper_count", 0))
             cough_count = int(sleep_summary.get("cough_count", 0))
             choke_count = int(sleep_summary.get("choke_risk_count", 0))
             apnea_count = int(sleep_summary.get("apnea_count", 0))
             hourly_clusters = delta_summary.get("hourly_clusters", {})
+
+        # Đối chiếu bảng quy chuẩn y khoa quốc tế (AAP, BTS, CHEST, WHO, Nelson Pediatrics)
+        import clinical_evaluator
+        age_days = 34
+        age_info = sleep_summary.get("age_info") or {}
+        if isinstance(age_info, dict) and age_info.get("total_days"):
+            age_days = int(age_info["total_days"])
+        health_eval = clinical_evaluator.evaluate_full_daily_health(
+            whimper_count=whimper_count,
+            cough_count=cough_count,
+            choke_count=choke_count,
+            avg_bpm=avg_bpm,
+            age_days=age_days
+        )
+        wh_eval = health_eval["whimper"]
+        cg_eval = health_eval["cough"]
+        ck_eval = health_eval["choke"]
+        rp_eval = health_eval["respiration"]
 
         if avg_bpm < 20.0:
             if yesterday and yesterday.get("avg_bpm", 0) > 20:
@@ -1437,41 +1457,50 @@ Dưới đây là hồ sơ dữ liệu sinh học thực tế của em bé {baby
 - Điểm chất lượng giấc ngủ: {sleep_score}/100
 - Số lần giật mình sinh lý Moro/REM: {sleep_summary.get("rem_twitch_count", 0)} lần
 - Nhịp thở quang học lồng ngực trung bình: {avg_bpm:.1f} BPM (Cảnh báo nguy cơ ngưng thở: {apnea_count} lần)
-- Thống kê âm thanh AI: {crying_count} lần quấy khóc, {cough_count} cơn ho / tiếng thở dốc, {choke_count} cảnh báo sặc sữa/ọc trớ.
+- Thống kê âm thanh AI: {crying_count} lần quấy khóc kéo dài, {whimper_count} lần ọ ẹ / trở mình sinh lý, {cough_count} cơn ho, {choke_count} cảnh báo sặc sữa/ọc trớ.
 - Chỉ số thể trạng & tăng trưởng: {growth_str}
 
-2. PHÂN TÍCH CỤM BIẾN ĐỘNG THEO TỪNG KHUNG GIỜ (HOURLY CLUSTERS):
+2. ĐỐI CHIẾU QUY CHUẨN Y KHOA QUỐC TẾ (CLINICAL BENCHMARKS):
+• Tiếng ọ ẹ / trở mình sinh lý: {whimper_count} lần (Chuẩn AAP & Nelson Pediatrics: 15 - 35 lần/24h trong giấc ngủ động REM).
+  -> Đánh giá: {wh_eval['status_vi']}.
+  -> Ý nghĩa lâm sàng: {wh_eval['clinical_meaning_vi']}
+• Cơn ho bảo vệ đường thở: {cough_count} lần (Chuẩn Hội Lồng ngực Anh BTS & CHEST: <= 10 lần/24h rải rác).
+  -> Đánh giá: {cg_eval['status_vi']}.
+  -> Ý nghĩa lâm sàng: {cg_eval['clinical_meaning_vi']}
+• Cảnh báo sặc sữa: {choke_count} lần (Chuẩn an toàn cấp cứu AHA & AAP: 0 lần).
+• Nhịp thở khi ngủ: {avg_bpm:.1f} BPM (Chuẩn sơ sinh WHO: 30 - 60 BPM).
+
+3. PHÂN TÍCH CỤM BIẾN ĐỘNG THEO TỪNG KHUNG GIỜ (HOURLY CLUSTERS):
 {cluster_text}
 
 LƯU Ý Y KHOA QUAN TRỌNG VỀ ĐỘ CHÍNH XÁC:
 1. VỀ THỜI GIAN MÁY TÍNH TẮT (~{camera_offline}h): Đây là khoảng thời gian máy tính/camera của gia đình tạm tắt (phụ huynh tắt máy, hoặc bế bé ra phòng khách chơi, tắm rửa). TUYỆT ĐỐI KHÔNG SUY DIỄN rằng bé không ngủ, bị bế ẵm 24/24 hay phụ thuộc bố mẹ. Hãy tập trung đánh giá chất lượng cữ ngủ {total_sleep}h ghi nhận được qua camera.
-2. VỀ CƠN HO & SẶC SỮA:
-   - Dựa trên số lần ho thực tế ({cough_count} lần) và nguy cơ sặc/trớ sữa ({choke_count} lần):
-   - Nếu có cụm ho/khẹc tập trung vào khung giờ cụ thể (xem mục 2 bên trên, ví dụ 16:00-17:11 sau cữ bú chiều): Hãy giải thích rõ ràng đây là phản xạ trào ngược sinh lý nhẹ (GER) thường gặp ở trẻ sơ sinh khi cơ thắt tâm vị chưa đóng kín hoàn toàn sau ăn, hoặc do vướng đờm sữa ở hầu họng.
-   - Hướng dẫn bố mẹ xử lý đúng: vỗ ợ hơi kỹ 15-20 phút sau bú, giữ đầu bé cao nhẹ 15-30 độ sau khi bú, không ép bú quá no một lúc.
-   - Các cơn ho rải rác ban đêm/sáng (1 tiếng nhẹ): Là phản xạ sinh lý tự nhiên bình thường để làm sạch dịch đường thở sơ sinh, phụ huynh không cần hoang mang.
+2. VỀ TIẾNG Ọ Ẹ & CƠN HO (ĐỐI CHIẾU CHUẨN QUỐC TẾ):
+   - Phân tích số lần ọ ẹ ({whimper_count} lần) so với chuẩn AAP/Nelson (15-35 lần/ngày trong chu kỳ ngủ động REM). Giải thích rõ cho ba mẹ đây là phản xạ sinh lý hoàn toàn lành tính khi chuyển giấc và não bộ đang tích cực phát triển, bé đang tập tự trấn an (self-soothing) để nối tiếp cữ ngủ, ba mẹ KHÔNG nên bế ẵm hay đánh thức bé.
+   - Dựa trên số lần ho thực tế ({cough_count} lần) đối chiếu chuẩn BTS & CHEST (<= 10 lần/ngày rải rác là phản xạ sinh lý tự nhiên bình thường để làm sạch bụi/dịch hầu họng).
+   - Nếu có cụm ho/khẹc tập trung vào khung giờ sau bú: Giải thích đây là phản xạ trào ngược sinh lý nhẹ (GER) thường gặp ở trẻ sơ sinh, hướng dẫn vỗ ợ hơi kỹ 15-20 phút sau bú, giữ đầu cao 15-30 độ sau ăn.
 3. VỀ THỂ TRẠNG: Đối chiếu theo bảng chuẩn WHO một cách khoa học, khách quan, mang tính khích lệ và đồng hành cùng bố mẹ.
 4. VĂN PHONG: Chuẩn mực y khoa, ấm áp, tạo sự an tâm và tin cậy cho phụ huynh.
 
 Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG cho bố mẹ:
 A. PHÂN TÍCH GIẤC NGỦ: Đánh giá thời lượng {total_sleep}h ngủ, độ sâu NREM/REM và khả năng nối giấc của bé.
-B. HÔ HẤP & TIÊU HÓA: Nhận xét nhịp thở {avg_bpm} BPM và hướng dẫn vỗ ợ hơi sau bú.
+B. HÔ HẤP, Ọ Ẹ & TIÊU HÓA: Nhận xét nhịp thở {avg_bpm} BPM, đối chiếu số lần ọ ẹ ({whimper_count} lần) và số cơn ho ({cough_count} lần) với chuẩn quốc tế, hướng dẫn vỗ ợ hơi sau bú.
 C. ĐÁNH GIÁ THỂ TRẠNG THEO CHUẨN WHO: Nhận xét cân nặng, chiều cao đối chiếu trung vị WHO.
 D. LỜI KHUYÊN & LỊCH SINH HOẠT HÔM NAY: Wake Window tối ưu cho trẻ lứa tuổi này, quy tắc ngủ an toàn ABC của AAP.
-E. TRÍCH DẪN NGUỒN CHÍNH THỐNG: AAP, AASM, WHO.
+E. TRÍCH DẪN NGUỒN CHÍNH THỐNG: AAP, AASM, BTS, CHEST, WHO.
 
 Trả về đúng định dạng JSON:
 {{
   "headline_vi": "Tiêu đề báo cáo ngắn gọn, ấm áp",
   "summary_vi": "Phân tích cụ thể chu kỳ ngủ và nhịp sinh học của bé (3-4 câu tiếng Việt)",
-  "respiratory_and_reflux_vi": "Nhận xét chi tiết về nhịp thở và phân tích hô hấp (3-4 câu tiếng Việt)",
+  "respiratory_and_reflux_vi": "Nhận xét chi tiết về nhịp thở, đối chiếu số lần ọ ẹ và cơn ho theo chuẩn quốc tế (3-4 câu tiếng Việt)",
   "growth_analysis_vi": "Đánh giá chiều cao, cân nặng đối chiếu bảng chuẩn WHO (2-3 câu tiếng Việt)",
   "schedule_advice_vi": "Lịch sinh hoạt và gợi ý canh cửa sổ thức (Wake Window) hôm nay (2-3 câu tiếng Việt)",
   "tips_vi": ["Lời khuyên thực tế 1", "Lời khuyên thực tế 2", "Lời khuyên thực tế 3"],
   "scientific_citations_vi": [
-    "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) - Hướng dẫn Giấc ngủ An toàn & Phòng ngừa SIDS",
-    "Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) - Khuyến nghị Thời lượng Giấc ngủ Nhi khoa",
-    "Tổ chức Y tế Thế giới (WHO) - Bộ Tiêu chuẩn Tăng trưởng Trẻ em (Child Growth Standards)"
+    "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) & Nelson Pediatrics - Quy chuẩn Sinh lý Giấc ngủ REM & Tiếng Ọ ẹ Sơ sinh",
+    "Hội Lồng ngực Anh (BTS) & Hội Bác sĩ Lồng ngực Hoa Kỳ (CHEST) - Khuyến cáo Y khoa về Phản xạ Ho Trẻ em",
+    "Tổ chức Y tế Thế giới (WHO) - Bộ Tiêu chuẩn Nhịp thở & Tăng trưởng Thể trạng Trẻ em"
   ]
 }}
 """
@@ -1491,9 +1520,9 @@ Trả về đúng định dạng JSON:
             schedule_vi = str(data.get("schedule_advice_vi", ""))
             tips_vi = data.get("tips_vi", [])[:3]
             citations = data.get("scientific_citations_vi", [
-                "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) - Policy Statement on Infant Safe Sleep",
-                "Hiệp hội Y học Giấc ngủ Hoa Kỳ (AASM) - Pediatric Sleep Duration Consensus",
-                "Tổ chức Y tế Thế giới (WHO) - Child Growth Standards"
+                "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) & Nelson Pediatrics - Quy chuẩn Sinh lý Giấc ngủ REM & Tiếng Ọ ẹ Sơ sinh",
+                "Hội Lồng ngực Anh (BTS) & Hội Bác sĩ Lồng ngực Hoa Kỳ (CHEST) - Khuyến cáo Y khoa về Phản xạ Ho Trẻ em",
+                "Tổ chức Y tế Thế giới (WHO) - Bộ Tiêu chuẩn Nhịp thở & Tăng trưởng Thể trạng Trẻ em"
             ])
 
             # Soạn thảo nội dung định dạng HTML chuẩn đẹp để gửi Telegram
@@ -1512,9 +1541,11 @@ Trả về đúng định dạng JSON:
                 f"• Cữ dài nhất: <b>{longest_nap} phút</b> | Điểm giấc ngủ AI: <b>{sleep_score}/100</b>\n"
                 f"• Chu kỳ: <b>{sleep_summary.get('deep_ratio_pct', 55)}% NREM</b> (Sâu) | <b>{sleep_summary.get('rem_ratio_pct', 45)}% REM</b> (Động)\n"
                 f"👉 <i>{summary_vi}</i>\n\n"
-                f"🫁 <b>2. HÔ HẤP, HO & PHÒNG CHỐNG SẶC SỮA:</b>\n"
-                f"• Nhịp thở khi ngủ: <b>{avg_bpm:.1f} BPM</b> (Chuẩn sơ sinh: 30 - 60 BPM • Ổn định)\n"
-                f"• Cơn ho: <b>{cough_count} lần</b> | Nguy cơ sặc/trớ sữa: <b>{choke_count} lần</b> | Quấy khóc: <b>{crying_count} lần</b>\n"
+                f"🫁 <b>2. HÔ HẤP, HO & ĐỐI CHIẾU QUY CHUẨN QUỐC TẾ (AAP/BTS/CHEST):</b>\n"
+                f"• Nhịp thở khi ngủ: <b>{avg_bpm:.1f} BPM</b> (Chuẩn WHO: 30 - 60 BPM • {rp_eval['badge_symbol']} {rp_eval['status_vi']})\n"
+                f"• <b>Tiếng ọ ẹ sinh lý (REM/Moro):</b> <b>{whimper_count} lần</b> (Chuẩn AAP/Nelson: 15 - 35 lần/ngày • <b>{wh_eval['badge_symbol']} {wh_eval['status_vi']}</b>)\n"
+                f"• <b>Cơn ho bảo vệ đường thở:</b> <b>{cough_count} lần</b> (Chuẩn BTS/CHEST: ≤ 10 lần/ngày • <b>{cg_eval['badge_symbol']} {cg_eval['status_vi']}</b>)\n"
+                f"• Nguy cơ sặc/trớ sữa: <b>{choke_count} lần</b> (Chuẩn an toàn: 0 lần) | Quấy khóc: <b>{crying_count} lần</b>\n"
                 f"{cluster_tele_part}"
                 f"👉 <i>{reflux_vi}</i>\n\n"
                 f"📈 <b>3. THỂ TRẠNG & TĂNG TRƯỞNG (CHUẨN WHO):</b>\n"

@@ -84,6 +84,7 @@ class DailyDeltaTracker:
             "hourly_clusters": {},
             "recent_events": [],
             "daily_totals": {
+                "whimper_count": 0,
                 "cough_count": 0,
                 "choke_risk_count": 0,
                 "crying_minutes": 0.0,
@@ -140,6 +141,7 @@ class DailyDeltaTracker:
                 self.data["hourly_clusters"] = {}
                 self.data["recent_events"] = []
                 self.data["daily_totals"] = {
+                    "whimper_count": 0,
                     "cough_count": 0,
                     "choke_risk_count": 0,
                     "crying_minutes": 0.0,
@@ -163,6 +165,7 @@ class DailyDeltaTracker:
                 clusters[bucket_key] = {
                     "hour": dt.hour,
                     "time_range": f"{dt.hour:02d}:00 - {(dt.hour+1)%24:02d}:00",
+                    "whimper_count": 0,
                     "cough_count": 0,
                     "choke_risk_count": 0,
                     "crying_minutes": 0.0,
@@ -175,7 +178,10 @@ class DailyDeltaTracker:
             totals = self.data.setdefault("daily_totals", {})
 
             ev = event_type.lower()
-            if "cough" in ev:
+            if "whimper" in ev:
+                bucket["whimper_count"] = bucket.get("whimper_count", 0) + 1
+                totals["whimper_count"] = totals.get("whimper_count", 0) + 1
+            elif "cough" in ev:
                 bucket["cough_count"] = bucket.get("cough_count", 0) + 1
                 totals["cough_count"] = totals.get("cough_count", 0) + 1
             elif "choke" in ev or "spit" in ev or "reflux" in ev:
@@ -754,6 +760,45 @@ class SleepTracker:
                 "badge_color": "emerald" if rem_twitches <= 8 else "amber"
             }
         ]
+
+        # Bổ sung đối chiếu Y khoa: Ọ ẹ, Cơn ho & Sặc sữa (Chuẩn AAP, BTS, CHEST, AHA)
+        try:
+            import clinical_evaluator
+            d_tots = self.delta_tracker.data.get("daily_totals", {}) if hasattr(self, "delta_tracker") else {}
+            wh_cnt = int(d_tots.get("whimper_count", 0))
+            cg_cnt = int(d_tots.get("cough_count", 0))
+            ck_cnt = int(d_tots.get("choke_risk_count", 0))
+            wh_eval = clinical_evaluator.evaluate_whimper_count(wh_cnt)
+            cg_eval = clinical_evaluator.evaluate_cough_count(cg_cnt)
+            ck_eval = clinical_evaluator.evaluate_choke_count(ck_cnt)
+
+            wh_badge = "emerald" if wh_eval["status"] == "NORMAL" else ("amber" if wh_eval["status"] == "BORDERLINE" else "rose")
+            cg_badge = "emerald" if cg_eval["status"] == "NORMAL" else ("amber" if cg_eval["status"] == "BORDERLINE" else "rose")
+            ck_badge = "emerald" if ck_eval["status"] == "SAFE" else "rose"
+
+            rows.append({
+                "metric": "Tiếng ọ ẹ sinh lý (REM/Moro)",
+                "measured": f"{wh_cnt} lần (< 4s)",
+                "standard": "15 – 35 lần / 24h (Chuẩn AAP & Nelson)",
+                "status": wh_eval["status_vi"],
+                "badge_color": wh_badge
+            })
+            rows.append({
+                "metric": "Cơn ho sơ sinh (Làm sạch đường thở)",
+                "measured": f"{cg_cnt} lần",
+                "standard": "≤ 10 lần / 24h rải rác (Chuẩn BTS & CHEST)",
+                "status": cg_eval["status_vi"],
+                "badge_color": cg_badge
+            })
+            rows.append({
+                "metric": "Phòng chống sặc sữa & dị vật",
+                "measured": f"{ck_cnt} lần",
+                "standard": "0 lần (Chuẩn cấp cứu AHA/AAP)",
+                "status": ck_eval["status_vi"],
+                "badge_color": ck_badge
+            })
+        except Exception as e_bench:
+            print(f"[SleepTracker] Lỗi gán clinical rows: {e_bench}")
 
         # Nếu đã có nhận xét chuyên sâu từ Gemini AI cho ngày hôm nay thì ưu tiên hiển thị
         if self.daily_ai_report and self.daily_ai_report.get("date") == self.today_date:

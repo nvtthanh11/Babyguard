@@ -35,6 +35,7 @@ CYTHON_MODULES = [
     "music_player.py",
     "license_manager.py",
     "auto_updater.py",
+    "clinical_evaluator.py",
     "web_server.py"
 ]
 

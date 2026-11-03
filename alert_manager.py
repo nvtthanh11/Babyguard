@@ -261,6 +261,9 @@ class AlertManager:
             pass
 
     def _can_alert(self, event_type: str) -> bool:
+        if event_type == "whimper":
+            # Tiếng ọ ẹ sinh lý REM: Chỉ ghi log nhật ký y tế, tuyệt đối KHÔNG bao giờ báo động Telegram hay hú còi
+            return False
         base_cooldown = self.config.get("alert_cooldown_seconds", 120)
         # Routine motion has longer cooldown to avoid flooding local logs
         if event_type == "motion":
@@ -672,6 +675,7 @@ class AlertManager:
         now = time.time()
         counts = {
             "crying_count": 0,
+            "whimper_count": 0,
             "cough_count": 0,
             "choke_risk_count": 0,
             "spit_up_count": 0,
@@ -692,6 +696,8 @@ class AlertManager:
                 t = ev.get("type", "").lower()
                 if t == "cry":
                     counts["crying_count"] += 1
+                elif t == "whimper":
+                    counts["whimper_count"] += 1
                 elif t == "cough":
                     counts["cough_count"] += 1
                 elif t == "choke":
@@ -725,6 +731,7 @@ class AlertManager:
                     counts["cough_count"] = max(counts["cough_count"], int(tots.get("cough_count", 0)))
                     counts["choke_risk_count"] = max(counts["choke_risk_count"], int(tots.get("choke_risk_count", 0)))
                     counts["crying_count"] = max(counts["crying_count"], int(tots.get("crying_count", 0)))
+                    counts["whimper_count"] = max(counts["whimper_count"], int(tots.get("whimper_count", 0)))
                     counts["apnea_count"] = max(counts["apnea_count"], int(tots.get("apnea_count", 0)))
             except Exception:
                 pass
