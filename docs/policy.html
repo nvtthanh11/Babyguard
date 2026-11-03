@@ -241,6 +241,125 @@
         <p>
           Khi phát sinh cảnh báo khẩn cấp hoặc gửi Báo cáo Nhi khoa tổng hợp (buổi sáng 07:00 / buổi tối 20:00), hệ thống chỉ gửi dữ liệu trực tiếp từ máy tính của gia đình đến máy chủ Telegram Bot API thông qua kết nối HTTPS bảo mật. Mã khóa Bot Token và ID phòng chat thuộc quyền sở hữu riêng của chính ba mẹ.
         </p>
+
+        <!-- SƠ ĐỒ TRỰC QUAN KIẾN TRÚC LOCAL EDGE AI DÀNH CHO PHỤ HUYNH -->
+        <div class="mt-8 pt-6 border-t border-slate-800 space-y-6">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
+              <span>🔒 BẢO VỆ ĐA TẦNG CỤC BỘ (LOCAL-FIRST PRIVACY)</span>
+            </div>
+            <h4 class="text-base sm:text-lg font-black text-white mt-2">
+              Sơ Đồ Luồng Dữ Liệu: BabyGuard AI Bảo Vệ Hình Ảnh Của Bé Như Thế Nào?
+            </h4>
+            <p class="text-xs text-slate-400 mt-1">
+              Khác với camera thông thường đẩy video lên máy chủ đám mây, BabyGuard AI giữ 100% video trong ngôi nhà của bạn.
+            </p>
+          </div>
+
+          <!-- DIAGRAM BOX -->
+          <div class="p-4 sm:p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-6">
+            
+            <!-- 3 BLOCKS FLOW -->
+            <div class="grid grid-cols-1 lg:grid-cols-11 gap-4 items-center">
+              
+              <!-- STEP 1: NÔI BÉ -->
+              <div class="lg:col-span-3 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-center relative group hover:border-emerald-500/50 transition shadow-lg">
+                <div class="w-10 h-10 mx-auto rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center text-xl">
+                  📹
+                </div>
+                <div class="font-extrabold text-white text-xs sm:text-sm">1. Camera Nôi Bé</div>
+                <p class="text-[11px] text-slate-400 leading-tight">
+                  Webcam USB hoặc Camera WiFi trong phòng ngủ
+                </p>
+                <div class="pt-1">
+                  <span class="inline-block px-2 py-0.5 rounded-md bg-teal-950 text-teal-300 text-[10px] font-bold border border-teal-800">
+                    Mạng WiFi Gia Đình (LAN)
+                  </span>
+                </div>
+              </div>
+
+              <!-- ARROW 1 -->
+              <div class="lg:col-span-1 flex flex-col items-center justify-center text-emerald-400 font-bold">
+                <span class="hidden lg:block text-2xl font-black">➔</span>
+                <span class="lg:hidden text-xl font-black">⬇</span>
+                <span class="text-[10px] text-slate-500 font-mono text-center">Luồng RTSP / USB</span>
+              </div>
+
+              <!-- STEP 2: MÁY TÍNH GIA ĐÌNH (TRỌNG TÂM EDGE AI) -->
+              <div class="lg:col-span-4 p-4 rounded-xl bg-slate-950 border-2 border-emerald-500/60 space-y-2.5 text-center relative group hover:border-emerald-400 transition shadow-xl shadow-emerald-950/40">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase">
+                  <span>⚡ TRÁI TIM HỆ THỐNG</span>
+                </div>
+                <div class="w-10 h-10 mx-auto rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                  💻
+                </div>
+                <div class="font-extrabold text-white text-xs sm:text-sm">2. Máy Tính Gia Đình (PC / Mac)</div>
+                <div class="text-[11px] text-slate-300 text-left space-y-1.5 bg-slate-900/90 p-3 rounded-lg border border-slate-800">
+                  <div class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">✓</span> <span><b>Bộ nhớ tạm RAM:</b> AI quét hình ảnh xong giải phóng ngay, không lưu rác.</span></div>
+                  <div class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">✓</span> <span><b>Mô hình AI cục bộ:</b> YOLO, MediaPipe, DSP nhịp thở, Âm ho/khóc.</span></div>
+                  <div class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">✓</span> <span><b>Ổ cứng cục bộ:</b> Chỉ lưu video khi có cảnh báo nằm sấp/khóc, tự xóa sau 3-7 ngày.</span></div>
+                  <div class="flex items-start gap-1.5 text-rose-400"><span class="font-black">🚫</span> <span><b>Tường lửa:</b> Chặn 100% video nôi không bao giờ tải lên Cloud bên ngoài!</span></div>
+                </div>
+              </div>
+
+              <!-- ARROW 2 -->
+              <div class="lg:col-span-1 flex flex-col items-center justify-center text-emerald-400 font-bold">
+                <span class="hidden lg:block text-2xl font-black">➔</span>
+                <span class="lg:hidden text-xl font-black">⬇</span>
+                <span class="text-[10px] text-slate-500 font-mono text-center">Chỉ khi có Báo động (HTTPS)</span>
+              </div>
+
+              <!-- STEP 3: ĐIỆN THOẠI BA MẸ -->
+              <div class="lg:col-span-2 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-center relative group hover:border-purple-500/50 transition shadow-lg">
+                <div class="w-10 h-10 mx-auto rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl">
+                  📱
+                </div>
+                <div class="font-extrabold text-white text-xs sm:text-sm">3. Điện Thoại Ba Mẹ</div>
+                <p class="text-[11px] text-slate-400 leading-tight">
+                  Nhận chuông báo, ảnh chụp nôi và báo cáo nhi khoa 24/7
+                </p>
+                <div class="pt-1">
+                  <span class="inline-block px-2 py-0.5 rounded-md bg-purple-950 text-purple-300 text-[10px] font-bold border border-purple-800">
+                    Bot Telegram Riêng Tư
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- SO SÁNH TRỰC DIỆN -->
+            <div class="pt-4 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              
+              <!-- CỘT 1: CAMERA CLOUD TRÔI NỔI -->
+              <div class="p-3.5 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-2">
+                <div class="flex items-center gap-2 font-bold text-rose-400">
+                  <span>❌</span>
+                  <span>Camera IP / Đám Mây Trôi Nổi Trên Thị Trường:</span>
+                </div>
+                <ul class="space-y-1.5 text-slate-300 text-[11px]">
+                  <li class="flex items-start gap-1.5"><span class="text-rose-400 font-bold">•</span> Toàn bộ hình ảnh, âm thanh phòng ngủ bị gửi liên tục lên máy chủ Cloud bên ngoài.</li>
+                  <li class="flex items-start gap-1.5"><span class="text-rose-400 font-bold">•</span> Nguy cơ rò rỉ clip nhạy cảm nếu máy chủ bị tấn công hoặc nhân viên hãng xem trộm.</li>
+                  <li class="flex items-start gap-1.5"><span class="text-rose-400 font-bold">•</span> Phải trả tiền thuê bao lưu trữ đám mây tốn kém hàng tháng (100k - 200k/tháng).</li>
+                </ul>
+              </div>
+
+              <!-- CỘT 2: BABYGUARD AI -->
+              <div class="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
+                <div class="flex items-center gap-2 font-bold text-emerald-400">
+                  <span>✅</span>
+                  <span>Kiến Trúc Local Edge AI Của BabyGuard AI:</span>
+                </div>
+                <ul class="space-y-1.5 text-slate-300 text-[11px]">
+                  <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">•</span> Video được giữ 100% trong máy tính nhà, không ai ngoài ba mẹ có thể xem được.</li>
+                  <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">•</span> AI nhận diện nguy cơ tại chỗ trong 0.2 giây mà không cần phụ thuộc đường truyền Internet.</li>
+                  <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">•</span> Chỉ thanh toán 1 lần 49.000 VNĐ dùng trọn đời, không thu phí duy trì hàng tháng.</li>
+                </ul>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
       </div>
     </section>
 
