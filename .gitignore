@@ -46,3 +46,4 @@ ENV/
 .Spotlight-V100
 .Trashes
 sepay_transactions.json
+models/*.pt

@@ -5492,11 +5492,15 @@
                 document.getElementById('vital-cough-pct').innerText = `${coughPct}%`;
                 soundBarEl.style.width = `${Math.min(100, Math.max(5, a.volume || 5))}%`;
 
-                // Cảnh báo màu sắc nổi bật khi bé khóc hoặc ho
-                if (cryPct >= 40 || a.is_crying) {
+                // Cảnh báo màu sắc nổi bật khi bé khóc, ho, hoặc ọ ẹ
+                if (a.is_crying || (cryPct >= 50 && a.continuous_cry_seconds >= 4.0)) {
                     soundLabelEl.className = "text-[11px] font-bold text-rose-300 bg-rose-500/25 px-2.5 py-0.5 rounded-full border border-rose-500/50 animate-pulse";
                     cryPctEl.className = "text-rose-400 font-bold text-sm";
                     soundBarEl.className = "bg-gradient-to-r from-amber-500 to-rose-500 h-full transition-all duration-300";
+                } else if (a.is_fussing || (a.top_sound && a.top_sound.includes("ọ ẹ"))) {
+                    soundLabelEl.className = "text-[11px] font-semibold text-purple-300 bg-purple-500/20 px-2.5 py-0.5 rounded-full border border-purple-500/40";
+                    cryPctEl.className = "text-purple-300 font-medium";
+                    soundBarEl.className = "bg-gradient-to-r from-teal-500 to-purple-400 h-full transition-all duration-300";
                 } else if (coughPct >= 35 || a.is_coughing) {
                     soundLabelEl.className = "text-[11px] font-bold text-amber-300 bg-amber-500/25 px-2.5 py-0.5 rounded-full border border-amber-500/50 animate-pulse";
                     cryPctEl.className = "text-slate-200 font-semibold";

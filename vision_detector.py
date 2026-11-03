@@ -2323,6 +2323,93 @@ class VisionTracker:
             face = self.last_baby_face_info.copy() if getattr(self, "last_baby_face_info", None) is not None else None
             return frame, face
 
+    def create_cry_audit_mosaic(self, current_frame=None, airway_crop=None) -> np.ndarray:
+        """
+        Ghép 4 khung nhìn thời gian & cận cảnh phục vụ Gemini AI và Telegram hội chẩn tiếng khóc:
+        - Ô 1 [Top-Left]: T - 3.5s (Khung cảnh nôi trước khi có âm thanh / bé yên tĩnh)
+        - Ô 2 [Top-Right]: T - 1.5s (Khởi phát âm thanh / cựa mình)
+        - Ô 3 [Bottom-Left]: T - 0.0s (Toàn cảnh hiện tại khi đạt đỉnh âm thanh)
+        - Ô 4 [Bottom-Right]: Cận cảnh Mũi, Miệng, Thân bé (Độ nét gốc 100%)
+        """
+        now_t = time.time()
+        f_0 = current_frame if current_frame is not None else self.get_latest_frame(annotated=False)
+        if f_0 is None:
+            f_0 = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+        h, w = f_0.shape[:2]
+
+        # Trích xuất khung hình trong quá khứ từ temporal_frame_cache
+        f_t3 = None
+        f_t1 = None
+        if hasattr(self, "temporal_frame_cache") and self.temporal_frame_cache:
+            cache_list = list(self.temporal_frame_cache)
+            for ts, f in cache_list:
+                dt = now_t - ts
+                if 2.8 <= dt <= 5.5 and f_t3 is None:
+                    f_t3 = f
+                elif 1.0 <= dt < 2.8 and f_t1 is None:
+                    f_t1 = f
+
+        if f_t3 is None:
+            f_t3 = f_0
+        if f_t1 is None:
+            f_t1 = f_0
+
+        # Cận cảnh Mũi - Miệng - Thân bé (100% độ nét gốc)
+        p4_crop = None
+        if airway_crop is not None and airway_crop.size > 0:
+            p4_crop = airway_crop
+        elif getattr(self, "last_face_box", None) is not None:
+            fb = self.last_face_box
+            fx1, fy1, fx2, fy2 = fb
+            pad_w = int((fx2 - fx1) * 0.50)
+            pad_h = int((fy2 - fy1) * 0.50)
+            cx1 = max(0, fx1 - pad_w)
+            cy1 = max(0, fy1 - pad_h)
+            cx2 = min(w, fx2 + pad_w)
+            cy2 = min(h, fy2 + pad_h)
+            if (cx2 - cx1) >= 40 and (cy2 - cy1) >= 40:
+                p4_crop = f_0[cy1:cy2, cx1:cx2].copy()
+
+        if p4_crop is None:
+            # Cắt 50% trung tâm nôi
+            cy1, cy2 = int(h * 0.25), int(h * 0.75)
+            cx1, cx2 = int(w * 0.25), int(w * 0.75)
+            p4_crop = f_0[cy1:cy2, cx1:cx2].copy()
+
+        # Chuẩn hóa kích thước 512x512 cho từng ô
+        p1 = cv2.resize(f_t3, (512, 512))
+        p2 = cv2.resize(f_t1, (512, 512))
+        p3 = cv2.resize(f_0, (512, 512))
+        p4 = cv2.resize(p4_crop, (512, 512))
+
+        # Khử tối / Bù sáng nhẹ cho các ô ban đêm
+        try:
+            from gemini_verifier import enhance_low_light_image
+            p1 = enhance_low_light_image(p1, clip_limit=2.5)
+            p2 = enhance_low_light_image(p2, clip_limit=2.5)
+            p3 = enhance_low_light_image(p3, clip_limit=2.5)
+            p4 = enhance_low_light_image(p4, clip_limit=2.5)
+        except Exception:
+            pass
+
+        # Vẽ huy hiệu định danh trực quan trên từng ô
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        def _draw_badge(img, label, border_color=(56, 189, 248)):
+            cv2.rectangle(img, (8, 8), (300, 42), (15, 23, 42), -1)
+            cv2.rectangle(img, (8, 8), (300, 42), border_color, 1)
+            cv2.putText(img, label, (16, 30), font, 0.52, (255, 255, 255), 1, cv2.LINE_AA)
+
+        _draw_badge(p1, "[1] T - 3.5s (Truoc su kien)", (148, 163, 184))
+        _draw_badge(p2, "[2] T - 1.5s (Khoi phat am thanh)", (250, 204, 21))
+        _draw_badge(p3, "[3] T - 0.0s (Toan canh hien tai)", (239, 68, 68))
+        _draw_badge(p4, "[4] Can canh Mat & Than (100%)", (56, 189, 248))
+
+        top_row = np.hstack([p1, p2])
+        bottom_row = np.hstack([p3, p4])
+        mosaic = np.vstack([top_row, bottom_row])
+        return mosaic
+
     def get_latest_frame(self, annotated: bool = True):
         with self.lock:
             if annotated and self.annotated_frame is not None:

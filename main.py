@@ -181,9 +181,81 @@ def main():
     )
 
     # 3. Audio Cry, Cough & Choke Detector
-    def on_cry(prob, volume, top_label):
+    def on_cry(*args, **kwargs):
+        # Trích xuất Telemetry âm học (hỗ trợ cả dict và tuple cũ)
+        if len(args) == 1 and isinstance(args[0], dict):
+            telem = args[0]
+            prob = float(telem.get("cry_probability", 0.5))
+            volume = float(telem.get("volume", 0.02))
+            top_label = telem.get("top_label", "Bé khóc")
+        elif len(args) >= 3:
+            prob, volume, top_label = args[0], args[1], args[2]
+            telem = {
+                "cry_probability": prob,
+                "volume": volume,
+                "volume_pct": round(volume * 100, 1),
+                "continuous_seconds": 4.5,
+                "duty_cycle_12s": 60.0,
+                "recent_whimpers_60s": 1,
+                "volume_trend": "ổn định",
+                "top_label": top_label
+            }
+        else:
+            return
+
         cur_cfg = load_config()
-        # Tự động phát mềm Tiếng Ồn Trắng / Nhạc Không Lời khi bé khóc (kể cả khi tắt báo động còi)
+
+        # Multi-modal gate: Nếu camera xác định nôi trống và không có bé (Bé đã rời nôi / Ngoài giường),
+        # triệt tiêu cảnh báo khóc giả lập tức để không làm phiền phụ huynh
+        if (not vision_tracker.baby_detected) and (not getattr(vision_tracker, "adult_holding_baby", False)):
+            return
+
+        # Tạo Bức Ảnh Ghép 4 Ô (Composite 4-Panel Mosaic: T-3.5s, T-1.5s, T-0s, Cận cảnh Mặt/Thân)
+        mosaic_frame = vision_tracker.create_cry_audit_mosaic()
+
+        # Gửi lên Chuyên Gia Nhi Khoa Gemini AI Hội Chẩn & Kiểm Tra Chéo (Double-Check Sentinel)
+        verify_res = {}
+        if gemini_verifier and gemini_verifier.is_ready():
+            verify_res = gemini_verifier.verify_crying_alert(
+                mosaic_frame,
+                cry_telemetry=telem,
+                baby_pose=vision_tracker.sleep_pose
+            )
+        else:
+            is_urg = float(telem.get("continuous_seconds", 4.5)) >= 5.5
+            verify_res = {
+                "verified_by_gemini": False,
+                "should_alert": is_urg,
+                "is_real_distress": is_urg,
+                "baby_state": "distress_crying" if is_urg else "physiological_fussing",
+                "diagnosis_vi": f"Phát hiện tiếng khóc ({top_label})" if is_urg else "Bé ọ ẹ sinh lý trong giấc ngủ",
+                "clinical_advice_vi": "Quan sát bé qua camera nếu cần",
+                "confidence": 75
+            }
+
+        should_alert = verify_res.get("should_alert", True)
+        diag_vi = verify_res.get("diagnosis_vi", f"Phát hiện tiếng khóc em bé ({top_label})")
+        baby_state = verify_res.get("baby_state", "distress_crying")
+        advice_vi = verify_res.get("clinical_advice_vi", "")
+
+        # TRƯỜNG HỢP A: BÉ CHỈ Ọ Ẹ SINH LÝ / CỰA MÌNH REM / TỰ TRẤN AN (should_alert == False)
+        if not should_alert:
+            print(f"[BabyGuard AI] 👶 Gemini dập cảnh báo khóc giả: {diag_vi} [{baby_state}]")
+            sleep_tracker.record_health_event("fussing", f"Bé ọ ẹ sinh lý: {diag_vi}", {
+                "state": baby_state,
+                "confidence": f"{verify_res.get('confidence', 90)}%",
+                "continuous_sec": telem.get("continuous_seconds")
+            }, severity="INFO")
+            # Tự động mở mềm Tiếng Ồn Trắng / Nhạc Không Lời (từ 4%) để hỗ trợ bé ngủ sâu lại
+            if cur_cfg.get("auto_lullaby_on_cry", False) and not music_player.is_playing:
+                track = cur_cfg.get("selected_lullaby", "Tieng_on_trang_White_Noise.wav")
+                print(f"[BabyGuard AI] 🌊 Bé ọ ẹ chuyển giấc -> Mở mềm Tiếng Ồn Trắng hỗ trợ ngủ sâu: {track}")
+                music_player.play_track(track, loop=True)
+            return
+
+        # TRƯỜNG HỢP B: BÉ THỰC SỰ ĐANG QUẤY KHÓC / ĐAU ĐỚN (should_alert == True)
+        print(f"[BabyGuard AI] 🚨 Gemini XÁC THỰC BÉ KHÓC: {diag_vi} [{baby_state}]")
+
         if cur_cfg.get("auto_lullaby_on_cry", False) and not music_player.is_playing:
             track = cur_cfg.get("selected_lullaby", "Tieng_on_trang_White_Noise.wav")
             print(f"[BabyGuard AI] 🌊 Bé khóc -> Khởi động mềm Tiếng Ồn Trắng / Nhạc không lời (từ 4%): {track}")
@@ -192,28 +264,36 @@ def main():
         if not cur_cfg.get("cry_alert_enabled", True):
             return
 
-        # Multi-modal gate: Nếu camera xác định nôi trống và không có bé (Bé đã rời nôi / Ngoài giường),
-        # triệt tiêu cảnh báo khóc giả lập tức để không làm phiền phụ huynh
-        if (not vision_tracker.baby_detected) and (not getattr(vision_tracker, "adult_holding_baby", False)):
-            return
+        msg = f"CẢNH BÁO: {diag_vi}"
+        sleep_tracker.record_health_event("cry", msg, {
+            "confidence": f"{verify_res.get('confidence', int(prob*100))}%",
+            "duration_seconds": telem.get("continuous_seconds", 5.0),
+            "state": baby_state,
+            "advice": advice_vi
+        })
 
-        frame = vision_tracker.get_latest_frame(annotated=True)
-        msg = f"Phát hiện tiếng khóc / la hét em bé ({top_label})"
-        sleep_tracker.record_health_event("cry", msg, {"confidence": f"{prob*100:.1f}%", "duration_minutes": 1.0})
+        extra_info = {
+            "Hội chẩn AI": diag_vi,
+            "Trạng thái": baby_state,
+            "Duy trì": f"{telem.get('continuous_seconds', 0.0)}s",
+            "Âm lượng": f"{telem.get('volume_pct', round(volume*100, 1))}%",
+            "Tư thế bé": vision_tracker.sleep_pose
+        }
+        if advice_vi:
+            extra_info["Lời khuyên Nhi khoa"] = advice_vi
+
+        # Gửi cảnh báo Telegram đính kèm BỨC ẢNH GHÉP 4 Ô để phụ huynh nhìn rõ toàn bộ diễn tiến!
         if alert_manager.trigger_event(
             event_type="cry",
             message=msg,
-            frame=frame,
-            extra_info={
-                "Độ tin cậy AI": f"{prob*100:.1f}%",
-                "Âm lượng": f"{volume*100:.1f}%",
-                "Tư thế bé": vision_tracker.sleep_pose
-            }
+            frame=mosaic_frame,
+            extra_info=extra_info
         ):
             video_recorder.trigger_recording("cry", msg, on_complete_callback=handle_video_completion)
 
     def on_cough(prob, volume, top_label):
-        if not config.get("cough_alert_enabled", True):
+        cur_cfg = load_config()
+        if not cur_cfg.get("cough_alert_enabled", True):
             return
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = f"CẢNH BÁO: Phát hiện bé ho ({top_label})!"
@@ -231,7 +311,8 @@ def main():
             video_recorder.trigger_recording("cough", msg, on_complete_callback=handle_video_completion)
 
     def on_choke(prob, volume, top_label):
-        if not config.get("choke_alert_enabled", True):
+        cur_cfg = load_config()
+        if not cur_cfg.get("choke_alert_enabled", True):
             return
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = f"CẢNH BÁO KHẨN: Phát hiện dấu hiệu bé sặc sữa / ọc trớ ({top_label})!"

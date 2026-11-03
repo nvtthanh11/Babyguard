@@ -20,6 +20,9 @@ USAGE_LOG_PATH = os.path.join(BASE_DIR, "logs", "gemini_usage.json")
 # Danh sách các model Flash đa phương thức (Image + Text) có hạn mức Free độc lập (PerModel-FreeTier)
 FREE_MODEL_POOL = [
     "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+    "gemini-2.5-flash-lite",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
@@ -27,7 +30,6 @@ FREE_MODEL_POOL = [
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
     "gemini-3-flash-preview",
-    "gemini-2.5-flash-lite",
 ]
 
 
@@ -257,7 +259,8 @@ class GeminiHybridVerifier:
             try:
                 cfg = types.GenerateContentConfig(
                     response_mime_type="application/json" if json_mode else "text/plain",
-                    temperature=temperature
+                    temperature=temperature,
+                    http_options=types.HttpOptions(timeout=12000)
                 )
                 resp = client.models.generate_content(
                     model=m,
@@ -788,6 +791,164 @@ Trả về đúng định dạng JSON:
                 "diagnosis_vi": local_reason or "Cảnh báo khẩn cấp: Không thể kiểm tra chéo đám mây, tự động kích hoạt bảo vệ cục bộ!",
                 "confidence": 75,
                 "corrected_safe_zone_polygon": None
+            }
+
+    def verify_crying_alert(self, mosaic_frame, cry_telemetry: dict = None, baby_pose: str = "Nằm ngửa") -> dict:
+        """
+        Hội chẩn Chuyên gia Nhi khoa AI: Phân biệt tiếng ọ ẹ / cựa mình REM sinh lý vs khóc thật sự.
+        - Nhận vào ảnh ghép 4 ô (T-3.5s, T-1.5s, T-0s, Cận cảnh Mặt/Thân)
+        - Nhận vào Telemetry âm học (thời lượng khóc duy trì, duty cycle, âm lượng, lịch sử ọ ẹ)
+        - Quyết định có nên báo động ba mẹ hay để bé tự ngủ lại (should_alert: bool)
+        """
+        if cry_telemetry is None:
+            cry_telemetry = {}
+
+        cont_sec = float(cry_telemetry.get("continuous_seconds", 0.0))
+        vol_pct = float(cry_telemetry.get("volume_pct", 0.0))
+        duty_cycle = float(cry_telemetry.get("duty_cycle_12s", 0.0))
+        recent_whimpers = int(cry_telemetry.get("recent_whimpers_60s", 0))
+        vol_trend = str(cry_telemetry.get("volume_trend", "ổn định"))
+
+        # 0. Nếu Gemini chưa bật hoặc chưa sẵn sàng -> Fallback dựa trên đặc trưng âm học
+        if not self.is_ready() or not getattr(self, "verify_alerts_enabled", True):
+            is_urgent = (cont_sec >= 6.0 and vol_pct >= 2.0)
+            return {
+                "verified_by_gemini": False,
+                "should_alert": is_urgent,
+                "is_real_distress": is_urgent,
+                "baby_state": "distress_crying" if is_urgent else "physiological_fussing",
+                "diagnosis_vi": "Phát hiện tiếng khóc liên tục (AI cục bộ, chưa bật Gemini)." if is_urgent else "Bé ọ ẹ sinh lý trong giấc ngủ (AI cục bộ).",
+                "clinical_advice_vi": "Ba mẹ quan sát bé qua camera nếu cần.",
+                "confidence": 75
+            }
+
+        now = time.time()
+
+        # 1. Rào chắn Cache / Cooldown: Tránh gọi trùng lặp trong 40s nếu vừa đánh giá an toàn, 60s nếu là khóc thật
+        last_t = self.last_alert_verify_time.get("cry", 0.0)
+        cooldown_needed = 40.0 if self.last_alert_result.get("cry", {}).get("should_alert") is False else 60.0
+        if (now - last_t) < cooldown_needed and "cry" in self.last_alert_result:
+            cached = self.last_alert_result["cry"].copy()
+            cached["from_cache"] = True
+            return cached
+
+        # 2. Rào chắn Global Rate Limiter: Tối đa 3 req/phút
+        recent_calls = [t for t, _, _ in self.call_timestamps if (now - t) < 60.0]
+        if len(recent_calls) >= 3:
+            print(f"[GeminiVerifier] ⏱️ Global Rate Limiter: Đã có {len(recent_calls)} req trong 60s. Tự động chuyển Fallback an toàn!")
+            is_urgent = (cont_sec >= 6.0 and vol_pct >= 2.0)
+            return {
+                "verified_by_gemini": False,
+                "should_alert": is_urgent,
+                "is_real_distress": is_urgent,
+                "baby_state": "distress_crying" if is_urgent else "physiological_fussing",
+                "diagnosis_vi": "Tiếng khóc duy trì (Hệ thống bảo vệ hạn mức Quota)." if is_urgent else "Bé ọ ẹ ngắn (Bảo vệ Quota).",
+                "clinical_advice_vi": "Ba mẹ quan sát bé qua camera.",
+                "confidence": 70
+            }
+
+        # 3. Mã hóa ảnh JPEG
+        img_bytes = self._encode_frame_jpeg(mosaic_frame, max_dim=1024)
+        if not img_bytes:
+            is_urgent = (cont_sec >= 5.0)
+            return {
+                "verified_by_gemini": False,
+                "should_alert": is_urgent,
+                "is_real_distress": is_urgent,
+                "baby_state": "unknown",
+                "diagnosis_vi": "Không mã hóa được hình ảnh hội chẩn.",
+                "clinical_advice_vi": "Kiểm tra camera.",
+                "confidence": 50
+            }
+
+        prompt = f"""
+Bạn là Chuyên gia Cấp cứu Nhi khoa & Giấc ngủ Trẻ sơ sinh (BabyGuard AI Sentinel) cho bé {self.baby_name} ({self.baby_age_months} tháng tuổi).
+Hệ thống AI vừa phát hiện chuỗi âm thanh nghi ngờ tiếng bé khóc với dữ liệu âm học (Acoustic Telemetry) đo lường thực tế:
+- Thời gian âm thanh duy trì: {cont_sec:.1f} giây
+- Tỷ lệ hoạt động âm thanh (Duty cycle 12s): {duty_cycle:.1f}%
+- Âm lượng thực tế (RMS): {vol_pct:.1f}% (Xu hướng: {vol_trend})
+- Số lần ọ ẹ / cựa quậy ngắn trong 60 giây qua: {recent_whimpers} lần
+- Tư thế nhận diện hiện tại: {baby_pose}
+
+Bức ảnh ghép 4 ô (Composite 4-Panel Mosaic) gửi kèm gồm:
+- Ô 1 [Top-Left]: T - 3.5s (Khung cảnh nôi trước khi có âm thanh / bé yên tĩnh)
+- Ô 2 [Top-Right]: T - 1.5s (Thời điểm khởi phát âm thanh / cựa mình)
+- Ô 3 [Bottom-Left]: T - 0.0s (Toàn cảnh hiện tại khi âm thanh đạt đỉnh)
+- Ô 4 [Bottom-Right]: Cận cảnh Mũi, Miệng, Thân bé (Độ nét gốc 100%)
+
+NGUYÊN TẮC HỘI CHẨN NHI KHOA CHUẨN XÁC:
+Trẻ sơ sinh 1 tháng tuổi có pha ngủ động (REM sleep) chiếm 50% thời gian ngủ. Trong pha này, trẻ thường xuyên có các phản xạ sinh lý vô thức:
+1. Nhăn mặt thoáng qua, há he miệng, vặn người, giật mình Moro sinh lý.
+2. Phát ra 1-2 tiếng ọ ẹ, rên ư ử hoặc tiếng khóc thút thít ngắn (Whimpering) trong vài giây rồi tự nín ngủ tiếp (Self-soothing / mút tay, ngậm miệng).
+=> ĐÂY LÀ HIỆN TƯỢNG HOÀN TOÀN TỰ NHIÊN, KHÔNG PHẢI NGUY HIỂM. TUYỆT ĐỐI KHÔNG BÁO ĐỘNG ĐÁNH THỨC BA MẸ (should_alert = false).
+
+KHI NÀO MỚI CẦN BÁO ĐỘNG CHO BA MẸ (should_alert = true):
+- BÉ THỰC SỰ ĐANG QUẤY KHÓC / ĐAU ĐỚN (True Distress Crying): Bé tỉnh hẳn, hai mắt nhắm chặt nhăn nhó dữ dội, miệng há to hình chữ nhật khóc ngặt, tay chân quẫy đạp co quắp hoặc gồng cứng toàn thân qua các ô thời gian.
+- NGUY CƠ TẮC NGHẼN / NÔN TRỚ / KẸT TAY CHÂN / KHÓ THỞ: Bé có dấu hiệu đau bụng co thắt (colic), sặc sữa, trớ ọc cần ba mẹ vào vỗ về.
+
+LƯU Ý: Dù mặt bé có bị che khuất một phần (nghiêng góc, chăn che má), hãy đối soát động thái cơ thể (body agitation) và lồng ngực qua chuỗi 3 khung hình để đưa ra chẩn đoán chính xác nhất!
+
+Trả về đúng định dạng JSON:
+{{
+  "should_alert": boolean,
+  "is_real_distress": boolean,
+  "baby_state": "active_rem_sleep" | "self_soothing" | "physiological_fussing" | "hunger_crying" | "pain_distress_crying" | "false_alarm",
+  "confidence": integer (0-100),
+  "diagnosis_vi": "Chẩn đoán ngắn gọn 1-2 câu tiếng Việt chuyên nghiệp, giải thích rõ nguyên nhân",
+  "clinical_advice_vi": "Lời khuyên nhi khoa ngắn cho ba mẹ (ví dụ: 'Để bé tự ngủ lại' hoặc 'Ba mẹ nên vào kiểm tra bỉm/cữ bú')"
+}}
+"""
+        try:
+            self.status_text = "Đang hội chẩn tiếng khóc (Gemini AI)..."
+            resp = self._call_gemini_resilient(
+                contents=[
+                    types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
+                    prompt
+                ],
+                call_type="alert_verify",
+                json_mode=True,
+                temperature=0.05
+            )
+            data = json.loads(resp.text)
+            should_alert = bool(data.get("should_alert", False))
+            is_distress = bool(data.get("is_real_distress", should_alert))
+            state = str(data.get("baby_state", "distress_crying" if should_alert else "physiological_fussing"))
+            diag = str(data.get("diagnosis_vi", "Đã kiểm tra chéo tiếng khóc qua Gemini AI."))
+            advice = str(data.get("clinical_advice_vi", "Tiếp tục quan sát bé."))
+            conf = int(data.get("confidence", 90))
+
+            result = {
+                "verified_by_gemini": True,
+                "should_alert": should_alert,
+                "is_real_distress": is_distress,
+                "baby_state": state,
+                "confidence": conf,
+                "diagnosis_vi": diag,
+                "clinical_advice_vi": advice
+            }
+            self.last_alert_verify_time["cry"] = now
+            self.last_alert_result["cry"] = result
+            self.last_consultation = {
+                "timestamp": time.strftime("%H:%M:%S"),
+                "type": "cry",
+                "is_dangerous": should_alert,
+                "summary_vi": diag,
+                "confidence": conf
+            }
+            self.status_text = "Bé khóc (Đã xác thực)" if should_alert else "Bé ọ ẹ sinh lý (An toàn)"
+            print(f"[GeminiVerifier] 🩺 Double-Check (cry): alert={should_alert} [{state}] - {diag}")
+            return result
+        except Exception as e:
+            print(f"[GeminiVerifier] ⚠️ Lỗi gọi Gemini verify_crying_alert: {e} -> Kích hoạt FAIL-SAFE!")
+            is_urgent = (cont_sec >= 6.0 and vol_pct >= 2.0)
+            return {
+                "verified_by_gemini": False,
+                "should_alert": is_urgent,
+                "is_real_distress": is_urgent,
+                "baby_state": "distress_crying" if is_urgent else "physiological_fussing",
+                "diagnosis_vi": "Tiếng khóc duy trì (Không thể kết nối Gemini, kích hoạt bảo vệ an toàn)." if is_urgent else "Bé ọ ẹ cựa mình sinh lý (Fail-safe).",
+                "clinical_advice_vi": "Ba mẹ quan sát bé qua camera nếu tiếng khóc tiếp tục.",
+                "confidence": 75
             }
 
     # =========================================================================

@@ -592,9 +592,7 @@ class AlertManager:
         
         with self.lock:
             self.events.insert(0, event_record)
-            if len(self.events) > 1500:
-                self.events = self.events[:1500]
-            self._save_events()
+            self._trim_and_save_events()
 
         # 2. KIỂM TRA COOLDOWN: Chỉ áp dụng khi gửi Telegram hoặc kêu chuông trên Mac
         if not self._can_alert(event_type):
@@ -638,11 +636,22 @@ class AlertManager:
         }
         with self.lock:
             self.events.insert(0, event_record)
-            if len(self.events) > 1500:
-                self.events = self.events[:1500]
-            self._save_events()
+            self._trim_and_save_events()
         print(f"[AlertManager] Manual health event logged: [{event_type}] {message}")
         return event_record
+
+    def _trim_and_save_events(self):
+        """
+        Bảo toàn biến cố y tế quan trọng (Ho, Sặc sữa, Khóc, Ngạt, Cữ bú):
+        - Giữ tối đa 4000 biến cố y tế lâm sàng lâu dài (>= 30 ngày).
+        - Sự kiện chuyển động (motion) chỉ lưu tối đa 120 sự kiện gần nhất để không bao giờ chèn ép các biến cố sức khỏe!
+        """
+        clinical_events = [e for e in self.events if e.get("type") != "motion"]
+        motion_events = [e for e in self.events if e.get("type") == "motion"][:120]
+        combined = clinical_events[:4000] + motion_events
+        combined.sort(key=lambda x: x.get("epoch", 0.0), reverse=True)
+        self.events = combined
+        self._save_events()
 
     @staticmethod
     def get_event_cycle_date(epoch: float) -> str:
@@ -658,6 +667,7 @@ class AlertManager:
         Đếm chính xác số sự kiện ho/sặc sữa, khóc, ngạt...
         - Nếu có cycle_date (YYYY-MM-DD): đếm chính xác theo chu kỳ 24h neo 07:00 sáng.
         - Nếu không có: đếm trong 24 giờ qua.
+        - Đối soát chéo với daily_delta_log.json để đảm bảo tính toàn vẹn 100% của số liệu y tế.
         """
         now = time.time()
         counts = {
@@ -695,6 +705,30 @@ class AlertManager:
                     counts["prone_count"] += 1
                 elif t in ("covered_face", "covered"):
                     counts["covered_face_count"] += 1
+
+        # Đối soát chéo với daily_delta_log.json
+        delta_log_path = os.path.join(BASE_DIR, "daily_delta_log.json")
+        if os.path.exists(delta_log_path):
+            try:
+                with open(delta_log_path, "r", encoding="utf-8") as f:
+                    d_data = json.load(f)
+                cur_c = d_data.get("cycle_date")
+                tots = None
+                if cycle_date and cycle_date == cur_c:
+                    tots = d_data.get("daily_totals", {})
+                elif cycle_date and cycle_date in d_data.get("history", {}):
+                    tots = d_data["history"][cycle_date].get("daily_totals", {})
+                elif not cycle_date:
+                    tots = d_data.get("daily_totals", {})
+
+                if tots:
+                    counts["cough_count"] = max(counts["cough_count"], int(tots.get("cough_count", 0)))
+                    counts["choke_risk_count"] = max(counts["choke_risk_count"], int(tots.get("choke_risk_count", 0)))
+                    counts["crying_count"] = max(counts["crying_count"], int(tots.get("crying_count", 0)))
+                    counts["apnea_count"] = max(counts["apnea_count"], int(tots.get("apnea_count", 0)))
+            except Exception:
+                pass
+
         return counts
 
     def get_events(self, limit: int = 50, event_type: str = None):

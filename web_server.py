@@ -1177,14 +1177,17 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             }
 
         daily_counts = alert_manager.get_daily_event_counts() if alert_manager else {}
-        summary_dict["crying_count"] = daily_counts.get("crying_count", 0)
-        summary_dict["cough_count"] = daily_counts.get("cough_count", 0)
-        summary_dict["choke_risk_count"] = daily_counts.get("choke_risk_count", 0)
-        summary_dict["apnea_count"] = daily_counts.get("apnea_count", 0)
-
         # Bổ sung Cụm Biến Động Ban Ngày (Hourly Cluster Delta Summary)
+        delta_summary = {}
         if hasattr(sleep_tracker, "get_health_cluster_summary"):
-            summary_dict["delta_summary"] = sleep_tracker.get_health_cluster_summary()
+            delta_summary = sleep_tracker.get_health_cluster_summary()
+            summary_dict["delta_summary"] = delta_summary
+
+        delta_tots = delta_summary.get("daily_totals", {}) if delta_summary else {}
+        summary_dict["crying_count"] = max(int(daily_counts.get("crying_count", 0)), int(delta_tots.get("crying_count", 0)))
+        summary_dict["cough_count"] = max(int(daily_counts.get("cough_count", 0)), int(delta_tots.get("cough_count", 0)))
+        summary_dict["choke_risk_count"] = max(int(daily_counts.get("choke_risk_count", 0)), int(delta_tots.get("choke_risk_count", 0)))
+        summary_dict["apnea_count"] = max(int(daily_counts.get("apnea_count", 0)), int(delta_tots.get("apnea_count", 0)))
 
         # Nhịp thở lâm sàng đo khi ngủ (loại bỏ lúc thức / cử động / ngoài nôi)
         vis_bpm = 0.0
@@ -1204,10 +1207,20 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         if hist and len(hist) > 0:
             summary_dict["yesterday_sleep"] = hist[0]
             y_date = hist[0].get("date")
+            y_counts = {}
             if y_date and alert_manager:
-                summary_dict["yesterday_counts"] = alert_manager.get_daily_event_counts(y_date)
+                y_counts = alert_manager.get_daily_event_counts(y_date)
+            y_delta = {}
             if y_date and hasattr(sleep_tracker, "get_health_cluster_summary"):
-                summary_dict["delta_summary_yesterday"] = sleep_tracker.get_health_cluster_summary(y_date)
+                y_delta = sleep_tracker.get_health_cluster_summary(y_date)
+                summary_dict["delta_summary_yesterday"] = y_delta
+            y_tots = y_delta.get("daily_totals", {}) if y_delta else {}
+            summary_dict["yesterday_counts"] = {
+                "crying_count": max(int(y_counts.get("crying_count", 0)), int(y_tots.get("crying_count", 0))),
+                "cough_count": max(int(y_counts.get("cough_count", 0)), int(y_tots.get("cough_count", 0))),
+                "choke_risk_count": max(int(y_counts.get("choke_risk_count", 0)), int(y_tots.get("choke_risk_count", 0))),
+                "apnea_count": max(int(y_counts.get("apnea_count", 0)), int(y_tots.get("apnea_count", 0)))
+            }
 
         # Bổ sung cảnh báo Lịch Tiêm Chủng Quốc Gia & Dịch Vụ
         if vaccine_tracker:
