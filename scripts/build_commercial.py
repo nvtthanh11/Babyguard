@@ -88,7 +88,14 @@ def build_commercial_distribution():
         src = os.path.join(ROOT_DIR, folder)
         dst = os.path.join(COMMERCIAL_DIR, folder)
         if os.path.exists(src):
-            shutil.copytree(src, dst, ignore=shutil.ignore_patterns("*.zip", "*.tar.gz", "*.aab", "__pycache__", "*.pyc"))
+            shutil.copytree(
+                src,
+                dst,
+                ignore=shutil.ignore_patterns(
+                    "*.zip", "*.tar.gz", "*.aab", "*.apk", "*.dmg", "*.pkg",
+                    "download", "__pycache__", "*.pyc", ".DS_Store"
+                )
+            )
             print(f"   + Đã sao chép thư mục: {folder}/")
 
     for f in SUPPORT_FILES:
