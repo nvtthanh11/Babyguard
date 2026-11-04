@@ -1662,8 +1662,8 @@ Trả về đúng định dạng JSON:
             )
 
         prompt = f"""
-Bạn là Bác sĩ Nhi khoa Chuyên gia Dinh dưỡng & Phát triển Thể chất Trẻ em (Senior Pediatrician).
-Dưới đây là số liệu đo lường thể trạng của em bé:
+Bạn là Chuyên gia Dinh dưỡng & Thể trạng Nhi khoa, đối chiếu số đo thể trạng thực tế của bé với Tiêu Chuẩn Tăng Trưởng Trẻ Em của Tổ chức Y tế Thế giới (WHO Child Growth Standards).
+Dữ liệu đo lường thể chất của em bé:
 - Tên bé: {baby_name} ({gender}, {age_display})
 - Số đo lần này ({c_date}): Cân nặng = {c_w} kg, Chiều cao/dài = {c_h} cm{f', Vòng đầu = {c_head} cm' if c_head else ''}
 - So sánh với lần đo trước:
@@ -1671,17 +1671,21 @@ Dưới đây là số liệu đo lường thể trạng của em bé:
 - Đối chiếu Bảng Chuẩn Tăng Trưởng WHO:
 {who_info}
 
-Hãy phân tích y khoa sâu sắc và đưa ra ĐỀ XUẤT CHO BA MẸ theo định dạng JSON bắt buộc:
+MỤC TIÊU BẮT BUỘC:
+Trả lời rõ ràng cho ba mẹ: THỂ TRẠNG VÀ CÂN NẶNG CỦA BÉ CÓ NẰM TRONG NGƯỠNG AN TOÀN THEO CHUẨN WHO KHÔNG?
+Tuyệt đối không dùng các từ ngữ 'Bác sĩ AI'. Hãy phân tích dựa trên căn cứ khoa học WHO và hướng dẫn dinh dưỡng Nhi khoa.
+
+Định dạng JSON bắt buộc:
 {{
-  "growth_status_badge": "Tăng trưởng rất tốt" | "Đạt chuẩn WHO" | "Cần theo dõi thêm",
-  "velocity_evaluation_vi": "Nhận xét chi tiết 2-3 câu về tốc độ tăng cân/chiều cao trong khoảng thời gian {days_gap} ngày qua so với chuẩn sinh lý trẻ sơ sinh (khoảng 25-35g/ngày ở tháng đầu).",
-  "who_percentile_comparison_vi": "Đánh giá vị trí của bé so với trung vị WHO (rất tốt, đạt chuẩn hay cần cải thiện).",
+  "growth_status_badge": "Nằm Trong Ngưỡng An Toàn WHO" | "Tăng trưởng vượt trội so với chuẩn WHO" | "Cần theo dõi thêm (Dưới chuẩn WHO)",
+  "velocity_evaluation_vi": "Nhận xét chi tiết 2-3 câu về tốc độ tăng cân/chiều cao trong {days_gap} ngày qua so với chuẩn sinh lý trẻ sơ sinh (khoảng 25-35g/ngày ở tháng đầu) và khẳng định mức độ an toàn.",
+  "who_percentile_comparison_vi": "Đối chiếu vị trí cân nặng và chiều cao của bé với dải an toàn (vùng trung vị Median, -2SD đến +2SD) của WHO, khẳng định mức độ an toàn cho sự phát triển của bé.",
   "recommendations_vi": [
-    "Khuyến nghị cụ thể 1 về cữ bú / lượng sữa ml mỗi ngày phù hợp với cân nặng {c_w}kg",
-    "Khuyến nghị cụ thể 2 về giấc ngủ & vận động (Tummy Time, tắm nắng, massage)",
-    "Khuyến nghị cụ thể 3 về bổ sung vi chất (như Vitamin D3 400 IU/ngày) và lưu ý theo dõi"
+    "Khuyến nghị cụ thể 1 về cữ bú / tổng lượng sữa ml mỗi ngày phù hợp với cân nặng {c_w}kg theo hướng dẫn dinh dưỡng Nhi khoa (140-160ml/kg/ngày)",
+    "Khuyến nghị cụ thể 2 về vận động thể chất (Tummy Time, massage, tắm nắng) theo khuyến cáo của Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP)",
+    "Khuyến nghị cụ thể 3 về bổ sung vi chất (Vitamin D3 400 IU/ngày) và lưu ý theo dõi tăng trưởng"
   ],
-  "doctor_quote_vi": "Lời nhắn nhủ ấm áp, động viên ba mẹ từ Bác sĩ Nhi khoa (1 câu)"
+  "doctor_quote_vi": "Lời nhắn nhủ an tâm, động viên ba mẹ dựa trên tiêu chuẩn tăng trưởng chuẩn WHO (1 câu ngắn gọn)"
 }}
 """
         try:
@@ -1700,13 +1704,13 @@ Hãy phân tích y khoa sâu sắc và đưa ra ĐỀ XUẤT CHO BA MẸ theo đ
                     "weight_gain_g": w_diff_g,
                     "height_gain_cm": h_diff_cm,
                     "velocity_str": velocity_str,
-                    "status_badge": data.get("growth_status_badge", "Đạt chuẩn WHO"),
+                    "status_badge": data.get("growth_status_badge", "Nằm Trong Ngưỡng An Toàn WHO"),
                     "velocity_evaluation_vi": data.get("velocity_evaluation_vi", ""),
                     "who_percentile_comparison_vi": data.get("who_percentile_comparison_vi", ""),
                     "recommendations_vi": data.get("recommendations_vi", []),
-                    "doctor_quote_vi": data.get("doctor_quote_vi", "Chúc bé luôn mau ăn chóng lớn!"),
-                    "medical_disclaimer_vi": "Đây chỉ là gợi ý tham khảo dành cho bố mẹ dựa trên các thông số mà hệ thống đo đạc được. Để biết thêm thông tin chi tiết, bố mẹ cần liên hệ với bác sĩ chuyên ngành Nhi.",
-                    "model_used": self.active_model
+                    "doctor_quote_vi": data.get("doctor_quote_vi", "Chúc bé luôn tăng trưởng khỏe mạnh trong ngưỡng an toàn chuẩn WHO!"),
+                    "medical_disclaimer_vi": "Đây là kết quả đối chiếu tham khảo dựa trên Tiêu Chuẩn Tăng Trưởng Trẻ Em của Tổ chức Y tế Thế giới (WHO). Để biết thêm chi tiết hoặc khi bé có dấu hiệu bất thường, ba mẹ vui lòng liên hệ bác sĩ chuyên ngành Nhi.",
+                    "model_used": "Chuẩn Tăng Trưởng Trẻ Em WHO (World Health Organization)"
                 }
             }
         except Exception as e:

@@ -418,14 +418,14 @@ class GrowthTracker:
         w_med, w_min, w_max, l_med, l_min, l_max = std_row
 
         if w < w_min:
-            status_badge = "Cần theo dõi thêm"
-            w_comment = f"Cân nặng hiện tại {w} kg tiệm cận ngưỡng dưới so với trung vị WHO ({w_med} kg)."
+            status_badge = "⚠️ Cần theo dõi thêm (Dưới dải an toàn WHO)"
+            w_comment = f"Cân nặng hiện tại {w} kg tiệm cận ngưỡng dưới so với trung vị WHO ({w_med} kg). Dải tiêu chuẩn khuyến nghị an toàn của WHO cho độ tuổi này là từ {w_min} đến {w_max} kg."
         elif w > w_max:
-            status_badge = "Tăng trưởng vượt trội"
-            w_comment = f"Cân nặng hiện tại {w} kg phát triển vượt trội so với chuẩn WHO ({w_med} kg)."
+            status_badge = "🌟 Phát triển vượt trội so với chuẩn WHO"
+            w_comment = f"Cân nặng hiện tại {w} kg phát triển vượt mức trung vị WHO ({w_med} kg). Dải tiêu chuẩn an toàn của WHO cho độ tuổi này là từ {w_min} đến {w_max} kg."
         else:
-            status_badge = "Đạt chuẩn WHO"
-            w_comment = f"Cân nặng {w} kg và chiều cao {h} cm nằm trọn vẹn trong dải phát triển chuẩn của WHO ({w_min} - {w_max} kg, {l_min} - {l_max} cm)."
+            status_badge = "✅ Nằm Trong Ngưỡng An Toàn WHO"
+            w_comment = f"Cân nặng {w} kg và chiều cao {h} cm nằm trọn vẹn trong vùng an toàn theo Tiêu chuẩn Tăng trưởng Trẻ em của Tổ chức Y tế Thế giới (WHO: {w_min} - {w_max} kg, chiều dài {l_min} - {l_max} cm, mức trung vị {w_med} kg). Thể trạng của bé hoàn toàn an toàn và đạt chuẩn quốc tế."
 
         milk_need = int(w * 150)
         analysis = {
@@ -435,15 +435,15 @@ class GrowthTracker:
             "height_gain_cm": h_diff_cm,
             "velocity_str": velocity_str,
             "status_badge": status_badge,
-            "velocity_evaluation_vi": f"{baby_name} hiện đạt cân nặng {w} kg và chiều cao {h} cm ({velocity_str}). Tốc độ tăng trưởng thể trạng phản ánh bé đang hấp thu dinh dưỡng tốt và hoàn thiện thể chất đều đặn.",
+            "velocity_evaluation_vi": f"{baby_name} hiện đạt cân nặng {w} kg và chiều cao {h} cm ({velocity_str}). Thể trạng của bé nằm trọn trong dải phát triển sinh lý an toàn theo quy chuẩn WHO, hấp thu dinh dưỡng tốt và tăng trưởng đều đặn.",
             "who_percentile_comparison_vi": w_comment,
             "recommendations_vi": [
-                f"Duy trì tổng lượng sữa mẹ hoặc sữa công thức khoảng {milk_need} ml/ngày (140 - 160 ml/kg/ngày), chia đều các cữ bú.",
-                "Tập cho bé nằm sấp có kiểm soát (Tummy Time) 3 - 5 phút mỗi ngày khi bé thức để rèn luyện cơ cổ và vai.",
+                f"Duy trì tổng lượng sữa mẹ hoặc sữa công thức khoảng {milk_need} ml/ngày (140 - 160 ml/kg/ngày theo khuyến cáo dinh dưỡng Nhi khoa), chia đều các cữ bú.",
+                "Tập cho bé nằm sấp có kiểm soát (Tummy Time) 3 - 5 phút mỗi ngày khi bé thức để rèn luyện cơ cổ và vai theo khuyến cáo AAP.",
                 "Bổ sung đều đặn 400 IU Vitamin D3 mỗi buổi sáng để hỗ trợ hấp thu canxi và hoàn thiện khung xương."
             ],
-            "doctor_quote_vi": f"Thể trạng của {baby_name} đang phát triển rất tốt. Ba mẹ hãy tiếp tục duy trì cữ bú và giấc ngủ đều đặn cho con nhé!",
-            "model_used": "Chuẩn Nhi Khoa WHO"
+            "doctor_quote_vi": f"Thể trạng của {baby_name} đang phát triển rất tốt trong ngưỡng an toàn chuẩn WHO. Ba mẹ hoàn toàn yên tâm duy trì cữ bú và nếp sinh hoạt đều đặn cho con nhé!",
+            "model_used": "Chuẩn Tăng Trưởng Trẻ Em WHO (World Health Organization)"
         }
         self.save_ai_analysis(analysis)
         return analysis

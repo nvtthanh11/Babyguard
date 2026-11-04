@@ -9,7 +9,7 @@
 
 * 🫁 **Đo nhịp thở không tiếp xúc**: Giám sát lồng ngực bé qua thuật toán thị giác máy tính và quang sai vi mô, không cần đeo vòng hay cảm biến tiếp xúc lên người bé.
 * 💤 **Theo dõi chu kỳ thức / ngủ 24/7**: Phân tích Wake Window (Cửa sổ thức) và Infant Sleep Cycle (Chu kỳ ngủ NREM/REM 50 phút).
-* 🧠 **Hội chẩn bác sĩ AI buổi sáng (07:00 AM)**: Báo cáo phân tích chất lượng giấc ngủ đối chiếu theo tiêu chuẩn AAP & WHO.
+* 📊 **Đánh giá tổng hợp sức khỏe buổi sáng (07:00 AM)**: Báo cáo phân tích chất lượng giấc ngủ đối chiếu theo chuẩn AAP & WHO.
 * 🚨 **Cảnh báo khẩn cấp tức thì (Zero-Latency)**: Phát hiện trẻ lăn sát mép giường (nguy cơ ngã) và vật cản che mặt/mũi/miệng (nguy cơ ngạt thở).
 * 🎵 **Hệ thống âm thanh dỗ bé tự động (Closed-Loop Soothing)**: Tự động phát Tiếng ồn trắng (White / Pink / Brown Noise) hoặc Nhạc ru không lời; tự động đo cường độ âm thanh trong phòng bé để điều chỉnh âm lượng vừa đủ chuẩn y khoa (~45-50 dB).
 * 📸 **Album Khoảnh Khắc Đáng Yêu**: AI tự động lưu lại những nụ cười, cử chỉ ngộ nghĩnh của bé (đã qua kiểm duyệt bảo vệ quyền riêng tư); hỗ trợ chọn nhiều ảnh để tải về tệp ZIP hoặc xóa hàng loạt.
@@ -113,8 +113,8 @@ Mọi thiết lập có thể thực hiện trực quan ngay trên giao diện w
 1. **Hồ sơ bé**: Điền tên bé và số tháng tuổi để AI tự động so sánh nhịp thở và chu kỳ giấc ngủ theo chuẩn Nhi khoa quốc tế.
 2. **Thông báo Telegram**:
    * Nhập `Telegram Bot Token` và `Chat ID` để nhận cảnh báo tức thì kèm ảnh/video khi bé khóc, lật úp người, mặt bị che, hoặc chạm mép nôi.
-3. **Bác sĩ AI Gemini (Miễn phí)**:
-   * Nhập `Gemini API Key` (lấy miễn phí tại Google AI Studio) để kích hoạt tính năng Hội chẩn chuyên gia buổi sáng và bộ lọc khoảnh khắc đáng yêu.
+3. **Trợ lý Phân tích Gemini (Miễn phí)**:
+   * Nhập `Gemini API Key` (lấy miễn phí tại Google AI Studio) để kích hoạt tính năng Đánh giá tổng hợp sức khỏe buổi sáng và bộ lọc khoảnh khắc đáng yêu.
 4. **Căn chỉnh nôi (Safe Zone)**:
    * Hệ thống tự động căn chỉnh khung nôi bằng AI. Ngoài ra bạn có thể bấm nút **📐 Chỉnh Tay** trên video để kéo thả 4 cạnh nôi theo ý muốn.
 5. **Bộ sưu tập Khoảnh khắc**:

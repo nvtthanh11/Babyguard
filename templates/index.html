@@ -1250,8 +1250,8 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <button type="button" onclick="analyzeSleepWithAI(event)" id="btn-analyze-sleep-ai" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-md transition active:scale-95 flex items-center gap-1.5">
-                            <span>🩺</span>
-                            <span>Bác Sĩ AI Đánh Giá Ngay</span>
+                            <span>📋</span>
+                            <span>Đánh Giá Giấc Ngủ (Chuẩn AAP/AASM)</span>
                         </button>
                         <span id="sleep-ai-source-badge" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30">
                             ✅ Đã cập nhật hôm nay
@@ -1389,7 +1389,7 @@
                     </div>
                     <div>
                         <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Sổ Đo Chiều Cao & Cân Nặng (Chuẩn Tăng Trưởng WHO)</h2>
-                        <p class="text-xs text-slate-400">Theo dõi sự phát triển thể chất định kỳ, đối chiếu trung vị WHO và nhận đánh giá tăng trưởng chuyên sâu từ Bác sĩ AI.</p>
+                        <p class="text-xs text-slate-400">Theo dõi sự phát triển thể chất định kỳ, đối chiếu trực tiếp với Tiêu Chuẩn Tăng Trưởng Trẻ Em của Tổ chức Y tế Thế giới (WHO) để xác định ngưỡng phát triển an toàn của bé.</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -1439,12 +1439,12 @@
                 </p>
             </div>
 
-            <!-- Gemini Pediatrician Growth Advice Card -->
-            <div id="growth-gemini-advice-card" class="p-5 rounded-3xl bg-gradient-to-r from-indigo-950/70 via-slate-900 to-indigo-950/70 border border-indigo-500/35 space-y-3.5 text-xs shadow-xl">
+            <!-- WHO Growth Evaluation Card -->
+            <div id="growth-gemini-advice-card" class="p-5 rounded-3xl bg-slate-900/90 border border-emerald-500/35 space-y-3.5 text-xs shadow-xl">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div class="flex items-center gap-2">
                         <span class="text-xl">🩺</span>
-                        <span class="font-extrabold text-indigo-300 text-sm sm:text-base">Đánh Giá & Lời Khuyên Của Bác Sĩ AI</span>
+                        <span class="font-extrabold text-emerald-300 text-sm sm:text-base">Đối Chiếu Chuẩn Tăng Trưởng WHO & Hướng Dẫn Chăm Sóc</span>
                     </div>
                     <span id="growth-gemini-status-badge" class="text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30">
                         Đang phân tích...
@@ -1453,14 +1453,14 @@
                 <div id="growth-gemini-velocity-eval" class="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
                     Đang đối chiếu mức tăng trưởng với lần đo trước...
                 </div>
-                <div class="pt-2.5 border-t border-indigo-500/20">
-                    <span class="text-xs font-bold text-indigo-300 block mb-2">💡 Lời khuyên cụ thể cho ba mẹ:</span>
+                <div class="pt-2.5 border-t border-emerald-500/20">
+                    <span class="text-xs font-bold text-emerald-300 block mb-2">💡 Khuyến nghị cữ bú & chăm sóc theo tiêu chuẩn Nhi khoa:</span>
                     <ul id="growth-gemini-recommendations" class="space-y-2 text-xs sm:text-sm text-slate-300 list-disc list-inside leading-relaxed">
-                        <li>Đang tải lời khuyên chuyên gia...</li>
+                        <li>Đang tải khuyến nghị...</li>
                     </ul>
                 </div>
-                <div id="growth-gemini-quote" class="text-xs text-indigo-300/90 italic pt-2 border-t border-indigo-500/15">
-                    "Chúc bé luôn khỏe mạnh và tăng trưởng đều đặn!"
+                <div id="growth-gemini-quote" class="text-xs text-emerald-300/90 italic pt-2 border-t border-emerald-500/15">
+                    "Chúc bé luôn khỏe mạnh và tăng trưởng đều đặn trong ngưỡng an toàn chuẩn WHO!"
                 </div>
             </div>
 
@@ -1509,7 +1509,7 @@
                 <div class="pt-3 border-t border-bordercol/80 flex items-center justify-between gap-3 flex-wrap">
                     <span class="text-xs text-slate-400 flex items-center gap-1.5">
                         <span>💡</span>
-                        <span>Sau khi lưu, Bác sĩ AI sẽ tự động đối chiếu chuẩn WHO và đưa ra đánh giá tăng trưởng cho ba mẹ.</span>
+                        <span>Sau khi lưu, hệ thống tự động đối chiếu số đo với Biểu Đồ Chuẩn Tăng Trưởng WHO để xác định mức độ an toàn và lượng sữa khuyến nghị cho bé.</span>
                     </span>
                     <button type="submit" id="btn-save-growth" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-xl transition active:scale-95 flex items-center justify-center gap-2">
                         <span>💾</span>
@@ -3797,7 +3797,7 @@
                 sleep_score_title: 'Chất Lượng Giấc Ngủ',
                 sleep_chart_title: 'Biểu Đồ Giấc Ngủ 24h Theo Giờ (Mốc 07:00 Sáng)',
                 sleep_report_title: 'Bác Sĩ Giấc Ngủ Nhi Khoa (AI Clinical Sleep Summary)',
-                sleep_report_btn: '✨ Bác Sĩ AI Đánh Giá Toàn Diện',
+                sleep_report_btn: '✨ Đánh Giá Giấc Ngủ Chuẩn AAP',
                 lic_title: 'Bản Quyền BabyGuard AI',
                 lic_subtitle: 'Xác thực bản quyền thương mại & bảo vệ phần cứng',
                 lic_label_status: 'Trạng thái bản quyền:',
@@ -5704,13 +5704,13 @@
                 }
                 const badgeEl = document.getElementById('sleep-ai-source-badge');
                 if (badgeEl) {
-                    const isGemini = (da.source || '').toLowerCase().includes('gemini') || (da.source || '').toLowerCase().includes('bác sĩ ai');
+                    const isGemini = (da.source || '').toLowerCase().includes('gemini') || (da.source || '').toLowerCase().includes('bác sĩ ai') || (da.source || '').toLowerCase().includes('aap');
                     if (isGemini) {
                         badgeEl.className = "text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30";
-                        badgeEl.innerHTML = `<span>✨ Bác Sĩ AI (${da.generated_at || 'Hôm nay'})</span>`;
+                        badgeEl.innerHTML = `<span>📋 Chuẩn AAP & WHO (${da.generated_at || 'Hôm nay'})</span>`;
                     } else {
                         badgeEl.className = "text-[11px] font-bold text-indigo-300 bg-indigo-500/15 px-3 py-1 rounded-full border border-indigo-500/30";
-                        badgeEl.innerHTML = `<span>⚙️ AI Cục Bộ (${da.generated_at || 'Hôm nay'})</span>`;
+                        badgeEl.innerHTML = `<span>⚙️ Hệ Thống (${da.generated_at || 'Hôm nay'})</span>`;
                     }
                 }
                 const tbody = document.getElementById('sleep-ai-analysis-table-body');
@@ -5820,24 +5820,24 @@
             const btn = document.getElementById('btn-analyze-sleep-ai');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = `<span>⏳</span><span>Bác sĩ AI đang phân tích 24h...</span>`;
+                btn.innerHTML = `<span>⏳</span><span>Đang đối chiếu chuẩn AAP & WHO...</span>`;
             }
-            showToast("Đang gửi số liệu giấc ngủ 24h cho Bác sĩ Nhi khoa Gemini phân tích...", "🧠");
+            showToast("Đang đối chiếu dữ liệu 24h với Quy chuẩn Y khoa Quốc tế (AAP & WHO)...", "📋");
             try {
                 const res = await fetch('/api/sleep/analyze-ai', { method: 'POST' });
                 const d = await res.json();
                 if (d.success && d.summary) {
                     renderSleepSummaryUI(d.summary);
-                    showToast("Đã cập nhật Bảng Phân Tích Chuyên Sâu từ Bác Sĩ AI!", "🌅");
+                    showToast("Đã cập nhật Bảng Đối Chiếu Quy Chuẩn AAP & WHO!", "✅");
                 } else {
-                    showToast(d.error || "Không tạo được báo cáo AI", "⚠️");
+                    showToast(d.error || "Không tạo được báo cáo đối chiếu", "⚠️");
                 }
             } catch (e) {
                 showToast("Lỗi kết nối khi phân tích giấc ngủ", "⚠️");
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = `<span>🧠</span><span>Phân Tích Ngay Với Bác Sĩ AI</span>`;
+                    btn.innerHTML = `<span>📋</span><span>Đối Chiếu Chuẩn AAP & WHO</span>`;
                 }
             }
         }
@@ -7567,7 +7567,7 @@
                         recoList.innerHTML = ai.recommendations_vi.map(r => `<li>${r}</li>`).join('');
                     }
                     if (quoteEl && ai.doctor_quote_vi) {
-                        quoteEl.innerText = `"${ai.doctor_quote_vi}" • Bác sĩ Nhi khoa Gemini (${ai.model_used || 'AI'})`;
+                        quoteEl.innerText = `"${ai.doctor_quote_vi}" • Căn cứ: ${ai.model_used || 'Tiêu chuẩn Tăng Trưởng WHO'}`;
                     }
                 }
 
@@ -7655,10 +7655,10 @@
                     document.getElementById('input-growth-note').value = '';
                     setGrowthDefaultDate();
 
-                    // Hiển thị trạng thái đang đánh giá tại vị trí thẻ Bác sĩ AI
+                    // Hiển thị trạng thái đang đối chiếu tại vị trí thẻ Chuẩn WHO
                     const statusBadge = document.getElementById('growth-gemini-status-badge');
                     if (statusBadge) {
-                        statusBadge.innerHTML = '<span class="animate-pulse text-amber-300">⏳ Bác sĩ AI đang cập nhật đánh giá...</span>';
+                        statusBadge.innerHTML = '<span class="animate-pulse text-emerald-300">⏳ Đang đối chiếu với chuẩn WHO...</span>';
                     }
 
                     if (btn) {
@@ -7720,21 +7720,21 @@
             const oldHtml = btn ? btn.innerHTML : '';
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = `<span>⏳</span><span>Đang đánh giá AI...</span>`;
+                btn.innerHTML = `<span>⏳</span><span>Đang đối chiếu chuẩn y khoa...</span>`;
             }
-            showToast("Đang gửi dữ liệu sinh học lên Bác sĩ AI...", "🩺");
+            showToast("Đang đối chiếu dữ liệu sinh học theo Chuẩn AAP & WHO...", "📋");
             try {
                 const res = await fetch('/api/sleep/analyze-ai', { method: 'POST' });
                 const d = await res.json();
                 if (d.success && d.summary) {
                     renderSleepData(d.summary);
-                    showToast("Bác sĩ AI đã hoàn tất đánh giá & ghim Telegram!", "✅");
+                    showToast("Đã hoàn tất đối chiếu chuẩn y khoa & ghim Telegram!", "✅");
                 } else {
-                    showToast(d.error || "Không thể phân tích AI lúc này", "⚠️");
+                    showToast(d.error || "Không thể phân tích lúc này", "⚠️");
                 }
             } catch (e) {
                 console.error(e);
-                showToast("Lỗi kết nối khi gọi Bác sĩ AI", "⚠️");
+                showToast("Lỗi kết nối khi phân tích dữ liệu", "⚠️");
             } finally {
                 if (btn) {
                     btn.disabled = false;

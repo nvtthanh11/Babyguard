@@ -1,17 +1,17 @@
 {
-  "analyzed_at": "08:47 - 04/11/2026",
+  "analyzed_at": "13:54 - 04/11/2026",
   "days_gap": 7,
   "weight_gain_g": 700,
   "height_gain_cm": 0.0,
   "velocity_str": "+700g (100.0g/ngày), +0.0cm trong 7 ngày",
-  "status_badge": "Đạt chuẩn WHO",
-  "velocity_evaluation_vi": "Bé A Siu hiện đạt cân nặng 3.9 kg và chiều cao 55.0 cm (+700g (100.0g/ngày), +0.0cm trong 7 ngày). Tốc độ tăng trưởng thể trạng phản ánh bé đang hấp thu dinh dưỡng tốt và hoàn thiện thể chất đều đặn.",
-  "who_percentile_comparison_vi": "Cân nặng 3.9 kg và chiều cao 55.0 cm nằm trọn vẹn trong dải phát triển chuẩn của WHO (3.4 - 5.7 kg, 51.1 - 58.4 cm).",
+  "status_badge": "✅ Nằm Trong Ngưỡng An Toàn WHO",
+  "velocity_evaluation_vi": "Bé A Siu hiện đạt cân nặng 3.9 kg và chiều cao 55.0 cm (+700g (100.0g/ngày), +0.0cm trong 7 ngày). Thể trạng của bé nằm trọn trong dải phát triển sinh lý an toàn theo quy chuẩn WHO, hấp thu dinh dưỡng tốt và tăng trưởng đều đặn.",
+  "who_percentile_comparison_vi": "Cân nặng 3.9 kg và chiều cao 55.0 cm nằm trọn vẹn trong vùng an toàn theo Tiêu chuẩn Tăng trưởng Trẻ em của Tổ chức Y tế Thế giới (WHO: 3.4 - 5.7 kg, chiều dài 51.1 - 58.4 cm, mức trung vị 4.5 kg). Thể trạng của bé hoàn toàn an toàn và đạt chuẩn quốc tế.",
   "recommendations_vi": [
-    "Duy trì tổng lượng sữa mẹ hoặc sữa công thức khoảng 585 ml/ngày (140 - 160 ml/kg/ngày), chia đều các cữ bú.",
-    "Tập cho bé nằm sấp có kiểm soát (Tummy Time) 3 - 5 phút mỗi ngày khi bé thức để rèn luyện cơ cổ và vai.",
+    "Duy trì tổng lượng sữa mẹ hoặc sữa công thức khoảng 585 ml/ngày (140 - 160 ml/kg/ngày theo khuyến cáo dinh dưỡng Nhi khoa), chia đều các cữ bú.",
+    "Tập cho bé nằm sấp có kiểm soát (Tummy Time) 3 - 5 phút mỗi ngày khi bé thức để rèn luyện cơ cổ và vai theo khuyến cáo AAP.",
     "Bổ sung đều đặn 400 IU Vitamin D3 mỗi buổi sáng để hỗ trợ hấp thu canxi và hoàn thiện khung xương."
   ],
-  "doctor_quote_vi": "Thể trạng của Bé A Siu đang phát triển rất tốt. Ba mẹ hãy tiếp tục duy trì cữ bú và giấc ngủ đều đặn cho con nhé!",
-  "model_used": "Chuẩn Nhi Khoa WHO"
+  "doctor_quote_vi": "Thể trạng của Bé A Siu đang phát triển rất tốt trong ngưỡng an toàn chuẩn WHO. Ba mẹ hoàn toàn yên tâm duy trì cữ bú và nếp sinh hoạt đều đặn cho con nhé!",
+  "model_used": "Chuẩn Tăng Trưởng Trẻ Em WHO (World Health Organization)"
 }
