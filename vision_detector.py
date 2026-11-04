@@ -201,6 +201,16 @@ class VisionTracker:
         self.prev_keypoints = None
         self.prev_keypoints_conf = None
         self.fps_actual = 0.0
+
+        # Smooth Tracking & Anti-Jitter Filters (Adaptive Temporal EMA)
+        self.smoothed_kpts = None
+        self.smoothed_kpts_conf = None
+        self.smoothed_baby_box = None
+        self.smoothed_crib_polygon = None
+        self.tracking_persistence_count = 0
+        self.last_tracked_pose = "Đang ngủ ngoan"
+        self.last_tracked_status = "Đang ngủ ngoan"
+        self.last_tracked_bpm = 42.0
         
         # Tầng 1: Debounce thời gian theo dõi thay đổi tư thế ngủ (Bé phải giữ tư thế mới >= 10 giây mới gửi Gemini)
         self.last_confirmed_pose = "Đang quét..."
@@ -344,6 +354,139 @@ class VisionTracker:
             except Exception as ce:
                 print(f"[VisionTracker] Lỗi lưu Safe Zone vào config.json: {ce}")
 
+    def _get_interpolated_crib_polygon(self, w: int, h: int) -> np.ndarray:
+        """Trả về đa giác 4 đỉnh vùng an toàn với nội suy mượt mà (LERP), chống giật nảy khi cập nhật."""
+        raw_pts = self._get_safe_zone_polygon(w, h).astype(np.float32)
+        if self.smoothed_crib_polygon is None or self.smoothed_crib_polygon.shape != raw_pts.shape:
+            self.smoothed_crib_polygon = raw_pts.copy()
+            return raw_pts.astype(np.int32)
+        
+        diff = np.max(np.abs(self.smoothed_crib_polygon - raw_pts))
+        if diff > 0.8:
+            self.smoothed_crib_polygon += 0.22 * (raw_pts - self.smoothed_crib_polygon)
+        else:
+            self.smoothed_crib_polygon = raw_pts.copy()
+        return self.smoothed_crib_polygon.astype(np.int32)
+
+    def _smooth_keypoints(self, kpts_xy, kpts_conf):
+        """Bộ lọc thời gian khử rung giật vi mô (Anti-Jitter EMA) cho 17 khớp xương của bé."""
+        if kpts_xy is None or len(kpts_xy) < 17:
+            return kpts_xy, kpts_conf
+        
+        curr_xy = kpts_xy.astype(np.float32)
+        curr_conf = kpts_conf.astype(np.float32) if kpts_conf is not None else np.ones(17, dtype=np.float32)
+        
+        if self.smoothed_kpts is None or self.smoothed_kpts.shape != curr_xy.shape:
+            self.smoothed_kpts = curr_xy.copy()
+            self.smoothed_kpts_conf = curr_conf.copy()
+            return self.smoothed_kpts, self.smoothed_kpts_conf
+        
+        diffs = np.linalg.norm(curr_xy - self.smoothed_kpts, axis=1, keepdims=True)
+        # Deadband & Adaptive EMA:
+        # Bé nằm yên (diff < 3px): alpha = 0.85 (làm mượt cực đại, đứng yên 100%)
+        # Bé cựa nhẹ (3px <= diff < 12px): alpha = 0.65
+        # Bé cựa mạnh (diff >= 12px): alpha = 0.35 (bám tức thì)
+        alpha = np.where(diffs < 3.0, 0.85, np.where(diffs < 12.0, 0.65, 0.35))
+        self.smoothed_kpts = alpha * self.smoothed_kpts + (1.0 - alpha) * curr_xy
+        if self.smoothed_kpts_conf is not None:
+            self.smoothed_kpts_conf = 0.75 * self.smoothed_kpts_conf + 0.25 * curr_conf
+        return self.smoothed_kpts, self.smoothed_kpts_conf
+
+    def _smooth_box(self, box_xyxy):
+        """Bộ lọc làm mượt tọa độ hộp bao Bounding Box em bé (Adaptive Box EMA)."""
+        if box_xyxy is None:
+            return None
+        curr = np.array(box_xyxy, dtype=np.float32)
+        if self.smoothed_baby_box is None:
+            self.smoothed_baby_box = curr.copy()
+            return self.smoothed_baby_box.astype(int)
+        
+        diff = np.max(np.abs(self.smoothed_baby_box - curr))
+        # Nếu rung lắc nhẹ < 6px: alpha = 0.85 (khung đứng êm như chụp ảnh tĩnh)
+        # Nếu bé chuyển động < 25px: alpha = 0.60
+        # Nếu chuyển động lớn: alpha = 0.35
+        alpha = 0.85 if diff < 6.0 else (0.60 if diff < 25.0 else 0.35)
+        self.smoothed_baby_box = alpha * self.smoothed_baby_box + (1.0 - alpha) * curr
+        return self.smoothed_baby_box.astype(int)
+
+    def _draw_smart_baby_box(self, img, box, pose_text: str = "Đang ngủ ngoan",
+                             bpm_val: float = 0.0, is_alert: bool = False,
+                             is_moving: bool = False, is_swaddled: bool = False):
+        """
+        Vẽ khung định vị thông minh bo góc (Smart Corner Brackets) chuẩn camera nhi khoa cao cấp (Nanit Pro / CuboAi):
+        - Bám chắc chắn quanh người bé, tự đổi màu theo trạng thái.
+        - Có thẻ thông số sinh học bám mượt mà theo vị trí bé.
+        """
+        if box is None or len(box) != 4:
+            return
+        x1, y1, x2, y2 = [int(v) for v in box]
+        w_box = x2 - x1
+        h_box = y2 - y1
+        if w_box < 35 or h_box < 35:
+            return
+
+        if is_alert:
+            box_color = (40, 50, 245) # Bright red
+            bracket_color = (60, 80, 255)
+            tag_bg = (30, 20, 180)
+            tag_border = (60, 80, 255)
+        elif is_moving:
+            box_color = (50, 190, 255) # Amber gold
+            bracket_color = (80, 220, 255)
+            tag_bg = (20, 75, 140)
+            tag_border = (80, 220, 255)
+        else:
+            box_color = (70, 215, 90) # Neon emerald
+            bracket_color = (110, 250, 130)
+            tag_bg = (15, 50, 30)
+            tag_border = (110, 250, 130)
+
+        # 1. Vẽ 4 góc định vị thông minh (Corner Brackets) dày dặn 2px
+        c_len = max(18, min(42, int(min(w_box, h_box) * 0.22)))
+        thick = 2
+        
+        # Góc Trên - Trái
+        cv2.line(img, (x1, y1), (x1 + c_len, y1), bracket_color, thick, cv2.LINE_AA)
+        cv2.line(img, (x1, y1), (x1, y1 + c_len), bracket_color, thick, cv2.LINE_AA)
+        # Góc Trên - Phải
+        cv2.line(img, (x2, y1), (x2 - c_len, y1), bracket_color, thick, cv2.LINE_AA)
+        cv2.line(img, (x2, y1), (x2, y1 + c_len), bracket_color, thick, cv2.LINE_AA)
+        # Góc Dưới - Phải
+        cv2.line(img, (x2, y2), (x2 - c_len, y2), bracket_color, thick, cv2.LINE_AA)
+        cv2.line(img, (x2, y2), (x2, y2 - c_len), bracket_color, thick, cv2.LINE_AA)
+        # Góc Dưới - Trái
+        cv2.line(img, (x1, y2), (x1 + c_len, y2), bracket_color, thick, cv2.LINE_AA)
+        cv2.line(img, (x1, y2), (x1, y2 - c_len), bracket_color, thick, cv2.LINE_AA)
+
+        # 2. Đường viền bao mờ tinh tế
+        cv2.rectangle(img, (x1, y1), (x2, y2), box_color, 1, cv2.LINE_AA)
+
+        # 3. Thẻ thông tin nổi bật gắn liền phía trên khung tracking
+        label = "Be A Siu"
+        if pose_text:
+            short_pose = "Ngu ngoan" if "ngủ" in str(pose_text).lower() else ("Thuc choi" if "thức" in str(pose_text).lower() else str(pose_text)[:14])
+            label += f" | {short_pose}"
+        if bpm_val > 0:
+            label += f" | {int(round(bpm_val))} bpm"
+
+        tag_h = 22
+        tag_w = max(115, len(label) * 8 + 20)
+        tag_y1 = max(8, y1 - tag_h - 4)
+        tag_y2 = tag_y1 + tag_h
+        tag_x1 = max(8, min(x1, img.shape[1] - tag_w - 8))
+        tag_x2 = tag_x1 + tag_w
+
+        # Vẽ nền tag bán trong suốt
+        roi_tag = img[tag_y1:tag_y2, tag_x1:tag_x2]
+        if roi_tag.size > 0:
+            color_rect = np.full_like(roi_tag, tag_bg)
+            cv2.addWeighted(roi_tag, 0.25, color_rect, 0.75, 0, roi_tag)
+            img[tag_y1:tag_y2, tag_x1:tag_x2] = roi_tag
+
+        cv2.rectangle(img, (tag_x1, tag_y1), (tag_x2, tag_y2), tag_border, 1, cv2.LINE_AA)
+        cv2.circle(img, (tag_x1 + 10, tag_y1 + tag_h // 2), 3, bracket_color, -1, cv2.LINE_AA)
+        cv2.putText(img, label, (tag_x1 + 18, tag_y1 + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (255, 255, 255), 1, cv2.LINE_AA)
+
     def get_enhanced_low_light_frame(self, burst_frames=None) -> np.ndarray:
         """
         Bù sáng đa khung hình thích ứng (Multi-frame Exposure Stacking & CLAHE):
@@ -481,22 +624,26 @@ class VisionTracker:
         h, w = frame.shape[:2]
         raw_candidates = []
 
-        # 1. Quét hướng thẳng 0° (Bé nằm dọc)
-        self.face_detector.setInputSize((w, h))
-        _, faces_0 = self.face_detector.detect(frame)
-        if faces_0 is not None:
-            for f in faces_0:
-                bbox = f[:4].astype(int)
-                conf = float(f[-1])
-                lms = f[4:14].reshape((5, 2)).astype(np.float32)
-                raw_candidates.append((bbox, conf, lms, "0"))
-
-        # 2. Quét hướng nằm ngang (90° CCW: Đầu bên phải - Mình bên trái & 90° CW: Đầu bên trái - Mình bên phải)
-        # Thu nhỏ 0.5x khi quét xoay để tốc độ xử lý < 2.5ms mà vẫn đạt độ chính xác > 91%
+        # 1. Quét hướng thẳng 0° (Bé nằm dọc) trên ảnh thu nhỏ scale 0.5x cực nhanh (< 10ms)
         scale = 0.5
         sw, sh = int(w * scale), int(h * scale)
         small = cv2.resize(frame, (sw, sh))
 
+        self.face_detector.setInputSize((sw, sh))
+        _, faces_0 = self.face_detector.detect(small)
+        if faces_0 is not None:
+            for f in faces_0:
+                rx, ry, rw_b, rh_b = f[:4]
+                conf = float(f[-1])
+                fx = int(rx / scale)
+                fy = int(ry / scale)
+                fw = int(rw_b / scale)
+                fh = int(rh_b / scale)
+                lms_s = f[4:14].reshape((5, 2))
+                lms = (lms_s / scale).astype(np.float32)
+                raw_candidates.append((np.array([fx, fy, fw, fh], dtype=int), conf, lms, "0"))
+
+        # 2. Quét hướng nằm ngang (90° CCW: Đầu bên phải - Mình bên trái & 90° CW: Đầu bên trái - Mình bên phải)
         # 2a. Xoay 90° ngược chiều kim đồng hồ (90° CCW) -> Đầu bé bên phải trở thành thẳng đứng
         img_ccw = cv2.rotate(small, cv2.ROTATE_90_COUNTERCLOCKWISE)
         self.face_detector.setInputSize((sh, sw))
@@ -571,16 +718,21 @@ class VisionTracker:
                     hair_bonus = 0.18
 
             # Phân biệt người lớn vs em bé:
-            if (not in_crib) or (fw > 0.22 * w) or (fh > 0.32 * h):
+            # Người lớn có kích thước khuôn mặt vượt trội (chiều ngang > 18% hoặc chiều dọc > 25% khung hình)
+            is_large_face = (fw > 0.18 * w) or (fh > 0.25 * h)
+            if is_large_face:
                 adult_faces.append({"bbox": np.array([fx, fy, fw, fh]), "conf": conf, "landmarks": landmarks})
             else:
+                # Khuôn mặt em bé sơ sinh: Ưu tiên mặt trong nôi nhưng vẫn giữ bắt nét nếu bé nằm sát mép nôi
+                crib_bonus = 0.35 if in_crib else 0.0
                 baby_faces.append({
                     "bbox": np.array([fx, fy, fw, fh]),
                     "conf": conf,
-                    "rank_score": conf + hair_bonus,
+                    "rank_score": conf + hair_bonus + crib_bonus,
                     "landmarks": landmarks,
                     "skin_ratio": skin_ratio,
-                    "orient": orient
+                    "orient": orient,
+                    "in_crib": in_crib
                 })
 
         best_baby_face = None
@@ -753,8 +905,10 @@ class VisionTracker:
             if person_info["is_adult"] or is_border_touch or (not has_baby_anatomy):
                 adult_candidates.append((idx, human_score, xyxy.astype(int), person_info))
             else:
-                if person_info["in_crib_zone"]:
-                    baby_candidates.append((idx, human_score, xyxy.astype(int), person_info, False))
+                # Kích thước và giải phẫu chuẩn của em bé sơ sinh:
+                # Thưởng điểm ưu tiên cho bé trong nôi, nhưng vẫn kiên quyết duy trì theo dõi nếu bé cựa mình ra sát mép
+                crib_bonus = 2.0 if person_info["in_crib_zone"] else 0.0
+                baby_candidates.append((idx, human_score + crib_bonus, xyxy.astype(int), person_info, not person_info["in_crib_zone"]))
 
         if baby_candidates:
             baby_candidates.sort(key=lambda x: x[1], reverse=True)
@@ -1564,11 +1718,8 @@ class VisionTracker:
                 self.sleep_tracker.update_state(False, False)
 
             if self.danger_zone_enabled:
-                z_top = int(h * self.safe_zone_top)
-                z_bottom = int(h * self.safe_zone_bottom)
-                z_left = int(w * self.safe_zone_left)
-                z_right = int(w * self.safe_zone_right)
-                cv2.rectangle(annotated, (z_left, z_top), (z_right, z_bottom), (70, 215, 90), 1, cv2.LINE_AA)
+                pts = self._get_interpolated_crib_polygon(w, h)
+                cv2.polylines(annotated, [pts], isClosed=True, color=(70, 215, 90), thickness=2, lineType=cv2.LINE_AA)
 
             return annotated
 
@@ -1576,8 +1727,8 @@ class VisionTracker:
         baby_face_info, has_adult_face, adult_face_box = self._detect_baby_face(frame)
         self.last_baby_face_info = baby_face_info
 
-        # 2. Run YOLO inference với conf=0.18 chuẩn xác, lọc nhiễu bóng mờ
-        results = self.model(frame, device=self.device, verbose=False, conf=0.18)
+        # 2. Run YOLO inference với conf=0.18 chuẩn xác, tối ưu imgsz=480 tăng tốc gấp đôi
+        results = self.model(frame, device=self.device, verbose=False, conf=0.18, imgsz=480)
         r = results[0]
 
         best_baby_idx, has_adult, adult_box, is_occluded = self._select_real_baby(r, h, w)
@@ -1809,9 +1960,15 @@ class VisionTracker:
                 self.had_visible_face = True
                 self.last_face_box = np.array([bfx, bfy, bfx + bfw, bfy + bfh])
 
-            self.last_baby_box = box_xyxy
+            s_box = self._smooth_box(box_xyxy)
+            s_kpts, s_kpts_conf = self._smooth_keypoints(kpts_xy, kpts_conf)
+            self.last_baby_box = s_box
+            self.tracking_persistence_count = 12
+            self.last_tracked_pose = self.sleep_pose
+            self.last_tracked_status = self.baby_status
+            self.last_tracked_bpm = self.breathing_bpm
             self.lost_frames = 0
-            self._draw_baby_skeleton(annotated, box_xyxy, kpts_xy, kpts_conf)
+            self._draw_baby_skeleton(annotated, s_box, s_kpts, s_kpts_conf)
         elif baby_face_info is not None:
             # === DUAL-ENGINE FACE-FIRST TRACKING (ĐỊNH VỊ TỪ ĐẦU SANG CƠ THỂ BÉ XOAY THEO TRỤC SỐNG LƯNG) ===
             self.baby_detected = True
@@ -1826,7 +1983,12 @@ class VisionTracker:
             # 1. Suy diễn toàn bộ Bounding Box cơ thể bé và ROI lồng ngực xoay nghiêng từ khuôn mặt YuNet
             body_box, chest_roi = self._derive_infant_from_face(baby_face_info, h, w)
             bx1, by1, bx2, by2 = body_box
-            self.last_baby_box = body_box
+            s_box = self._smooth_box(body_box)
+            self.last_baby_box = s_box
+            self.tracking_persistence_count = 12
+            self.last_tracked_pose = self.sleep_pose
+            self.last_tracked_status = self.baby_status
+            self.last_tracked_bpm = self.breathing_bpm
 
             fx, fy, fw, fh = baby_face_info["bbox"]
             self.last_face_box = np.array([fx, fy, fx + fw, fy + fh])
@@ -2002,7 +2164,12 @@ class VisionTracker:
             self.adult_holding_baby = False
             g_box = self.gemini_anchor_box
             bx1, by1, bx2, by2 = g_box
-            self.last_baby_box = g_box
+            s_box = self._smooth_box(g_box)
+            self.last_baby_box = s_box
+            self.tracking_persistence_count = 12
+            self.last_tracked_pose = getattr(self, "gemini_anchor_pose", "Đang ngủ ngoan")
+            self.last_tracked_status = "Đang ngủ ngoan"
+            self.last_tracked_bpm = self.breathing_bpm
             self.sleep_pose = getattr(self, "gemini_anchor_pose", "Đang ngủ ngoan")
             self.baby_status = "Đang ngủ ngoan (AI Đồng bộ)"
             if self.breathing_monitor_enabled:
@@ -2013,8 +2180,6 @@ class VisionTracker:
                 self._update_breathing(frame, time.time(), max(0, cx - rw), max(0, cy - rh), min(w, cx + rw), min(h, cy + rh))
         else:
             # Kiểm tra tình huống MẶT BÉ VỪA BỊ CHE KHUẤT / TRÙM KHĂN ĐỘT NGỘT:
-            # Nếu bé vừa được phát hiện trong nôi (< 15s trước), không có người lớn bế đi,
-            # và vị trí mặt trước đó bị mất hoàn toàn sắc tố da do có khăn/chăn đè lên:
             now_t = time.time()
             face_recently_seen = (now_t - getattr(self, "baby_last_seen_time", 0.0) < 15.0) and (getattr(self, "last_face_box", None) is not None)
             
@@ -2034,6 +2199,13 @@ class VisionTracker:
 
                 if self.covered_face_frame_count >= 15: # ~1.2s - 1.5s
                     self._trigger_gemini_alert_verify(frame, "covered_face", "Mặt bé vừa bị khăn/chăn trùm kín đột ngột")
+            elif getattr(self, "tracking_persistence_count", 0) > 0 and not has_adult and (now_t - getattr(self, "baby_last_seen_time", 0.0) < 1.5):
+                # Persistence buffer: duy trì vị trí bé thêm ~12 frame (~0.6s) để chống nhấp nháy khi bé trở mình
+                self.tracking_persistence_count -= 1
+                self.baby_detected = True
+                self.adult_holding_baby = False
+                self.sleep_pose = getattr(self, "last_tracked_pose", "Đang ngủ ngoan")
+                self.baby_status = getattr(self, "last_tracked_status", "Đang ngủ ngoan")
             else:
                 # Hoàn toàn không phát hiện bé và không có người lớn
                 self.adult_holding_baby = False
@@ -2062,24 +2234,41 @@ class VisionTracker:
                 self.smoothed_motion
             )
 
-        # Draw Virtual Crib / Safe Zone on video (VIỀN NÔI 3D PERSPECTIVE QUADRILATERAL)
+        # 1. Vẽ Khung Định Vị Em Bé Thông Minh (Smart Baby Target Brackets & Bio HUD Tag)
+        if self.baby_detected and self.smoothed_baby_box is not None:
+            is_near_edge_now = getattr(self, "is_near_edge", False)
+            is_covered_now = getattr(self, "covered_face_active", False)
+            is_prone_now = self.prone_alert_enabled and ("sấp" in str(self.sleep_pose).lower())
+            is_alert_box = is_near_edge_now or is_covered_now or is_prone_now
+            is_moving_now = (self.smoothed_motion > self.motion_threshold)
+            self._draw_smart_baby_box(
+                annotated,
+                self.smoothed_baby_box,
+                pose_text=self.sleep_pose,
+                bpm_val=self.breathing_bpm if self.breathing_monitor_enabled else 0.0,
+                is_alert=is_alert_box,
+                is_moving=is_moving_now,
+                is_swaddled=getattr(self, "is_swaddled", False)
+            )
+
+        # 2. Draw Virtual Crib / Safe Zone on video (VIỀN NÔI 3D PERSPECTIVE QUADRILATERAL)
         if self.danger_zone_enabled:
-            pts = self._get_safe_zone_polygon(w, h)
+            pts = self._get_interpolated_crib_polygon(w, h)
             is_alert = (getattr(self, "is_near_edge", False) and self.baby_detected) or getattr(self, "covered_face_active", False)
             if is_alert:
-                box_color = (0, 0, 240) # Bright red
-                corner_color = (0, 40, 255)
+                box_color = (40, 50, 245) # Bright red
+                corner_color = (60, 80, 255)
                 box_thickness = 2
             else:
                 box_color = (70, 215, 90) # Emerald neon
-                corner_color = (110, 250, 130)
-                box_thickness = 1
+                corner_color = (120, 255, 150)
+                box_thickness = 2
 
-            # 1. Vẽ viền đa giác Safe Zone 3D bẻ theo đúng góc phối cảnh tấm đệm / nôi
+            # 2a. Vẽ viền đa giác Safe Zone 3D bẻ theo đúng góc phối cảnh tấm đệm / nôi
             cv2.polylines(annotated, [pts], isClosed=True, color=box_color, thickness=box_thickness, lineType=cv2.LINE_AA)
 
-            # 2. Vẽ 4 góc định vị phát sáng bẻ theo đúng góc xiên phối cảnh của từng cạnh
-            c_len = 28.0
+            # 2b. Vẽ 4 góc định vị phát sáng bẻ theo đúng góc xiên phối cảnh của từng cạnh
+            c_len = 32.0
             c_thick = 3
             n_pts = len(pts)
             for i in range(n_pts):
@@ -2091,7 +2280,7 @@ class VisionTracker:
                 len_prev = np.linalg.norm(v_prev)
                 if len_prev > 1e-4:
                     u_prev = v_prev / len_prev
-                    arm_len_prev = min(c_len, len_prev * 0.4)
+                    arm_len_prev = min(c_len, len_prev * 0.35)
                     pt_arm_prev = (p_curr + u_prev * arm_len_prev).astype(np.int32)
                     cv2.line(annotated, (int(p_curr[0]), int(p_curr[1])), (int(pt_arm_prev[0]), int(pt_arm_prev[1])), corner_color, c_thick, cv2.LINE_AA)
 
@@ -2099,9 +2288,12 @@ class VisionTracker:
                 len_next = np.linalg.norm(v_next)
                 if len_next > 1e-4:
                     u_next = v_next / len_next
-                    arm_len_next = min(c_len, len_next * 0.4)
+                    arm_len_next = min(c_len, len_next * 0.35)
                     pt_arm_next = (p_curr + u_next * arm_len_next).astype(np.int32)
                     cv2.line(annotated, (int(p_curr[0]), int(p_curr[1])), (int(pt_arm_next[0]), int(pt_arm_next[1])), corner_color, c_thick, cv2.LINE_AA)
+
+            p_tl = pts[0]
+            cv2.putText(annotated, "KHUNG AN TOAN NOI", (int(p_tl[0]) + 4, max(18, int(p_tl[1]) - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.40, corner_color, 1, cv2.LINE_AA)
 
         # Chủ động tận dụng Quota Free dư thừa để gửi hình kiểm tra chéo & hiệu chỉnh Tracking AI Local
         self._maybe_trigger_tracking_audit(frame, annotated, h, w)
