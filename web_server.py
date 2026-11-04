@@ -20,6 +20,7 @@ from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSONResponse, RedirectResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 
@@ -28,6 +29,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, music_player, sleep_tracker, config_path: str, gemini_verifier=None, tunnel_manager=None):
     app = FastAPI(title="BabyGuard AI")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
     snapshots_dir = os.path.join(BASE_DIR, "snapshots")
     recordings_dir = os.path.join(BASE_DIR, "recordings")
@@ -1914,6 +1922,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         Khách hàng ở bất kỳ đâu chuyển khoản 49k, máy tính của họ sẽ gọi về đây để nhận License Key tự động.
         """
         short_id = short_id.strip().upper()
+        clean_short = short_id.replace("BG", "").replace("-", "").replace("_", "").strip()
         machine_id = machine_id.strip().upper()
         if not short_id and not machine_id:
             return {"valid": False, "reason": "missing_id"}
@@ -1931,7 +1940,8 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         matched_rec = None
         for k, v in paid_data.items():
             k_up = str(k).upper()
-            if (short_id and (short_id in k_up or k_up in short_id)) or (machine_id and (machine_id in k_up or k_up in machine_id)):
+            k_clean = k_up.replace("BG", "").replace("-", "").replace("_", "").strip()
+            if (short_id and (short_id in k_up or k_up in short_id or (clean_short and clean_short == k_clean))) or (machine_id and (machine_id in k_up or k_up in machine_id)):
                 matched_rec = v
                 break
 

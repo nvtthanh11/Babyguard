@@ -2746,28 +2746,36 @@
                     </div>
 
                     <!-- QR code display & Bank details -->
-                    <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                        <div class="relative bg-white p-2 rounded-xl shadow-lg flex-shrink-0">
-                            <img id="lic-vietqr-img" src="https://img.vietqr.io/image/970422-1550107316004-compact2.png?amount=49000&addInfo=BG%20BABY&accountName=Nguyen%20Vu%20Truong%20Thanh" alt="VietQR MBBank" class="w-32 h-32 object-contain rounded-lg">
-                            <div class="text-[9px] text-slate-500 text-center font-bold mt-1">MBBank • SePay Auto</div>
+                    <div class="flex flex-col sm:flex-row items-center gap-5 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+                        <div class="relative bg-white p-3 rounded-2xl shadow-xl flex-shrink-0 border-2 border-emerald-500/40 text-center">
+                            <img id="lic-vietqr-img" src="https://img.vietqr.io/image/970422-1550107316004-compact2.png?amount=49000&addInfo=BG%20BABY&accountName=Nguyen%20Vu%20Truong%20Thanh" alt="VietQR MBBank" class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-xl mx-auto">
+                            <div class="text-[10px] text-slate-600 font-bold mt-1.5 flex items-center justify-center gap-1">
+                                <span>🏦 MBBank</span>
+                                <span>•</span>
+                                <span class="text-emerald-700">SePay Tự Động 24/7</span>
+                            </div>
                         </div>
 
-                        <div class="flex-1 space-y-2 text-left w-full text-[11px]">
-                            <div class="space-y-0.5">
-                                <span class="text-slate-400 text-[10px]">Tài khoản thụ hưởng:</span>
-                                <div class="font-bold text-white text-xs">MBBank - 1550107316004</div>
-                                <div class="text-[10px] text-slate-400">NGUYEN VU TRUONG THANH</div>
+                        <div class="flex-1 space-y-2.5 text-left w-full text-[11px]">
+                            <div class="space-y-0.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                                <span class="text-slate-400 text-[10px] block font-medium">Tài khoản thụ hưởng:</span>
+                                <div class="font-bold text-white text-xs sm:text-sm">MBBank - 1550107316004</div>
+                                <div class="text-[11px] text-emerald-400 font-semibold">NGUYEN VU TRUONG THANH</div>
                             </div>
                             <div class="space-y-0.5">
-                                <span class="text-slate-400 text-[10px]">Nội dung chuyển khoản (Bắt buộc):</span>
-                                <div class="flex items-center justify-between bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-700 font-mono text-emerald-400 font-bold">
+                                <span class="text-slate-400 text-[10px] block font-medium">Mã chuyển khoản tự động (Hệ thống tự nhận):</span>
+                                <div class="flex items-center justify-between bg-slate-900 px-3 py-2 rounded-xl border border-emerald-500/40 font-mono text-emerald-400 font-black text-xs sm:text-sm">
                                     <span id="lic-transfer-content">BG ...</span>
-                                    <button onclick="copyTransferContent()" class="text-slate-400 hover:text-white text-xs" title="Sao chép nội dung">📋</button>
+                                    <button onclick="copyTransferContent()" class="px-2 py-0.5 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 rounded text-[11px] font-bold transition flex items-center gap-1" title="Sao chép nội dung">
+                                        <span>📋</span>
+                                        <span>Sao chép</span>
+                                    </button>
                                 </div>
+                                <p class="text-[10px] text-amber-300 pt-0.5">⚡ Quét mã QR bằng app ngân hàng sẽ tự điền sẵn tiền và mã chuyển khoản!</p>
                             </div>
                             <div class="space-y-0.5">
-                                <span class="text-slate-400 text-[10px]">Số tiền thanh toán:</span>
-                                <div class="font-bold text-white text-xs">49.000 VNĐ <span class="text-[10px] text-emerald-400 font-bold">(Giá ưu đãi • Trọn đời)</span></div>
+                                <span class="text-slate-400 text-[10px] block font-medium">Số tiền thanh toán:</span>
+                                <div class="font-bold text-white text-xs sm:text-sm">49.000 VNĐ <span class="text-[10px] text-emerald-400 font-bold">(Giá ưu đãi • Trọn đời)</span></div>
                             </div>
                             <!-- Live status indicator -->
                             <div class="flex items-center gap-2 pt-1 text-indigo-300 font-medium text-[11px]">
@@ -2775,7 +2783,7 @@
                                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                     <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                                 </span>
-                                <span id="lic-auto-poll-status">Đang lắng nghe thanh toán từ SePay...</span>
+                                <span id="lic-auto-poll-status" class="text-emerald-400 font-semibold">Đang lắng nghe thanh toán từ SePay... (Tự mở khóa 3s)</span>
                             </div>
                         </div>
                     </div>
@@ -2814,7 +2822,7 @@
 
             <!-- Bottom Close & Support -->
             <div class="pt-2 flex items-center justify-between border-t border-slate-800/80 text-[11px]">
-                <span class="text-slate-400">Cần hỗ trợ? Telegram: <b class="text-slate-200">@babyguard_support</b></span>
+                <span class="text-slate-400">Cần hỗ trợ? <a href="https://t.me/Nvtthanh11" target="_blank" class="text-sky-400 hover:text-sky-300 font-bold underline inline-flex items-center gap-1">Telegram: <strong>@Nvtthanh11</strong></a></span>
                 <button onclick="closeLicenseModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">
                     Đóng
                 </button>
@@ -3134,7 +3142,7 @@
 
             <!-- Bottom Support & Close -->
             <div class="pt-2 flex items-center justify-between border-t border-slate-800/80 text-[11px]">
-                <span class="text-slate-400">Hỗ trợ kỹ thuật 24/7: <b class="text-slate-200">Telegram @babyguard_support</b></span>
+                <span class="text-slate-400">Hỗ trợ kỹ thuật: <a href="https://t.me/Nvtthanh11" target="_blank" class="text-sky-400 hover:text-sky-300 font-bold underline inline-flex items-center gap-1">Telegram: <strong>@Nvtthanh11</strong> (Ba bé ASiu)</a></span>
                 <button onclick="closeUserGuideModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">
                     Đã Hiểu & Đóng
                 </button>

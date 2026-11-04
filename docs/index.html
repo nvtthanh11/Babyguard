@@ -2416,6 +2416,123 @@
       if (modal) modal.classList.add('hidden');
     }
 
+    // =========================================================================
+    // CHECKOUT MODAL: 100% AUTOMATED VIETQR & INSTANT ACTIVATION POLLING
+    // =========================================================================
+    let checkoutPollTimer = null;
+    let currentOrderCode = '';
+
+    function openCheckoutModal() {
+      const modal = document.getElementById('checkout-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+
+      // Sinh mã đơn hàng duy nhất 5 chữ số (VD: BG85219) nếu chưa có trong phiên
+      let savedCode = sessionStorage.getItem('bg_checkout_code');
+      if (!savedCode) {
+        const randNum = Math.floor(10000 + Math.random() * 90000);
+        savedCode = 'BG' + randNum;
+        sessionStorage.setItem('bg_checkout_code', savedCode);
+      }
+      currentOrderCode = savedCode;
+
+      // Cập nhật giao diện thanh toán với mã đơn duy nhất
+      const memoEl = document.getElementById('checkout-memo');
+      if (memoEl) memoEl.innerText = currentOrderCode;
+
+      const qrImg = document.getElementById('checkout-vietqr-img');
+      if (qrImg) {
+        const qrUrl = `https://img.vietqr.io/image/970422-1550107316004-compact2.png?amount=49000&addInfo=${encodeURIComponent(currentOrderCode)}&accountName=Nguyen%20Vu%20Truong%20Thanh`;
+        qrImg.src = qrUrl;
+      }
+
+      // Khởi động lắng nghe SePay Webhook tự động (Auto-Poll mỗi 2.5 giây)
+      startCheckoutPolling(currentOrderCode);
+    }
+
+    function closeCheckoutModal() {
+      const modal = document.getElementById('checkout-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+      stopCheckoutPolling();
+    }
+
+    function stopCheckoutPolling() {
+      if (checkoutPollTimer) {
+        clearInterval(checkoutPollTimer);
+        checkoutPollTimer = null;
+      }
+    }
+
+    function startCheckoutPolling(orderCode) {
+      stopCheckoutPolling();
+      const cleanShort = orderCode.replace('BG', '').trim();
+      
+      checkoutPollTimer = setInterval(async () => {
+        try {
+          // Thử gọi cloud-verify cục bộ hoặc qua domain chính
+          const apiUrl = `/api/license/cloud-verify?short_id=${cleanShort}`;
+          const res = await fetch(apiUrl, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.valid && data.is_lifetime) {
+              stopCheckoutPolling();
+              handlePaymentSuccess(data);
+            }
+          }
+        } catch (err) {
+          // Bỏ qua lỗi mạng tạm thời trong lúc poll
+        }
+      }, 2500);
+    }
+
+    function handlePaymentSuccess(data) {
+      const key = data.license_key || 'BG-LFT-ACTIVE-OK';
+      localStorage.setItem('babyguard_paid_license', key);
+
+      const contentBox = document.getElementById('checkout-content-vietqr');
+      if (!contentBox) return;
+
+      contentBox.innerHTML = `
+        <div class="p-6 rounded-2xl bg-gradient-to-b from-emerald-950/80 to-slate-900 border-2 border-emerald-500 text-center space-y-4 animate-fade-in shadow-2xl">
+          <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 text-3xl mx-auto flex items-center justify-center border border-emerald-400/40">
+            🎉
+          </div>
+          <div class="space-y-1">
+            <h4 class="text-xl font-black text-white">THANH TOÁN THÀNH CÔNG!</h4>
+            <p class="text-xs text-emerald-300 font-semibold">Đã xác nhận chuyển khoản 49.000 VNĐ qua SePay</p>
+          </div>
+          
+          <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30 text-left space-y-2">
+            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Mã Bản Quyền Vĩnh Viễn Của Bạn:</div>
+            <div class="flex items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-700 font-mono text-emerald-300 font-black text-xs sm:text-sm select-all">
+              <span id="paid-key-text">${key}</span>
+              <button onclick="navigator.clipboard.writeText('${key}'); alert('Đã sao chép License Key vào bộ nhớ tạm!');" class="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-md transition shrink-0">
+                Sao Chép
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">💡 Khi mở ứng dụng trên máy tính, app sẽ tự động nhận diện bản quyền này mà không cần gõ lại!</p>
+          </div>
+
+          <div class="space-y-2 pt-2">
+            <div class="text-xs font-bold text-white">Tải Ngay Bộ Cài Đặt Phù Hợp:</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <a href="/download/windows-app" class="py-3 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
+                <span>🪟 Tải Cho Windows (.ZIP)</span>
+              </a>
+              <a href="/download/BabyGuard_Mac.pkg" class="py-3 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
+                <span>🍏 Tải Cho Mac (.PKG)</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     function switchCheckoutTab(tab) {
       const btnVietQR = document.getElementById('tab-checkout-vietqr');
       const btnIntl = document.getElementById('tab-checkout-intl');
@@ -2437,9 +2554,9 @@
 
     function copyCheckoutMemo() {
       const memo = document.getElementById('checkout-memo');
-      const txt = memo ? memo.innerText.trim() : 'BG [SĐT HOẶC TELEGRAM]';
+      const txt = memo ? memo.innerText.trim() : (currentOrderCode || 'BG68821');
       navigator.clipboard.writeText(txt).then(() => {
-        alert('Đã sao chép cú pháp chuyển khoản vào bộ nhớ tạm!');
+        alert('Đã sao chép nội dung chuyển khoản: ' + txt);
       });
     }
   </script>
@@ -2479,32 +2596,54 @@
 
       <!-- Tab Content: VietQR -->
       <div id="checkout-content-vietqr" class="space-y-4 text-xs">
-        <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center gap-5">
-          <div class="bg-white p-2.5 rounded-2xl shadow-xl flex-shrink-0 text-center">
-            <img src="https://img.vietqr.io/image/970422-1550107316004-compact2.png?amount=49000&addInfo=BG%20LIFETIME&accountName=Nguyen%20Vu%20Truong%20Thanh" alt="VietQR 49k BabyGuard AI" class="w-36 h-36 object-contain rounded-xl">
-            <span class="text-[9px] text-slate-500 font-bold block mt-1">MBBank • SePay Auto IPN</span>
+        <div class="bg-slate-950/80 p-4 sm:p-5 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center gap-5">
+          <div class="bg-white p-3 rounded-2xl shadow-2xl flex-shrink-0 text-center border-2 border-emerald-500/40">
+            <img id="checkout-vietqr-img" src="https://img.vietqr.io/image/970422-1550107316004-compact2.png?amount=49000&addInfo=BG%20LIFETIME&accountName=Nguyen%20Vu%20Truong%20Thanh" alt="VietQR 49k BabyGuard AI" class="w-52 h-52 sm:w-60 sm:h-60 object-contain rounded-xl mx-auto">
+            <div class="text-[10px] text-slate-600 font-black mt-1.5 flex items-center justify-center gap-1">
+              <span>🏦 MBBank</span>
+              <span>•</span>
+              <span class="text-emerald-700">SePay Tự Động 24/7</span>
+            </div>
           </div>
 
-          <div class="space-y-2.5 flex-1 w-full">
+          <div class="space-y-3 flex-1 w-full text-left">
             <div>
               <span class="text-slate-300 text-[11px] font-medium block">Số tiền thanh toán:</span>
-              <span class="text-xl font-black text-emerald-400">49.000 VNĐ</span>
-              <span class="text-[10px] text-slate-400 ml-1">(Giá gốc 990.000đ)</span>
+              <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-black text-emerald-400">49.000 VNĐ</span>
+                <span class="text-xs text-slate-400 line-through">990.000đ</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">Trọn Đời</span>
+              </div>
             </div>
 
-            <div class="space-y-0.5 text-[11px] text-slate-200">
-              <span class="text-slate-300 text-[10px] font-medium">Tài khoản thụ hưởng:</span>
-              <div class="font-bold text-white">MBBank - 1550107316004</div>
-              <div class="text-[10px] text-slate-300 font-medium">NGUYEN VU TRUONG THANH</div>
+            <div class="space-y-0.5 text-xs text-slate-200 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+              <span class="text-slate-400 text-[10px] font-medium block">Tài khoản thụ hưởng:</span>
+              <div class="font-bold text-white text-sm">MBBank - 1550107316004</div>
+              <div class="text-[11px] text-emerald-400 font-semibold">NGUYEN VU TRUONG THANH</div>
             </div>
 
             <div class="space-y-1">
-              <span class="text-slate-300 text-[11px] font-medium block">Cú pháp nội dung chuyển khoản:</span>
-              <div class="flex items-center justify-between bg-slate-900 px-3 py-2 rounded-xl border border-slate-700 font-mono text-emerald-300 font-bold">
-                <span id="checkout-memo">BG [SĐT HOẶC NICK TELEGRAM]</span>
-                <button onclick="copyCheckoutMemo()" class="text-slate-400 hover:text-white text-xs" title="Sao chép cú pháp">📋</button>
+              <span class="text-slate-300 text-[11px] font-medium block">Mã chuyển khoản tự động (Hệ thống tự nhận):</span>
+              <div class="flex items-center justify-between bg-slate-900 px-3.5 py-2.5 rounded-xl border border-emerald-500/50 font-mono text-emerald-300 font-black text-sm shadow-inner">
+                <span id="checkout-memo">BG88219</span>
+                <button onclick="copyCheckoutMemo()" class="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Sao chép cú pháp">
+                  <span>📋</span>
+                  <span>Sao Chép</span>
+                </button>
               </div>
-              <p class="text-[10px] text-amber-300">💡 Ví dụ: <code class="text-emerald-300 font-mono">BG 0912345678</code> hoặc <code class="text-emerald-300 font-mono">BG @nguyenvana</code></p>
+              <p class="text-[10.5px] text-amber-300 leading-relaxed pt-0.5">
+                ⚡ <strong>Không cần nhập số điện thoại hay nickname!</strong> Mở app ngân hàng bất kỳ quét mã QR ở trên, hệ thống ngân hàng sẽ tự điền sẵn toàn bộ. Bạn chỉ cần bấm <strong>Xác nhận</strong>!
+              </p>
+            </div>
+
+            <!-- Live Polling Status indicator -->
+            <div class="flex items-center gap-2 pt-1 text-slate-300 text-[11px]">
+              <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span class="text-emerald-400 font-semibold">Đang trực chiến kết nối SePay:</span>
+              <span class="text-slate-400">Tự động mở khóa ngay khi nhận tiền</span>
             </div>
           </div>
         </div>
@@ -2515,7 +2654,7 @@
           </div>
           <ul class="space-y-1 text-slate-300 text-[11px]">
             <li>✓ Ngay khi chuyển khoản thành công, bot SePay tự động ghi nhận giao dịch trong 3 giây.</li>
-            <li>✓ Nếu bạn đang mở app trên máy tính, app sẽ <strong>tự động mở khóa vĩnh viễn ngay lập tức</strong> mà bạn không cần phải gõ mã key!</li>
+            <li>✓ Màn hình này sẽ <strong>tự động đổi sang màu xanh chúc mừng và cấp mã bản quyền vĩnh viễn</strong> ngay lập tức.</li>
             <li>✓ Hoàn tiền 100% trong 30 ngày nếu ứng dụng không hoạt động mượt mà như mong đợi.</li>
           </ul>
         </div>
@@ -2547,8 +2686,15 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
-        <span>Hỗ trợ 24/7 qua Telegram: <strong class="text-slate-200">@babyguard_support</strong></span>
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800 text-[11px] text-slate-400">
+        <div class="flex items-center gap-1.5">
+          <span>Cần hỗ trợ trực tiếp?</span>
+          <a href="https://t.me/Nvtthanh11" target="_blank" class="text-sky-400 hover:text-sky-300 font-bold underline inline-flex items-center gap-1">
+            <span>💬 Telegram:</span>
+            <strong>@Nvtthanh11</strong>
+            <span>(Ba bé ASiu)</span>
+          </a>
+        </div>
         <button onclick="closeCheckoutModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">
           Đóng
         </button>
