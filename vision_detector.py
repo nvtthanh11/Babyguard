@@ -34,7 +34,9 @@ class VisionTracker:
                  moments_dir: str = None,
                  danger_zone_y_percent: float = None,
                  danger_zone_x_percent: float = None,
-                 safe_zone_polygon: list = None):
+                 safe_zone_polygon: list = None,
+                 show_baby_box: bool = False,
+                 show_skeleton: bool = False):
         self.camera_index = camera_index
         self.width = width
         self.height = height
@@ -90,6 +92,8 @@ class VisionTracker:
             ]
         self.danger_zone_y_percent = self.safe_zone_bottom
         self.danger_zone_x_percent = self.safe_zone_right
+        self.show_baby_box = bool(show_baby_box)
+        self.show_skeleton = bool(show_skeleton)
         self.covered_face_alert = covered_face_alert
         self.breathing_monitor_enabled = breathing_monitor_enabled
         self.cute_moments_enabled = cute_moments_enabled
@@ -1968,7 +1972,8 @@ class VisionTracker:
             self.last_tracked_status = self.baby_status
             self.last_tracked_bpm = self.breathing_bpm
             self.lost_frames = 0
-            self._draw_baby_skeleton(annotated, s_box, s_kpts, s_kpts_conf)
+            if getattr(self, "show_skeleton", False):
+                self._draw_baby_skeleton(annotated, s_box, s_kpts, s_kpts_conf)
         elif baby_face_info is not None:
             # === DUAL-ENGINE FACE-FIRST TRACKING (ĐỊNH VỊ TỪ ĐẦU SANG CƠ THỂ BÉ XOAY THEO TRỤC SỐNG LƯNG) ===
             self.baby_detected = True
@@ -2234,8 +2239,8 @@ class VisionTracker:
                 self.smoothed_motion
             )
 
-        # 1. Vẽ Khung Định Vị Em Bé Thông Minh (Smart Baby Target Brackets & Bio HUD Tag)
-        if self.baby_detected and self.smoothed_baby_box is not None:
+        # 1. Khung Định Vị Em Bé Quanh Người Bé (Smart Baby Target Brackets & Tag): Tối giản theo yêu cầu người dùng (Mặc định tắt để hình ảnh bé luôn trong trẻo, không bị che chắn)
+        if getattr(self, "show_baby_box", False) and self.baby_detected and self.smoothed_baby_box is not None:
             is_near_edge_now = getattr(self, "is_near_edge", False)
             is_covered_now = getattr(self, "covered_face_active", False)
             is_prone_now = self.prone_alert_enabled and ("sấp" in str(self.sleep_pose).lower())

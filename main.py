@@ -177,7 +177,9 @@ def main():
         covered_face_alert=config.get("covered_face_alert", True),
         breathing_monitor_enabled=config.get("breathing_monitor_enabled", True),
         cute_moments_enabled=config.get("cute_moments_enabled", True),
-        moments_dir=os.path.join(BASE_DIR, "moments")
+        moments_dir=os.path.join(BASE_DIR, "moments"),
+        show_baby_box=config.get("show_baby_box", False),
+        show_skeleton=config.get("show_skeleton", False)
     )
 
     # 3. Audio Cry, Cough & Choke Detector

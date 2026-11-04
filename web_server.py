@@ -2535,7 +2535,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             vision_tracker.motion_threshold = cfg.get("motion_threshold", 18.0)
             
         for k in ["prone_alert_enabled", "covered_face_alert", "danger_zone_enabled",
-                  "breathing_monitor_enabled", "cute_moments_enabled"]:
+                  "breathing_monitor_enabled", "cute_moments_enabled", "show_baby_box", "show_skeleton"]:
             if k in update_data and hasattr(vision_tracker, k):
                 setattr(vision_tracker, k, update_data[k])
                 
