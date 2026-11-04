@@ -1,7 +1,7 @@
 """
 BabyGuard AI - Clinical Benchmark Evaluator
 Đối chiếu số lượng ọ ẹ, số lượng ho, nhịp thở và sặc sữa với quy chuẩn quốc tế
-(AAP - Viện Hàn lâm Nhi khoa Hoa Kỳ, BTS - Hội Lồng ngực Anh, CHEST - Hội Bác sĩ Lồng ngực Hoa Kỳ, WHO, Nelson Pediatrics).
+(AAP - Viện Hàn lâm Nhi khoa Hoa Kỳ, BTS - Hội Lồng ngực Anh, CHEST - Trường Môn Lồng ngực Hoa Kỳ, WHO, Nelson Pediatrics).
 """
 
 import os

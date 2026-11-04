@@ -245,9 +245,9 @@ class GrowthTracker:
 
     def should_trigger_monthly_reminder(self) -> dict:
         """
-        Kiểm tra điều kiện bật pop-up nhắc nhở bố mẹ:
+        Kiểm tra điều kiện bật pop-up nhắc nhở ba mẹ:
         1. Hôm nay là Ngày 1 đầu tháng (day == 1) và chưa có bản ghi nào trong 15 ngày qua.
-        2. HOẶC nếu bố mẹ đã nhập sớm thì tính từ ngày nhập gần nhất đến nay đã đủ 30 ngày (>= 30 ngày)
+        2. HOẶC nếu ba mẹ đã nhập sớm thì tính từ ngày nhập gần nhất đến nay đã đủ 30 ngày (>= 30 ngày)
            mà chưa có bản ghi bổ sung tiếp theo.
         """
         today = date.today()
@@ -367,7 +367,7 @@ class GrowthTracker:
         }
 
     def save_ai_analysis(self, analysis: dict):
-        """Lưu kết quả phân tích tăng trưởng và lời khuyên từ Bác sĩ Gemini AI."""
+        """Lưu kết quả phân tích tăng trưởng và lời khuyên theo chuẩn WHO."""
         if not analysis:
             return
         ai_path = os.path.join(BASE_DIR, "baby_growth_ai.json")
@@ -449,7 +449,7 @@ class GrowthTracker:
         return analysis
 
     def get_latest_ai_analysis(self) -> dict:
-        """Lấy kết quả phân tích tăng trưởng gần nhất của Bác sĩ Gemini AI."""
+        """Lấy kết quả phân tích tăng trưởng gần nhất theo chuẩn WHO."""
         ai_path = os.path.join(BASE_DIR, "baby_growth_ai.json")
         latest = self.get_latest_record()
         if os.path.exists(ai_path):

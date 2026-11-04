@@ -434,7 +434,7 @@ class GeminiHybridVerifier:
 
     def audit_local_tracking(self, raw_frame, annotated_frame, local_info: dict) -> dict:
         """
-        Gửi khung hình lên Gemini để TỰ ĐỘNG thực hiện đồng thời 2 nhiệm vụ (bố mẹ không cần bấm nút):
+        Gửi khung hình lên Gemini để TỰ ĐỘNG thực hiện đồng thời 2 nhiệm vụ (ba mẹ không cần bấm nút):
         1. Kiểm tra & Tự động căn chỉnh Khung Bảo Vệ Nôi / Tấm Đệm của bé (khung viền xanh lá cây Safe Zone).
         2. Kiểm tra & Hiệu chỉnh nóng Khung Tracking Em Bé ('EM BE' màu xanh dương & 'ROI NGỰC').
         """
@@ -1020,10 +1020,10 @@ Trả về đúng định dạng JSON:
         if is_manual:
             prompt = f"""
 Bạn là Trợ lý Nhiếp ảnh Gia Đình của BabyGuard AI cho bé {self.baby_name}.
-Bức ảnh này do chính BỐ MẸ / NGƯỜI THÂN CHỦ ĐỘNG BẤM CHỤP để lưu lại khoảnh khắc đáng nhớ của gia đình và bé bên nôi.
+Bức ảnh này do chính BA MẸ / NGƯỜI THÂN CHỦ ĐỘNG BẤM CHỤP để lưu lại khoảnh khắc đáng nhớ của gia đình và bé bên nôi.
 
 YÊU CẦU:
-1. TÔN TRỌNG VÀ DUYỆT ẢNH (approved = true, privacy_safe = true) để lưu giữ kỷ niệm cho gia đình (kể cả khi có bố mẹ/người thân đang chăm sóc, ngắm nhìn bé hoặc bé đang ngủ nghiêng).
+1. TÔN TRỌNG VÀ DUYỆT ẢNH (approved = true, privacy_safe = true) để lưu giữ kỷ niệm cho gia đình (kể cả khi có ba mẹ/người thân đang chăm sóc, ngắm nhìn bé hoặc bé đang ngủ nghiêng).
 2. Tạo một câu chú thích (caption_vi) thật ngọt ngào, ấm áp, ghi nhận khoảnh khắc gia đình và bé (ví dụ: "Mẹ âu yếm ngắm nhìn bé yêu", "Khoảnh khắc bình yên bên nôi", "Bé ngủ say giấc trong vòng tay gia đình").
 
 Trả về đúng định dạng JSON:
@@ -1258,7 +1258,7 @@ Trả về đúng định dạng JSON:
   "safe_zone_right": float,
   "baby_present": boolean,
   "objects_detected": ["danh sách vật thể bằng tiếng Việt"],
-  "safety_advice_vi": "Lời khuyên ngắn gọn cho bố mẹ bằng tiếng Việt"
+  "safety_advice_vi": "Lời khuyên ngắn gọn cho ba mẹ bằng tiếng Việt"
 }
 """
         try:
@@ -1324,7 +1324,7 @@ Trả về đúng định dạng JSON:
             if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
                 return {
                     "success": False,
-                    "error": "Khóa Gemini API đã chạm hạn mức Free (20 lượt/ngày). Khung 3D đã được hiệu chỉnh tối ưu sẵn, hoặc bố mẹ có thể bấm 'Chỉnh Tay' để tinh chỉnh 4 góc."
+                    "error": "Khóa Gemini API đã chạm hạn mức Free (20 lượt/ngày). Khung 3D đã được hiệu chỉnh tối ưu sẵn, hoặc ba mẹ có thể bấm 'Chỉnh Tay' để tinh chỉnh 4 góc."
                 }
             return {"success": False, "error": f"Lỗi Gemini AI: {err_msg[:120]}"}
 
@@ -1468,15 +1468,15 @@ Dưới đây là hồ sơ dữ liệu sinh học thực tế của em bé {baby
 {cluster_text}
 
 LƯU Ý Y KHOA QUAN TRỌNG VỀ ĐỘ CHÍNH XÁC:
-1. VỀ THỜI GIAN MÁY TÍNH TẮT (~{camera_offline}h): Đây là khoảng thời gian máy tính/camera của gia đình tạm tắt (phụ huynh tắt máy, hoặc bế bé ra phòng khách chơi, tắm rửa). TUYỆT ĐỐI KHÔNG SUY DIỄN rằng bé không ngủ, bị bế ẵm 24/24 hay phụ thuộc bố mẹ. Hãy tập trung đánh giá chất lượng cữ ngủ {total_sleep}h ghi nhận được qua camera.
+1. VỀ THỜI GIAN MÁY TÍNH TẮT (~{camera_offline}h): Đây là khoảng thời gian máy tính/camera của gia đình tạm tắt (phụ huynh tắt máy, hoặc bế bé ra phòng khách chơi, tắm rửa). TUYỆT ĐỐI KHÔNG SUY DIỄN rằng bé không ngủ, bị bế ẵm 24/24 hay phụ thuộc ba mẹ. Hãy tập trung đánh giá chất lượng cữ ngủ {total_sleep}h ghi nhận được qua camera.
 2. VỀ TIẾNG Ọ Ẹ & CƠN HO (ĐỐI CHIẾU CHUẨN QUỐC TẾ):
    - Phân tích số lần ọ ẹ ({whimper_count} lần) so với chuẩn AAP/Nelson (15-35 lần/ngày trong chu kỳ ngủ động REM). Giải thích rõ cho ba mẹ đây là phản xạ sinh lý hoàn toàn lành tính khi chuyển giấc và não bộ đang tích cực phát triển, bé đang tập tự trấn an (self-soothing) để nối tiếp cữ ngủ, ba mẹ KHÔNG nên bế ẵm hay đánh thức bé.
    - Dựa trên số lần ho thực tế ({cough_count} lần) đối chiếu chuẩn BTS & CHEST (<= 10 lần/ngày rải rác là phản xạ sinh lý tự nhiên bình thường để làm sạch bụi/dịch hầu họng).
    - Nếu có cụm ho/khẹc tập trung vào khung giờ sau bú: Giải thích đây là phản xạ trào ngược sinh lý nhẹ (GER) thường gặp ở trẻ sơ sinh, hướng dẫn vỗ ợ hơi kỹ 15-20 phút sau bú, giữ đầu cao 15-30 độ sau ăn.
-3. VỀ THỂ TRẠNG: Đối chiếu theo bảng chuẩn WHO một cách khoa học, khách quan, mang tính khích lệ và đồng hành cùng bố mẹ.
+3. VỀ THỂ TRẠNG: Đối chiếu theo bảng chuẩn WHO một cách khoa học, khách quan, mang tính khích lệ và đồng hành cùng ba mẹ.
 4. VĂN PHONG: Chuẩn mực y khoa, ấm áp, tạo sự an tâm và tin cậy cho phụ huynh.
 
-Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG cho bố mẹ:
+Hãy phân tích toàn diện, khoa học và đưa ra BÁO CÁO NHI KHOA BUỔI SÁNG cho ba mẹ:
 A. PHÂN TÍCH GIẤC NGỦ: Đánh giá thời lượng {total_sleep}h ngủ, độ sâu NREM/REM và khả năng nối giấc của bé.
 B. HÔ HẤP, Ọ Ẹ & TIÊU HÓA: Nhận xét nhịp thở {avg_bpm} BPM, đối chiếu số lần ọ ẹ ({whimper_count} lần) và số cơn ho ({cough_count} lần) với chuẩn quốc tế, hướng dẫn vỗ ợ hơi sau bú.
 C. ĐÁNH GIÁ THỂ TRẠNG THEO CHUẨN WHO: Nhận xét cân nặng, chiều cao đối chiếu trung vị WHO.
@@ -1493,7 +1493,7 @@ Trả về đúng định dạng JSON:
   "tips_vi": ["Lời khuyên thực tế 1", "Lời khuyên thực tế 2", "Lời khuyên thực tế 3"],
   "scientific_citations_vi": [
     "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) & Nelson Pediatrics - Quy chuẩn Sinh lý Giấc ngủ REM & Tiếng Ọ ẹ Sơ sinh",
-    "Hội Lồng ngực Anh (BTS) & Hội Bác sĩ Lồng ngực Hoa Kỳ (CHEST) - Khuyến cáo Y khoa về Phản xạ Ho Trẻ em",
+    "Hội Lồng ngực Anh (BTS) & Trường Môn Lồng ngực Hoa Kỳ (CHEST) - Khuyến cáo Y khoa về Phản xạ Ho Trẻ em",
     "Tổ chức Y tế Thế giới (WHO) - Bộ Tiêu chuẩn Nhịp thở & Tăng trưởng Thể trạng Trẻ em"
   ]
 }}
@@ -1515,7 +1515,7 @@ Trả về đúng định dạng JSON:
             tips_vi = data.get("tips_vi", [])[:3]
             citations = data.get("scientific_citations_vi", [
                 "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) & Nelson Pediatrics - Quy chuẩn Sinh lý Giấc ngủ REM & Tiếng Ọ ẹ Sơ sinh",
-                "Hội Lồng ngực Anh (BTS) & Hội Bác sĩ Lồng ngực Hoa Kỳ (CHEST) - Khuyến cáo Y khoa về Phản xạ Ho Trẻ em",
+                "Hội Lồng ngực Anh (BTS) & Trường Môn Lồng ngực Hoa Kỳ (CHEST) - Khuyến cáo Y khoa về Phản xạ Ho Trẻ em",
                 "Tổ chức Y tế Thế giới (WHO) - Bộ Tiêu chuẩn Nhịp thở & Tăng trưởng Thể trạng Trẻ em"
             ])
 
@@ -1547,7 +1547,7 @@ Trả về đúng định dạng JSON:
                 f"👉 <i>{growth_vi}</i>\n\n"
                 f"⏰ <b>4. LỊCH SINH HOẠT & CỬA SỔ THỨC (WAKE WINDOW):</b>\n"
                 f"👉 <i>{schedule_vi}</i>\n\n"
-                f"💡 <b>LỜI KHUYÊN HÔM NAY CHO BỐ MẸ:</b>\n"
+                f"💡 <b>LỜI KHUYÊN HÔM NAY CHO BA MẸ:</b>\n"
             )
             for idx, tip in enumerate(tips_vi, 1):
                 tele_msg += f" {idx}. {tip}\n"

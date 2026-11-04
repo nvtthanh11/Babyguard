@@ -341,7 +341,7 @@ class SleepTracker:
        - Không bị cưa đôi giấc ngủ đêm giữa chừng lúc 00:00 nửa đêm.
        - Tích lũy trọn vẹn cả cữ ngủ đêm dài và toàn bộ các cữ nap ban ngày.
        - Khi kim đồng hồ điểm 07:00 sáng, chốt chu kỳ 24h vào `daily_history` (14 ngày).
-    2. BÁC SĨ NHI KHOA AI & PHÂN TÍCH CỤM BIẾN ĐỘNG (Hourly Cluster Analytics):
+    2. THEO DÕI GIẤC NGỦ CHUẨN AAP & PHÂN TÍCH CỤM BIẾN ĐỘNG (Hourly Cluster Analytics):
        - Ghi nhận cụm ho, sặc sữa, nhịp thở vào `daily_delta_log.json`.
        - Đúng 07:00 sáng, Gemini tổng hợp bệnh án lâm sàng 24h gửi Telegram.
     """
@@ -841,7 +841,7 @@ class SleepTracker:
             )
             ai_growth = (
                 "Chỉ số thể trạng chiều cao và cân nặng đang được đối chiếu thời gian thực theo chuẩn trung vị của Tổ chức Y tế Thế giới (WHO Child Growth Standards). "
-                "Bố mẹ có thể cập nhật số đo mới nhất tại thẻ 'Chỉ Số Phát Triển' để nhận đánh giá chi tiết."
+                "Ba mẹ có thể cập nhật số đo mới nhất tại thẻ 'Chỉ Số Phát Triển' để nhận đánh giá chi tiết."
             )
             ai_schedule = (
                 "Khuyến nghị duy trì Cửa sổ thức (Wake Window) từ 45-75 phút giữa các cữ trong ngày. "
@@ -964,7 +964,7 @@ class SleepTracker:
                 elif is_crying:
                     wake_hint = "😭 Bé đang thức và quấy khóc! Hãy kiểm tra tã bỉm, nhiệt độ phòng hoặc cho bé bú."
                 elif adult_holding:
-                    wake_hint = f"🤱 Bố mẹ đang bế bé ({current_awake_formatted}). Cữ ngủ tiếp theo dự kiến lúc {pred_nap_time}."
+                    wake_hint = f"🤱 Ba mẹ đang bế bé ({current_awake_formatted}). Cữ ngủ tiếp theo dự kiến lúc {pred_nap_time}."
                 else:
                     wake_hint = (
                         f"☀️ Đang theo dõi bé thức chơi ({current_awake_formatted}) • "

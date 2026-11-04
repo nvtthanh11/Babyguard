@@ -288,7 +288,7 @@ class AlertManager:
         if not self.config.get("sound_alert_on_mac", True):
             return
             
-        # 1. Chạm mép giường / nguy cơ lăn ngã: Kêu tiếng "ting ting" (Glass.aiff) theo đúng ý bố mẹ
+        # 1. Chạm mép giường / nguy cơ lăn ngã: Kêu tiếng "ting ting" (Glass.aiff) theo đúng ý ba mẹ
         # 2. Nguy hiểm mạnh (Mặt bị che, Ngưng thở, Lật úp sấp): Phát chuông cảnh báo mạnh (Sosumi.aiff)
         # 3. Các sự kiện thông thường khác (khóc, ho nhẹ, cựa quậy, chụp ảnh): Hoàn toàn im lặng
         if event_type == "danger_zone":
@@ -396,7 +396,7 @@ class AlertManager:
         threading.Thread(target=_send, daemon=True).start()
 
     def _get_compact_view_link(self) -> str:
-        """Tạo link xem trực tiếp 1 chạm siêu nhanh không cần mật khẩu cho bố mẹ."""
+        """Tạo link xem trực tiếp 1 chạm siêu nhanh không cần mật khẩu cho ba mẹ."""
         url = str(self.config.get("remote_access_url", "")).strip()
         if not url or "trycloudflare.com" in url or "cam.babyguard.site" in url or url == "https://babyguard.site":
             url = "https://babyguard.site/cam"
@@ -468,7 +468,7 @@ class AlertManager:
                 try:
                     target_text = text
                     if tag_recipients:
-                        tag = f"🔔 <b>[GỬI TỚI {r.get('name', 'BỐ MẸ').upper()}]</b>"
+                        tag = f"🔔 <b>[GỬI TỚI {r.get('name', 'BA MẸ').upper()}]</b>"
                         target_text = f"{tag}\n{target_text}"
 
                     chunks = AlertManager._chunk_telegram_text(target_text, max_chars=3850)

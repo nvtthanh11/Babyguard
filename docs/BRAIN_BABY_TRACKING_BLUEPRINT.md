@@ -9,7 +9,7 @@
 
 ## 1. GIẢI TRÌNH KỸ THUẬT: TẠI SAO HỆ THỐNG CŨ GẶP 3 LỖI TAI HẠI?
 
-Dưới đây là mổ xẻ mã nguồn (code autopsy) giải thích chính xác nguyên nhân vật lý và thuật toán dẫn đến tình trạng trong hình ảnh thực tế: **Bé bị che khuất 90% nhưng hệ thống lại vẽ khung nhận diện gối ôm thành em bé, báo có nhịp thở 48.1 RPM và báo bố mẹ nằm cạnh.**
+Dưới đây là mổ xẻ mã nguồn (code autopsy) giải thích chính xác nguyên nhân vật lý và thuật toán dẫn đến tình trạng trong hình ảnh thực tế: **Bé bị che khuất 90% nhưng hệ thống lại vẽ khung nhận diện gối ôm thành em bé, báo có nhịp thở 48.1 RPM và báo ba mẹ nằm cạnh.**
 
 ```
                      [ KHUNG HÌNH CAMERA THỰC TẾ ]
@@ -71,7 +71,7 @@ Dưới đây là mổ xẻ mã nguồn (code autopsy) giải thích chính xác
 
 ---
 
-### 1.3. Lỗi 3: Tại sao không có ai mà lại báo "Bố mẹ nằm cạnh bé"?
+### 1.3. Lỗi 3: Tại sao không có ai mà lại báo "Ba mẹ nằm cạnh bé"?
 - **Nguyên nhân mã nguồn:**
   Trong hàm `_detect_baby_face()` cũ có dòng logic phân loại cứng:
   ```python

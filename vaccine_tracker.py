@@ -373,7 +373,7 @@ class VaccineTracker:
 
     def add_custom_vaccine(self, milestone_id: str, name: str, disease: str = "",
                            injected_date: str = "", note: str = "", completed: bool = False) -> dict:
-        """Thêm mũi tiêm ngoài lịch hoặc tiêm kết hợp do bố mẹ chủ động nhập."""
+        """Thêm mũi tiêm ngoài lịch hoặc tiêm kết hợp do ba mẹ chủ động nhập."""
         if "custom_vaccines" not in self.data:
             self.data["custom_vaccines"] = []
 
@@ -386,7 +386,7 @@ class VaccineTracker:
             "disease": str(disease or "Tiêm mũi phối hợp / vắc-xin ngoài lịch").strip(),
             "type": "Tiêm bắp / Uống",
             "category": "Mũi tiêm bổ sung / Kết hợp",
-            "schedule_hint": "Bố mẹ tự thêm vào sổ tiêm",
+            "schedule_hint": "Ba mẹ tự thêm vào sổ tiêm",
             "completed": bool(completed),
             "injected_date": str(injected_date).strip() if completed else "",
             "note": str(note or "").strip(),
@@ -546,7 +546,7 @@ class VaccineTracker:
                         "disease": cv.get("disease", "Mũi tiêm bổ sung"),
                         "type": cv.get("type", "Tiêm bắp / Uống"),
                         "category": "Mũi tiêm bổ sung / Kết hợp",
-                        "schedule_hint": "Bố mẹ tự thêm vào sổ tiêm",
+                        "schedule_hint": "Ba mẹ tự thêm vào sổ tiêm",
                         "completed": is_comp,
                         "injected_date": inj_date,
                         "note": note,
@@ -628,12 +628,12 @@ class VaccineTracker:
         due_date = next_ms["due_date"] if next_ms else ""
 
         lines = [
-            "🚨 <b>LỊCH TIÊM CHỦNG ĐẾN HẠN — BỐ MẸ ĐỪNG QUÊN!</b>",
+            "🚨 <b>LỊCH TIÊM CHỦNG ĐẾN HẠN — BA MẸ ĐỪNG QUÊN!</b>",
             f"⚠️ <b>{ms_name} (Dự kiến: {due_date}):</b>"
         ]
         for it in due_items[:4]:
             st = "🔴 Quá hạn" if it.get("status") == "overdue" else "⏰ Đến hạn"
             lines.append(f"• 💉 <b>{it['name']}</b> ({st})")
 
-        lines.append("\n💡 <i>Lưu ý: Bố mẹ kiểm tra bé không sốt, không bú quá no trước khi đi tiêm. Sau khi tiêm xong, nhớ vào Web tích 'Đã chích' thì hệ thống mới tắt thông báo nhắc nhở này nhé!</i>")
+        lines.append("\n💡 <i>Lưu ý: Ba mẹ kiểm tra bé không sốt, không bú quá no trước khi đi tiêm. Sau khi tiêm xong, nhớ vào Web tích 'Đã chích' thì hệ thống mới tắt thông báo nhắc nhở này nhé!</i>")
         return "\n".join(lines)

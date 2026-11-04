@@ -1542,7 +1542,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         if frame is None:
             return {"success": False, "error": "Không lấy được khung hình từ camera"}
 
-        # 2. Ảnh chụp thủ công của bố mẹ: Luôn luôn lưu khung hình chất lượng cao đầy đủ góc nhìn gia đình
+        # 2. Ảnh chụp thủ công của ba mẹ: Luôn luôn lưu khung hình chất lượng cao đầy đủ góc nhìn gia đình
         frame_to_save = frame.copy()
         ts_moment = datetime.now().strftime("%Y%m%d_%H%M%S")
         moment_fn = f"moment_{ts_moment}.jpg"
@@ -3113,7 +3113,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     def discover_telegram_family(payload: TelegramDiscoverRequest):
         """
         Tự động dò tìm những người nhà vừa bấm /start hoặc nhắn tin cho Bot Telegram
-        để bố mẹ thêm vào danh sách dùng chung chỉ bằng 1 cú nhấp chuột (không cần tự mò Chat ID).
+        để ba mẹ thêm vào danh sách dùng chung chỉ bằng 1 cú nhấp chuột (không cần tự mò Chat ID).
         """
         token = (payload.token or "").strip()
         if not token:

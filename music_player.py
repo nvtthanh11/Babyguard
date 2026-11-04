@@ -177,7 +177,7 @@ class MusicPlayer:
             self.calibration_state_vi = "🌙 Bé đã yên giấc • Đang nhỏ dần tắt êm (Fade-Out)..."
             return
 
-        # Nếu tắt chế độ Tự cân bằng theo Mic -> Tăng mượt (Fade-In) tới đúng mức âm lượng bố mẹ chọn
+        # Nếu tắt chế độ Tự cân bằng theo Mic -> Tăng mượt (Fade-In) tới đúng mức âm lượng ba mẹ chọn
         if not self.adaptive_mic_mode:
             if self.current_gain < self.max_volume_cap - 0.01:
                 self.current_gain = min(self.max_volume_cap, self.current_gain + 0.03 * dt)
@@ -206,7 +206,7 @@ class MusicPlayer:
             if self.current_gain < self.max_volume_cap:
                 self.current_gain = min(self.max_volume_cap, self.current_gain + 0.022 * dt)
                 if self.current_gain >= self.max_volume_cap - 0.01:
-                    self.calibration_state_vi = f"🔒 Đã chạm trần an toàn bố mẹ đặt ({int(self.max_volume_cap * 100)}%)"
+                    self.calibration_state_vi = f"🔒 Đã chạm trần an toàn ba mẹ đặt ({int(self.max_volume_cap * 100)}%)"
                 else:
                     self.calibration_state_vi = f"🌱 Đang tăng dần từ nhỏ -> vừa đủ (Mic: {int(measured)}% / Mục tiêu: {int(target)}%)"
             else:

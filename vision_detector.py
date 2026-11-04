@@ -1169,7 +1169,7 @@ class VisionTracker:
         - Tầng 2: Gửi chuỗi 3 khung thời gian (T-2s, T-1s, T-0s) + Crop đường thở lên Gemini.
         - Xử lý:
           + Nếu Gemini xác nhận NGUY HIỂM: Dispatch callback (báo động còi loa + Telegram).
-          + Nếu Gemini báo AN TOÀN (Báo động giả): Hủy cảnh báo, không làm phiền bố mẹ.
+          + Nếu Gemini báo AN TOÀN (Báo động giả): Hủy cảnh báo, không làm phiền ba mẹ.
             Đặc biệt nếu là danger_zone và có corrected_safe_zone_polygon -> Tự động nới rộng khung nôi xanh lá cây!
           + Nếu MẤT MẠNG hoặc Gemini timeout > 3.5s -> FAIL-SAFE: Tự động kích hoạt báo động cấp 1 ngay lập tức!
         """
@@ -1485,7 +1485,7 @@ class VisionTracker:
     def _maybe_trigger_tracking_audit(self, raw_frame, annotated_frame, h: int, w: int):
         """
         Tự động gọi Gemini định kỳ để:
-        1. Tự động căn chỉnh Khung Giường / Nôi của bé (Safe Zone màu xanh lá cây) mà bố mẹ không cần bấm nút.
+        1. Tự động căn chỉnh Khung Giường / Nôi của bé (Safe Zone màu xanh lá cây) mà ba mẹ không cần bấm nút.
         2. Kiểm tra & hiệu chỉnh nóng khung Tracking cơ thể em bé ('EM BE' & 'ROI NGỰC').
         """
         if self.gemini_verifier is None or getattr(self, "pending_tracking_audit", False):
@@ -2123,8 +2123,8 @@ class VisionTracker:
                 self.covered_face_frame_count = 0
                 if self.sleep_pose in ("Ngoài giường", "Người lớn trong phòng", "Đang được bế trên tay", "Không phát hiện bé"):
                     self.sleep_pose = "Nằm ngủ ngoan"
-                self.baby_status = "Bé đang nằm nôi • Bố mẹ ở cạnh"
-                if self.breathing_status in ("Ngoài giường", "Bố mẹ đang bế"):
+                self.baby_status = "Bé đang nằm nôi • Ba mẹ ở cạnh"
+                if self.breathing_status in ("Ngoài giường", "Ba mẹ đang bế"):
                     self.breathing_status = "Đang theo dõi nhịp thở"
             elif is_touching_baby and baby_recently_seen:
                 # Bé ở ngoài Safe Zone VÀ người lớn tiếp xúc bế bé
@@ -2135,8 +2135,8 @@ class VisionTracker:
                 self.covered_face_active = False
                 self.covered_face_frame_count = 0
                 self.sleep_pose = "Đang được bế trên tay"
-                self.baby_status = "Bố mẹ đang bế / chăm sóc bé"
-                self.breathing_status = "Bố mẹ đang bế"
+                self.baby_status = "Ba mẹ đang bế / chăm sóc bé"
+                self.breathing_status = "Ba mẹ đang bế"
                 if self.breathing_bpm <= 5.0:
                     self.breathing_bpm = 48.0
             else:
@@ -2401,7 +2401,7 @@ class VisionTracker:
     def capture_preview_frame(self, source):
         """
         Chụp 1 khung hình xem thử (Preview) từ cổng Camera USB hoặc đường dẫn RTSP
-        để bố mẹ xem trước đâu là chiếc Camera đang quay em bé.
+        để ba mẹ xem trước đâu là chiếc Camera đang quay em bé.
         """
         # Nếu đang xem thử chính chiếc camera đang chạy trực tiếp, lấy ngay khung hình hiện tại (0ms)
         if str(source) == str(self.camera_index):
