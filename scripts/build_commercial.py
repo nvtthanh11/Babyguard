@@ -250,25 +250,21 @@ exec ./start.sh >> "$DIR/logs/app_launch.log" 2>&1
         f.write(mac_launcher_script)
     os.chmod(mac_bin, 0o755)
 
-    # 6.4 Sao chép tài nguyên vào Resources và XÓA TRIỆT ĐỂ TOÀN BỘ FILE .PY (CHỈ GIỮ .SO & MAIN.PYC)
+    # 6.4 Sao chép tài nguyên vào Resources (Bao gồm cả Mach-O .so và .py fallback đa phiên bản)
     for root, dirs, files in os.walk(COMMERCIAL_DIR):
         rel = os.path.relpath(root, COMMERCIAL_DIR)
         target_subdir = os.path.join(res_dir, rel) if rel != "." else res_dir
         os.makedirs(target_subdir, exist_ok=True)
         for file in files:
-            # TUYỆT ĐỐI KHÔNG COPY FILE .PY NGUỒN CỦA CÁC MODULES ĐÃ BIÊN DỊCH
-            if file in CYTHON_MODULES or file.endswith(".bat"):
-                continue
-            # main.py được biên dịch thành main.pyc (Bytecode), xóa sạch mã nguồn text
-            if file == "main.py":
-                py_compile.compile(os.path.join(root, file), cfile=os.path.join(target_subdir, "main.pyc"))
+            # Bỏ qua các tệp batch dành riêng cho Windows
+            if file.endswith(".bat"):
                 continue
             dst_f = os.path.join(target_subdir, file)
             shutil.copyfile(os.path.join(root, file), dst_f)
             if file.endswith(".sh") or file.endswith(".command"):
                 os.chmod(dst_f, 0o755)
 
-    print("   🔒 Đã loại bỏ 100% tệp mã nguồn .py khỏi macOS App Bundle (Chỉ còn Mach-O .so & .pyc).")
+    print("   🔒 Đã cấu hình macOS App Bundle hỗ trợ song song Mach-O C-extension và Universal Python fallback.")
 
     # 6.5 Ký mã số Ad-hoc Code Signing theo tiêu chuẩn Apple macOS
     print("   🔑 Đang thực hiện ký số Apple Mach-O (Ad-hoc Code Signing)...")
@@ -341,9 +337,13 @@ Website chính thức: https://babyguard.site
 
     postinstall_path = os.path.join(pkg_scripts, "postinstall")
     postinstall_script = """#!/bin/bash
+CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")
+if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
+    chown -R "$CONSOLE_USER:staff" "/Applications/BabyGuard AI.app" 2>/dev/null || true
+fi
 xattr -cr "/Applications/BabyGuard AI.app" 2>/dev/null || true
 xattr -dr com.apple.quarantine "/Applications/BabyGuard AI.app" 2>/dev/null || true
-chmod -R 755 "/Applications/BabyGuard AI.app" 2>/dev/null || true
+chmod -R 775 "/Applications/BabyGuard AI.app" 2>/dev/null || true
 codesign --force --deep -s - "/Applications/BabyGuard AI.app" 2>/dev/null || true
 exit 0
 """
