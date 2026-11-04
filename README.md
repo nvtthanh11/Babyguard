@@ -1,5 +1,5 @@
 # 🍼 BabyGuard AI - Smart AI Baby Monitor
-> **Trợ lý Vệ sĩ & Bác sĩ Giấc ngủ AI Thông minh cho Bé yêu**  
+> **Giám Sát An Toàn & Chăm Sóc Giấc Ngủ Thông Minh Cho Bé Yêu (Chuẩn WHO & AAP)**  
 > *Hệ thống AI giám sát thị giác & âm thanh cục bộ (Edge AI), bảo mật riêng tư 100%, tích hợp theo dõi nhịp thở, tư thế và chăm sóc giấc ngủ trẻ sơ sinh.*
 
 ---
@@ -12,12 +12,12 @@
 - **Ranh giới Cũi an toàn (Safe Zone):** Phụ huynh dùng ngón tay kéo thả trực tiếp khung nôi trên điện thoại. Khi bé bò đến mép hoặc có nguy cơ trèo ngã, còi báo động sẽ reo.
 - **Giám sát Nhịp thở & Cảnh báo Ngưng thở (Apnea Alert):** Đo chuyển động vi mô lồng ngực với tần số hô hấp chuẩn y khoa (30–60 BPM). Cảnh báo đỏ nếu bé không thở quá 20 giây.
 
-### 👂 Bác Sĩ Thính Giác (Audio AI - Google YAMNet)
+### 👂 Giám Sát Âm Thanh (Audio AI - Google YAMNet)
 - **Nhận diện Tiếng khóc (Baby Cry):** Phân biệt chính xác tiếng khóc, gắt ngủ, la hét với tạp âm xung quanh.
 - **Cảnh báo Ho & Sặc sữa (Cough & Gasp):** Phát hiện tiếng ho khò khè, ho sặc hoặc thở dốc để cha mẹ hỗ trợ kịp thời.
 - **Tự động Ru ngủ (Auto Soothing):** Tự động phát tiếng ồn trắng, nhịp tim mẹ hoặc nhạc chuông êm dịu khi bé vừa chớm khóc.
 
-### 📊 Bác Sĩ Giấc Ngủ (Sleep Analytics & Wake Window)
+### 📊 Theo Dõi Giấc Ngủ Chuẩn AAP (Sleep Analytics & Wake Window)
 - **Điểm chất lượng giấc ngủ (Sleep Score 0–100):** Đánh giá dựa trên thời lượng ngủ sâu, số lần cựa mình và nhịp thở.
 - **Biểu đồ Chu kỳ Ngủ (Hypnogram):** Trực quan hóa giấc ngủ nông (Light/REM), ngủ sâu (Deep Sleep) và lúc thức dậy.
 - **Dự đoán Cửa sổ Thức (Wake Window Predictor):** Tính toán chính xác thời điểm bé sẽ buồn ngủ tiếp theo, giúp cha mẹ rèn nếp sinh hoạt EASY chuẩn khoa học.
@@ -103,7 +103,7 @@ baby_monitor/
 ├── main.py                     # Entry point khởi động và điều phối toàn bộ hệ thống
 ├── vision_detector.py          # AI thị giác: Pose, chống sấp, ngạt mặt, nhịp thở, khoảnh khắc
 ├── audio_detector.py           # AI thính giác: YAMNet nhận diện tiếng khóc, ho, thở dốc
-├── sleep_tracker.py            # Bác sĩ giấc ngủ: Sleep score, chu kỳ ngủ, Wake window
+├── sleep_tracker.py            # Theo dõi giấc ngủ: Sleep score, chu kỳ ngủ, Wake window (Chuẩn AAP)
 ├── alert_manager.py            # Điều phối cảnh báo âm thanh loa & thông báo Telegram
 ├── video_recorder.py           # Ghi hình sự kiện cuốn chiếu (Rolling buffer 10s trước + 20s sau)
 ├── music_player.py             # Máy phát nhạc ru, tiếng ồn trắng, nhịp tim dỗ bé

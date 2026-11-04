@@ -211,10 +211,10 @@ flowchart TD
 4. **Lọc Thông Dải Âm Thanh ($250 - 3800\text{ Hz}$) & Nursery Sound Whitelist:**
    - Lọc bỏ tạp âm tần số thấp (quạt, điều hòa $< 250\text{ Hz}$) trước khi đưa vào YAMNet, nâng sàn cắt nhiễu tiếng khóc (`raw_score <= 0.06 -> 0%`), và áp dụng danh sách nhãn hợp lệ trong phòng ngủ em bé (loại bỏ hoàn toàn nhãn rác `"Animal"`).
 
-### 8.2. Tích hợp Chuyên gia Hội chẩn & Giám khảo Ảnh Gemini AI ([`gemini_verifier.py`](file:///Volumes/SSD/WORK/baby_monitor/gemini_verifier.py))
+### 8.2. Tích hợp Trợ Lý Thẩm Định & Giám Khảo Ảnh Gemini AI ([`gemini_verifier.py`](file:///Volumes/SSD/WORK/baby_monitor/gemini_verifier.py))
 - **Cơ chế Event-Driven & Cooldown nghiêm ngặt:** Không gọi API trên từng frame; có hàng rào Debounce và Cooldown (180s cho cảnh báo, 300s cho chụp khoảnh khắc tự động).
 - **Kiểm duyệt Ảnh "Khoảnh Khắc Đáng Yêu" (Privacy & Co-Presence Aesthetic Judge):**
   1. **Bảo vệ quyền riêng tư (`privacy_safe`):** Tự động hủy ảnh ngay trên RAM nếu phát hiện bé đang thay tã, tắm hoặc hở vùng nhạy cảm.
   2. **Kiểm tra người đi cùng & Thẩm mỹ đồng hiện (`has_other_person` & `other_person_aesthetic`):** Phát hiện có bố/mẹ/người thân xuất hiện cùng bé trong khung hình hay không. **Nếu có người khác xuất hiện, bắt buộc cả người đó cũng phải tươi tắn, lịch sự, không bị nhắm mắt/dìm hàng/lộ mặt xấu** thì hệ thống mới lưu ảnh vào Album.
   3. **Tự động viết lời bình (`caption_vi`):** Tạo chú thích tiếng Việt ấm áp đính kèm lên từng bức ảnh trong Album.
-- **Căn chỉnh Nôi thông minh 1 chạm (`auto_calibrate_crib`) & Hội chẩn chéo Cảnh báo (`verify_high_risk_alert`):** Hỗ trợ tự động nhận diện tọa độ `Safe Zone` và bác bỏ báo động giả do gối ôm.
+- **Căn chỉnh Nôi thông minh 1 chạm (`auto_calibrate_crib`) & Thẩm định chéo Cảnh báo (`verify_high_risk_alert`):** Hỗ trợ tự động nhận diện tọa độ `Safe Zone` và bác bỏ báo động giả do gối ôm.

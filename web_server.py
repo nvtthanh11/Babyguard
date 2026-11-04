@@ -1314,7 +1314,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
         threading.Thread(target=_bg, daemon=True).start()
 
-    # Luồng chạy ngầm điều phối Bác Sĩ Nhi Khoa 07:00 Sáng & Giám sát Cụm Bất Thường Ban Ngày
+    # Luồng chạy ngầm điều phối Đánh Giá Giấc Ngủ Chuẩn AAP 07:00 Sáng & Giám sát Cụm Bất Thường Ban Ngày
     def _start_background_pediatric_scheduler():
         last_anomaly_check_time = 0.0
         while True:
@@ -1355,7 +1355,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                             snap["total_awake_today_hours"] = prev_day.get("total_awake_hours", snap.get("total_awake_today_hours", 0))
                             snap["longest_nap_minutes"] = prev_day.get("longest_nap_minutes", snap.get("longest_nap_minutes", 0))
                             snap["sleep_score"] = prev_day.get("sleep_score", snap.get("sleep_score", 85))
-                        print(f"[WebServer] ⏰ ĐÃ QUA 07:00 SÁNG (Hiện tại {now_dt.strftime('%H:%M')}): Tự động kích hoạt Bác Sĩ AI tổng hợp bệnh án 24h & gửi ghim Telegram...")
+                        print(f"[WebServer] ⏰ ĐÃ QUA 07:00 SÁNG (Hiện tại {now_dt.strftime('%H:%M')}): Tự động tổng hợp giấc ngủ 24h theo chuẩn AAP & gửi ghim Telegram...")
                         _trigger_morning_ai_sleep_report(snap)
 
                 # 2. Giám sát Cụm Biến Động Khẩn Cấp trong ngày (Micro-Triage)
@@ -2320,7 +2320,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                     if ai_res and ai_res.get("success"):
                         growth_tracker.save_ai_analysis(ai_res.get("analysis"))
                 except Exception as e:
-                    print(f"[Growth] Lỗi ngầm Bác sĩ AI đánh giá tăng trưởng: {e}")
+                    print(f"[Growth] Lỗi ngầm Gemini đánh giá tăng trưởng WHO: {e}")
 
             threading.Thread(target=_async_gemini_growth, daemon=True).start()
 

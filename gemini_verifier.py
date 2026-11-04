@@ -74,7 +74,7 @@ def enhance_low_light_image(frame_or_burst, clip_limit=2.8):
 
 class GeminiHybridVerifier:
     """
-    Chuyên gia Hội chẩn, Giám sát Tracking & Giám khảo Thẩm mỹ AI (Hybrid Cloud-Edge).
+    Trợ lý Thẩm định Cảnh báo, Giám sát Tracking & Giám khảo Thẩm mỹ AI (Hybrid Cloud-Edge).
     - Tích hợp Bộ đếm Request & Xoay vòng Pool 9 Model Flash miễn phí (Multi-Model Free Quota Pool).
     - Tự động tận dụng hạn mức Request Free khi rảnh để kiểm tra chéo & hiệu chỉnh nóng tọa độ Tracking của AI Local.
     - Kiểm duyệt nghiêm ngặt Quyền Riêng Tư & Thẩm Mỹ trước khi lưu Khoảnh Khắc Đáng Yêu.
@@ -131,7 +131,7 @@ class GeminiHybridVerifier:
             "timestamp": None,
             "type": None,
             "is_dangerous": False,
-            "summary_vi": "Chưa có yêu cầu hội chẩn mới.",
+            "summary_vi": "Chưa có yêu cầu đánh giá mới.",
             "confidence": 0
         }
         self.update_config(config)
@@ -595,7 +595,7 @@ Trả về đúng JSON:
 
     # =========================================================================
     # =========================================================================
-    # 1. HỘI CHẨN CẢNH BÁO NGUY HIỂM CAO (KIỂM TRA CHÉO 4 Ô THỜI GIAN & ĐƯỜNG THỞ)
+    # 1. THẨM ĐỊNH CẢNH BÁO NGUY HIỂM CAO (KIỂM TRA CHÉO 4 Ô THỜI GIAN & ĐƯỜNG THỞ)
     # =========================================================================
     def _create_emergency_quad_matrix(self, frame_t_minus_2, frame_t_minus_1, frame_t_0, airway_crop=None):
         """
@@ -692,7 +692,7 @@ Trả về đúng JSON:
             return {"verified_by_gemini": False, "is_dangerous": True, "diagnosis_vi": local_reason, "confidence": 50}
 
         prompt = f"""
-Bạn là Bác sĩ Nhi khoa Trực ban Cấp cứu (BabyGuard AI Sentinel) cho bé {self.baby_name} ({self.baby_age_months} tháng tuổi).
+Bạn là Chuyên gia An toàn Sơ sinh & Giấc ngủ Trẻ em (BabyGuard AI Sentinel) cho bé {self.baby_name} ({self.baby_age_months} tháng tuổi).
 Hệ thống Edge AI vừa phát hiện tín hiệu bất thường: "{alert_type}" ({local_reason}).
 
 Bức ảnh ghép 4 ô (Composite 4-Panel Matrix) gửi kèm gồm:
@@ -789,7 +789,7 @@ Trả về đúng định dạng JSON:
 
     def verify_crying_alert(self, mosaic_frame, cry_telemetry: dict = None, baby_pose: str = "Nằm ngửa") -> dict:
         """
-        Hội chẩn Chuyên gia Nhi khoa AI: Phân biệt tiếng ọ ẹ / cựa mình REM sinh lý vs khóc thật sự.
+        Đánh giá chuyên sâu: Phân biệt tiếng ọ ẹ / cựa mình REM sinh lý vs khóc thật sự theo chuẩn AAP.
         - Nhận vào ảnh ghép 4 ô (T-3.5s, T-1.5s, T-0s, Cận cảnh Mặt/Thân)
         - Nhận vào Telemetry âm học (thời lượng khóc duy trì, duty cycle, âm lượng, lịch sử ọ ẹ)
         - Quyết định có nên báo động ba mẹ hay để bé tự ngủ lại (should_alert: bool)
@@ -850,7 +850,7 @@ Trả về đúng định dạng JSON:
                 "should_alert": is_urgent,
                 "is_real_distress": is_urgent,
                 "baby_state": "unknown",
-                "diagnosis_vi": "Không mã hóa được hình ảnh hội chẩn.",
+                "diagnosis_vi": "Không mã hóa được hình ảnh đánh giá.",
                 "clinical_advice_vi": "Kiểm tra camera.",
                 "confidence": 50
             }
@@ -870,7 +870,7 @@ Bức ảnh ghép 4 ô (Composite 4-Panel Mosaic) gửi kèm gồm:
 - Ô 3 [Bottom-Left]: T - 0.0s (Toàn cảnh hiện tại khi âm thanh đạt đỉnh)
 - Ô 4 [Bottom-Right]: Cận cảnh Mũi, Miệng, Thân bé (Độ nét gốc 100%)
 
-NGUYÊN TẮC HỘI CHẨN NHI KHOA CHUẨN XÁC:
+NGUYÊN TẮC ĐÁNH GIÁ NHI KHOA CHUẨN XÁC:
 Trẻ sơ sinh 1 tháng tuổi có pha ngủ động (REM sleep) chiếm 50% thời gian ngủ. Trong pha này, trẻ thường xuyên có các phản xạ sinh lý vô thức:
 1. Nhăn mặt thoáng qua, há he miệng, vặn người, giật mình Moro sinh lý.
 2. Phát ra 1-2 tiếng ọ ẹ, rên ư ử hoặc tiếng khóc thút thít ngắn (Whimpering) trong vài giây rồi tự nín ngủ tiếp (Self-soothing / mút tay, ngậm miệng).
@@ -893,7 +893,7 @@ Trả về đúng định dạng JSON:
 }}
 """
         try:
-            self.status_text = "Đang hội chẩn tiếng khóc (Gemini AI)..."
+            self.status_text = "Đang thẩm định tiếng khóc (Gemini AI)..."
             resp = self._call_gemini_resilient(
                 contents=[
                     types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
@@ -1329,7 +1329,7 @@ Trả về đúng định dạng JSON:
             return {"success": False, "error": f"Lỗi Gemini AI: {err_msg[:120]}"}
 
     # =========================================================================
-    # 5. BÁC SĨ NHI KHOA AI: PHÂN TÍCH GIẤC NGỦ ĐÊM QUA & 24H (SÁNG HÔM SAU 07:00)
+    # 5. ĐÁNH GIÁ TỔNG HỢP GIẤC NGỦ 24H THEO CHUẨN AAP & WHO (SÁNG HÔM SAU 07:00)
     # =========================================================================
     def generate_daily_sleep_report(self, sleep_summary: dict) -> dict:
         """
@@ -1441,7 +1441,7 @@ Trả về đúng định dạng JSON:
         )
 
         prompt = f"""
-Bạn là Bác sĩ Nhi khoa Chuyên gia về Sơ sinh & Giấc ngủ Trẻ em (Pediatrician & Sleep Specialist) của hệ thống BabyGuard AI.
+Bạn là Chuyên gia về Sơ sinh & Giấc ngủ Trẻ em đối chiếu theo khuyến cáo của Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP) và WHO.
 Dưới đây là hồ sơ dữ liệu sinh học thực tế của em bé {baby_name} ({age_display}) trong {cycle_label}:
 
 1. DỮ LIỆU ĐO LƯỜNG SINH HỌC:
@@ -1583,15 +1583,15 @@ Trả về đúng định dạng JSON:
             # Khuyến cáo y tế bắt buộc theo chỉ thị
             medical_disclaimer = (
                 "⚠️ <b>LƯU Ý Y KHOA:</b>\n"
-                "<i>Các nhận định trên chỉ là gợi ý tham khảo dành cho bố mẹ dựa trên các thông số mà hệ thống đo đạc được. "
-                "Để biết thêm thông tin chi tiết hoặc khi bé có biểu hiện bất thường, bố mẹ cần liên hệ với bác sĩ chuyên ngành Nhi.</i>"
+                "<i>Các nhận định trên chỉ là gợi ý tham khảo dành cho ba mẹ dựa trên các thông số mà hệ thống đo đạc được. "
+                "Để biết thêm thông tin chi tiết hoặc khi bé có biểu hiện bất thường, ba mẹ cần liên hệ với bác sĩ chuyên ngành Nhi hoặc cơ sở y tế gần nhất.</i>"
             )
             tele_msg += f"\n{medical_disclaimer}\n"
 
             report = {
                 "date": sleep_summary.get("today_date"),
                 "generated_at": time.strftime("%H:%M - %d/%m"),
-                "model": f"Bác Sĩ AI ({self.active_model})",
+                "model": f"Chuẩn AAP & WHO ({self.active_model})",
                 "headline_vi": headline,
                 "summary_vi": summary_vi,
                 "respiratory_and_reflux_vi": reflux_vi,
@@ -1600,7 +1600,7 @@ Trả về đúng định dạng JSON:
                 "tips_vi": tips_vi,
                 "daily_story": story,
                 "scientific_citations_vi": citations,
-                "medical_disclaimer_vi": "Các nhận định trên chỉ là gợi ý tham khảo dành cho bố mẹ dựa trên các thông số mà hệ thống đo đạc được. Để biết thêm thông tin chi tiết hoặc khi bé có biểu hiện bất thường, bố mẹ cần liên hệ với bác sĩ chuyên ngành Nhi.",
+                "medical_disclaimer_vi": "Các nhận định trên chỉ là gợi ý tham khảo dành cho ba mẹ dựa trên các thông số mà hệ thống đo đạc được. Để biết thêm thông tin chi tiết hoặc khi bé có biểu hiện bất thường, ba mẹ cần liên hệ với bác sĩ chuyên ngành Nhi hoặc cơ sở y tế gần nhất.",
                 "telegram_text": tele_msg
             }
             return {"success": True, "report": report}
@@ -1608,12 +1608,12 @@ Trả về đúng định dạng JSON:
             return {"success": False, "error": str(e)}
 
     # =========================================================================
-    # 5. HỘI CHẨN TĂNG TRƯỞNG THỂ CHẤT (CHIỀU CAO - CÂN NẶNG CHUẨN WHO)
+    # 5. ĐÁNH GIÁ TĂNG TRƯỞNG THỂ CHẤT (CHIỀU CAO - CÂN NẶNG CHUẨN WHO)
     # =========================================================================
     def consult_growth_progress(self, baby_name: str, age_display: str, gender: str,
                                 current_rec: dict, prev_rec: dict = None, who_standard: dict = None) -> dict:
         """
-        Bác Sĩ Nhi Khoa Gemini AI so sánh số đo lần này với lần trước,
+        Trợ lý Gemini AI đối chiếu số đo lần này với lần trước theo chuẩn WHO,
         tính toán khoảng cách ngày, tốc độ tăng cân/chiều cao và đưa ra đề xuất dinh dưỡng, chăm sóc cho ba mẹ.
         """
         if not self.is_ready():

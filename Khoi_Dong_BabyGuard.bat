@@ -1,11 +1,11 @@
 @echo off
 chcp 65001 >nul
-title BabyGuard AI - Trợ Lý Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé
+title BabyGuard AI - Giám Sát An Toàn & Giấc Ngủ Cho Bé
 cd /d "%~dp0"
 color 0B
 
 echo ======================================================================
-echo    🍼 BABYGUARD AI - TRỢ LÝ VỆ SĨ & BÁC SĨ GIẤC NGỦ CHO BÉ
+echo    🍼 BABYGUARD AI - GIÁM SÁT AN TOÀN & GIẤC NGỦ CHO BÉ
 echo ======================================================================
 echo.
 echo [1/3] 🔍 Đang kiểm tra môi trường Python trên máy tính Windows...

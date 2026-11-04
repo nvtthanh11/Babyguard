@@ -292,7 +292,7 @@ fi
     os.chmod(cmd_path, 0o755)
 
     mac_txt_guide = """======================================================================
-🍼 BABYGUARD AI - TRỢ LÝ VỆ SĨ & BÁC SĨ GIẤC NGỦ THÔNG MINH CHO BÉ
+🍼 BABYGUARD AI - GIÁM SÁT AN TOÀN & GIẤC NGỦ CHO BÉ
 ======================================================================
 
 HƯỚNG DẪN CÀI ĐẶT & KÍCH HOẠT NHANH TRÊN MACOS:
@@ -373,7 +373,7 @@ exit 0
         # File chạy chính ở gốc
         win_launcher_content = """@echo off
 chcp 65001 >nul
-title BabyGuard AI - Tro Ly Ve Si & Bac Si Giac Ngu Cho Be
+title BabyGuard AI - Giam Sat An Toan & Giac Ngu Cho Be
 cd /d "%~dp0app_core"
 call "Khoi_Dong_BabyGuard.bat"
 """
@@ -381,7 +381,7 @@ call "Khoi_Dong_BabyGuard.bat"
 
         # File hướng dẫn ở gốc
         win_guide_content = """======================================================================
-🍼 BABYGUARD AI - TRỢ LÝ VỆ SĨ & BÁC SĨ GIẤC NGỦ THÔNG MINH CHO BÉ
+🍼 BABYGUARD AI - GIÁM SÁT AN TOÀN & GIẤC NGỦ CHO BÉ
 ======================================================================
 
 HƯỚNG DẪN KHỞI ĐỘNG NHANH TRONG 1 BƯỚC:

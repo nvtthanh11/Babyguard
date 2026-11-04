@@ -349,7 +349,7 @@
             </button>
             <button onclick="switchTab('sleep')" id="tab-btn-sleep" class="tab-btn px-4 py-2 rounded-xl bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent flex items-center gap-2 whitespace-nowrap transition">
                 <span>📊</span>
-                <span>Bác Sĩ Giấc Ngủ</span>
+                <span>Giấc Ngủ Chuẩn AAP</span>
             </button>
             <button onclick="switchTab('growth')" id="tab-btn-growth" class="tab-btn px-4 py-2 rounded-xl bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent flex items-center gap-2 whitespace-nowrap transition">
                 <span>📏</span>
@@ -632,20 +632,20 @@
 
                         <p id="vital-wake-hint" class="text-[11px] text-slate-400 leading-relaxed">Bé đang trong chu kỳ phục hồi năng lượng và phát triển thể chất.</p>
 
-                        <!-- Nút Chuyển nhanh sang Tab Bác Sĩ Giấc Ngủ -->
+                        <!-- Nút Chuyển nhanh sang Tab Giấc Ngủ Chuẩn AAP -->
                         <button type="button" onclick="switchTab('sleep')" class="w-full mt-2 py-2.5 px-3.5 rounded-2xl bg-gradient-to-r from-purple-500/15 via-indigo-500/15 to-purple-500/15 hover:from-purple-500/25 hover:to-indigo-500/25 border border-purple-500/30 hover:border-purple-500/50 text-purple-200 text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer shadow-sm">
                             <div class="flex items-center gap-2.5 text-left">
                                 <span class="text-base p-1.5 rounded-xl bg-purple-500/20 border border-purple-500/30 flex-shrink-0">🩺</span>
                                 <div class="leading-tight">
                                     <div class="text-[11px] font-bold text-purple-100">Cẩm Nang & Dòng Thời Gian Giấc Ngủ</div>
-                                    <div class="text-[10px] text-purple-300/80">Xem chi tiết tại tab <span class="font-bold text-purple-200 whitespace-nowrap">Bác Sĩ Giấc Ngủ</span></div>
+                                    <div class="text-[10px] text-purple-300/80">Xem chi tiết tại tab <span class="font-bold text-purple-200 whitespace-nowrap">Giấc Ngủ Chuẩn AAP</span></div>
                                 </div>
                             </div>
                             <span class="text-purple-300 group-hover:translate-x-1 transition-transform font-bold text-sm flex-shrink-0 ml-2">➔</span>
                         </button>
                     </div>
 
-                    <!-- Card: Chuyên Gia Hội Chẩn & Giám Sát Tracking Gemini AI -->
+                    <!-- Card: Trợ Lý Phân Tích & Giám Sát Tracking Gemini AI -->
                     <div class="p-5 rounded-3xl bg-cardbg border border-indigo-500/25 space-y-3">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
@@ -883,14 +883,14 @@
                     </label>
                 </div>
 
-                <!-- Toggle 7: Bác sĩ giấc ngủ & Cữ thức -->
+                <!-- Toggle 7: Theo dõi giấc ngủ & Cữ thức -->
                 <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2">
                             <span class="text-lg">📊</span>
-                            <span class="font-bold text-sm text-slate-100">Bác Sĩ Giấc Ngủ AI</span>
+                            <span class="font-bold text-sm text-slate-100">Theo Dõi Giấc Ngủ Chuẩn AAP</span>
                         </div>
-                        <p class="text-xs text-slate-400 leading-relaxed">Chấm điểm giấc ngủ (Sleep Score) và gợi ý giờ cho bé ngủ tiếp theo.</p>
+                        <p class="text-xs text-slate-400 leading-relaxed">Chấm điểm giấc ngủ (Sleep Score) và gợi ý giờ cho bé ngủ tiếp theo theo Cửa Sổ Thức.</p>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" id="toggle-sleep_analytics_enabled" onchange="handleToggle('sleep_analytics_enabled', this.checked)">
@@ -979,12 +979,12 @@
                     </label>
                 </div>
 
-                <!-- Toggle 13: Bác Sĩ AI Đánh Giá Cảnh Báo -->
+                <!-- Toggle 13: Trợ Lý Gemini Thẩm Định Cảnh Báo -->
                 <div class="p-5 rounded-3xl bg-cardbg border border-indigo-500/30 flex items-start justify-between gap-4 hover:border-indigo-500/50 transition">
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2">
                             <span class="text-lg">✨</span>
-                            <span class="font-bold text-sm text-indigo-300">Bác Sĩ AI Đánh Giá Cảnh Báo</span>
+                            <span class="font-bold text-sm text-indigo-300">Trợ Lý Gemini Thẩm Định Cảnh Báo</span>
                         </div>
                         <p class="text-xs text-slate-400 leading-relaxed">Khi nghi ngờ mặt bị che khuất, gửi 1 ảnh cho Gemini xác nhận chéo để triệt tiêu báo giả do gối ôm.</p>
                     </div>
@@ -1018,7 +1018,7 @@
             
             <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-bordercol">
                 <div>
-                    <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Bác Sĩ Giấc Ngủ AI • Tổng Kết Sáng Hôm Sau (07:00) & Theo Dõi 24/7</h2>
+                    <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Theo Dõi Giấc Ngủ Chuẩn AAP • Tổng Kết Sáng Hôm Sau (07:00) & Giám Sát 24/7</h2>
                     <p class="text-xs text-slate-400">Đo lường xuyên suốt các cữ ngủ ngày + giấc ngủ ban đêm, tự động lập Bảng Phân Tích Nhi Khoa vào 07:00 sáng hôm sau.</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -1028,7 +1028,7 @@
                     </span>
                     <button onclick="triggerAiSleepReportNow()" id="btn-analyze-sleep-ai" class="px-4 py-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition active:scale-95">
                         <span>🧠</span>
-                        <span>Phân Tích Ngay Với Bác Sĩ AI</span>
+                        <span>Đánh Giá Giấc Ngủ Chuẩn AAP Ngay</span>
                     </button>
                 </div>
             </div>
@@ -1173,7 +1173,7 @@
                     </div>
                 </div>
 
-                <!-- 2. BỐ MẸ HỎI - BÁC SĨ NHI KHOA TRẢ LỜI -->
+                <!-- 2. GIẢI ĐÁP THẮC MẮC SINH LÝ GIẤC NGỦ THEO CHUẨN AAP -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     
                     <!-- Câu hỏi 1: Vì sao 15-20 phút đầu là Ngủ REM 100% & Ngủ sâu 0%? -->
@@ -1238,13 +1238,13 @@
                 </div>
             </div>
 
-            <!-- BẢNG PHÂN TÍCH GIẤC NGỦ 24H & ĐÊM QUA TỪ BÁC SĨ AI (MORNING 07:00 REPORT) -->
+            <!-- BẢNG PHÂN TÍCH GIẤC NGỦ 24H & ĐÊM QUA CHUẨN AAP (MORNING 07:00 REPORT) -->
             <div class="p-6 rounded-3xl bg-cardbg border border-indigo-500/30 space-y-5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2.5">
                         <span class="text-xl">🌅</span>
                         <div>
-                            <h3 class="font-extrabold text-sm text-slate-100">Bảng Phân Tích Giấc Ngủ Đêm Qua & 24 Giờ Qua (Bác Sĩ Nhi Khoa AI)</h3>
+                            <h3 class="font-extrabold text-sm text-slate-100">Bảng Phân Tích Giấc Ngủ Đêm Qua & 24 Giờ Qua (Chuẩn AAP & WHO)</h3>
                             <span id="sleep-ai-report-meta" class="text-[11px] text-indigo-300/80">Tự động đối chiếu chuẩn Nhi khoa WHO/AAP vào mỗi sáng</span>
                         </div>
                     </div>
@@ -1278,7 +1278,7 @@
                     </table>
                 </div>
 
-                <!-- Nhận định chuyên sâu từ Bác sĩ Nhi khoa AI & Trích dẫn Y khoa -->
+                <!-- Nhận định chuyên sâu theo chuẩn Nhi khoa AAP & WHO -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <!-- Khối 1: Camera vs Ngoài Camera & Hô hấp/Sặc sữa -->
                     <div class="space-y-4">
@@ -1933,7 +1933,7 @@
                     </div>
                     <div>
                         <h3 class="font-black text-lg text-white">Cài Đặt Ứng Dụng BabyGuard AI</h3>
-                        <p class="text-xs text-slate-400">Trợ lý Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé (Thiết lập 4 bước nhanh)</p>
+                        <p class="text-xs text-slate-400">Giám Sát An Toàn & Giấc Ngủ Cho Bé Chuẩn WHO & AAP</p>
                     </div>
                 </div>
                 <button onclick="closeSetupWizard()" class="text-slate-400 hover:text-white p-1 text-lg" title="Đóng cài đặt">✕</button>
@@ -1998,7 +1998,7 @@
                         <span>🤖</span> Bước 2: Khóa Trí Tuệ Nhân Tạo (Gemini API)
                     </div>
                     <p class="text-xs text-slate-300 leading-relaxed">
-                        BabyGuard sử dụng mô hình trí tuệ đa phương thức <strong>Google Gemini 2.5 Flash</strong> để phân tích tiếng khóc, chống báo động giả khi bé chỉ cựa mình, và làm Bác sĩ Nhi đánh giá giấc ngủ.
+                        BabyGuard sử dụng mô hình trí tuệ đa phương thức <strong>Google Gemini 2.5 Flash</strong> để phân tích tiếng khóc, chống báo động giả khi bé chỉ cựa mình, và hỗ trợ đánh giá giấc ngủ chuẩn AAP.
                     </p>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Khóa Google Gemini API Key:</label>
@@ -2194,7 +2194,7 @@
                     <span>👋</span>
                     <span>Chào mừng ba mẹ đến với BabyGuard AI (Bản Thương Mại Hybrid)!</span>
                 </div>
-                <p class="text-slate-300 leading-relaxed">Vui lòng điền thông tin hồ sơ của bé và khóa API dưới đây để kích hoạt đầy đủ tính năng Bác sĩ AI Đánh Giá & Chọn Lọc Khoảnh Khắc Đẹp.</p>
+                <p class="text-slate-300 leading-relaxed">Vui lòng điền thông tin hồ sơ của bé và khóa API dưới đây để kích hoạt đầy đủ tính năng Trợ Lý Gemini Thẩm Định & Chọn Lọc Khoảnh Khắc Đẹp.</p>
             </div>
 
             <!-- 1. Hồ Sơ Bé Yêu -->
@@ -2232,14 +2232,14 @@
                 </div>
             </div>
 
-            <!-- 2. Chuyên Gia Hội Chẩn & Giám Khảo Ảnh Gemini AI -->
+            <!-- 2. Trợ Lý Phân Tích & Giám Khảo Ảnh Gemini AI -->
             <div class="p-4 rounded-2xl bg-slate-900/70 border border-indigo-500/30 space-y-3.5 text-xs">
                 <div class="flex items-center justify-between flex-wrap gap-2">
-                    <span class="font-bold text-indigo-300 flex items-center gap-1.5 text-sm">✨ 2. Bác Sĩ AI Đánh Giá & Duyệt Ảnh</span>
+                    <span class="font-bold text-indigo-300 flex items-center gap-1.5 text-sm">✨ 2. Trợ Lý Gemini Thẩm Định & Duyệt Ảnh</span>
                     <span class="text-[10px] text-indigo-300 bg-indigo-500/15 px-2.5 py-0.5 rounded-full border border-indigo-500/30">Event-Driven • Chống báo giả</span>
                 </div>
                 <p class="text-slate-400 leading-relaxed">
-                    Kết hợp Edge AI chạy cục bộ 100% với Gemini Flash/Pro để: <b>(1)</b> Tự động căn chỉnh vùng nôi, <b>(2)</b> Bác sĩ AI đánh giá trước khi báo động ngạt thở, và <b>(3)</b> Kiểm duyệt ảnh kỷ niệm (đảm bảo bé kín đáo và <b>nếu có bố/mẹ trong hình thì bố/mẹ cũng phải tươi tắn, đẹp</b> mới lưu).
+                    Kết hợp Edge AI chạy cục bộ 100% với Gemini Flash/Pro để: <b>(1)</b> Tự động căn chỉnh vùng nôi, <b>(2)</b> Thẩm định đa tầng trước khi kích hoạt báo động, và <b>(3)</b> Kiểm duyệt ảnh kỷ niệm (đảm bảo bé kín đáo và <b>nếu có bố/mẹ trong hình thì bố/mẹ cũng phải tươi tắn, đẹp</b> mới lưu).
                 </p>
                 <div>
                     <label class="block text-slate-300 mb-1 font-medium">Google Gemini API Key (<a href="https://aistudio.google.com/apikey" target="_blank" class="text-indigo-400 underline hover:text-indigo-300">Lấy khóa tại Google AI Studio</a>):</label>
@@ -2259,7 +2259,7 @@
                     <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/70 cursor-pointer">
                         <input type="checkbox" id="cfg-gemini-verify-alerts" class="mt-0.5 accent-indigo-500 w-4 h-4">
                         <div>
-                            <span class="font-bold text-slate-200 block">Bác sĩ AI đánh giá cảnh báo nguy hiểm</span>
+                            <span class="font-bold text-slate-200 block">Trợ lý Gemini thẩm định cảnh báo nguy hiểm</span>
                             <span class="text-[11px] text-slate-400">Chặn báo động giả do gối ôm đè cạnh cằm bé</span>
                         </div>
                     </label>
@@ -3796,7 +3796,7 @@
                 sleep_wake_title: 'Cữ Thức Tiếp Theo',
                 sleep_score_title: 'Chất Lượng Giấc Ngủ',
                 sleep_chart_title: 'Biểu Đồ Giấc Ngủ 24h Theo Giờ (Mốc 07:00 Sáng)',
-                sleep_report_title: 'Bác Sĩ Giấc Ngủ Nhi Khoa (AI Clinical Sleep Summary)',
+                sleep_report_title: 'Đánh Giá Giấc Ngủ Chuẩn AAP (Clinical Sleep Summary)',
                 sleep_report_btn: '✨ Đánh Giá Giấc Ngủ Chuẩn AAP',
                 lic_title: 'Bản Quyền BabyGuard AI',
                 lic_subtitle: 'Xác thực bản quyền thương mại & bảo vệ phần cứng',
@@ -5419,7 +5419,7 @@
                     document.getElementById('vital-wake-hint').innerText = s.wake_window.hint;
                 }
 
-                // Tự động cập nhật trực tiếp Cẩm Nang & Timeline khi phụ huynh đang mở Tab Bác Sĩ Giấc Ngủ
+                // Tự động cập nhật trực tiếp Cẩm Nang & Timeline khi phụ huynh đang mở Tab Giấc Ngủ
                 if (activeTab === 'sleep') {
                     renderSleepSummaryUI(s);
                 }
@@ -5696,7 +5696,7 @@
                 const da = s.daily_analysis;
                 const metaEl = document.getElementById('sleep-ai-report-meta');
                 if (metaEl) {
-                    metaEl.innerText = `Ngày ${da.date || s.today_date} • Nguồn: ${da.source || 'Bác Sĩ Giấc Ngủ AI'} • Cập nhật lúc ${da.generated_at || '--:--'}`;
+                    metaEl.innerText = `Ngày ${da.date || s.today_date} • Nguồn: ${da.source || 'Chuẩn AAP & WHO'} • Cập nhật lúc ${da.generated_at || '--:--'}`;
                 }
                 const anchorBadge = document.getElementById('cycle-anchor-badge');
                 if (anchorBadge && s.cycle_anchor_display) {
@@ -5704,7 +5704,7 @@
                 }
                 const badgeEl = document.getElementById('sleep-ai-source-badge');
                 if (badgeEl) {
-                    const isGemini = (da.source || '').toLowerCase().includes('gemini') || (da.source || '').toLowerCase().includes('bác sĩ ai') || (da.source || '').toLowerCase().includes('aap');
+                    const isGemini = (da.source || '').toLowerCase().includes('gemini') || (da.source || '').toLowerCase().includes('aap') || (da.source || '').toLowerCase().includes('who');
                     if (isGemini) {
                         badgeEl.className = "text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30";
                         badgeEl.innerHTML = `<span>📋 Chuẩn AAP & WHO (${da.generated_at || 'Hôm nay'})</span>`;
@@ -7673,7 +7673,7 @@
                     await fetchGrowthData();
                     dismissGrowthReminder();
 
-                    // Tự động tải lại đánh giá khi Bác sĩ AI phân tích ngầm xong sau 3.5s
+                    // Tự động tải lại đánh giá khi Trợ lý Gemini phân tích ngầm xong sau 3.5s
                     setTimeout(() => {
                         fetchGrowthData(true);
                     }, 3500);
@@ -7713,7 +7713,7 @@
             }
         }
 
-        // Bác sĩ Nhi khoa Gemini AI Hội chẩn theo yêu cầu
+        // Đánh giá giấc ngủ theo chuẩn AAP & WHO
         async function analyzeSleepWithAI(event) {
             if (event) event.preventDefault();
             const btn = document.getElementById('btn-analyze-sleep-ai');

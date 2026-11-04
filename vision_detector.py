@@ -2522,7 +2522,7 @@ class VisionTracker:
 
     def create_cry_audit_mosaic(self, current_frame=None, airway_crop=None) -> np.ndarray:
         """
-        Ghép 4 khung nhìn thời gian & cận cảnh phục vụ Gemini AI và Telegram hội chẩn tiếng khóc:
+        Ghép 4 khung nhìn thời gian & cận cảnh phục vụ Gemini AI và Telegram đánh giá tiếng khóc:
         - Ô 1 [Top-Left]: T - 3.5s (Khung cảnh nôi trước khi có âm thanh / bé yên tĩnh)
         - Ô 2 [Top-Right]: T - 1.5s (Khởi phát âm thanh / cựa mình)
         - Ô 3 [Bottom-Left]: T - 0.0s (Toàn cảnh hiện tại khi đạt đỉnh âm thanh)

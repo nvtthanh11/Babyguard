@@ -9,10 +9,10 @@
 
 * **Tên sản phẩm:** BabyGuard AI (Smart AI Baby Monitor - Commercial Edition).
 * **Tác giả / Nhà sáng lập:** Nguyễn Vũ Trường Thanh (Ba của bé Bé A Siu).
-* **Sứ mệnh:** Biến webcam/laptop/máy tính cũ thành **Trợ lý Vệ sĩ & Bác sĩ Giấc ngủ AI** bảo vệ giấc ngủ và sinh mạng của bé yêu 24/7 với chi phí siêu tiết kiệm (199.000đ trọn đời thay vì mua camera ngoại 8 - 10 triệu đồng).
+* **Sứ mệnh:** Biến webcam/laptop/máy tính cũ thành **Trợ lý Giám Sát An Toàn & Giấc Ngủ AI Cho Bé (Chuẩn WHO & AAP)** bảo vệ giấc ngủ và sinh mạng của bé yêu 24/7 với chi phí siêu tiết kiệm (199.000đ trọn đời thay vì mua camera ngoại 8 - 10 triệu đồng).
 * **Triết lý kỹ thuật:**
   1. **Edge AI First (Xử lý cục bộ 100%):** Không đẩy video của bé lên cloud để đảm bảo quyền riêng tư tuyệt đối cho gia đình.
-  2. **Hybrid Cloud (Gemini Pool Failover):** Chỉ gửi ảnh cắt vi mô ẩn danh lên Gemini để hội chẩn khi cần thẩm định cảnh báo giả (False Alarm Suppression), chấm điểm ảnh đẹp (Cute Moments) hoặc phân tích giấc ngủ nhi khoa.
+  2. **Hybrid Cloud (Gemini Pool Failover):** Chỉ gửi ảnh cắt vi mô ẩn danh lên Gemini để thẩm định khi cần khử cảnh báo giả (False Alarm Suppression), chấm điểm ảnh đẹp (Cute Moments) hoặc phân tích giấc ngủ theo chuẩn nhi khoa AAP.
   3. **Zero Maintenance Cost (Chi phí duy trì 0 VNĐ):** Dùng Cloudflare Quick Tunnel miễn phí, SePay Free Tier (50 tx/tháng), GitHub Pages + Fastly CDN, Gemini API Free Pool. Không cần thuê máy chủ đắt đỏ.
 * **Nguyên tắc xưng hô bất di bất dịch:**  
   > ⚠️ **LUÔN DÙNG TỪ "BA" - TUYỆT ĐỐI KHÔNG DÙNG TỪ "BỐ"** trong toàn bộ giao diện, câu chuyện, tài liệu và thông báo.
@@ -28,7 +28,7 @@ baby_monitor/
 ├── vision_tracker.py           # AI Thị giác: YuNet Face, YOLOv8-pose MPS, chống lật úp, che mặt, đo nhịp thở RPM, căn nôi
 ├── audio_detector.py           # AI Thính giác: Google YAMNet TFLite phát hiện tiếng khóc, ho sặc, tiếng ồn
 ├── sleep_tracker.py            # AI Giấc ngủ: Cửa sổ 24h nhi khoa (tính từ 07:00 sáng theo chuẩn AAP/AASM), chu kỳ ngủ, điểm số
-├── gemini_verifier.py          # Bộ hội chẩn Gemini: Quản lý Multi-Key Pool tự đảo model khi chạm quota, duyệt ảnh đẹp, RAG nhi
+├── gemini_verifier.py          # Bộ thẩm định Gemini: Quản lý Multi-Key Pool tự đảo model khi chạm quota, duyệt ảnh đẹp, RAG nhi
 ├── alert_manager.py            # Quản lý cảnh báo: Bắn tin Telegram (kèm ảnh/video), chống spam (cooldown), ghim tin khẩn
 ├── license_manager.py          # Quản lý bản quyền thương mại: HMAC-SHA256, dùng thử 14 ngày, khóa theo máy & Master Lifetime
 ├── tunnel_manager.py           # Trình quản lý Cloudflare Tunnel: Tự động cấp link xem từ xa 4G/5G HTTPS
@@ -95,10 +95,10 @@ Khách hàng **KHÔNG BAO GIỜ PHẢI NHẬP HAY NHẬN MÃ KEY THỦ CÔNG**:
    * **Chống che mặt (Covered Face):** Phát hiện chăn gối che mũi miệng.
    * **Đo nhịp thở (Breathing RPM):** Phân tích quang sai chuyển động vi mô ngực (chuẩn 30 - 60 nhịp/phút), cảnh báo ngưng thở (>20s).
    * **Ranh giới nôi ảo (Safe Crib Zone):** Cho phép kéo thả trực tiếp vùng an toàn trên màn hình cảm ứng, cảnh báo khi bé leo trèo hoặc trườn ra ngoài.
-2. **Bác Sĩ Thính Giác (Audio AI - `audio_detector.py`):**
+2. **Giám Sát Âm Thanh (Audio AI - `audio_detector.py`):**
    * **Google YAMNet TFLite:** Phát hiện tiếng khóc (Baby Cry) và tiếng ho/sặc sữa (Cough & Gasp).
    * **Tự động ru ngủ:** Tự bật nhạc ru / tiếng ồn trắng khi bé vừa khóc.
-3. **Bác Sĩ Giấc Ngủ Nhi Khoa (Sleep Tracker - `sleep_tracker.py`):**
+3. **Theo Dõi Giấc Ngủ Chuẩn AAP (Sleep Tracker - `sleep_tracker.py`):**
    * **Chu kỳ 24h Nhi khoa:** Mốc tính từ **07:00 sáng** hàng ngày theo chuẩn Viện Hàn Lâm Nhi Khoa Hoa Kỳ (AAP & AASM).
    * **Chấm điểm giấc ngủ (Sleep Score 0-100), Biểu đồ giấc ngủ 24h, Cửa sổ thức (Wake Window).**
    * **Gemini Clinical Sleep Summary:** Gemini phân tích cữ ngủ đêm và giấc ngủ ngày, đưa ra lời khuyên sinh hoạt EASY cho ba mẹ.

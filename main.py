@@ -215,7 +215,7 @@ def main():
         # Tạo Bức Ảnh Ghép 4 Ô (Composite 4-Panel Mosaic: T-3.5s, T-1.5s, T-0s, Cận cảnh Mặt/Thân)
         mosaic_frame = vision_tracker.create_cry_audit_mosaic()
 
-        # Gửi lên Chuyên Gia Nhi Khoa Gemini AI Hội Chẩn & Kiểm Tra Chéo (Double-Check Sentinel)
+        # Thẩm định phân tích âm thanh & tư thế qua Trợ Lý Gemini
         verify_res = {}
         if gemini_verifier and gemini_verifier.is_ready():
             verify_res = gemini_verifier.verify_crying_alert(
@@ -275,7 +275,7 @@ def main():
         })
 
         extra_info = {
-            "Hội chẩn AI": diag_vi,
+            "Đánh giá": diag_vi,
             "Trạng thái": baby_state,
             "Duy trì": f"{telem.get('continuous_seconds', 0.0)}s",
             "Âm lượng": f"{telem.get('volume_pct', round(volume*100, 1))}%",
@@ -439,7 +439,7 @@ def main():
             import webview
             print("[BabyGuard AI] 🚀 Đang khởi chạy Cửa Sổ Ứng Dụng Độc Lập Native...")
             window = webview.create_window(
-                title="BabyGuard AI • Vệ Sĩ & Bác Sĩ Giấc Ngủ Cho Bé",
+                title="BabyGuard AI • Giám Sát An Toàn & Giấc Ngủ Cho Bé",
                 url=f"http://127.0.0.1:{port}/app",
                 width=1280,
                 height=820,

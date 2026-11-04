@@ -822,7 +822,7 @@ class SleepTracker:
             source = self.daily_ai_report.get("model", "Gemini Pediatric AI")
         else:
             generated_at = datetime.now().strftime("%H:%M")
-            source = "Bác Sĩ Giấc Ngủ AI (Hệ thống AI Cục Bộ)"
+            source = "Chuẩn AAP & WHO (Hệ thống Cục Bộ)"
             if is_morning and prev_sleep_h > 0:
                 ai_summary = (
                     f"Tổng hợp 24h & Đêm qua ({self.today_date}): Trong chu kỳ 24h hôm qua bé ngủ đạt {prev_sleep_h} giờ "

@@ -72,7 +72,7 @@ class AudioCryDetector:
         self.last_cry_callback_trigger_time = 0.0
         self.whimper_history = deque(maxlen=30)         # Lưu timestamp các lần ọ ẹ ngắn (< 4s) trong 60s
         self.acoustic_sliding_window = deque(maxlen=24) # Bộ đệm 12 giây gần nhất (@ 2Hz) để tính duty-cycle & xu hướng âm lượng
-        self.acoustic_event_log = deque(maxlen=40)      # Nhật ký tiến trình âm thanh gần nhất chuyển cho Gemini hội chẩn
+        self.acoustic_event_log = deque(maxlen=40)      # Nhật ký tiến trình âm thanh gần nhất chuyển cho Gemini thẩm định
         
         # Target classes in YAMNet (0-indexed)
         # 11: Screaming, 19: Crying, sobbing, 20: Baby cry, infant cry, 21: Whimper, 22: Wail, moan
@@ -374,7 +374,7 @@ class AudioCryDetector:
 
                     self.top_sound_label = top_label
 
-                    # --- KÍCH HOẠT CALLBACK HỘI CHẨN TIẾNG KHÓC ---
+                    # --- KÍCH HOẠT CALLBACK THẨM ĐỊNH TIẾNG KHÓC ---
                     # Chỉ kích hoạt khi thỏa mãn tính liên tục / chu kỳ dồn dập (loại bỏ dứt điểm tiếng ọ ẹ 1-2 tiếng)
                     if self.cry_alert_enabled and is_sustained_crying and self.cry_probability >= self.cry_threshold and self.on_cry_callback:
                         if (now_t - self.last_cry_callback_trigger_time) >= 15.0:
@@ -402,7 +402,7 @@ class AudioCryDetector:
                                 "volume": round(float(vol), 4),
                                 "note": top_label
                             })
-                            # Chuyển đầy đủ dữ liệu âm học cho bộ điều phối hội chẩn
+                            # Chuyển đầy đủ dữ liệu âm học cho bộ điều phối thẩm định
                             try:
                                 self.on_cry_callback(cry_telemetry)
                             except TypeError:
