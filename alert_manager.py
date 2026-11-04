@@ -447,7 +447,7 @@ class AlertManager:
             chunks.append(current.strip())
         return chunks if chunks else [text[:max_chars]]
 
-    def send_telegram_text(self, text: str, pin: bool = False, tag_recipients: bool = False) -> bool:
+    def send_telegram_text(self, text: str, pin: bool = False, tag_recipients: bool = False, unpin_old: bool = True) -> bool:
         bot_token = self.config.get("telegram_bot_token", "").strip()
         enabled = self.config.get("telegram_enabled", False)
         recipients = self._get_recipient_list()
@@ -477,20 +477,21 @@ class AlertManager:
                         resp = requests.post(url_send, json=data, timeout=12)
                         if resp.status_code == 200:
                             mid = resp.json().get("result", {}).get("message_id")
-                            # Chỉ ghim tin nhắn đầu tiên (Báo cáo chính) và xóa sạch các tin ghim cũ
+                            # Chỉ ghim tin nhắn đầu tiên của khối tin
                             if pin and idx == 0 and mid:
                                 try:
-                                    try:
-                                        requests.post(url_unpin_all, json={"chat_id": r["chat_id"]}, timeout=6)
-                                    except Exception:
-                                        pass
-                                    try:
-                                        requests.post(url_unpin_one, json={"chat_id": r["chat_id"]}, timeout=6)
-                                    except Exception:
-                                        pass
+                                    if unpin_old:
+                                        try:
+                                            requests.post(url_unpin_all, json={"chat_id": r["chat_id"]}, timeout=6)
+                                        except Exception:
+                                            pass
+                                        try:
+                                            requests.post(url_unpin_one, json={"chat_id": r["chat_id"]}, timeout=6)
+                                        except Exception:
+                                            pass
 
                                     requests.post(url_pin, json={"chat_id": r["chat_id"], "message_id": mid, "disable_notification": False}, timeout=8)
-                                    print(f"[AlertManager] 📌 Đã xóa ghim cũ và ghim tin Báo cáo mới nhất #{mid} trên Telegram của {r['name']}")
+                                    print(f"[AlertManager] 📌 Đã ghim tin #{mid} trên Telegram của {r['name']} (unpin_old={unpin_old})")
                                 except Exception as pe:
                                     print(f"[AlertManager] Không thể ghim tin nhắn: {pe}")
                         else:

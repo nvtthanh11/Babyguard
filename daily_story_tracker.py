@@ -16,6 +16,23 @@ from datetime import date, datetime, timedelta
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STORIES_FILE = os.path.join(BASE_DIR, "baby_daily_stories.json")
+STORY_LOG_FILE = os.path.join(BASE_DIR, "logs", "daily_stories_history.log")
+
+GLOBAL_BANNED_STORIES = [
+    "sư tử và chuột",
+    "sư tử và chú chuột",
+    "chuột nhắt và sư tử",
+    "sư tử và chuột nhắt",
+    "lion and mouse",
+    "lion and the mouse",
+    "the lion and the mouse"
+]
+
+def is_banned_story(title: str = "", content: str = "") -> bool:
+    """Kiểm tra xem câu chuyện có nằm trong danh sách cấm lặp (vd: Chú chuột & sư tử) hay không."""
+    s = f"{title} {content[:250]}".lower()
+    return any(b in s for b in GLOBAL_BANNED_STORIES)
+
 
 # ==============================================================================
 # 7 TRỤ CỘT NHÂN CÁCH TRONG TUẦN (7 DISTINCT THEMATIC PILLARS)
@@ -116,20 +133,20 @@ Câu chuyện ngụ ngôn muôn đời này là bài học vô giá: Tố chất
         "weekday": 1,
         "theme_id": "kindness",
         "theme_name": "Thứ Ba: Lòng Nhân Ái & Sự Tử Tế Dịu Dàng",
-        "title": "Sư Tử Và Chuột Nhắt - Sức Mạnh Kỳ Diệu Của Lòng Tử Tế",
+        "title": "Hoàng Tử Hạnh Phúc Và Chú Chim Én Nhỏ - Trái Tim Bằng Vàng",
         "category": "Bài Học Đạo Đức & Trái Tim Nhân Ái",
-        "source": "Truyện Ngụ Ngôn Aesop & Lev Tolstoy",
-        "quote": "Lòng tốt dù nhỏ bé đến đâu cũng không bao giờ là lãng phí.",
-        "content": """Giữa rừng già rậm rạp, Chúa sơn lâm Sư Tử sau một ngày săn mồi mệt mỏi đang nằm tựa đầu vào gốc cây cổ thụ thiếp đi trong giấc ngủ trưa sâu lắng. Một chú Chuột nhắt bé xíu tinh nghịch mải mê đuổi theo hạt sồi rơi vô tình chạy vụt qua mũi Sư Tử. Giật mình tỉnh giấc, Sư Tử nổi cơn thịnh nộ, vung chiếc vuốt sắc nhọn chụp gọn lấy sinh linh nhỏ bé. Trong chiếc vuốt khổng lồ, Chuột nhắt run rẩy cất tiếng van lơn tha thiết: 'Xin Ngài tha mạng! Tôi thật vô tâm đã quấy rầy giấc ngủ của Chúa sơn lâm. Nếu Ngài rộng lòng tha thứ, biết đâu một ngày nào đó kẻ hèn mọn này có thể đền đáp ơn nghĩa sâu nặng của Ngài!'.
+        "source": "Truyện Cổ Tích Oscar Wilde",
+        "quote": "Điều đẹp đẽ nhất trên thế gian chỉ có thể cảm nhận bằng trái tim yêu thương chân thành.",
+        "content": """Trên đỉnh một cột đá cao sừng sững giữa quảng trường thành phố, bức tượng Hoàng Tử Hạnh Phúc đứng uy nghiêm ngắm nhìn nhân gian. Tượng được dát bằng những lá vàng ròng óng ánh, đôi mắt là hai viên ngọc bích xanh biếc và trên chuôi kiếm nạm một viên hồng ngọc đỏ rực rỡ. Ai đi qua cũng ngước nhìn tượng với lòng ngưỡng mộ và khen ngợi chàng là biểu tượng của niềm hạnh phúc vĩnh cửu.
 
-Nghe lời van xin của chú chuột bé tí xíu, Sư Tử cất tiếng cười vang dội làm rung chuyển cả tán rừng: 'Một con chuột nhỏ bằng nắm tay thì giúp gì được cho Chúa tể sơn lâm?'. Thế nhưng, nhìn thấy ánh mắt chân thành và sự run rẩy tội nghiệp của con vật nhỏ bé, trái tim Sư Tử bất chợt chùng xuống bởi lòng trắc ẩn. Sư Tử từ từ mở vuốt và phóng thích cho Chuột nhắt chạy thoát vào bụi rậm.
+Một đêm mùa thu lạnh giá, một chú chim Én nhỏ mải mê bay về phương nam tránh rét muộn ghé vào đậu nghỉ chân dưới chân tượng Hoàng Tử. Bỗng nhiên, những giọt nước ấm áp rơi tí tách lên cánh chim. Én ngước nhìn lên ngỡ ngàng: Bức tượng lộng lẫy kia đang rưng rưng rơi những giọt nước mắt xót xa. Hoàng Tử nghẹn ngào cất tiếng: 'Thuở còn sống trong cung điện nguy nga, ta chưa từng biết đến đau khổ hay nước mắt. Nhưng giờ đây khi đứng trên cao, ta nhìn thấy tất cả sự cơ cực, đói nghèo và lạnh lẽo của muôn người nơi phố nhỏ'.
 
-Ít lâu sau, tai họa ập đến rừng xanh. Sư Tử vô tình sa vào chiếc bẫy lưới bện bằng dây thừng khổng lồ của nhóm thợ săn hung ác. Càng vùng vẫy gầm thét dữ dội, những sợi dây thừng chắc nịch càng siết chặt vào da thịt khiến vị vua rừng già kiệt sức nằm tuyệt vọng chờ chết. Nghe thấy tiếng gầm ai oán vang vọng, Chuột nhắt nhận ra ân nhân của mình liền chạy vụt tới. Nhìn thấy Sư Tử mắc nạn, Chuột không hề sợ hãi mà lập tức dùng hàm răng sắc nhọn gặm từng mắt lưới kiên trì suốt hàng giờ đồng hồ.
+Hoàng Tử tha thiết nhờ chim Én cạy viên hồng ngọc trên chuôi kiếm mang tặng người mẹ nghèo có đứa con thơ đang sốt mê man không có thuốc thang; rồi lại xin Én lấy từng viên ngọc bích nơi khóe mắt gửi cho chàng thi sĩ đói lả và cô bé bán diêm lạnh cóng giữa trời đông. Cuối cùng, Hoàng Tử bảo Én bóc từng lá vàng dát trên thân mình trao cho những đứa trẻ lang thang đang co ro góc chợ. Mùa đông băng giá kéo đến, Hoàng Tử chỉ còn lại thân hình chì xám xịt trơ trụi và đôi mắt mù lòa, nhưng từ bên trong chàng tỏa ra hơi ấm của tình yêu thương vô bờ bến.
 
-Khi ánh trăng thượng tuần vừa ló rạng trên rặng cây, mắt lưới cuối cùng đứt lìa, Sư Tử chui ra khỏi cạm bẫy trong sự giải thoát kỳ diệu. Cúi đầu nhìn chú Chuột nhắt nhỏ bé đứng trên phiến đá, Sư Tử cảm động nói lời tạ ơn sâu sắc. Lòng tốt không phân biệt lớn hay nhỏ, sang hay hèn; chính sự trắc ẩn và tha thứ hôm nào đã gieo hạt giống cứu rỗi cho chính vị vua quyền uy nhất của muôn loài.""",
-        "parenting_lesson": """1. Về mặt tâm lý phát triển: Trẻ nhỏ học về lòng nhân ái qua sự đối xử dịu dàng của cha mẹ trong những năm tháng đầu đời. Trẻ được yêu thương vô điều kiện sẽ phát triển vùng não đồng cảm (Empathy) vượt trội, trở thành người ấm áp, biết lắng nghe và dễ thấu hiểu người khác.
-2. Phương pháp nuôi dạy của ba mẹ: Hãy làm gương bằng những hành động tử tế mỗi ngày: Nhẹ nhàng vuốt ve con, mỉm cười với người lao công, giúp đỡ người già qua đường. Đừng bao giờ cười nhạo hay xem thường những điều nhỏ bé, vì lòng tử tế chính là tài sản quý giá nhất của một đời người.""",
-        "baby_talk_prompt": """Thiên thần nhỏ của ba mẹ ơi, trần gian này bao la và có muôn vàn điều diệu kỳ đang chờ đón con. Ba mẹ chỉ mong con khi khôn lớn sẽ luôn mang trong mình một trái tim ấm áp, biết rung động trước nỗi đau của người khác và luôn sẵn lòng trao đi nụ cười tử tế. Giấc ngủ êm đềm này sẽ nuôi dưỡng tâm hồn con thật trong trẻo và thiện lương, con yêu nhé."""
+Chú chim Én vì thương Hoàng Tử cô độc nên quyết định không bay về phương nam ấm áp nữa, ở lại bầu bạn và sưởi ấm cho chàng cho đến khi kiệt sức vì giá lạnh rồi trút hơi thở cuối cùng dưới chân tượng. Đúng lúc ấy, trái tim bằng chì của Hoàng Tử vỡ đôi ra trong một tiếng nấc nghẹn ngào. Khi Thượng Đế bảo thiên thần hãy mang về thiên đàng hai vật quý giá nhất của thành phố, thiên thần đã mang về trái tim bằng chì vỡ vụn và chú chim Én nhỏ. Tình yêu thương vị tha và lòng nhân ái trao đi trọn vẹn chính là viên ngọc quý giá nhất, bất tử trước mọi thời gian.""",
+        "parenting_lesson": """1. Về mặt tâm lý phát triển: Trí tuệ cảm xúc (EQ) và lòng trắc ẩn của trẻ nhỏ được bồi đắp sâu sắc nhất thông qua các câu chuyện văn học giàu tính biểu tượng. Trẻ hiểu rằng giá trị của một con người không nằm ở vẻ ngoài lộng lẫy hay của cải vật chất mà ở khả năng thấu cảm và san sẻ nỗi đau với người xung quanh.
+2. Phương pháp nuôi dạy của ba mẹ: Hãy cùng con thực hành những nghĩa cử tử tế giản dị: Chia sẻ đồ chơi với bạn, nhẹ nhàng vỗ về khi thấy ai đó buồn bã, và dạy con biết trân trọng những tấm lòng chân thành hơn là những hào nhoáng bề ngoài.""",
+        "baby_talk_prompt": """Bé A Siu yêu thương của ba mẹ ơi, thế giới này có thể rộng lớn và đôi khi lạnh giá, nhưng chỉ cần trong tim con luôn rực sáng một ngọn lửa nhân ái và dịu dàng, con sẽ sưởi ấm cho chính mình và mang lại bình an cho những người xung quanh. Ba mẹ chúc con có một giấc ngủ thật êm đềm, luôn là thiên thần mang lại niềm vui cho cuộc đời này con nhé."""
     },
     {
         "weekday": 2,
@@ -233,6 +250,7 @@ class DailyStoryTracker:
     def __init__(self, data_file: str = None):
         self.data_file = data_file or STORIES_FILE
         self.data = self._load_data()
+        self.init_story_history_log()
 
     def _load_data(self) -> dict:
         if os.path.exists(self.data_file):
@@ -255,6 +273,97 @@ class DailyStoryTracker:
                 json.dump(self.data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"[DailyStoryTracker] Lỗi ghi {self.data_file}: {e}")
+
+    def format_telegram_story(self, story: dict, baby_name: str = "Bé A Siu") -> str:
+        """Định dạng câu chuyện thành một tin nhắn độc lập chuẩn đẹp, trang nhã để gửi & ghim Telegram."""
+        title = story.get("title", "1 Ngày 1 Câu Chuyện").strip()
+        cat = story.get("category", "Nhân Cách & Đạo Đức").strip()
+        src = story.get("source", "Kho tàng Văn học").strip()
+        quote = story.get("quote", "").strip()
+        content = story.get("content", "").strip()
+        lesson = story.get("parenting_lesson", "").strip()
+        prompt = story.get("baby_talk_prompt", "").strip()
+        date_str = story.get("date", datetime.now().strftime("%Y-%m-%d"))
+        theme_name = story.get("theme_name", cat).strip()
+
+        msg = (
+            f"📖 <b>1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA CHO CON — {baby_name.upper()}</b>\n"
+            f"📅 <i>Ngày: {date_str} | Trụ cột: {theme_name}</i>\n"
+            f"━━━━━━━━━━━━━━━━━━━\n\n"
+            f"✨ <b>{title.upper()}</b>\n"
+            f"🏛 <i>Nguồn: {src}</i>\n"
+        )
+        if quote:
+            msg += f"💬 <i>\"{quote}\"</i>\n\n"
+        else:
+            msg += "\n"
+
+        msg += f"{content}\n\n"
+        msg += f"━━━━━━━━━━━━━━━━━━━\n"
+        if lesson:
+            msg += f"🌱 <b>BÀI HỌC NUÔI DẠY CON DÀNH CHO BA MẸ:</b>\n{lesson}\n\n"
+        if prompt:
+            msg += f"🤱 <b>LỜI THỦ THỈ BÊN NÔI CHO {baby_name.upper()}:</b>\n<i>\"{prompt}\"</i>\n"
+
+        return msg
+
+    def log_story_history(self, story: dict, context: str = "System", telegram_pinned: bool = False):
+        """Ghi nhận lịch sử câu chuyện vào tệp logs/daily_stories_history.log."""
+        try:
+            log_dir = os.path.dirname(STORY_LOG_FILE)
+            os.makedirs(log_dir, exist_ok=True)
+            
+            t_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            d_str = story.get("date", datetime.now().strftime("%Y-%m-%d"))
+            title = story.get("title", "Không rõ tiêu đề")
+            theme = story.get("theme_name", story.get("category", "Đạo đức"))
+            source = story.get("source", "Văn học kinh điển")
+            src_type = story.get("source_type", "Unknown")
+            quote = story.get("quote", "")
+            lesson = story.get("parenting_lesson", "")
+            pin_status = "📌 ĐÃ GHIM LÊN TELEGRAM" if telegram_pinned else "💾 ĐÃ LƯU HỆ THỐNG"
+
+            entry = (
+                f"================================================================================\n"
+                f"[{t_now}] 📖 CÂU CHUYỆN NGÀY {d_str} — {title.upper()}\n"
+                f"• Chủ đề nhân cách: {theme}\n"
+                f"• Nguồn tác phẩm: {source}\n"
+                f"• Phân loại nguồn: {src_type} (Ngữ cảnh: {context})\n"
+                f"• Trạng thái Telegram: {pin_status}\n"
+            )
+            if quote:
+                entry += f"• Câu đúc kết: \"{quote}\"\n"
+            if lesson:
+                entry += f"--------------------------------------------------------------------------------\n"
+                entry += f"[Bài học nuôi dạy con]:\n{lesson}\n"
+            entry += f"================================================================================\n\n"
+
+            with open(STORY_LOG_FILE, "a", encoding="utf-8") as f:
+                f.write(entry)
+        except Exception as e:
+            print(f"[DailyStoryTracker] Lỗi ghi daily_stories_history.log: {e}")
+
+    def init_story_history_log(self):
+        """Khởi tạo file log nếu chưa có dữ liệu, đồng bộ toàn bộ lịch sử từ file JSON."""
+        try:
+            log_dir = os.path.dirname(STORY_LOG_FILE)
+            os.makedirs(log_dir, exist_ok=True)
+            if not os.path.exists(STORY_LOG_FILE) or os.path.getsize(STORY_LOG_FILE) < 50:
+                header = (
+                    "================================================================================\n"
+                    "         NHẬT KÝ 1 NGÀY 1 CÂU CHUYỆN Ý NGHĨA & DẠY CON — BABYGUARD AI         \n"
+                    "   Hệ thống tự động theo dõi, ghi vết và chống lặp nội dung cho bé A Siu       \n"
+                    "================================================================================\n\n"
+                )
+                with open(STORY_LOG_FILE, "w", encoding="utf-8") as f:
+                    f.write(header)
+
+                stories = self.data.get("stories", {})
+                for d_str in sorted(stories.keys()):
+                    st = stories[d_str]
+                    self.log_story_history(st, context="Lịch sử đồng bộ ban đầu", telegram_pinned=(d_str == "2026-11-02"))
+        except Exception as e:
+            print(f"[DailyStoryTracker] Lỗi khởi tạo story log: {e}")
 
     def get_recent_history(self, days: int = 7) -> list:
         """
@@ -384,6 +493,7 @@ class DailyStoryTracker:
             self.data["theme_history"] = self.data["theme_history"][-30:]
 
         self._save_data()
+        self.log_story_history(story, context="Hệ thống lưu câu chuyện mới", telegram_pinned=False)
 
     def _generate_with_gemini(self, gemini_verifier, baby_name: str, age_display: str,
                               target_pillar: dict, recent_history: list) -> dict:
@@ -466,6 +576,9 @@ Yêu cầu định dạng JSON bắt buộc (không chứa markdown backticks th
             text = text.strip()
 
             data = json.loads(text)
+            if is_banned_story(data.get("title", ""), data.get("content", "")):
+                print(f"[DailyStoryTracker] ⚠️ Phát hiện câu chuyện bị cấm lặp ({data.get('title')}). Hủy bỏ và chọn tác phẩm kinh điển khác.")
+                return None
             data["source_type"] = "Gemini AI"
             return data
         return None

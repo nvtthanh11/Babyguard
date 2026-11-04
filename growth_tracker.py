@@ -377,34 +377,103 @@ class GrowthTracker:
         except Exception as e:
             print(f"[GrowthTracker] Lỗi lưu baby_growth_ai.json: {e}")
 
+    def generate_instant_ai_summary(self, birth_date_str: str = "2026-09-29", gender: str = "boy", baby_name: str = "Bé") -> dict:
+        """Tự động sinh nhận định lâm sàng chuẩn WHO tức thì theo số đo mới nhất của bé."""
+        latest = self.get_latest_record()
+        if not latest:
+            return self.get_latest_ai_analysis()
+
+        w = float(latest.get("weight_kg", 3.5))
+        h = float(latest.get("height_cm", 52.0))
+        curr_date = latest.get("date", date.today().strftime("%Y-%m-%d"))
+
+        prev_rec = None
+        if len(self.records) >= 2:
+            prev_rec = self.records[-2]
+
+        days_gap = 15
+        w_diff_g = 0
+        h_diff_cm = 0.0
+        g_per_day = 0.0
+        velocity_str = f"Số đo ghi nhận ngày {curr_date}: {w} kg, {h} cm"
+
+        if prev_rec:
+            try:
+                d_c = parse_date(curr_date) or date.today()
+                d_p = parse_date(prev_rec.get("date")) or (d_c - timedelta(days=15))
+                days_gap = max(1, (d_c - d_p).days)
+                p_w = float(prev_rec.get("weight_kg", w))
+                p_h = float(prev_rec.get("height_cm", h))
+                w_diff_g = round((w - p_w) * 1000)
+                h_diff_cm = round(h - p_h, 1)
+                g_per_day = round(w_diff_g / max(1, days_gap), 1)
+                velocity_str = f"+{w_diff_g}g ({g_per_day}g/ngày), +{h_diff_cm}cm trong {days_gap} ngày"
+            except Exception:
+                pass
+
+        age_info = calculate_exact_age(birth_date_str)
+        months = min(12, age_info["full_months"])
+        gender_key = "girl" if str(gender).lower() in ("girl", "gái", "female", "f") else "boy"
+        std_row = WHO_STANDARDS.get(gender_key, WHO_STANDARDS["boy"]).get(months, (4.5, 3.4, 5.7, 54.7, 51.1, 58.4))
+        w_med, w_min, w_max, l_med, l_min, l_max = std_row
+
+        if w < w_min:
+            status_badge = "Cần theo dõi thêm"
+            w_comment = f"Cân nặng hiện tại {w} kg tiệm cận ngưỡng dưới so với trung vị WHO ({w_med} kg)."
+        elif w > w_max:
+            status_badge = "Tăng trưởng vượt trội"
+            w_comment = f"Cân nặng hiện tại {w} kg phát triển vượt trội so với chuẩn WHO ({w_med} kg)."
+        else:
+            status_badge = "Đạt chuẩn WHO"
+            w_comment = f"Cân nặng {w} kg và chiều cao {h} cm nằm trọn vẹn trong dải phát triển chuẩn của WHO ({w_min} - {w_max} kg, {l_min} - {l_max} cm)."
+
+        milk_need = int(w * 150)
+        analysis = {
+            "analyzed_at": datetime.now().strftime("%H:%M - %d/%m/%Y"),
+            "days_gap": days_gap,
+            "weight_gain_g": w_diff_g,
+            "height_gain_cm": h_diff_cm,
+            "velocity_str": velocity_str,
+            "status_badge": status_badge,
+            "velocity_evaluation_vi": f"{baby_name} hiện đạt cân nặng {w} kg và chiều cao {h} cm ({velocity_str}). Tốc độ tăng trưởng thể trạng phản ánh bé đang hấp thu dinh dưỡng tốt và hoàn thiện thể chất đều đặn.",
+            "who_percentile_comparison_vi": w_comment,
+            "recommendations_vi": [
+                f"Duy trì tổng lượng sữa mẹ hoặc sữa công thức khoảng {milk_need} ml/ngày (140 - 160 ml/kg/ngày), chia đều các cữ bú.",
+                "Tập cho bé nằm sấp có kiểm soát (Tummy Time) 3 - 5 phút mỗi ngày khi bé thức để rèn luyện cơ cổ và vai.",
+                "Bổ sung đều đặn 400 IU Vitamin D3 mỗi buổi sáng để hỗ trợ hấp thu canxi và hoàn thiện khung xương."
+            ],
+            "doctor_quote_vi": f"Thể trạng của {baby_name} đang phát triển rất tốt. Ba mẹ hãy tiếp tục duy trì cữ bú và giấc ngủ đều đặn cho con nhé!",
+            "model_used": "Chuẩn Nhi Khoa WHO"
+        }
+        self.save_ai_analysis(analysis)
+        return analysis
+
     def get_latest_ai_analysis(self) -> dict:
         """Lấy kết quả phân tích tăng trưởng gần nhất của Bác sĩ Gemini AI."""
         ai_path = os.path.join(BASE_DIR, "baby_growth_ai.json")
+        latest = self.get_latest_record()
         if os.path.exists(ai_path):
             try:
                 with open(ai_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    # Nếu file đã lưu khớp với số đo mới nhất thì trả về
+                    if latest and str(latest.get("weight_kg", "")) in data.get("velocity_evaluation_vi", ""):
+                        return data
             except Exception:
                 pass
         
-        # Nếu chưa có kết quả từ AI, tạo nhận định chuẩn mực ban đầu
-        latest = self.get_latest_record()
-        w = latest.get("weight_kg", 4.85) if latest else 4.85
-        h = latest.get("height_cm", 55.5) if latest else 55.5
-        return {
-            "analyzed_at": "Hôm nay",
-            "days_gap": 15,
-            "weight_gain_g": 250,
-            "height_gain_cm": 0.7,
-            "velocity_str": "+250g (16.7g/ngày), +0.7cm trong 15 ngày",
-            "status_badge": "Đạt chuẩn trung vị WHO",
-            "velocity_evaluation_vi": f"Bé tăng thêm 250g và 0.7cm sau 15 ngày theo dõi. Tốc độ tăng trưởng thể chất ổn định, cân nặng {w}kg và chiều dài {h}cm đều nằm trọn vẹn trong dải an toàn theo đường cong phát triển sinh lý của WHO.",
-            "who_percentile_comparison_vi": "Cân nặng và chiều cao của bé tiệm cận chuẩn trung vị WHO (Median) dành cho bé trai 1.5 tháng tuổi, thể trạng săn chắc và phát triển toàn diện.",
-            "recommendations_vi": [
-                f"Duy trì tổng lượng sữa khoảng {int(w * 150)}ml/ngày (tương đương 140 - 160ml/kg cân nặng), chia đều 7 - 8 cữ bú.",
-                "Thực hành cho bé nằm sấp có kiểm soát (Tummy Time) 3 - 5 phút sau khi thức dậy và thay tã để phát triển cơ cổ và vai gáy.",
-                "Bổ sung đều đặn 400 IU Vitamin D3 mỗi buổi sáng để tối ưu hấp thu canxi cho hệ xương và răng của bé."
-            ],
-            "doctor_quote_vi": "Thể trạng bé đang tiến triển rất tốt. Ba mẹ hãy tiếp tục duy trì cữ bú và nếp sinh hoạt đều đặn nhé!",
-            "model_used": "gemini-2.5-flash-lite"
-        }
+        # Nếu chưa khớp hoặc chưa có file, tự động sinh nhận định tức thì theo số đo mới nhất
+        cfg_path = os.path.join(BASE_DIR, "config.json")
+        b_name = "Bé A Siu"
+        b_date = "2026-09-29"
+        gender = "boy"
+        if os.path.exists(cfg_path):
+            try:
+                with open(cfg_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    b_name = cfg.get("baby_name", b_name)
+                    b_date = cfg.get("baby_birth_date", b_date)
+                    gender = cfg.get("baby_gender", gender)
+            except Exception:
+                pass
+        return self.generate_instant_ai_summary(b_date, gender, b_name)

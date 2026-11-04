@@ -1,17 +1,17 @@
 {
-  "analyzed_at": "15:22 - 24/10/2026",
-  "days_gap": 1,
-  "weight_gain_g": 0,
+  "analyzed_at": "08:47 - 04/11/2026",
+  "days_gap": 7,
+  "weight_gain_g": 700,
   "height_gain_cm": 0.0,
-  "velocity_str": "+0g (0.0g/ngày), +0.0cm trong 1 ngày",
+  "velocity_str": "+700g (100.0g/ngày), +0.0cm trong 7 ngày",
   "status_badge": "Đạt chuẩn WHO",
-  "velocity_evaluation_vi": "Trong 1 ngày qua, cân nặng của bé duy trì ổn định ở mức 2.7 kg và chiều cao 50.0 cm. Do khoảng thời gian đo quá ngắn (1 ngày), sự thay đổi trọng lượng chưa rõ rệt, tuy nhiên trẻ sơ sinh trong tháng đầu thường cần đạt mức tăng trung bình 25-35g/ngày để phát triển tối ưu.",
-  "who_percentile_comparison_vi": "Cân nặng 2.7 kg và chiều cao 50.0 cm của bé nằm trong khoảng bình thường theo chuẩn WHO cho bé trai 25 ngày tuổi (Cân nặng từ 2.5 - 4.3 kg, Chiều cao từ 46.3 - 53.4 cm), cho thấy bé đang phát triển tiệm cận mức chuẩn.",
+  "velocity_evaluation_vi": "Bé A Siu hiện đạt cân nặng 3.9 kg và chiều cao 55.0 cm (+700g (100.0g/ngày), +0.0cm trong 7 ngày). Tốc độ tăng trưởng thể trạng phản ánh bé đang hấp thu dinh dưỡng tốt và hoàn thiện thể chất đều đặn.",
+  "who_percentile_comparison_vi": "Cân nặng 3.9 kg và chiều cao 55.0 cm nằm trọn vẹn trong dải phát triển chuẩn của WHO (3.4 - 5.7 kg, 51.1 - 58.4 cm).",
   "recommendations_vi": [
-    "Duy trì cho bé bú mẹ hoàn toàn theo nhu cầu hoặc bú sữa công thức với lượng khoảng 120-150 ml/kg/ngày (tương đương khoảng 350-400 ml/ngày chia thành 8-10 cữ nhỏ), đảm bảo bé bú đủ 8-12 cữ mỗi ngày và có số lượng tã ướt đạt ít nhất 6-8 cái/ngày.",
-    "Khuyến khích cho bé thực hiện Tummy Time (nằm sấp có kiểm soát) ngắn vài phút mỗi ngày khi thức để phát triển cơ cổ, kết hợp massage nhẹ nhàng giúp bé thư giãn và ngủ ngon giấc.",
-    "Bổ sung đều đặn Vitamin D3 với liều 400 IU/ngày để hỗ trợ hấp thu canxi tối ưu, đồng thời theo dõi sát sao biểu hiện bú, ngủ và lịch tái khám định kỳ của bé."
+    "Duy trì tổng lượng sữa mẹ hoặc sữa công thức khoảng 585 ml/ngày (140 - 160 ml/kg/ngày), chia đều các cữ bú.",
+    "Tập cho bé nằm sấp có kiểm soát (Tummy Time) 3 - 5 phút mỗi ngày khi bé thức để rèn luyện cơ cổ và vai.",
+    "Bổ sung đều đặn 400 IU Vitamin D3 mỗi buổi sáng để hỗ trợ hấp thu canxi và hoàn thiện khung xương."
   ],
-  "doctor_quote_vi": "Ba mẹ hãy kiên nhẫn đồng hành cùng con mỗi ngày, chú trọng cung cấp đủ dinh dưỡng và yêu thương để bé A Siu phát triển khỏe mạnh và toàn diện nhất nhé!",
-  "model_used": "gemini-3.5-flash-lite"
+  "doctor_quote_vi": "Thể trạng của Bé A Siu đang phát triển rất tốt. Ba mẹ hãy tiếp tục duy trì cữ bú và giấc ngủ đều đặn cho con nhé!",
+  "model_used": "Chuẩn Nhi Khoa WHO"
 }

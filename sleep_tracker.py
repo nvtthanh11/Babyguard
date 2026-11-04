@@ -535,14 +535,12 @@ class SleepTracker:
                 self._save_data()
                 print("[SleepTracker] 😴 Gemini xác nhận bé đang NGỦ NGOAN -> Chuyển sang cữ ngủ (ASLEEP).")
 
-    def update_state(self, baby_detected: bool, is_moving: bool, motion_score: float = 0.0):
-        now = time.time()
+    def check_cycle_rollover(self, now: float = None):
+        """Chủ động kiểm tra và lật chu kỳ ngày mới (07:00 sáng) ngay cả khi camera không có luồng hình ảnh."""
+        if now is None:
+            now = time.time()
+        cur_cycle_date = self.get_sleep_cycle_date(now)
         with self.lock:
-            dt = max(0.0, min(2.0, now - self.last_update_ts))
-            self.last_update_ts = now
-
-            # Chu kỳ đo 24h lâm sàng neo cố định vào mốc 07:00 sáng (Chuẩn Nhi khoa AAP/AASM)
-            cur_cycle_date = self.get_sleep_cycle_date(now)
             if cur_cycle_date != self.today_date:
                 prev_sleep_h = round(self.total_sleep_today / 3600.0, 1)
                 prev_awake_h = round(self.total_awake_today / 3600.0, 1)
@@ -573,6 +571,14 @@ class SleepTracker:
                 self.daily_ai_report = None
                 self.delta_tracker.check_rollover(cur_cycle_date)
                 self._save_data()
+                print(f"[SleepTracker] 🌅 Đã lật chu kỳ ngày mới sang ngày {cur_cycle_date} (Khóa 07:00 sáng).")
+
+    def update_state(self, baby_detected: bool, is_moving: bool, motion_score: float = 0.0):
+        now = time.time()
+        self.check_cycle_rollover(now)
+        with self.lock:
+            dt = max(0.0, min(2.0, now - self.last_update_ts))
+            self.last_update_ts = now
 
             # Cập nhật cửa sổ trượt 60 giây để tính mật độ vận động (Activity Density)
             self.motion_window.append((now, bool(is_moving), float(motion_score)))
