@@ -59,6 +59,12 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
+        .safe-area-pb {
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 12px));
+        }
+        .safe-area-pt {
+            padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+        }
         h1, h2, h3, h4, h5 {
             text-wrap: balance;
         }
@@ -247,22 +253,22 @@
     </div>
 
     <!-- Header Navigation -->
-    <header class="sticky top-0 z-40 bg-obsidian/85 backdrop-blur-xl border-b border-bordercol px-4 lg:px-8 py-3.5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-400/20 border border-emerald-500/30 flex items-center justify-center text-xl shadow-inner">
+    <header class="sticky top-0 z-40 bg-obsidian/85 backdrop-blur-xl border-b border-bordercol px-3 sm:px-4 lg:px-8 py-2.5 sm:py-3.5 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-400/20 border border-emerald-500/30 flex items-center justify-center text-lg sm:text-xl shadow-inner shrink-0">
                 👶
             </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-base tracking-tight text-slate-100">BabyGuard<span class="text-emerald-400">.AI</span></span>
-                    <span class="text-[10px] uppercase font-semibold tracking-wider bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">Commercial Hybrid</span>
+            <div class="min-w-0">
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <span class="font-bold text-sm sm:text-base tracking-tight text-slate-100 whitespace-nowrap">BabyGuard<span class="text-emerald-400">.AI</span></span>
+                    <span class="hidden md:inline-block text-[10px] uppercase font-semibold tracking-wider bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">Commercial Hybrid</span>
                 </div>
-                <p id="header-baby-subtitle" class="text-[11px] text-slate-400 font-medium">Bảo bọc giấc ngủ bé Siu 24/7</p>
+                <p id="header-baby-subtitle" class="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">Bảo bọc bé Siu 24/7</p>
             </div>
         </div>
 
         <!-- Center Baby Status Pill (Desktop & Tablet) -->
-        <div id="header-status-pill" class="hidden md:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-slate-300 shadow-sm">
+        <div id="header-status-pill" class="hidden md:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-slate-300 shadow-sm shrink-0">
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-subtle"></span>
             <span id="header-baby-status" class="font-medium text-slate-200">Đang quét phòng bé...</span>
             <span class="text-slate-600">•</span>
@@ -272,22 +278,21 @@
         </div>
 
         <!-- Right Quick Controls (Clean & Minimalist: Max 6 items on Desktop, 4 on Mobile) -->
-        <div class="flex items-center gap-1.5 sm:gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <!-- 1. Primary Highlight Button: Kết Nối Điện Thoại (Quét QR, 4G & Tải App) -->
-            <button onclick="openMobileHubModal()" class="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/35 hover:to-emerald-500/35 border border-teal-500/40 text-xs font-bold text-teal-300 transition active:scale-95 shadow-sm" title="Kết Nối Điện Thoại (Quét Mã QR, Xem Từ Xa 4G & Cài App)">
-                <span class="text-sm">📱</span>
-                <span class="hidden sm:inline">Kết Nối ĐT</span>
-                <span class="sm:hidden font-extrabold">Kết Nối</span>
+            <button onclick="openMobileHubModal()" class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/35 hover:to-emerald-500/35 border border-teal-500/40 text-[11px] sm:text-xs font-bold text-teal-300 transition active:scale-95 shadow-sm" title="Kết Nối Điện Thoại (Quét Mã QR, Xem Từ Xa 4G & Cài App)">
+                <span class="text-xs sm:text-sm">📱</span>
+                <span class="hidden xs:inline sm:inline">Kết Nối</span>
             </button>
 
             <!-- 2. License Status Pill -->
-            <button onclick="openLicenseModal()" id="header-license-btn" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition" title="Bản quyền phần mềm BabyGuard AI">
+            <button onclick="openLicenseModal()" id="header-license-btn" class="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-cardbg hover:bg-cardhover border border-indigo-500/30 text-[11px] sm:text-xs font-semibold text-indigo-300 transition" title="Bản quyền phần mềm BabyGuard AI">
                 <span id="header-license-icon">🔑</span>
-                <span id="header-license-text" class="hidden sm:inline">Bản quyền</span>
+                <span id="header-license-text" class="hidden md:inline">Bản quyền</span>
             </button>
 
             <!-- 3. Music Icon -->
-            <button onclick="toggleMusicModal()" class="p-2 sm:p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-amber-400 hover:text-amber-300 transition" title="Nhạc ru & Tiếng ồn trắng">
+            <button onclick="toggleMusicModal()" class="p-1.5 sm:p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-amber-400 hover:text-amber-300 transition text-xs sm:text-sm" title="Nhạc ru & Tiếng ồn trắng">
                 🎵
             </button>
 
@@ -303,7 +308,7 @@
             </button>
 
             <!-- 6. Settings Hub (Desktop & Mobile) -->
-            <button onclick="openSettingsModal()" class="p-2 sm:p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition" title="Cài đặt Hệ thống & Hồ sơ Bé">
+            <button onclick="openSettingsModal()" class="p-1.5 sm:p-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition text-xs sm:text-sm" title="Cài đặt Hệ thống & Hồ sơ Bé">
                 ⚙️
             </button>
 
@@ -372,33 +377,33 @@
     </nav>
 
     <!-- Main Workspace Content -->
-    <main class="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
+    <main class="flex-1 p-3 sm:p-4 lg:p-8 max-w-7xl mx-auto w-full pb-20 md:pb-8">
 
         <!-- ================= TAB 1: LIVE MONITOR & BABY GUARD ================= -->
-        <section id="tab-live" class="tab-content space-y-6">
+        <section id="tab-live" class="tab-content space-y-3.5 sm:space-y-6">
             
             <!-- Video Stage + Quick Intercom -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-6 items-start">
                 
                 <!-- Main Video Stream Frame (col-span-2) -->
-                <div class="lg:col-span-2 space-y-4">
-                    <div class="bg-cardbg rounded-3xl overflow-hidden border border-bordercol shadow-2xl relative">
+                <div class="lg:col-span-2 space-y-3 sm:space-y-4">
+                    <div class="bg-cardbg rounded-2xl sm:rounded-3xl overflow-hidden border border-bordercol shadow-2xl relative">
                         
                         <!-- HUD Overlays on Top of Video -->
-                        <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none">
+                        <div class="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-20 flex justify-between items-start pointer-events-none gap-2">
                             <!-- Posture Badge -->
-                            <div id="hud-pose-badge" class="pointer-events-auto bg-slate-950/80 backdrop-blur-md border border-slate-700/70 text-slate-200 text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
-                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                <span id="hud-pose-text">Đang nhận diện tư thế...</span>
+                            <div id="hud-pose-badge" class="pointer-events-auto bg-slate-950/85 backdrop-blur-md border border-slate-700/70 text-slate-200 text-[10.5px] sm:text-xs font-semibold px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg max-w-[55%] truncate">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                                <span id="hud-pose-text" class="truncate">Đang nhận diện tư thế...</span>
                             </div>
 
                             <!-- Real-time Vital Badge -->
-                            <div class="pointer-events-auto flex items-center gap-2">
-                                <div class="bg-slate-950/80 backdrop-blur-md border border-cyan-500/30 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                            <div class="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                <div class="bg-slate-950/85 backdrop-blur-md border border-cyan-500/30 text-cyan-300 text-[10.5px] sm:text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full flex items-center gap-1 shadow-lg">
                                     <span>🫁</span>
                                     <span id="hud-breathing">-- RPM</span>
                                 </div>
-                                <div class="bg-slate-950/80 backdrop-blur-md border border-slate-700/70 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                                <div class="bg-slate-950/85 backdrop-blur-md border border-slate-700/70 text-slate-300 text-[10.5px] sm:text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1.5 rounded-full flex items-center gap-1 shadow-lg">
                                     <span>🔊</span>
                                     <span id="hud-sound">0%</span>
                                 </div>
@@ -434,175 +439,193 @@
                             </div>
                         </div>
 
-                        <!-- Action Bar Under Video (Redesigned Professional Camera Toolbar) -->
-                        <div class="camera-action-bar px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-950/85 backdrop-blur-xl border-t border-bordercol flex items-center justify-between gap-2 text-xs">
-                            <!-- Left Group: Audio & Media Interaction -->
-                            <div class="flex items-center gap-1.5 sm:gap-2">
-                                <!-- Push-to-Talk Intercom Button -->
-                                <button id="talkback-btn" class="h-9 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-md shadow-emerald-500/20 transition active:scale-95 select-none flex items-center gap-2">
-                                    <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                                        <line x1="12" x2="12" y1="19" y2="22"/>
-                                    </svg>
-                                    <span id="talkback-label" class="text-xs font-bold whitespace-nowrap">Nói Với Bé</span>
-                                </button>
-                                <!-- Live Room Audio Listen Button -->
-                                <button id="live-audio-btn" onclick="toggleLiveAudio()" class="h-9 px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium select-none flex items-center gap-1.5" title="Bật/Tắt nghe âm thanh trực tiếp từ phòng bé">
-                                    <span id="live-audio-icon" class="text-sm">🔇</span>
-                                    <span id="live-audio-label" class="hidden sm:inline font-semibold">Nghe Phòng</span>
-                                </button>
-                                <!-- Instant Snapshot Button -->
-                                <button onclick="takeManualSnapshot()" class="h-9 px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium flex items-center gap-1.5" title="Chụp ảnh kỷ niệm tức thì">
-                                    <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-                                        <circle cx="12" cy="13" r="3"/>
-                                    </svg>
-                                    <span class="hidden sm:inline font-semibold">Chụp Ảnh</span>
-                                </button>
+                        <!-- Action Bar Under Video: Symmetrical 5-Col Grid on Mobile, Balanced Flex on Desktop -->
+                        <div class="camera-action-bar p-2 sm:px-4 sm:py-3 bg-slate-950/90 backdrop-blur-xl border-t border-bordercol">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <!-- 5 Primary Action Buttons: Equal 5-col Grid on Mobile, Flex Row on Desktop -->
+                                <div class="grid grid-cols-5 sm:flex sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
+                                    <!-- 1. Push-to-Talk Intercom -->
+                                    <button id="talkback-btn" class="h-11 sm:h-9 px-0.5 sm:px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-md shadow-emerald-500/20 transition active:scale-95 select-none flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 w-full sm:w-auto" title="Nhấn và giữ để nói trực tiếp về phòng bé">
+                                        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                            <line x1="12" x2="12" y1="19" y2="22"/>
+                                        </svg>
+                                        <span id="talkback-label" class="text-[10px] sm:text-xs font-bold leading-none truncate max-w-full"><span class="sm:hidden">Nói</span><span class="hidden sm:inline">Nói Với Bé</span></span>
+                                    </button>
+
+                                    <!-- 2. Live Audio Listen -->
+                                    <button id="live-audio-btn" onclick="toggleLiveAudio()" class="h-11 sm:h-9 px-0.5 sm:px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium select-none flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 w-full sm:w-auto" title="Bật/Tắt nghe âm thanh trực tiếp từ phòng bé">
+                                        <span id="live-audio-icon" class="text-sm">🔇</span>
+                                        <span id="live-audio-label" class="text-[10px] sm:text-xs font-semibold leading-none truncate max-w-full"><span class="sm:hidden">Nghe</span><span class="hidden sm:inline">Nghe Phòng</span></span>
+                                    </button>
+
+                                    <!-- 3. Instant Snapshot -->
+                                    <button onclick="takeManualSnapshot()" class="h-11 sm:h-9 px-0.5 sm:px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 transition font-medium flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 w-full sm:w-auto" title="Chụp ảnh kỷ niệm tức thì">
+                                        <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                                            <circle cx="12" cy="13" r="3"/>
+                                        </svg>
+                                        <span class="text-[10px] sm:text-xs font-semibold leading-none truncate max-w-full"><span class="sm:hidden">Chụp</span><span class="hidden sm:inline">Chụp Ảnh</span></span>
+                                    </button>
+
+                                    <!-- 4. Refresh Stream -->
+                                    <button onclick="reconnectStream()" class="h-11 sm:h-9 px-0.5 sm:px-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 w-full sm:w-auto" title="Làm mới luồng video khi bị đứng">
+                                        <svg class="w-4 h-4 shrink-0 text-slate-400 transition-transform active:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>
+                                        </svg>
+                                        <span class="text-[10px] sm:text-xs font-semibold leading-none truncate max-w-full" id="btn-reconnect-cam"><span class="sm:hidden">Tải Lại</span><span class="hidden sm:inline">Làm Mới</span></span>
+                                    </button>
+
+                                    <!-- 5. Fullscreen Button -->
+                                    <button onclick="toggleFullscreen()" class="h-11 sm:h-9 px-0.5 sm:w-9 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-0 w-full sm:w-auto" title="Xem camera toàn màn hình">
+                                        <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><polyline points="21 15 21 21 15 21"/><polyline points="3 9 3 3 9 3"/>
+                                        </svg>
+                                        <span class="text-[10px] sm:hidden font-semibold leading-none truncate max-w-full">Toàn Màn</span>
+                                    </button>
+                                </div>
+
+                                <!-- Desktop Right Group: Setup & Crib Alignment -->
+                                <div class="hidden sm:flex items-center gap-2">
+                                    <!-- Gemini AI Auto-Calibrate Crib Status Badge -->
+                                    <button id="btn-ai-calibrate" onclick="autoCalibrateCribWithGemini()" class="h-9 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 transition font-semibold flex items-center gap-1.5" title="Hệ thống tự động căn chỉnh khung nôi & giường bằng AI định kỳ">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                                        <span class="hidden md:inline">Tự Động Căn Nôi: Bật</span>
+                                        <span class="md:hidden">AI Nôi</span>
+                                    </button>
+                                    <!-- Toggle Safe Zone Edit Button -->
+                                    <button id="btn-toggle-safe-zone-edit" onclick="toggleSafeZoneEditor()" class="h-9 px-2.5 sm:px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium flex items-center gap-1.5" title="Chỉnh tay 4 góc khung an toàn">
+                                        <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+                                        </svg>
+                                        <span class="inline text-[11px] sm:text-xs font-semibold">Khung Nôi</span>
+                                    </button>
+                                </div>
                             </div>
 
-                            <!-- Right Group: AI Smart Sentry & Camera Utilities -->
-                            <div class="flex items-center gap-1.5 sm:gap-2">
-                                <!-- Gemini AI Auto-Calibrate Crib Status Badge -->
-                                <button id="btn-ai-calibrate" onclick="autoCalibrateCribWithGemini()" class="h-9 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 transition font-semibold flex items-center gap-1.5" title="Hệ thống tự động căn chỉnh khung nôi & giường bằng AI định kỳ (Bấm nếu muốn quét lại ngay)">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-                                    <span class="hidden md:inline">Tự Động Căn Nôi: Bật</span>
-                                    <span class="md:hidden">AI Nôi</span>
+                            <!-- Mobile-Only Subtle Secondary Row for Safe Zone & AI Crib (Preserves DOM ID for Mobile) -->
+                            <div class="sm:hidden flex items-center justify-between pt-2 mt-2 border-t border-slate-800/60 text-[11px]">
+                                <button id="btn-ai-calibrate-mob" onclick="autoCalibrateCribWithGemini()" class="text-emerald-400 font-semibold flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 active:scale-95 transition">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span>Tự căn nôi: Bật</span>
                                 </button>
-                                <!-- Toggle Safe Zone Edit Button -->
-                                <button id="btn-toggle-safe-zone-edit" onclick="toggleSafeZoneEditor()" class="h-9 px-2.5 sm:px-3 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium flex items-center gap-1.5" title="Chỉnh tay 4 góc khung an toàn nếu muốn">
-                                    <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>
-                                    </svg>
-                                    <span class="inline text-[11px] sm:text-xs font-semibold">Khung Nôi</span>
-                                </button>
-                                <!-- Refresh Stream Button -->
-                                <button onclick="reconnectStream()" class="h-9 w-9 sm:w-auto sm:px-2.5 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition font-medium flex items-center justify-center gap-1.5" title="Làm mới luồng video khi bị đứng">
-                                    <svg class="w-4 h-4 shrink-0 text-slate-400 transition-transform active:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>
-                                    </svg>
-                                    <span class="hidden xl:inline text-xs" id="btn-reconnect-cam">Làm Mới</span>
-                                </button>
-                                <!-- Fullscreen Button -->
-                                <button onclick="toggleFullscreen()" class="h-9 w-9 rounded-xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 hover:text-white transition flex items-center justify-center" title="Xem camera toàn màn hình">
-                                    <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><polyline points="21 15 21 21 15 21"/><polyline points="3 9 3 3 9 3"/>
-                                    </svg>
+                                <button onclick="toggleSafeZoneEditor()" class="text-slate-300 font-medium flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-slate-900 border border-slate-800 active:scale-95 transition">
+                                    <span>📐 Chỉnh khung tay</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Quick Parent Health Log Bar (Ghi nhận nhanh sự kiện lâm sàng) -->
-                    <div class="p-3 sm:p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 shadow-lg">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <div class="p-2.5 sm:p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-md space-y-2 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-200 flex items-center gap-1.5">
                                 <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
                                 <span>Ghi Nhận Y Tế Nhanh:</span>
                             </span>
-                            <span class="text-[11px] text-slate-400 hidden lg:inline">Bấm 1 chạm để lưu vào sổ khám bệnh & báo cáo Gemini</span>
+                            <span class="text-[10px] text-slate-400">1 chạm lưu sổ</span>
                         </div>
-                        <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
-                            <button onclick="quickLogHealthEvent('cough')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold border border-slate-700/70 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận cơn ho của bé">
-                                <span>💨</span>
-                                <span>Bé Ho</span>
+                        <div class="grid grid-cols-5 gap-1 sm:gap-2 w-full">
+                            <button onclick="quickLogHealthEvent('cough')" class="h-11 sm:h-auto py-1 px-0.5 sm:py-2 sm:px-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold border border-slate-700/70 transition flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 shadow-sm w-full" title="Ghi nhận cơn ho của bé">
+                                <span class="text-sm sm:text-xs">💨</span>
+                                <span class="text-[9.5px] sm:text-xs leading-none truncate max-w-full">Bé Ho</span>
                             </button>
-                            <button onclick="quickLogHealthEvent('choke')" class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 text-xs font-semibold border border-amber-500/30 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận bé bị sặc sữa / ngộp">
-                                <span>🥛</span>
-                                <span>Sặc Sữa</span>
+                            <button onclick="quickLogHealthEvent('choke')" class="h-11 sm:h-auto py-1 px-0.5 sm:py-2 sm:px-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 text-xs font-semibold border border-amber-500/30 transition flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 shadow-sm w-full" title="Ghi nhận bé bị sặc sữa / ngộp">
+                                <span class="text-sm sm:text-xs">🥛</span>
+                                <span class="text-[9.5px] sm:text-xs leading-none truncate max-w-full">Sặc Sữa</span>
                             </button>
-                            <button onclick="quickLogHealthEvent('spit_up')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 active:scale-95 text-rose-300 text-xs font-semibold border border-rose-500/30 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận bé trớ / ọc sữa sau bú">
-                                <span>🍼</span>
-                                <span>Trớ Sữa</span>
+                            <button onclick="quickLogHealthEvent('spit_up')" class="h-11 sm:h-auto py-1 px-0.5 sm:py-2 sm:px-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 active:scale-95 text-rose-300 text-xs font-semibold border border-rose-500/30 transition flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 shadow-sm w-full" title="Ghi nhận bé trớ / ọc sữa sau bú">
+                                <span class="text-sm sm:text-xs">🍼</span>
+                                <span class="text-[9.5px] sm:text-xs leading-none truncate max-w-full">Trớ Sữa</span>
                             </button>
-                            <button onclick="quickLogHealthEvent('feed')" class="px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 active:scale-95 text-cyan-300 text-xs font-semibold border border-cyan-500/30 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận cữ bú sữa">
-                                <span>🍼</span>
-                                <span>Cữ Bú</span>
+                            <button onclick="quickLogHealthEvent('feed')" class="h-11 sm:h-auto py-1 px-0.5 sm:py-2 sm:px-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 active:scale-95 text-cyan-300 text-xs font-semibold border border-cyan-500/30 transition flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 shadow-sm w-full" title="Ghi nhận cữ bú sữa">
+                                <span class="text-sm sm:text-xs">🍼</span>
+                                <span class="text-[9.5px] sm:text-xs leading-none truncate max-w-full">Cữ Bú</span>
                             </button>
-                            <button onclick="quickLogHealthEvent('burp')" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center gap-1.5 shadow-sm" title="Ghi nhận vỗ ợ hơi cho bé">
-                                <span>👶</span>
-                                <span>Vỗ Ợ Hơi</span>
+                            <button onclick="quickLogHealthEvent('burp')" class="h-11 sm:h-auto py-1 px-0.5 sm:py-2 sm:px-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 shadow-sm w-full" title="Ghi nhận vỗ ợ hơi cho bé">
+                                <span class="text-sm sm:text-xs">👶</span>
+                                <span class="text-[9.5px] sm:text-xs leading-none truncate max-w-full">Ợ Hơi</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Quick Vitals Under Video: 2 Cột Cân Đối (Chuyển Động Hô Hấp & Âm Thanh Phòng) -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Quick Vitals Under Video: Cân Đối 2 Cột Trên Cả Điện Thoại Lẫn Máy Tính -->
+                    <div class="grid grid-cols-2 gap-2 sm:gap-4">
                         <!-- Card: Chuyển Động Hô Hấp Lồng Ngực (Contactless Optical Chest Motion) -->
-                        <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-3 relative overflow-hidden flex flex-col justify-between">
-                            <div>
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2.5">
-                                        <div class="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300">
+                        <div class="p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-cardbg border border-bordercol flex flex-col justify-between shadow-sm">
+                            <div class="space-y-1 sm:space-y-2">
+                                <div class="flex items-center justify-between gap-1">
+                                    <div class="flex items-center gap-1.5 sm:gap-2.5">
+                                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300 text-sm sm:text-base shrink-0">
                                             🫁
                                         </div>
                                         <div>
-                                            <span class="font-bold text-sm text-slate-200 block leading-tight">Chuyển Động Hô Hấp</span>
-                                            <span class="text-[10px] text-slate-400">Quang học không chạm (Optical DSP)</span>
+                                            <span class="font-bold text-xs sm:text-sm text-slate-200 block leading-tight">Hô Hấp</span>
+                                            <span class="text-[9px] sm:text-[10px] text-slate-400 hidden xs:block">Quang học DSP</span>
                                         </div>
                                     </div>
-                                    <span id="vital-breathing-status" class="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Đang đo...</span>
+                                    <span id="vital-breathing-status" class="text-[9.5px] sm:text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 sm:px-2 rounded-full border border-emerald-500/20 whitespace-nowrap">Đang đo...</span>
                                 </div>
-                                <div class="flex items-baseline gap-2 pt-2">
-                                    <span id="vital-breathing-bpm" class="text-3xl font-extrabold tracking-tight text-cyan-300">--</span>
-                                    <span class="text-xs text-slate-400 font-medium">nhịp / phút (RPM)</span>
+                                <div class="flex items-baseline gap-1.5 pt-1 sm:pt-2">
+                                    <span id="vital-breathing-bpm" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-cyan-300">--</span>
+                                    <span class="text-[10px] sm:text-xs text-slate-400 font-medium">RPM</span>
                                 </div>
                             </div>
-                            <p class="text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/80 pt-2">Đo dao động phập phồng lồng ngực qua bộ lọc Butterworth 28–75 RPM (bám theo trục cơ thể bé).</p>
+                            <p class="text-[10px] sm:text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/80 pt-2 hidden sm:block">Đo dao động phập phồng lồng ngực qua bộ lọc Butterworth 28–75 RPM (bám theo trục cơ thể bé).</p>
                         </div>
 
                         <!-- Card: Âm Thanh & Tiếng Khóc / Ho -->
-                        <div class="p-5 rounded-3xl bg-cardbg border border-bordercol space-y-3 flex flex-col justify-between">
-                            <div>
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2.5">
-                                        <div class="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
+                        <div class="p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-cardbg border border-bordercol flex flex-col justify-between shadow-sm">
+                            <div class="space-y-1 sm:space-y-2">
+                                <div class="flex items-center justify-between gap-1">
+                                    <div class="flex items-center gap-1.5 sm:gap-2.5">
+                                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 text-sm sm:text-base shrink-0">
                                             🎙️
                                         </div>
-                                        <span class="font-bold text-sm text-slate-200">Âm Thanh Phòng Bé</span>
+                                        <span class="font-bold text-xs sm:text-sm text-slate-200 leading-tight">Âm Thanh</span>
                                     </div>
-                                    <span id="vital-sound-label" class="text-[11px] font-semibold text-slate-300 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">Yên tĩnh</span>
+                                    <span id="vital-sound-label" class="text-[9.5px] sm:text-[11px] font-semibold text-slate-300 bg-slate-800 px-1.5 py-0.5 sm:px-2 rounded-full border border-slate-700 whitespace-nowrap">Yên tĩnh</span>
                                 </div>
-                                <div class="space-y-2 pt-2">
-                                    <div class="flex justify-between text-xs text-slate-400">
-                                        <span>Xác suất khóc: <b id="vital-cry-pct" class="text-slate-200">0%</b></span>
-                                        <span>Tiếng ho/sặc: <b id="vital-cough-pct" class="text-slate-200">0%</b></span>
+                                <div class="space-y-1 pt-1 sm:pt-2">
+                                    <div class="flex justify-between text-[10px] sm:text-xs text-slate-400">
+                                        <span>Khóc: <b id="vital-cry-pct" class="text-slate-200">0%</b></span>
+                                        <span>Ho: <b id="vital-cough-pct" class="text-slate-200">0%</b></span>
                                     </div>
-                                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                    <div class="w-full bg-slate-800 h-1.5 sm:h-2 rounded-full overflow-hidden">
                                         <div id="vital-sound-bar" class="bg-gradient-to-r from-emerald-500 to-amber-500 h-full w-[10%] transition-all duration-300"></div>
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/80 pt-2">Google YAMNet AI bóc tách tiếng khóc, ho sặc & tự bật tiếng ồn trắng dỗ bé.</p>
+                            <p class="text-[10px] sm:text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/80 pt-2 hidden sm:block">Google YAMNet AI bóc tách tiếng khóc, ho sặc & tự bật tiếng ồn trắng dỗ bé.</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Live Vitals & Quick Insights Sidebar (col-span-1) -->
-                <div class="space-y-4">
+                <div class="space-y-3.5 sm:space-y-4">
                     
                     <!-- Card: Chu Kỳ Giấc Ngủ & Theo Dõi Lúc Bé Thức (24/7 Dual-Mode) -->
-                    <div class="p-5 rounded-3xl bg-cardbg border border-purple-500/25 space-y-3">
+                    <div class="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-cardbg border border-purple-500/25 space-y-2.5 sm:space-y-3">
                         <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2.5">
-                                <div id="vital-sleep-card-icon" class="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300">
+                            <div class="flex items-center gap-2 sm:gap-2.5">
+                                <div id="vital-sleep-card-icon" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300 text-sm sm:text-base shrink-0">
                                     😴
                                 </div>
                                 <div>
-                                    <span id="vital-sleep-card-title" class="font-bold text-sm text-slate-200 block leading-tight">Chu Kỳ Ngủ & Thức Chơi</span>
-                                    <span id="vital-sleep-start-sub" class="text-[10px] text-purple-300/80">Theo dõi 24/7 cả lúc ngủ lẫn lúc thức</span>
+                                    <span id="vital-sleep-card-title" class="font-bold text-xs sm:text-sm text-slate-200 block leading-tight">Chu Kỳ Ngủ & Thức Chơi</span>
+                                    <span id="vital-sleep-start-sub" class="text-[9.5px] sm:text-[10px] text-purple-300/80">Theo dõi 24/7 cả lúc ngủ lẫn lúc thức</span>
                                 </div>
                             </div>
-                            <span id="vital-sleep-stage" class="text-[10px] font-bold text-purple-300 bg-purple-500/15 px-2.5 py-1 rounded-full border border-purple-500/30 whitespace-nowrap">Chu kỳ 1 • Ngủ sâu</span>
+                            <span id="vital-sleep-stage" class="text-[9.5px] sm:text-[10px] font-bold text-purple-300 bg-purple-500/15 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-purple-500/30 whitespace-nowrap">Chu kỳ 1 • Ngủ sâu</span>
                         </div>
 
                         <div class="flex items-baseline justify-between pt-0.5">
                             <div class="flex items-baseline gap-1.5">
-                                <span id="vital-current-nap" class="text-2xl font-extrabold tracking-tight text-purple-300">28 phút</span>
-                                <span id="vital-current-nap-unit" class="text-xs text-slate-400 font-medium">liên tục</span>
+                                <span id="vital-current-nap" class="text-xl sm:text-2xl font-extrabold tracking-tight text-purple-300">28 phút</span>
+                                <span id="vital-current-nap-unit" class="text-[11px] sm:text-xs text-slate-400 font-medium">liên tục</span>
                             </div>
-                            <span id="vital-cycle-minute-label" class="text-[11px] font-bold text-emerald-300">Phút 28/50</span>
+                            <span id="vital-cycle-minute-label" class="text-[10px] sm:text-[11px] font-bold text-emerald-300">Phút 28/50</span>
                         </div>
 
                         <!-- Thanh tiến trình Chu kỳ ngủ (50p) hoặc Cửa sổ thức (90p) -->
@@ -610,58 +633,58 @@
                             <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
                                 <div id="vital-sleep-cycle-bar" class="bg-gradient-to-r from-purple-500 via-indigo-400 to-emerald-400 h-full w-[56%] transition-all duration-500"></div>
                             </div>
-                            <div class="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
-                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                            <div class="grid grid-cols-2 gap-1.5 pt-1 text-[10.5px] sm:text-[11px]">
+                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2 py-1.5 flex items-center justify-between">
                                     <span id="vital-box1-label" class="text-slate-400">🌊 Ngủ sâu:</span>
                                     <b id="vital-deep-pct" class="text-cyan-300">55%</b>
                                 </div>
-                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2 py-1.5 flex items-center justify-between">
                                     <span id="vital-box2-label" class="text-slate-400">✨ Ngủ REM:</span>
                                     <b id="vital-rem-pct" class="text-purple-300">45%</b>
                                 </div>
-                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
-                                    <span class="text-slate-400">📊 Ngủ hôm nay:</span>
+                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2 py-1.5 flex items-center justify-between">
+                                    <span class="text-slate-400">📊 Hôm nay:</span>
                                     <b id="vital-total-sleep-today" class="text-emerald-300">10.5h</b>
                                 </div>
-                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl px-2 py-1.5 flex items-center justify-between">
                                     <span id="vital-box4-label" class="text-slate-400">⚡ Vận động:</span>
-                                    <b id="vital-rem-twitches" class="text-amber-300">0 lần REM</b>
+                                    <b id="vital-rem-twitches" class="text-amber-300">0 lần</b>
                                 </div>
                             </div>
                         </div>
 
-                        <p id="vital-wake-hint" class="text-[11px] text-slate-400 leading-relaxed">Bé đang trong chu kỳ phục hồi năng lượng và phát triển thể chất.</p>
+                        <p id="vital-wake-hint" class="text-[10px] sm:text-[11px] text-slate-400 leading-relaxed">Bé đang trong chu kỳ phục hồi năng lượng và phát triển thể chất.</p>
 
                         <!-- Nút Chuyển nhanh sang Tab Giấc Ngủ Chuẩn AAP -->
-                        <button type="button" onclick="switchTab('sleep')" class="w-full mt-2 py-2.5 px-3.5 rounded-2xl bg-gradient-to-r from-purple-500/15 via-indigo-500/15 to-purple-500/15 hover:from-purple-500/25 hover:to-indigo-500/25 border border-purple-500/30 hover:border-purple-500/50 text-purple-200 text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer shadow-sm">
-                            <div class="flex items-center gap-2.5 text-left">
-                                <span class="text-base p-1.5 rounded-xl bg-purple-500/20 border border-purple-500/30 flex-shrink-0">🩺</span>
+                        <button type="button" onclick="switchTab('sleep')" class="w-full mt-1 sm:mt-2 py-2 sm:py-2.5 px-3 rounded-2xl bg-gradient-to-r from-purple-500/15 via-indigo-500/15 to-purple-500/15 hover:from-purple-500/25 hover:to-indigo-500/25 border border-purple-500/30 hover:border-purple-500/50 text-purple-200 text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer shadow-sm">
+                            <div class="flex items-center gap-2 text-left">
+                                <span class="text-sm sm:text-base p-1 sm:p-1.5 rounded-xl bg-purple-500/20 border border-purple-500/30 flex-shrink-0">🩺</span>
                                 <div class="leading-tight">
-                                    <div class="text-[11px] font-bold text-purple-100">Cẩm Nang & Dòng Thời Gian Giấc Ngủ</div>
-                                    <div class="text-[10px] text-purple-300/80">Xem chi tiết tại tab <span class="font-bold text-purple-200 whitespace-nowrap">Giấc Ngủ Chuẩn AAP</span></div>
+                                    <div class="text-[10.5px] sm:text-[11px] font-bold text-purple-100">Cẩm Nang & Dòng Thời Gian Giấc Ngủ</div>
+                                    <div class="text-[9.5px] sm:text-[10px] text-purple-300/80">Xem chi tiết tại tab <span class="font-bold text-purple-200 whitespace-nowrap">Giấc Ngủ AAP</span></div>
                                 </div>
                             </div>
-                            <span class="text-purple-300 group-hover:translate-x-1 transition-transform font-bold text-sm flex-shrink-0 ml-2">➔</span>
+                            <span class="text-purple-300 group-hover:translate-x-1 transition-transform font-bold text-sm flex-shrink-0 ml-1">➔</span>
                         </button>
                     </div>
 
                     <!-- Card: Trợ Lý Phân Tích & Giám Sát Tracking Gemini AI -->
-                    <div class="p-5 rounded-3xl bg-cardbg border border-indigo-500/25 space-y-3">
+                    <div class="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-cardbg border border-indigo-500/25 space-y-2.5 sm:space-y-3">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-300">
+                                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-sm sm:text-base shrink-0">
                                     ✨
                                 </div>
                                 <div>
-                                    <span class="font-bold text-sm text-slate-200 block leading-tight">Chuyên Gia Gemini AI</span>
-                                    <span id="vital-gemini-model-sub" class="text-[10px] text-indigo-300/80 font-mono">Pool 9 Model Flash Free</span>
+                                    <span class="font-bold text-xs sm:text-sm text-slate-200 block leading-tight">Chuyên Gia Gemini AI</span>
+                                    <span id="vital-gemini-model-sub" class="text-[9.5px] sm:text-[10px] text-indigo-300/80 font-mono">Pool 9 Model Flash Free</span>
                                 </div>
                             </div>
-                            <span id="vital-gemini-badge" class="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/25 whitespace-nowrap">Đang kiểm tra...</span>
+                            <span id="vital-gemini-badge" class="text-[9.5px] sm:text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-amber-500/25 whitespace-nowrap">Đang kiểm tra...</span>
                         </div>
 
                         <!-- Bộ đếm Request Free & Pool Model -->
-                        <div class="p-2.5 rounded-2xl bg-slate-950/70 border border-slate-800/90 space-y-1.5 text-[11px]">
+                        <div class="p-2 sm:p-2.5 rounded-2xl bg-slate-950/70 border border-slate-800/90 space-y-1.5 text-[10.5px] sm:text-[11px]">
                             <div class="flex items-center justify-between text-slate-300">
                                 <span class="text-slate-400">⚡ Đã gọi API:</span>
                                 <span id="vital-gemini-usage-count" class="font-bold text-emerald-300">0 lần (1p qua) • 0 hôm nay</span>
@@ -676,19 +699,19 @@
                             </div>
                         </div>
 
-                        <p id="vital-gemini-opinion" class="text-[11px] text-slate-300 leading-relaxed bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-2.5">
+                        <p id="vital-gemini-opinion" class="text-[10.5px] sm:text-[11px] text-slate-300 leading-relaxed bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-2 sm:p-2.5">
                             Tự động tận dụng Request Free khi rảnh để kiểm tra & hiệu chỉnh khung Tracking AI Local, đánh giá cảnh báo và lọc ảnh riêng tư.
                         </p>
 
                         <!-- Nút bấm kiểm tra nhanh & Mở Sổ Đo WHO -->
-                        <div class="grid grid-cols-2 gap-2 pt-0.5">
-                            <button onclick="quickProbeGeminiHealth()" id="btn-probe-gemini" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-semibold transition flex items-center justify-center gap-1 active:scale-95">
+                        <div class="grid grid-cols-2 gap-1.5 sm:gap-2 pt-0.5">
+                            <button onclick="quickProbeGeminiHealth()" id="btn-probe-gemini" class="px-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10.5px] sm:text-[11px] font-semibold transition flex items-center justify-center gap-1 active:scale-95 truncate">
                                 <span>🔄</span>
-                                <span>Kiểm tra hạn API</span>
+                                <span class="truncate">Kiểm tra API</span>
                             </button>
-                            <button onclick="openGrowthModal()" class="px-2.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold transition flex items-center justify-center gap-1 active:scale-95">
+                            <button onclick="openGrowthModal()" class="px-2 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[10.5px] sm:text-[11px] font-bold transition flex items-center justify-center gap-1 active:scale-95 truncate">
                                 <span>📏</span>
-                                <span>Sổ Đo WHO</span>
+                                <span class="truncate">Sổ Đo WHO</span>
                             </button>
                         </div>
                     </div>
@@ -697,18 +720,18 @@
             </div>
 
             <!-- Recent Alert Stream Box -->
-            <div class="p-6 rounded-3xl bg-cardbg border border-bordercol space-y-4">
+            <div class="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-cardbg border border-bordercol space-y-3 sm:space-y-4">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2.5">
-                        <span class="text-lg">🔔</span>
-                        <h3 class="font-bold text-sm text-slate-100">Dòng Sự Kiện & Cảnh Báo Gần Nhất</h3>
+                    <div class="flex items-center gap-2 sm:gap-2.5">
+                        <span class="text-base sm:text-lg">🔔</span>
+                        <h3 class="font-bold text-xs sm:text-sm text-slate-100">Dòng Sự Kiện & Cảnh Báo Gần Nhất</h3>
                     </div>
-                    <button onclick="fetchEvents(true)" id="btn-reload-events" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 transition active:scale-95 flex items-center gap-1.5">
+                    <button onclick="fetchEvents(true)" id="btn-reload-events" class="text-[11px] sm:text-xs text-emerald-400 hover:text-emerald-300 font-medium px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 transition active:scale-95 flex items-center gap-1">
                         <span id="reload-events-icon" class="inline-block transition-transform duration-500">🔄</span>
                         <span>Làm mới</span>
                     </button>
                 </div>
-                <div id="recent-events-list" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                <div id="recent-events-list" class="space-y-2 sm:space-y-2.5 max-h-52 sm:max-h-60 overflow-y-auto pr-1">
                     <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 text-center">
                         Đang tải danh sách sự kiện...
                     </div>
@@ -716,59 +739,58 @@
             </div>
 
             <!-- 1 Ngày 1 Câu Chuyện Ý Nghĩa Cho Con (Đưa lên Trang Nhất Dashboard) -->
-            <div class="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-indigo-950/40 via-cardbg to-slate-900 border border-indigo-500/30 space-y-4 shadow-xl">
-                <div class="flex items-center justify-between flex-wrap gap-2.5">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xl shrink-0 shadow-inner">
+            <div class="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-indigo-950/40 via-cardbg to-slate-900 border border-indigo-500/30 space-y-3 sm:space-y-4 shadow-xl">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-inner">
                             📖
                         </div>
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="font-extrabold text-base text-slate-100">1 Ngày 1 Câu Chuyện Ý Nghĩa Cho Con</h3>
-                                <span id="story-theme-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">🌟 Chủ Đề Tuần</span>
-                                <span id="story-category-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">Bài Học Đạo Đức Đầu Đời</span>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                <h3 class="font-extrabold text-sm sm:text-base text-slate-100 truncate">1 Ngày 1 Câu Chuyện Cho Con</h3>
+                                <span id="story-theme-badge" class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 shrink-0">🌟 Chủ Đề Tuần</span>
                             </div>
-                            <span id="story-source-text" class="text-[11px] text-indigo-300/80">Truyện ngụ ngôn thế giới (Aesop, Andersen) & Hạt giống tâm hồn</span>
+                            <span id="story-source-text" class="text-[10px] sm:text-[11px] text-indigo-300/80 truncate block">Truyện ngụ ngôn thế giới & Nuôi dưỡng tâm hồn</span>
                         </div>
                     </div>
-                    <button onclick="refreshDailyStory()" id="btn-refresh-story" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow">
+                    <button onclick="refreshDailyStory()" id="btn-refresh-story" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-[11px] sm:text-xs font-semibold flex items-center gap-1 transition active:scale-95 shadow shrink-0">
                         <span>🔄</span>
-                        <span>Đổi Truyện Khác (AI)</span>
+                        <span>Đổi Truyện (AI)</span>
                     </button>
                 </div>
 
-                <div class="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
-                    <div class="space-y-2 border-b border-slate-800/80 pb-3">
-                        <h4 id="story-title" class="text-base sm:text-lg font-bold text-slate-100">Đang tải câu chuyện hôm nay...</h4>
-                        <div id="story-quote-container" class="p-3 rounded-xl bg-amber-500/10 border-l-4 border-amber-400 text-xs sm:text-sm text-amber-200 italic font-medium">
+                <div class="p-3 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3 sm:space-y-4">
+                    <div class="space-y-1.5 sm:space-y-2 border-b border-slate-800/80 pb-2.5 sm:pb-3">
+                        <h4 id="story-title" class="text-sm sm:text-lg font-bold text-slate-100">Đang tải câu chuyện hôm nay...</h4>
+                        <div id="story-quote-container" class="p-2.5 sm:p-3 rounded-xl bg-amber-500/10 border-l-4 border-amber-400 text-[11px] sm:text-sm text-amber-200 italic font-medium">
                             <span id="story-quote">"Gieo hạt mầm yêu thương..."</span>
                         </div>
                     </div>
                     
                     <!-- Main Story Content (Rich multi-paragraph literary text) -->
-                    <div class="p-3 sm:p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
+                    <div class="p-2.5 sm:p-4 rounded-xl bg-slate-900/40 border border-slate-800/60">
                         <p id="story-content" class="text-xs sm:text-sm text-slate-200 leading-relaxed font-serif whitespace-pre-line space-y-2">
                             Đang kết nối thư viện câu chuyện ý nghĩa...
                         </p>
                     </div>
 
                     <!-- 2 Pedagogical & Emotional Columns -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
-                        <div class="p-4 rounded-2xl bg-indigo-950/25 border border-indigo-500/30 space-y-1.5">
-                            <span class="font-bold text-indigo-300 flex items-center gap-1.5 text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3.5 pt-1">
+                        <div class="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-indigo-950/25 border border-indigo-500/30 space-y-1">
+                            <span class="font-bold text-indigo-300 flex items-center gap-1.5 text-[11px] sm:text-xs">
                                 <span>🌱</span>
-                                <span>Bài Học Giáo Dục & Nuôi Dưỡng EQ:</span>
+                                <span>Bài Học Nuôi Dưỡng EQ:</span>
                             </span>
-                            <p id="story-parenting-lesson" class="text-xs text-slate-300 leading-relaxed whitespace-pre-line">
+                            <p id="story-parenting-lesson" class="text-[11px] sm:text-xs text-slate-300 leading-relaxed whitespace-pre-line">
                                 Đang cập nhật...
                             </p>
                         </div>
-                        <div class="p-4 rounded-2xl bg-emerald-950/25 border border-emerald-500/30 space-y-1.5">
-                            <span class="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
+                        <div class="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-emerald-950/25 border border-emerald-500/30 space-y-1">
+                            <span class="font-bold text-emerald-300 flex items-center gap-1.5 text-[11px] sm:text-xs">
                                 <span>💬</span>
-                                <span>Lời Thủ Thỉ Yêu Thương Bên Nôi Bé:</span>
+                                <span>Thủ Thỉ Yêu Thương Bên Nôi:</span>
                             </span>
-                            <p id="story-baby-talk" class="text-xs text-slate-300 italic leading-relaxed whitespace-pre-line">
+                            <p id="story-baby-talk" class="text-[11px] sm:text-xs text-slate-300 italic leading-relaxed whitespace-pre-line">
                                 Đang cập nhật...
                             </p>
                         </div>
@@ -6385,7 +6407,7 @@
                 isRecordingTalkback = true;
                 talkBtn.classList.remove('bg-emerald-500');
                 talkBtn.classList.add('bg-rose-500', 'animate-pulse');
-                document.getElementById('talkback-label').innerText = "Đang nói... thả ra để phát";
+                document.getElementById('talkback-label').innerHTML = '<span class="sm:hidden">Đang nói...</span><span class="hidden sm:inline">Đang nói... thả ra để phát</span>';
             } catch (err) {
                 showToast("Vui lòng cấp quyền Micro trên trình duyệt", "⚠️");
             }
@@ -6397,7 +6419,7 @@
             isRecordingTalkback = false;
             talkBtn.classList.remove('bg-rose-500', 'animate-pulse');
             talkBtn.classList.add('bg-emerald-500');
-            document.getElementById('talkback-label').innerText = "Giữ để nói với bé";
+            document.getElementById('talkback-label').innerHTML = '<span class="sm:hidden">Nói</span><span class="hidden sm:inline">Nói Với Bé</span>';
 
             mediaRecorder.onstop = async () => {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -6430,7 +6452,7 @@
                 liveAudioPlayer.play().then(() => {
                     isLiveAudioPlaying = true;
                     if (icon) icon.innerText = '🔊';
-                    if (label) label.innerText = 'Đang Nghe';
+                    if (label) label.innerHTML = '<span class="sm:hidden">Đang Nghe</span><span class="hidden sm:inline">Đang Nghe Phòng</span>';
                     if (btn) {
                         btn.classList.add('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
                         btn.classList.remove('bg-cardbg', 'text-slate-200');
@@ -6447,7 +6469,7 @@
                 }
                 isLiveAudioPlaying = false;
                 if (icon) icon.innerText = '🔇';
-                if (label) label.innerText = 'Nghe Phòng';
+                if (label) label.innerHTML = '<span class="sm:hidden">Nghe</span><span class="hidden sm:inline">Nghe Phòng Bé</span>';
                 if (btn) {
                     btn.classList.remove('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
                     btn.classList.add('bg-cardbg', 'text-slate-200');
