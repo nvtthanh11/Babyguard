@@ -5,7 +5,8 @@ import shutil
 import collections
 import threading
 import subprocess
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 import cv2
 import numpy as np
 
@@ -97,10 +98,19 @@ class VideoRecorder:
                     return
 
                 now = datetime.now()
-                ts_str = now.strftime("%Y%m%d_%H%M%S")
-                base_name = f"{ts_str}_{event_type}"
-                mp4_path = os.path.join(self.recordings_dir, f"{base_name}.mp4")
-                thumb_path = os.path.join(self.recordings_dir, f"{base_name}.jpg")
+                date_folder = now.strftime("%Y-%m-%d")
+                date_dir = os.path.join(self.recordings_dir, date_folder)
+                os.makedirs(date_dir, exist_ok=True)
+
+                # Tính khoảng thời gian clip video (từ mấy giờ đến mấy giờ)
+                end_dt = now
+                clip_duration_sec = len(frames_to_save) / max(1.0, float(self.fps))
+                start_dt = end_dt - timedelta(seconds=clip_duration_sec)
+
+                time_range_name = f"{start_dt.strftime('%Hh%Mp%S')}_den_{end_dt.strftime('%Hh%Mp%S')}_{event_type}"
+                base_name = f"{date_folder}/{time_range_name}"
+                mp4_path = os.path.join(date_dir, f"{time_range_name}.mp4")
+                thumb_path = os.path.join(date_dir, f"{time_range_name}.jpg")
 
                 # Save thumbnail
                 mid_idx = len(frames_to_save) // 2
@@ -190,7 +200,7 @@ class VideoRecorder:
             cutoff_time = time.time() - (max_days * 86400)
 
             files = []
-            for f in glob.glob(os.path.join(self.recordings_dir, "*.mp4")):
+            for f in glob.glob(os.path.join(self.recordings_dir, "**", "*.mp4"), recursive=True):
                 mtime = os.path.getmtime(f)
                 size = os.path.getsize(f)
                 files.append((f, mtime, size))
@@ -206,6 +216,9 @@ class VideoRecorder:
                         if os.path.exists(thumb):
                             os.remove(thumb)
                         print(f"[VideoRecorder] Đã xóa video hết hạn (> {max_days} ngày): {os.path.basename(path)}")
+                        parent = os.path.dirname(path)
+                        if parent != self.recordings_dir and os.path.isdir(parent) and not os.listdir(parent):
+                            os.rmdir(parent)
                     except Exception:
                         pass
                 else:
@@ -222,40 +235,105 @@ class VideoRecorder:
                         os.remove(thumb)
                     total_size -= size
                     print(f"[VideoRecorder] Quấn chiếu: Xóa {os.path.basename(path)} để giữ dưới {max_gb}GB.")
+                    parent = os.path.dirname(path)
+                    if parent != self.recordings_dir and os.path.isdir(parent) and not os.listdir(parent):
+                        os.rmdir(parent)
                 except Exception:
                     pass
 
         except Exception as e:
             print(f"[VideoRecorder] Retention error: {e}")
 
-    def get_recordings(self, limit: int = 50):
+    def get_recordings(self, limit: int = 150):
         records = []
-        files = glob.glob(os.path.join(self.recordings_dir, "*.mp4"))
+        files = glob.glob(os.path.join(self.recordings_dir, "**", "*.mp4"), recursive=True)
         files.sort(key=os.path.getmtime, reverse=True)
         
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
         for f in files[:limit]:
+            rel_path = os.path.relpath(f, self.recordings_dir).replace("\\", "/")
             base = os.path.basename(f)
             size_mb = round(os.path.getsize(f) / (1024 * 1024), 2)
             mtime = os.path.getmtime(f)
-            dt_str = datetime.fromtimestamp(mtime).strftime("%H:%M:%S - %d/%m/%Y")
-            thumb_name = base.replace(".mp4", ".jpg")
-            has_thumb = os.path.exists(os.path.join(self.recordings_dir, thumb_name))
+            dt = datetime.fromtimestamp(mtime)
             
+            # Determine date folder
+            parent_dir = os.path.basename(os.path.dirname(f))
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", parent_dir):
+                date_folder = parent_dir
+            else:
+                date_folder = dt.strftime("%Y-%m-%d")
+
+            try:
+                date_obj = datetime.strptime(date_folder, "%Y-%m-%d")
+                d_formatted = date_obj.strftime("%d/%m/%Y")
+            except Exception:
+                d_formatted = date_folder
+
+            if date_folder == today_str:
+                date_display = f"Hôm nay ({d_formatted})"
+            elif date_folder == yesterday_str:
+                date_display = f"Hôm qua ({d_formatted})"
+            else:
+                date_display = d_formatted
+
+            # Thumbnail check
+            thumb_path = f.replace(".mp4", ".jpg")
+            has_thumb = os.path.exists(thumb_path)
+            rel_thumb = os.path.relpath(thumb_path, self.recordings_dir).replace("\\", "/") if has_thumb else None
+            
+            # Event type label
             evt = "Sự kiện"
             if "montage" in base:
                 evt = "🎬 Video Kỷ Niệm"
             elif "cry" in base:
-                evt = "Tiếng khóc"
+                evt = "🎙️ Tiếng khóc"
             elif "motion" in base:
-                evt = "Cử động"
+                evt = "⚡ Cử động / thức giấc"
             elif "prone" in base:
-                evt = "Nằm sấp"
+                evt = "⚠️ Nằm sấp"
+            elif "covered" in base:
+                evt = "⚠️ Mặt bị che"
+            elif "danger" in base:
+                evt = "⚠️ Sát mép giường"
+            elif "cough" in base:
+                evt = "💨 Tiếng ho"
+            elif "choke" in base:
+                evt = "🥛 Sặc sữa"
+
+            # Parse time range from filename if it has _den_
+            den_match = re.search(r"(\d{2})h(\d{2})p(\d{2})_den_(\d{2})h(\d{2})p(\d{2})", base)
+            if den_match:
+                sh, sm, ss, eh, em, es = den_match.groups()
+                time_range = f"Từ {sh}:{sm}:{ss} đến {eh}:{em}:{es}"
+                title = f"{time_range} • {evt}"
+            else:
+                old_match = re.search(r"\d{8}_(\d{2})(\d{2})(\d{2})", base)
+                if old_match:
+                    eh, em, es = old_match.groups()
+                    try:
+                        end_t = datetime.strptime(f"{date_folder} {eh}:{em}:{es}", "%Y-%m-%d %H:%M:%S")
+                        start_t = end_t - timedelta(seconds=30)
+                        time_range = f"Từ {start_t.strftime('%H:%M:%S')} đến {end_t.strftime('%H:%M:%S')}"
+                    except Exception:
+                        time_range = f"{eh}:{em}:{es}"
+                    title = f"{time_range} • {evt}"
+                else:
+                    time_range = dt.strftime("%H:%M:%S")
+                    title = f"{time_range} • {evt}"
 
             records.append({
-                "filename": base,
-                "video_url": f"/api/recordings/{base}",
-                "thumbnail_url": f"/api/recordings/{thumb_name}" if has_thumb else None,
-                "timestamp": dt_str,
+                "filename": rel_path,
+                "name": base,
+                "title": title,
+                "time_range": time_range,
+                "date_folder": date_folder,
+                "date_display": date_display,
+                "video_url": f"/api/recordings/{rel_path}",
+                "thumbnail_url": f"/api/recordings/{rel_thumb}" if rel_thumb else None,
+                "timestamp": dt.strftime("%H:%M:%S - %d/%m/%Y"),
                 "size_mb": size_mb,
                 "event_type": evt
             })
@@ -268,7 +346,8 @@ class VideoRecorder:
         """
         if not image_paths:
             moments_dir = os.path.join(BASE_DIR, "moments")
-            all_moments = sorted(glob.glob(os.path.join(moments_dir, "moment_*.jpg")), key=os.path.getmtime, reverse=True)
+            all_moments = sorted(glob.glob(os.path.join(moments_dir, "**", "*.jpg"), recursive=True), key=os.path.getmtime, reverse=True)
+            all_moments = [p for p in all_moments if "rejected_backup" not in p]
             image_paths = all_moments[:24]
 
         valid_paths = [p for p in image_paths if os.path.exists(p)]
@@ -334,9 +413,14 @@ class VideoRecorder:
                 f.write(f"file '{slides[-1]}'\n")
 
             total_duration = len(slides) * duration_per_slide
+            date_folder = now.strftime("%Y-%m-%d")
+            date_dir = os.path.join(self.recordings_dir, date_folder)
+            os.makedirs(date_dir, exist_ok=True)
             out_base = f"montage_{ts_str}.mp4"
-            out_mp4 = os.path.join(self.recordings_dir, out_base)
-            out_thumb = os.path.join(self.recordings_dir, f"montage_{ts_str}.jpg")
+            out_mp4 = os.path.join(date_dir, out_base)
+            out_thumb = os.path.join(date_dir, f"montage_{ts_str}.jpg")
+            rel_mp4 = f"{date_folder}/{out_base}"
+            rel_thumb = f"{date_folder}/montage_{ts_str}.jpg"
 
             # Save middle slide as thumbnail
             mid_idx = len(slides) // 2
@@ -379,9 +463,9 @@ class VideoRecorder:
 
             return {
                 "success": True,
-                "filename": out_base,
-                "video_url": f"/api/recordings/{out_base}",
-                "thumbnail_url": f"/api/recordings/montage_{ts_str}.jpg",
+                "filename": rel_mp4,
+                "video_url": f"/api/recordings/{rel_mp4}",
+                "thumbnail_url": f"/api/recordings/{rel_thumb}",
                 "duration": round(total_duration, 1),
                 "count": len(slides),
                 "size_mb": size_mb,

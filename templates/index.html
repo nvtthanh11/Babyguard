@@ -1697,25 +1697,25 @@
         <!-- ================= TAB 4: CUTE MOMENTS ALBUM ================= -->
         <section id="tab-moments" class="tab-content space-y-6 hidden">
             
-            <div class="flex items-center justify-between pb-2 border-b border-bordercol">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-3 border-b border-bordercol">
                 <div>
                     <h2 class="text-lg font-extrabold text-slate-100 tracking-tight">Khoảnh Khắc Đáng Yêu Của Bé</h2>
                     <p class="text-xs text-slate-400">Bộ sưu tập hình ảnh nụ cười, ngáp và cử chỉ ngộ nghĩnh do AI tự động lưu lại.</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleMomentSelectMode()" id="btn-toggle-select-moments" class="px-3.5 py-2 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition active:scale-95" title="Chọn nhiều ảnh để tải về hoặc xóa">
+                <div class="grid grid-cols-4 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+                    <button onclick="toggleMomentSelectMode()" id="btn-toggle-select-moments" class="px-2.5 sm:px-3.5 py-2 rounded-xl sm:rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-200 font-semibold text-xs flex items-center justify-center gap-1 transition active:scale-95" title="Chọn nhiều ảnh để tải về hoặc xóa">
                         <span>☑️</span>
-                        <span id="btn-select-mode-text">Chọn Nhiều</span>
+                        <span id="btn-select-mode-text" class="truncate">Chọn Nhiều</span>
                     </button>
-                    <button onclick="createMontageVideo(false)" id="btn-create-montage-auto" class="px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-500/20 transition active:scale-95" title="Ghép các khoảnh khắc đẹp nhất thành video kỷ niệm 60s có nhạc ru">
+                    <button onclick="createMontageVideo(false)" id="btn-create-montage-auto" class="px-2.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-lg shadow-purple-500/20 transition active:scale-95" title="Ghép các khoảnh khắc đẹp nhất thành video kỷ niệm 60s có nhạc ru">
                         <span>🎬</span>
-                        <span>Tạo Video Kỷ Niệm</span>
+                        <span class="truncate">Tạo Video</span>
                     </button>
-                    <button onclick="takeManualSnapshot()" id="btn-take-snapshot-moments" class="px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg transition active:scale-95">
+                    <button onclick="takeManualSnapshot()" id="btn-take-snapshot-moments" class="px-2.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1 shadow-lg transition active:scale-95">
                         <span>📸</span>
-                        <span>Chụp Ngay</span>
+                        <span class="truncate">Chụp Ngay</span>
                     </button>
-                    <button onclick="fetchMoments(true)" id="btn-reload-moments" class="p-2.5 rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 transition active:scale-95 flex items-center justify-center" title="Làm mới album">
+                    <button onclick="fetchMoments(true)" id="btn-reload-moments" class="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-cardbg hover:bg-cardhover border border-bordercol text-slate-300 transition active:scale-95 flex items-center justify-center" title="Làm mới album">
                         <span id="reload-moments-icon" class="inline-block transition-transform duration-500">🔄</span>
                     </button>
                 </div>
@@ -2158,8 +2158,8 @@
     </div>
 
     <!-- Modal: Commercial Onboarding & System Configuration Center -->
-    <div id="settings-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden" onclick="closeSettingsModal()">
-        <div class="bg-cardbg rounded-3xl border border-bordercol max-w-2xl w-full p-6 space-y-5 shadow-2xl max-h-[92vh] overflow-y-auto" onclick="event.stopPropagation()">
+    <div id="settings-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 hidden" onclick="closeSettingsModal()">
+        <div class="bg-cardbg rounded-2xl sm:rounded-3xl border border-bordercol max-w-2xl w-full p-3.5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl max-h-[94vh] sm:max-h-[92vh] overflow-y-auto" onclick="event.stopPropagation()">
             
             <!-- Modal Header -->
             <div class="flex items-center justify-between pb-3 border-b border-bordercol">
@@ -2305,12 +2305,14 @@
                 </div>
 
                 <!-- Chế độ kết nối Camera: USB hay Wi-Fi IP -->
-                <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-950 border border-slate-800">
-                    <button type="button" id="cam-tab-usb" onclick="switchCameraSourceTab('usb')" class="py-2 px-3 rounded-lg font-bold text-xs transition bg-emerald-500 text-slate-950">
-                        🔌 Camera Cắm Máy (USB / Webcam)
+                <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                    <button type="button" id="cam-tab-usb" onclick="switchCameraSourceTab('usb')" class="py-2 px-1.5 sm:px-3 rounded-lg font-bold text-xs transition bg-emerald-500 text-slate-950 text-center">
+                        <span class="hidden sm:inline">🔌 Camera Cắm Máy (USB / Webcam)</span>
+                        <span class="sm:hidden">🔌 Cam Cắm Máy (USB)</span>
                     </button>
-                    <button type="button" id="cam-tab-rtsp" onclick="switchCameraSourceTab('rtsp')" class="py-2 px-3 rounded-lg font-bold text-xs transition text-slate-400 hover:text-slate-200">
-                        📡 Camera Wi-Fi Gia Đình (Ezviz/Imou/Tapo)
+                    <button type="button" id="cam-tab-rtsp" onclick="switchCameraSourceTab('rtsp')" class="py-2 px-1.5 sm:px-3 rounded-lg font-bold text-xs transition text-slate-400 hover:text-slate-200 text-center">
+                        <span class="hidden sm:inline">📡 Camera Wi-Fi Gia Đình (Ezviz/Imou/Tapo)</span>
+                        <span class="sm:hidden">📡 Cam Wi-Fi Gia Đình</span>
                     </button>
                 </div>
 
@@ -2456,8 +2458,8 @@
                         </button>
                     </div>
 
-                    <!-- Tiêu đề cột -->
-                    <div class="grid grid-cols-12 gap-2 px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <!-- Tiêu đề cột (Ẩn trên mobile vì đã có placeholder trực quan) -->
+                    <div class="hidden sm:grid grid-cols-12 gap-2 px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                         <div class="col-span-5">Tên người nhận (Ba, Mẹ, Bà...)</div>
                         <div class="col-span-5">Mã Telegram Chat ID</div>
                         <div class="col-span-2 text-right">Thao tác</div>
@@ -2565,9 +2567,9 @@
                 <div class="text-[11px] text-slate-400 hidden sm:block">
                     💡 Mẹo: Nhấn <b>"✨ AI Căn Chỉnh Nôi"</b> dưới màn hình Live sau khi đặt bé vào nôi.
                 </div>
-                <div class="flex items-center gap-2 ml-auto">
-                    <button onclick="closeSettingsModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">Đóng</button>
-                    <button onclick="saveAllSettings()" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs font-extrabold text-slate-950 shadow-lg transition">💾 Lưu & Hoàn Tất Thiết Lập</button>
+                <div class="flex items-center gap-2 w-full sm:w-auto ml-auto">
+                    <button onclick="closeSettingsModal()" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 text-center transition">Đóng</button>
+                    <button onclick="saveAllSettings()" class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs font-extrabold text-slate-950 text-center shadow-lg transition">💾 Lưu Cấu Hình</button>
                 </div>
             </div>
         </div>
@@ -6105,7 +6107,7 @@
             }
             if (dl) {
                 dl.href = videoUrl;
-                dl.download = filename;
+                dl.download = filename.split('/').pop();
             }
             if (info) {
                 info.innerText = `Thời lượng: ${duration}s • ${count} khoảnh khắc • ${sizeMb} MB`;
@@ -6147,7 +6149,7 @@
             }
         }
 
-        // Fetch Cute Moments (with Authentic Gemini AI Badge Verification)
+        // Fetch Cute Moments (Gom nhóm theo ngày tháng)
         async function fetchMoments(isUserClick = false) {
             const icon = document.getElementById('reload-moments-icon');
             if (icon) icon.classList.add('rotate-180');
@@ -6167,58 +6169,85 @@
                     updateMomentsSelectionUI();
                     return;
                 }
-                grid.innerHTML = cachedMoments.map(m => {
-                    const caption = (m.caption_vi || 'Khoảnh khắc đáng yêu của bé').replace(/'/g, "\\'");
-                    const isAiVerified = Boolean(m.checked_by_gemini);
-                    const badgeText = isAiVerified
-                        ? (m.has_other_person ? '👨‍👩‍👧 Có người thân • AI Duyệt' : '✨ AI Đã Duyệt Riêng Tư')
-                        : '📷 Chụp Cục Bộ';
-                    const badgeClass = isAiVerified
-                        ? 'text-emerald-300 border-emerald-500/30'
-                        : 'text-slate-300 border-slate-600/40';
-                    const scoreBadge = (isAiVerified && m.aesthetic_score) ? `⭐ ${m.aesthetic_score}/10` : '';
 
-                    const isSel = selectedMoments.has(m.filename);
-                    const ringClass = isSel ? 'ring-2 ring-emerald-400 border-transparent shadow-emerald-500/20 shadow-lg' : 'border-bordercol';
-                    const chkClass = isSel 
-                        ? 'w-6 h-6 rounded-full border-2 bg-emerald-500 text-slate-950 border-emerald-400 flex items-center justify-center transition-all shadow-md active:scale-90'
-                        : (isMomentSelectMode 
-                            ? 'w-6 h-6 rounded-full border-2 bg-slate-950/80 text-transparent border-slate-400/60 hover:border-emerald-400 flex items-center justify-center transition-all shadow-md active:scale-90'
-                            : 'w-6 h-6 rounded-full border-2 bg-slate-950/70 text-transparent border-slate-500/40 hover:border-emerald-400 hidden group-hover:flex items-center justify-center transition-all shadow-md active:scale-90');
-                    const chkSvgStroke = isSel ? 'stroke-slate-950' : 'stroke-transparent';
+                // Gom nhóm theo ngày
+                const groups = {};
+                for (const m of cachedMoments) {
+                    const gKey = m.date_display || (m.timestamp ? m.timestamp.split(' - ')[1] : 'Gần đây');
+                    if (!groups[gKey]) groups[gKey] = [];
+                    groups[gKey].push(m);
+                }
 
-                    return `
-                    <div id="moment-card-${m.filename}" class="group relative rounded-2xl overflow-hidden border ${ringClass} bg-slate-900 aspect-square cursor-pointer transition-all duration-200 select-none" onclick="handleMomentCardClick('${m.filename}', '${m.url}', '${caption} (${m.timestamp})', event)">
-                        <img src="${m.url}" class="w-full h-full object-cover transition-transform duration-300 ${isSel ? 'scale-95 brightness-90' : 'group-hover:scale-105'}" loading="lazy">
-                        
-                        <!-- Multi-select Checkbox (Top-Right) -->
-                        <div class="absolute top-2 right-2 z-10">
-                            <button type="button" id="moment-chk-${m.filename}" onclick="toggleMomentSelection('${m.filename}', event)" 
-                                    class="${chkClass}"
-                                    title="${isSel ? 'Bỏ chọn' : 'Chọn ảnh này'}">
-                                <svg id="moment-chk-svg-${m.filename}" class="w-3.5 h-3.5 stroke-[3] ${chkSvgStroke}" fill="none" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- AI Badge & Score (Top-Left) -->
-                        <div class="absolute top-2 left-2 flex items-center gap-1 pointer-events-none z-0">
-                            <span class="bg-slate-950/80 backdrop-blur-md text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badgeClass}">${badgeText}</span>
-                            ${scoreBadge ? `<span class="bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">${scoreBadge}</span>` : ''}
-                        </div>
-
-                        <!-- Hover Gradient Overlay -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end pointer-events-none">
-                            <p class="text-[11px] font-medium text-slate-100 line-clamp-2 mb-1">${m.caption_vi || 'Khoảnh khắc đáng yêu'}</p>
-                            <span class="text-[10px] text-slate-400">${m.timestamp}</span>
-                            <div class="flex items-center justify-between pt-1.5 border-t border-slate-700/60 mt-1 pointer-events-auto">
-                                <a href="${m.url}" download="${m.filename}" onclick="event.stopPropagation()" class="text-emerald-400 hover:text-emerald-300 text-[11px] font-semibold">⬇️ Tải về</a>
-                                <button onclick="deleteMoment('${m.filename}', event)" class="text-rose-400 hover:text-rose-300 text-[11px] font-semibold">🗑️ Xóa</button>
-                            </div>
+                let html = '';
+                for (const [dateGroup, mList] of Object.entries(groups)) {
+                    html += `
+                    <div class="col-span-full pt-4 pb-1.5 flex items-center justify-between border-b border-slate-800/80">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs sm:text-sm font-extrabold text-emerald-300">📅 ${dateGroup}</span>
+                            <span class="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800 font-mono">${mList.length} ảnh</span>
                         </div>
                     </div>
-                `}).join('');
+                    `;
+                    for (const m of mList) {
+                        const caption = (m.caption_vi || 'Khoảnh khắc đáng yêu của bé').replace(/'/g, "\\'");
+                        const isAiVerified = Boolean(m.checked_by_gemini);
+                        const badgeText = isAiVerified
+                            ? (m.has_other_person ? '👨‍👩‍👧 Có người thân' : '✨ AI Đã Duyệt')
+                            : '📷 Chụp Cục Bộ';
+                        const badgeClass = isAiVerified
+                            ? 'text-emerald-300 border-emerald-500/30'
+                            : 'text-slate-300 border-slate-600/40';
+                        const scoreBadge = (isAiVerified && m.aesthetic_score) ? `⭐ ${m.aesthetic_score}/10` : '';
+
+                        const isSel = selectedMoments.has(m.filename);
+                        const ringClass = isSel ? 'ring-2 ring-emerald-400 border-transparent shadow-emerald-500/20 shadow-lg' : 'border-bordercol';
+                        const chkClass = isSel 
+                            ? 'w-6 h-6 rounded-full border-2 bg-emerald-500 text-slate-950 border-emerald-400 flex items-center justify-center transition-all shadow-md active:scale-90'
+                            : (isMomentSelectMode 
+                                ? 'w-6 h-6 rounded-full border-2 bg-slate-950/80 text-transparent border-slate-400/60 hover:border-emerald-400 flex items-center justify-center transition-all shadow-md active:scale-90'
+                                : 'w-6 h-6 rounded-full border-2 bg-slate-950/70 text-transparent border-slate-500/40 hover:border-emerald-400 flex sm:hidden group-hover:flex items-center justify-center transition-all shadow-md active:scale-90');
+                        const chkSvgStroke = isSel ? 'stroke-slate-950' : 'stroke-transparent';
+
+                        html += `
+                        <div id="moment-card-${m.filename}" class="group relative rounded-2xl overflow-hidden border ${ringClass} bg-slate-900 aspect-square cursor-pointer transition-all duration-200 select-none shadow-md" onclick="handleMomentCardClick('${m.filename}', '${m.url}', '${caption} (${m.timestamp})', event)">
+                            <img src="${m.url}" class="w-full h-full object-cover transition-transform duration-300 ${isSel ? 'scale-95 brightness-90' : 'group-hover:scale-105'}" loading="lazy">
+                            
+                            <!-- Multi-select Checkbox (Top-Right) -->
+                            <div class="absolute top-2 right-2 z-10">
+                                <button type="button" id="moment-chk-${m.filename}" onclick="toggleMomentSelection('${m.filename}', event)" 
+                                        class="${chkClass}"
+                                        title="${isSel ? 'Bỏ chọn' : 'Chọn ảnh này'}">
+                                    <svg id="moment-chk-svg-${m.filename}" class="w-3.5 h-3.5 stroke-[3] ${chkSvgStroke}" fill="none" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- AI Badge & Score (Top-Left) -->
+                            <div class="absolute top-2 left-2 flex items-center gap-1 pointer-events-none z-0">
+                                <span class="bg-slate-950/80 backdrop-blur-md text-[9px] sm:text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-full border ${badgeClass}">${badgeText}</span>
+                                ${scoreBadge ? `<span class="bg-slate-950/80 backdrop-blur-md text-[9px] sm:text-[10px] font-bold text-amber-300 px-1.5 sm:px-2 py-0.5 rounded-full border border-amber-500/30">${scoreBadge}</span>` : ''}
+                            </div>
+
+                            <!-- Permanent Time Tag (Bottom-Right on Mobile) -->
+                            <div class="absolute bottom-1.5 right-1.5 pointer-events-none sm:hidden">
+                                <span class="bg-slate-950/80 backdrop-blur-sm text-[9px] font-mono text-slate-300 px-1.5 py-0.5 rounded-md border border-slate-800">${m.time_str || (m.timestamp ? m.timestamp.split(' - ')[0] : '')}</span>
+                            </div>
+
+                            <!-- Hover Gradient Overlay -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2.5 sm:p-3 flex flex-col justify-end pointer-events-none">
+                                <p class="text-[11px] font-medium text-slate-100 line-clamp-2 mb-1">${m.caption_vi || 'Khoảnh khắc đáng yêu'}</p>
+                                <span class="text-[10px] text-slate-400">${m.timestamp}</span>
+                                <div class="flex items-center justify-between pt-1.5 border-t border-slate-700/60 mt-1 pointer-events-auto">
+                                    <a href="${m.url}" download="${m.base_filename || m.filename}" onclick="event.stopPropagation()" class="text-emerald-400 hover:text-emerald-300 text-[11px] font-semibold">⬇️ Tải về</a>
+                                    <button onclick="deleteMoment('${m.filename}', event)" class="text-rose-400 hover:text-rose-300 text-[11px] font-semibold">🗑️ Xóa</button>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    }
+                }
+                grid.innerHTML = html;
                 updateMomentsSelectionUI();
                 if (isUserClick) {
                     showToast(`Đã làm mới! Có ${cachedMoments.length} khoảnh khắc sạch đẹp`, "🔄");
@@ -6237,7 +6266,7 @@
             if (evt) evt.stopPropagation();
             if (!confirm("Bạn có chắc chắn muốn xóa khoảnh khắc này?")) return;
             try {
-                await fetch(`/api/moments/${fn}`, { method: 'DELETE' });
+                await fetch(`/api/moments/${encodeURIComponent(fn)}`, { method: 'DELETE' });
                 showToast("Đã xóa khoảnh khắc thành công", "🗑️");
                 selectedMoments.delete(fn);
                 fetchMoments(false);
@@ -6246,7 +6275,7 @@
             }
         }
 
-        // Fetch Event Recordings
+        // Fetch Event Recordings (Gom nhóm theo ngày tháng & hiển thị khoảng thời gian từ mấy giờ đến mấy giờ)
         async function fetchRecordings(isUserClick = false) {
             const icon = document.getElementById('reload-recordings-icon');
             if (icon) icon.classList.add('rotate-180');
@@ -6259,25 +6288,59 @@
                     if (isUserClick) showToast("Chưa có video mới", "ℹ️");
                     return;
                 }
-                list.innerHTML = recs.map(r => `
-                    <div class="p-4 rounded-2xl bg-cardbg border border-bordercol flex items-center justify-between gap-4 hover:border-slate-700 transition">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-lg">📹</div>
-                            <div>
-                                <span class="font-bold text-xs text-slate-100 block">${r.title || r.name}</span>
-                                <span class="text-[11px] text-slate-400">${r.timestamp || ''} • ${r.size_mb || 0} MB</span>
-                            </div>
-                        </div>
+
+                // Gom nhóm theo ngày
+                const groups = {};
+                for (const r of recs) {
+                    const gKey = r.date_display || (r.timestamp ? r.timestamp.split(' - ')[1] : 'Gần đây');
+                    if (!groups[gKey]) groups[gKey] = [];
+                    groups[gKey].push(r);
+                }
+
+                let html = '';
+                for (const [dateGroup, rList] of Object.entries(groups)) {
+                    html += `
+                    <div class="pt-3 pb-1 flex items-center justify-between border-b border-slate-800">
                         <div class="flex items-center gap-2">
-                            <button onclick="openMediaModal('${r.video_url}', '${r.title || r.name}', 'video')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-400 transition">
-                                ▶ Xem
-                            </button>
-                            <a href="${r.video_url}" download class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition text-xs" title="Tải về máy">
-                                ⬇️
-                            </a>
+                            <span class="text-xs sm:text-sm font-extrabold text-indigo-400">📅 ${dateGroup}</span>
+                            <span class="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800 font-mono">${rList.length} clips</span>
                         </div>
                     </div>
-                `).join('');
+                    `;
+                    for (const r of rList) {
+                        const safeTitle = (r.title || r.name).replace(/'/g, "\\'");
+                        const thumbHtml = r.thumbnail_url 
+                            ? `<img src="${r.thumbnail_url}" class="w-16 h-12 sm:w-20 sm:h-14 rounded-xl object-cover border border-slate-700/80 shrink-0" loading="lazy">`
+                            : `<div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-xl shrink-0">📹</div>`;
+
+                        html += `
+                        <div class="p-3 sm:p-4 rounded-2xl bg-cardbg border border-bordercol flex items-center justify-between gap-2.5 sm:gap-4 hover:border-slate-700 transition">
+                            <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                                ${thumbHtml}
+                                <div class="min-w-0 flex-1">
+                                    <span class="font-extrabold text-xs sm:text-sm text-slate-100 block truncate" title="${r.title || r.name}">
+                                        ${r.time_range ? `⏱️ ${r.time_range}` : (r.title || r.name)}
+                                    </span>
+                                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5">
+                                        <span class="text-[10px] sm:text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">${r.event_type || 'Sự kiện'}</span>
+                                        <span class="text-[10px] sm:text-[11px] text-slate-400">${r.size_mb || 0} MB</span>
+                                        <span class="text-[10px] text-slate-500 hidden sm:inline">• ${r.timestamp || ''}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                <button onclick="openMediaModal('${r.video_url}', '${safeTitle}', 'video')" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition active:scale-95 flex items-center gap-1">
+                                    <span>▶</span><span class="hidden xs:inline sm:inline">Xem</span>
+                                </button>
+                                <a href="${r.video_url}" download class="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition text-xs" title="Tải về máy">
+                                    ⬇️
+                                </a>
+                            </div>
+                        </div>
+                        `;
+                    }
+                }
+                list.innerHTML = html;
                 if (isUserClick) showToast(`Đã làm mới! Có ${recs.length} video sự kiện`, "📁");
             } catch (e) {
                 console.error("Recordings error:", e);
@@ -7026,21 +7089,31 @@
                 const safeName = String(r.name || '').replace(/"/g, '&quot;');
                 const safeCid = String(r.chat_id || '').replace(/"/g, '&quot;');
                 return `
-                <div class="p-2 rounded-xl bg-slate-950/90 border ${r.enabled !== false ? 'border-emerald-500/30' : 'border-slate-800 opacity-60'} grid grid-cols-12 gap-2 items-center">
-                    <div class="col-span-5 flex items-center gap-2">
-                        <input type="checkbox" ${r.enabled !== false ? 'checked' : ''} onchange="toggleTelegramRecipient(${idx}, this.checked)" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0" title="Bật/Tắt nhận thông báo">
-                        <input type="text" value="${safeName}" autocomplete="off"
-                            oninput="updateTelegramRowField(${idx}, 'name', this.value)"
-                            placeholder="Tên (vd: Mẹ, Bà Nội)"
-                            class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-2.5 py-1.5 text-slate-100 font-semibold text-xs">
+                <div class="p-2.5 rounded-xl bg-slate-950/90 border ${r.enabled !== false ? 'border-emerald-500/30' : 'border-slate-800 opacity-60'} flex flex-col sm:grid sm:grid-cols-12 gap-2">
+                    <div class="sm:col-span-5 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <input type="checkbox" ${r.enabled !== false ? 'checked' : ''} onchange="toggleTelegramRecipient(${idx}, this.checked)" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0" title="Bật/Tắt nhận thông báo">
+                            <input type="text" value="${safeName}" autocomplete="off"
+                                oninput="updateTelegramRowField(${idx}, 'name', this.value)"
+                                placeholder="Tên (vd: Mẹ, Bà Nội)"
+                                class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-2.5 py-1.5 text-slate-100 font-semibold text-xs">
+                        </div>
+                        <div class="flex sm:hidden items-center gap-1 shrink-0">
+                            <button type="button" onclick="testTelegramRow(${idx})" class="px-2 py-1.5 rounded-lg bg-slate-800 text-emerald-300 font-bold text-[10px] border border-slate-700" title="Gửi tin nhắn thử tới ID này">
+                                ✉️ Thử
+                            </button>
+                            <button type="button" onclick="removeTelegramRecipient(${idx})" class="px-2 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 font-bold text-[10px] border border-rose-500/20" title="Xóa dòng này">
+                                🗑️
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-span-5">
+                    <div class="sm:col-span-5">
                         <input type="text" id="tg-row-chatid-${idx}" value="${safeCid}" autocomplete="off"
                             oninput="updateTelegramRowField(${idx}, 'chat_id', this.value)"
-                            placeholder="Nhập mã Chat ID (vd: 2082937337)"
+                            placeholder="Mã Telegram Chat ID (vd: 2082937337)"
                             class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-2.5 py-1.5 text-emerald-300 font-mono font-bold text-xs">
                     </div>
-                    <div class="col-span-2 flex items-center justify-end gap-1">
+                    <div class="hidden sm:flex sm:col-span-2 items-center justify-end gap-1">
                         <button type="button" onclick="testTelegramRow(${idx})" class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-[10px] transition border border-slate-700" title="Gửi tin nhắn thử tới ID này">
                             ✉️ Thử
                         </button>

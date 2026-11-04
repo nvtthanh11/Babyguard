@@ -65,7 +65,7 @@ class AlertManager:
         if not os.path.exists(rec_dir):
             return []
         import glob
-        mp4s = glob.glob(os.path.join(rec_dir, "*.mp4"))
+        mp4s = glob.glob(os.path.join(rec_dir, "**", "*.mp4"), recursive=True)
         now = time.time()
         cutoff_7d = now - 7 * 86400
 
@@ -84,32 +84,32 @@ class AlertManager:
 
         rec_events = []
         for f in mp4s:
+            rel = os.path.relpath(f, rec_dir).replace("\\", "/")
             base = os.path.basename(f)
-            parts = base.split("_")
-            if len(parts) >= 3:
-                ts_str = f"{parts[0]}_{parts[1]}"
-                try:
-                    dt = datetime.strptime(ts_str, "%Y%m%d_%H%M%S")
-                    ep = dt.timestamp()
-                    if ep < cutoff_7d:
-                        continue
-                    raw_t = parts[2].split(".")[0].lower()
-                    ev_type = "covered_face" if raw_t == "covered" else raw_t
-                    title = emojis.get(ev_type, "THÔNG BÁO")
-                    snap_name = f"{parts[0]}_{parts[1]}_{raw_t}.jpg"
-                    rec_events.append({
-                        "id": len(rec_events) + 1,
-                        "type": ev_type,
-                        "title": title,
-                        "message": f"Ghi nhận video sự kiện {title.lower()}",
-                        "timestamp": dt.strftime("%H:%M:%S - %d/%m/%Y"),
-                        "epoch": ep,
-                        "snapshot_url": f"/api/snapshots/{snap_name}",
-                        "video_url": f"/api/recordings/{base}",
-                        "extra": {"source": "video_recording"}
-                    })
-                except Exception:
-                    pass
+            ep = os.path.getmtime(f)
+            if ep < cutoff_7d:
+                continue
+
+            dt = datetime.fromtimestamp(ep)
+            ev_type = "motion"
+            for k in ["cry", "cough", "choke", "spit_up", "apnea", "prone", "covered", "danger", "motion"]:
+                if k in base:
+                    ev_type = "covered_face" if k == "covered" else k
+                    break
+
+            title = emojis.get(ev_type, "THÔNG BÁO")
+            snap_thumb = rel.replace(".mp4", ".jpg")
+            rec_events.append({
+                "id": len(rec_events) + 1,
+                "type": ev_type,
+                "title": title,
+                "message": f"Ghi nhận video sự kiện {title.lower()}",
+                "timestamp": dt.strftime("%H:%M:%S - %d/%m/%Y"),
+                "epoch": ep,
+                "snapshot_url": f"/api/recordings/{snap_thumb}",
+                "video_url": f"/api/recordings/{rel}",
+                "extra": {"source": "video_recording"}
+            })
         rec_events.sort(key=lambda x: x["epoch"], reverse=True)
         return rec_events
 
@@ -541,11 +541,14 @@ class AlertManager:
         - Cooldown chỉ áp dụng cho việc gửi tin nhắn Telegram & phát âm thanh báo động loa ngoài để không làm phiền ba mẹ.
         """
         now = datetime.now()
+        date_folder = now.strftime("%Y-%m-%d")
+        date_snap_dir = os.path.join(self.snapshots_dir, date_folder)
+        os.makedirs(date_snap_dir, exist_ok=True)
         ts_str = now.strftime("%Y%m%d_%H%M%S")
         display_time = now.strftime("%H:%M:%S - %d/%m/%Y")
         
-        # Save snapshot
-        snapshot_filename = f"{ts_str}_{event_type}.jpg"
+        # Save snapshot into date subfolder
+        snapshot_filename = f"{date_folder}/{ts_str}_{event_type}.jpg"
         snapshot_path = os.path.join(self.snapshots_dir, snapshot_filename)
         
         if frame is not None:

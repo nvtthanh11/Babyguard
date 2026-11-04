@@ -1,5 +1,7 @@
 import os
 import io
+import re
+import glob
 import zipfile
 import shutil
 import json
@@ -9,7 +11,7 @@ import socket
 import hmac
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timedelta
 import subprocess
 import threading
 import cv2
@@ -1044,9 +1046,14 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     def api_events():
         return alert_manager.get_events()
 
-    @app.get("/api/snapshots/{filename}")
+    @app.get("/api/snapshots/{filename:path}")
     def get_snapshot(filename: str):
         file_path = os.path.join(snapshots_dir, filename)
+        if not os.path.exists(file_path):
+            base = os.path.basename(filename)
+            cand = glob.glob(os.path.join(snapshots_dir, "**", base), recursive=True)
+            if cand:
+                file_path = cand[0]
         if os.path.exists(file_path):
             return FileResponse(file_path)
         return JSONResponse({"error": "File not found"}, status_code=404)
@@ -1055,9 +1062,14 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     def api_recordings():
         return video_recorder.get_recordings()
 
-    @app.get("/api/recordings/{filename}")
+    @app.get("/api/recordings/{filename:path}")
     def get_recording_file(filename: str):
         file_path = os.path.join(recordings_dir, filename)
+        if not os.path.exists(file_path):
+            base = os.path.basename(filename)
+            cand = glob.glob(os.path.join(recordings_dir, "**", base), recursive=True)
+            if cand:
+                file_path = cand[0]
         if os.path.exists(file_path):
             media_type = "video/mp4" if filename.endswith(".mp4") else "image/jpeg"
             return FileResponse(file_path, media_type=media_type)
@@ -1536,9 +1548,22 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     moments_dir = os.path.join(BASE_DIR, "moments")
     os.makedirs(moments_dir, exist_ok=True)
 
+    def _resolve_moment_file(filename: str):
+        if not filename:
+            return None
+        clean_name = filename.replace("\\", "/").lstrip("/")
+        p = os.path.join(moments_dir, clean_name)
+        if os.path.exists(p) and os.path.isfile(p):
+            return p
+        base = os.path.basename(clean_name)
+        cand = glob.glob(os.path.join(moments_dir, "**", base), recursive=True)
+        if cand:
+            return cand[0]
+        return None
+
     @app.post("/api/take-snapshot")
     def take_snapshot():
-        # 1. Lấy khung hình an toàn qua get_snapshot_frame (không gọi OpenCV detect đồng thời gây deadlock)
+        # 1. Lấy khung hình an toàn qua get_snapshot_frame
         frame = None
         face_info = None
         if hasattr(vision_tracker, "get_snapshot_frame"):
@@ -1550,19 +1575,27 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         if frame is None:
             return {"success": False, "error": "Không lấy được khung hình từ camera"}
 
-        # 2. Ảnh chụp thủ công của ba mẹ: Luôn luôn lưu khung hình chất lượng cao đầy đủ góc nhìn gia đình
+        # 2. Ảnh chụp thủ công của ba mẹ: Lưu theo thư mục ngày tháng YYYY-MM-DD
         frame_to_save = frame.copy()
-        ts_moment = datetime.now().strftime("%Y%m%d_%H%M%S")
-        moment_fn = f"moment_{ts_moment}.jpg"
-        moment_path = os.path.join(moments_dir, moment_fn)
-        snapshot_path = os.path.join(snapshots_dir, moment_fn)
+        now_dt = datetime.now()
+        ts_moment = now_dt.strftime("%Y%m%d_%H%M%S")
+        date_folder = now_dt.strftime("%Y-%m-%d")
+        day_moments_dir = os.path.join(moments_dir, date_folder)
+        os.makedirs(day_moments_dir, exist_ok=True)
+        day_snapshots_dir = os.path.join(snapshots_dir, date_folder)
+        os.makedirs(day_snapshots_dir, exist_ok=True)
 
-        # Lưu tệp đĩa ngay lập tức (chỉ mất ~0.003s)
+        moment_fn = f"moment_{ts_moment}.jpg"
+        rel_fn = f"{date_folder}/{moment_fn}"
+        moment_path = os.path.join(day_moments_dir, moment_fn)
+        snapshot_path = os.path.join(day_snapshots_dir, moment_fn)
+
+        # Lưu tệp đĩa ngay lập tức
         cv2.imwrite(moment_path, frame_to_save)
         cv2.imwrite(snapshot_path, frame_to_save)
 
         # Gán metadata ban đầu để giao diện hiển thị ngay lập tức
-        base_caption = f"Khoảnh khắc kỷ niệm của bé ({datetime.now().strftime('%H:%M:%S')})"
+        base_caption = f"Khoảnh khắc kỷ niệm của bé ({now_dt.strftime('%H:%M:%S')})"
         base_meta = {
             "checked_by_gemini": False,
             "approved": True,
@@ -1575,9 +1608,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         }
         if gemini_verifier is not None:
             gemini_verifier.save_moment_metadata(moment_fn, base_meta)
+            gemini_verifier.save_moment_metadata(rel_fn, base_meta)
 
-        # 3. ĐẨY XỬ LÝ NẶNG (Gemini Chú Thích & Đồng Bộ Google Drive) SANG THREAD CHẠY NGẦM
-        # Tuyệt đối không chặn luồng camera và HTTP stream /video_feed của người dùng!
+        # 3. ĐẨY XỬ LÝ NẶNG SANG THREAD CHẠY NGẦM
         def _bg_snapshot_tasks(m_path, m_fn, img_data):
             try:
                 cfg = load_config()
@@ -1601,8 +1634,8 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
         return {
             "success": True,
-            "filename": moment_fn,
-            "url": f"/api/moments/{moment_fn}",
+            "filename": rel_fn,
+            "url": f"/api/moments/{rel_fn}",
             "caption_vi": base_caption,
             "checked_by_gemini": True,
             "auto_cropped": False
@@ -1613,36 +1646,76 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         files = []
         meta_map = gemini_verifier.load_moments_metadata() if gemini_verifier else {}
         if os.path.exists(moments_dir):
-            for f in sorted(os.listdir(moments_dir), reverse=True):
-                if f.endswith((".jpg", ".png")):
-                    p = os.path.join(moments_dir, f)
-                    st = os.stat(p)
-                    m_info = meta_map.get(f, {})
-                    files.append({
-                        "filename": f,
-                        "url": f"/api/moments/{f}",
-                        "timestamp": datetime.fromtimestamp(st.st_mtime).strftime("%H:%M:%S - %d/%m/%Y"),
-                        "size_kb": round(st.st_size / 1024, 1),
-                        "caption_vi": m_info.get("caption_vi", "Khoảnh khắc đáng yêu của bé"),
-                        "aesthetic_score": m_info.get("aesthetic_score", None),
-                        "has_other_person": m_info.get("has_other_person", False),
-                        "checked_by_gemini": m_info.get("checked_by_gemini", False)
-                    })
+            all_paths = glob.glob(os.path.join(moments_dir, "**", "*.jpg"), recursive=True) + \
+                        glob.glob(os.path.join(moments_dir, "**", "*.png"), recursive=True)
+            all_paths.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+            for p in all_paths:
+                rel_path = os.path.relpath(p, moments_dir).replace("\\", "/")
+                if "rejected_backup" in rel_path.split("/"):
+                    continue
+                base = os.path.basename(p)
+                st = os.stat(p)
+                mtime_dt = datetime.fromtimestamp(st.st_mtime)
+
+                parent_dir = os.path.basename(os.path.dirname(p))
+                if re.match(r"^\d{4}-\d{2}-\d{2}$", parent_dir):
+                    date_folder = parent_dir
+                else:
+                    date_folder = mtime_dt.strftime("%Y-%m-%d")
+
+                try:
+                    df_obj = datetime.strptime(date_folder, "%Y-%m-%d")
+                    d_formatted = df_obj.strftime("%d/%m/%Y")
+                except Exception:
+                    d_formatted = date_folder
+
+                if date_folder == today_str:
+                    date_display = f"Hôm nay ({d_formatted})"
+                elif date_folder == yesterday_str:
+                    date_display = f"Hôm qua ({d_formatted})"
+                else:
+                    date_display = d_formatted
+
+                m_info = meta_map.get(base, {}) or meta_map.get(rel_path, {})
+                files.append({
+                    "filename": rel_path,
+                    "base_filename": base,
+                    "date_folder": date_folder,
+                    "date_display": date_display,
+                    "time_str": mtime_dt.strftime("%H:%M:%S"),
+                    "url": f"/api/moments/{rel_path}",
+                    "timestamp": mtime_dt.strftime("%H:%M:%S - %d/%m/%Y"),
+                    "size_kb": round(st.st_size / 1024, 1),
+                    "caption_vi": m_info.get("caption_vi", "Khoảnh khắc đáng yêu của bé"),
+                    "aesthetic_score": m_info.get("aesthetic_score", None),
+                    "has_other_person": m_info.get("has_other_person", False),
+                    "checked_by_gemini": m_info.get("checked_by_gemini", False)
+                })
         return files
 
-    @app.get("/api/moments/{filename}")
+    @app.get("/api/moments/{filename:path}")
     def get_moment_file(filename: str):
-        p = os.path.join(moments_dir, filename)
-        if os.path.exists(p):
+        p = _resolve_moment_file(filename)
+        if p and os.path.exists(p):
             return FileResponse(p, media_type="image/jpeg")
         return JSONResponse({"error": "File not found"}, status_code=404)
 
-    @app.delete("/api/moments/{filename}")
+    @app.delete("/api/moments/{filename:path}")
     def delete_moment(filename: str):
-        p = os.path.join(moments_dir, filename)
-        if os.path.exists(p):
+        p = _resolve_moment_file(filename)
+        if p and os.path.exists(p):
             try:
+                parent_dir = os.path.dirname(p)
                 os.remove(p)
+                if parent_dir != moments_dir and os.path.exists(parent_dir) and not os.listdir(parent_dir):
+                    try:
+                        os.rmdir(parent_dir)
+                    except:
+                        pass
                 return {"success": True}
             except Exception as e:
                 return {"success": False, "error": str(e)}
@@ -1655,14 +1728,19 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             filenames = data.get("filenames", [])
             deleted = []
             for fn in filenames:
-                safe_fn = os.path.basename(fn)
-                p = os.path.join(moments_dir, safe_fn)
-                if os.path.exists(p):
+                p = _resolve_moment_file(fn)
+                if p and os.path.exists(p):
                     try:
+                        parent_dir = os.path.dirname(p)
                         os.remove(p)
-                        deleted.append(safe_fn)
+                        deleted.append(fn)
+                        if parent_dir != moments_dir and os.path.exists(parent_dir) and not os.listdir(parent_dir):
+                            try:
+                                os.rmdir(parent_dir)
+                            except:
+                                pass
                     except Exception as e:
-                        print(f"[Moments] Lỗi xóa file {safe_fn}: {e}")
+                        print(f"[Moments] Lỗi xóa file {fn}: {e}")
             return {"success": True, "deleted_count": len(deleted), "deleted": deleted}
         except Exception as e:
             return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -1678,10 +1756,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
                 for fn in filenames:
-                    safe_fn = os.path.basename(fn)
-                    p = os.path.join(moments_dir, safe_fn)
-                    if os.path.exists(p):
-                        zip_file.write(p, arcname=safe_fn)
+                    p = _resolve_moment_file(fn)
+                    if p and os.path.exists(p):
+                        zip_file.write(p, arcname=os.path.basename(p))
             
             zip_buffer.seek(0)
             now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1711,9 +1788,8 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             image_paths = []
             if filenames:
                 for fn in filenames:
-                    safe_fn = os.path.basename(fn)
-                    p = os.path.join(moments_dir, safe_fn)
-                    if os.path.exists(p):
+                    p = _resolve_moment_file(fn)
+                    if p and os.path.exists(p):
                         image_paths.append(p)
 
             # Create video via video_recorder
@@ -1726,6 +1802,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             # Optionally send to Telegram
             if send_telegram and alert_manager and alert_manager.is_configured():
                 mp4_path = os.path.join(video_recorder.recordings_dir, res["filename"])
+                if not os.path.exists(mp4_path):
+                    cand = glob.glob(os.path.join(video_recorder.recordings_dir, "**", os.path.basename(res["filename"])), recursive=True)
+                    if cand: mp4_path = cand[0]
                 caption = f"🎬 <b>VIDEO KỶ NIỆM HÀNH TRÌNH KHÔN LỚN CỦA BÉ A SIU</b>\n✨ Được tạo tự động từ {res['count']} khoảnh khắc đẹp nhất kèm nhạc ru Brahms Lullaby êm dịu."
                 alert_manager.send_telegram_video(mp4_path, caption, event_type="montage", force=True)
                 res["telegram_sent"] = True
@@ -1740,13 +1819,17 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     async def send_recording_to_telegram(request: Request):
         try:
             data = await request.json()
-            filename = os.path.basename(data.get("filename", ""))
-            if not filename:
+            raw_fn = data.get("filename", "").replace("\\", "/").lstrip("/")
+            if not raw_fn:
                 return JSONResponse({"success": False, "error": "Thiếu tên tệp video"}, status_code=400)
 
-            p = os.path.join(video_recorder.recordings_dir, filename)
+            p = os.path.join(video_recorder.recordings_dir, raw_fn)
             if not os.path.exists(p):
-                return JSONResponse({"success": False, "error": "Tệp video không tồn tại"}, status_code=404)
+                cand = glob.glob(os.path.join(video_recorder.recordings_dir, "**", os.path.basename(raw_fn)), recursive=True)
+                if cand:
+                    p = cand[0]
+                else:
+                    return JSONResponse({"success": False, "error": "Tệp video không tồn tại"}, status_code=404)
 
             caption = data.get("caption", "🎬 <b>VIDEO KỶ NIỆM BÉ A SIU</b>\nBabyGuard AI đã gửi thước phim kỷ niệm của con đến ba mẹ!")
             if alert_manager and alert_manager.is_configured():

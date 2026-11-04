@@ -1448,9 +1448,12 @@ class VisionTracker:
                     }
 
                 now_dt = datetime.now()
+                date_folder = now_dt.strftime("%Y-%m-%d")
+                date_moments_dir = os.path.join(self.moments_dir, date_folder)
+                os.makedirs(date_moments_dir, exist_ok=True)
                 now_str = now_dt.strftime("%Y%m%d_%H%M%S")
                 fn = f"moment_{now_str}.jpg"
-                m_path = os.path.join(self.moments_dir, fn)
+                m_path = os.path.join(date_moments_dir, fn)
                 cv2.imwrite(m_path, frame_to_save)
 
                 # Đồng bộ lưu trữ Google Drive theo cấu trúc Năm > Tháng > Ngày > Giờ-Phút-Giây.jpg
