@@ -51,6 +51,8 @@ class VisionTracker:
         self.sleep_tracker = sleep_tracker
         self.gemini_verifier = gemini_verifier
         self.gemini_suppressed_until = 0.0
+        self.baby_out_of_crib_confirmed = False
+        self.baby_return_in_crib_frames = 0
         self.pending_alert_verify = False
         self.pending_moment_eval = False
         
@@ -122,8 +124,8 @@ class VisionTracker:
         self.last_mosaic_eval_time = 0.0
         
         # Breathing metrics (Đo quang học nhịp thở thật từ bụng & lồng ngực với Butterworth DSP)
-        self.breathing_bpm = 42.0
-        self.breathing_status = "Đang đo..."
+        self.breathing_bpm = 0.0
+        self.breathing_status = "Đang tích lũy mẫu..."
         self.chest_history = []
         self.sleep_breathing_samples = deque(maxlen=300)
         self.last_motion_time = time.time()
@@ -214,7 +216,7 @@ class VisionTracker:
         self.tracking_persistence_count = 0
         self.last_tracked_pose = "Đang ngủ ngoan"
         self.last_tracked_status = "Đang ngủ ngoan"
-        self.last_tracked_bpm = 42.0
+        self.last_tracked_bpm = 0.0
         
         # Tầng 1: Debounce thời gian theo dõi thay đổi tư thế ngủ (Bé phải giữ tư thế mới >= 10 giây mới gửi Gemini)
         self.last_confirmed_pose = "Đang quét..."
@@ -224,7 +226,60 @@ class VisionTracker:
         self.pose_changed_and_stabilized = False
 
         self.prone_frame_count = 0
+        self.head_orientation = "center"
+        self.head_orientation_vi = "Chính giữa"
+        self.last_head_track_time = time.time()
+        self.tummy_time_active = False
+        self.adult_last_seen_time = 0.0
+        self.periodic_breathing_count = 0
+        self.tachypnea_sustained_seconds = 0.0
+        self.last_tachypnea_check_time = time.time()
         self.worker_thread = None
+
+    def _detect_head_orientation(self, kpts_xy=None, kpts_conf=None, baby_face_info=None) -> str:
+        """
+        Xác định hướng quay đầu của bé ('left', 'right', 'center') từ tọa độ 2 mắt, mũi, 2 tai (YOLO Pose hoặc YuNet):
+        Phục vụ Tracking Cân bằng Hướng quay đầu chống Bẹp đầu lệch (Plagiocephaly Prevention - Chuẩn AAP).
+        """
+        # 1. Nếu có landmarks 5 điểm từ YuNet Face Detector (re, le, nose, rm, lm)
+        if baby_face_info and isinstance(baby_face_info, dict) and baby_face_info.get("landmarks") is not None:
+            try:
+                lms = baby_face_info["landmarks"]
+                if len(lms) >= 3:
+                    re = np.array(lms[0], dtype=np.float32)
+                    le = np.array(lms[1], dtype=np.float32)
+                    nose = np.array(lms[2], dtype=np.float32)
+                    d_re = float(np.linalg.norm(nose - re))
+                    d_le = float(np.linalg.norm(nose - le))
+                    total_d = max(1e-4, d_re + d_le)
+                    ratio = (d_le - d_re) / total_d
+                    if ratio > 0.22:
+                        return "right"
+                    elif ratio < -0.22:
+                        return "left"
+                    return "center"
+            except Exception:
+                pass
+
+        # 2. Sử dụng COCO 17 keypoints (0: nose, 1: l_eye, 2: r_eye, 3: l_ear, 4: r_ear)
+        if kpts_xy is not None and kpts_conf is not None and len(kpts_conf) >= 5:
+            l_score = max(float(kpts_conf[1]), float(kpts_conf[3]))
+            r_score = max(float(kpts_conf[2]), float(kpts_conf[4]))
+            if l_score > 0.35 and r_score < 0.20:
+                return "right"
+            if r_score > 0.35 and l_score < 0.20:
+                return "left"
+            if float(kpts_conf[0]) > 0.30 and float(kpts_conf[1]) > 0.25 and float(kpts_conf[2]) > 0.25:
+                nose_pt = kpts_xy[0]
+                d_le = float(np.linalg.norm(nose_pt - kpts_xy[1]))
+                d_re = float(np.linalg.norm(nose_pt - kpts_xy[2]))
+                tot = max(1e-4, d_le + d_re)
+                asym = (d_le - d_re) / tot
+                if asym > 0.22:
+                    return "right"
+                elif asym < -0.22:
+                    return "left"
+        return "center"
 
     def _determine_pose(self, kpts_xy, confs):
         """
@@ -367,7 +422,7 @@ class VisionTracker:
         
         diff = np.max(np.abs(self.smoothed_crib_polygon - raw_pts))
         if diff > 0.8:
-            self.smoothed_crib_polygon += 0.22 * (raw_pts - self.smoothed_crib_polygon)
+            self.smoothed_crib_polygon += 0.65 * (raw_pts - self.smoothed_crib_polygon)
         else:
             self.smoothed_crib_polygon = raw_pts.copy()
         return self.smoothed_crib_polygon.astype(np.int32)
@@ -387,13 +442,13 @@ class VisionTracker:
         
         diffs = np.linalg.norm(curr_xy - self.smoothed_kpts, axis=1, keepdims=True)
         # Deadband & Adaptive EMA:
-        # Bé nằm yên (diff < 3px): alpha = 0.85 (làm mượt cực đại, đứng yên 100%)
-        # Bé cựa nhẹ (3px <= diff < 12px): alpha = 0.65
-        # Bé cựa mạnh (diff >= 12px): alpha = 0.35 (bám tức thì)
-        alpha = np.where(diffs < 3.0, 0.85, np.where(diffs < 12.0, 0.65, 0.35))
+        # Bé nằm yên (diff < 3px): alpha = 0.70
+        # Bé cựa nhẹ (3px <= diff < 12px): alpha = 0.35
+        # Bé cựa mạnh (diff >= 12px): alpha = 0.15 (bám tức thì)
+        alpha = np.where(diffs < 3.0, 0.70, np.where(diffs < 12.0, 0.35, 0.15))
         self.smoothed_kpts = alpha * self.smoothed_kpts + (1.0 - alpha) * curr_xy
         if self.smoothed_kpts_conf is not None:
-            self.smoothed_kpts_conf = 0.75 * self.smoothed_kpts_conf + 0.25 * curr_conf
+            self.smoothed_kpts_conf = 0.55 * self.smoothed_kpts_conf + 0.45 * curr_conf
         return self.smoothed_kpts, self.smoothed_kpts_conf
 
     def _smooth_box(self, box_xyxy):
@@ -406,10 +461,8 @@ class VisionTracker:
             return self.smoothed_baby_box.astype(int)
         
         diff = np.max(np.abs(self.smoothed_baby_box - curr))
-        # Nếu rung lắc nhẹ < 6px: alpha = 0.85 (khung đứng êm như chụp ảnh tĩnh)
-        # Nếu bé chuyển động < 25px: alpha = 0.60
-        # Nếu chuyển động lớn: alpha = 0.35
-        alpha = 0.85 if diff < 6.0 else (0.60 if diff < 25.0 else 0.35)
+        # Bám sát bé ngay lập tức (nhanh gấp 3 lần trước đây)
+        alpha = 0.65 if diff < 5.0 else (0.30 if diff < 20.0 else 0.10)
         self.smoothed_baby_box = alpha * self.smoothed_baby_box + (1.0 - alpha) * curr
         return self.smoothed_baby_box.astype(int)
 
@@ -705,12 +758,23 @@ class VisionTracker:
             fcy = fy + fh / 2.0
 
             # Kiểm tra tâm mặt với đa giác Safe Zone bằng cv2.pointPolygonTest
-            in_crib = self._is_point_in_safe_zone(fcx, fcy, w, h, margin_px=40.0)
+            in_crib = self._is_point_in_safe_zone(fcx, fcy, w, h, margin_px=25.0)
 
-            # Lọc bỏ mặt giả từ thú bông/đồ chơi
+            # Lọc bỏ mặt giả từ thú bông/đồ chơi/nếp gấp chăn gối
             skin_ratio = self._check_skin_in_roi(frame, fx, fy, fx + fw, fy + fh)
-            if skin_ratio < 0.030:
+            if skin_ratio < 0.055:
                 continue
+
+            # Kiểm tra độ tin cậy theo góc xoay (góc xoay 90° cần ngưỡng cao hơn để không bắt nhầm nếp chăn/gối nằm ngang)
+            min_face_conf = 0.65 if orient == "0" else 0.72
+            if conf < min_face_conf:
+                continue
+
+            # Kiểm tra hình học 5 điểm mốc khuôn mặt (khoảng cách 2 mắt phải hợp lý so với chiều rộng mặt)
+            if landmarks is not None and len(landmarks) >= 5:
+                eye_dist = float(np.linalg.norm(landmarks[0] - landmarks[1]))
+                if eye_dist < 0.14 * max(fw, fh) or eye_dist > 0.70 * max(fw, fh):
+                    continue
 
             # Tính tỷ lệ tóc / chân mày tối màu bên trong khung đầu để phân biệt Đầu thật với Bàn chân/Bàn tay bé
             head_crop = frame[fy:fy + fh, fx:fx + fw]
@@ -724,11 +788,12 @@ class VisionTracker:
             # Phân biệt người lớn vs em bé:
             # Người lớn có kích thước khuôn mặt vượt trội (chiều ngang > 18% hoặc chiều dọc > 25% khung hình)
             is_large_face = (fw > 0.18 * w) or (fh > 0.25 * h)
-            if is_large_face:
-                adult_faces.append({"bbox": np.array([fx, fy, fw, fh]), "conf": conf, "landmarks": landmarks})
+            if is_large_face or not in_crib:
+                if is_large_face:
+                    adult_faces.append({"bbox": np.array([fx, fy, fw, fh]), "conf": conf, "landmarks": landmarks})
             else:
-                # Khuôn mặt em bé sơ sinh: Ưu tiên mặt trong nôi nhưng vẫn giữ bắt nét nếu bé nằm sát mép nôi
-                crib_bonus = 0.35 if in_crib else 0.0
+                # Khuôn mặt em bé sơ sinh BẮT BUỘC phải nằm trong vùng Nôi (Safe Zone)
+                crib_bonus = 0.35
                 baby_faces.append({
                     "bbox": np.array([fx, fy, fw, fh]),
                     "conf": conf,
@@ -736,7 +801,7 @@ class VisionTracker:
                     "landmarks": landmarks,
                     "skin_ratio": skin_ratio,
                     "orient": orient,
-                    "in_crib": in_crib
+                    "in_crib": True
                 })
 
         best_baby_face = None
@@ -890,29 +955,43 @@ class VisionTracker:
 
             person_info = self._classify_person(xyxy, kpts, frame_h, frame_w)
             face_conf = float(np.mean(kpts[:3, 2]))
+            head_kpts = int(np.sum(kpts[:5, 2] > 0.25))  # Mũi, 2 Mắt, 2 Tai (bắt được cả khi bé quay mặt sang ngang/sau)
+            shoulder_kpts = int(np.sum(kpts[5:7, 2] > 0.25))
             torso_conf = float(np.mean(kpts[5:7, 2]))
+            hip_limb_kpts = int(np.sum(kpts[7:17, 2] > 0.25))
             valid_kpts = int(np.sum(kpts[:, 2] > 0.25))
 
-            is_real_human = (face_conf >= 0.15 or torso_conf >= 0.18) and valid_kpts >= 3
+            is_real_human = (face_conf >= 0.20 or torso_conf >= 0.24) and valid_kpts >= 4
             if not is_real_human:
                 continue
 
             human_score = conf + (face_conf * 1.5) + (torso_conf * 1.2)
 
-            # Tiêu chuẩn nghiêm ngặt của EM BÉ (Baby Candidate):
-            # Bé sơ sinh trong nôi PHẢI có khuôn mặt (face_conf >= 0.15) HOẶC đầy đủ 2 vai (torso_conf >= 0.20 & shoulder_w >= 28px).
-            # Nếu không có mặt và không có vai rõ rệt -> Đây là tay/chân lẻ loi của người lớn hoặc đồ vật!
+            # Tiêu chuẩn giải phẫu Kép (Mặt + Khung Xương) của EM BÉ trong nôi:
+            # 1. Trường hợp thấy mặt bé: face_conf >= 0.22 kèm ít nhất 1 khớp vai/tay chân (valid_kpts >= 4)
+            # 2. Trường hợp bé quay mặt đi / nằm nghiêng / nằm sấp: BẮT BUỘC phải bắt được Khung Xương Thân Mình
+            #    (đủ 2 vai shoulder_kpts == 2 với chiều rộng vai sơ sinh 24px..118px, torso_conf >= 0.26,
+            #     kèm ít nhất 1 điểm đầu/tai HOẶC >= 2 điểm hông/tay chân, tổng valid_kpts >= 4).
+            # Nhờ vậy: Bé quay mặt đi vẫn bắt chuẩn khung xương, nhưng gối ôm / chăn dồn cục (không có cấu trúc vai-đầu-thân) bị loại 100%!
             sh_w = person_info.get("shoulder_w", 0.0)
-            has_baby_anatomy = (face_conf >= 0.15) or (torso_conf >= 0.20 and sh_w >= 28.0)
-            is_border_touch = person_info.get("touches_border", False) and (face_conf < 0.20)
+            has_visible_face_pose = (face_conf >= 0.22 and (shoulder_kpts >= 1 or hip_limb_kpts >= 1) and valid_kpts >= 4)
+            has_turned_head_skeleton = (
+                shoulder_kpts == 2
+                and (24.0 <= sh_w <= 118.0)
+                and torso_conf >= 0.26
+                and (head_kpts >= 1 or hip_limb_kpts >= 2)
+                and valid_kpts >= 4
+            )
+            has_baby_anatomy = has_visible_face_pose or has_turned_head_skeleton
+            is_border_touch = person_info.get("touches_border", False) and (face_conf < 0.25)
 
-            if person_info["is_adult"] or is_border_touch or (not has_baby_anatomy):
-                adult_candidates.append((idx, human_score, xyxy.astype(int), person_info))
+            if person_info["is_adult"] or is_border_touch or (not has_baby_anatomy) or (not person_info["in_crib_zone"]):
+                if person_info["is_adult"] or is_border_touch:
+                    adult_candidates.append((idx, human_score, xyxy.astype(int), person_info))
             else:
-                # Kích thước và giải phẫu chuẩn của em bé sơ sinh:
-                # Thưởng điểm ưu tiên cho bé trong nôi, nhưng vẫn kiên quyết duy trì theo dõi nếu bé cựa mình ra sát mép
-                crib_bonus = 2.0 if person_info["in_crib_zone"] else 0.0
-                baby_candidates.append((idx, human_score + crib_bonus, xyxy.astype(int), person_info, not person_info["in_crib_zone"]))
+                # Chỉ nhận ứng viên em bé thực sự nằm bên trong vùng nôi (in_crib_zone == True)
+                crib_bonus = 2.0
+                baby_candidates.append((idx, human_score + crib_bonus, xyxy.astype(int), person_info, False))
 
         if baby_candidates:
             baby_candidates.sort(key=lambda x: x[1], reverse=True)
@@ -1026,6 +1105,12 @@ class VisionTracker:
             self.breathing_status = "Đã tắt"
             return False
 
+        if (not self.baby_detected) or getattr(self, "baby_out_of_crib_confirmed", False) or (now_t < getattr(self, "gemini_empty_crib_until", 0.0)):
+            self.breathing_bpm = 0.0
+            self.breathing_status = "Ngoài giường"
+            self.chest_history = []
+            return False
+
         if rx1 is None or rx2 is None or (rx2 - rx1) < 20 or (ry2 - ry1) < 20:
             self.breathing_bpm = 0.0
             self.breathing_status = "Ngoài giường"
@@ -1066,8 +1151,10 @@ class VisionTracker:
                 sig = vals - np.mean(vals)
                 raw_std = float(np.std(sig))
 
-                # Nếu biên độ biến thiên quang học quá nhỏ (nhiễu tĩnh trên gối/nệm) -> Không có nhịp thở!
-                if raw_std < 0.035 or fps_est < 4.0:
+                # Nếu biên độ biến thiên quang học quá nhỏ (nhiễu cảm biến ISO trên gối/nệm tĩnh) -> Không có nhịp thở!
+                if raw_std < 0.095 or fps_est < 4.0:
+                    if (now_t - getattr(self, "last_breath_peak_time", 0.0)) > 6.0:
+                        self.breathing_bpm = 0.0
                     self.breathing_status = "Đang phân tích..."
                     return False
 
@@ -1082,7 +1169,9 @@ class VisionTracker:
                     filtered_sig = sig
 
                 filt_std = float(np.std(filtered_sig))
-                if filt_std < 0.020:
+                if filt_std < 0.045:
+                    if (now_t - getattr(self, "last_breath_peak_time", 0.0)) > 6.0:
+                        self.breathing_bpm = 0.0
                     self.breathing_status = "Đang phân tích..."
                     return False
 
@@ -1101,6 +1190,7 @@ class VisionTracker:
                     peak_val = float(search_region[best_offset])
 
                     if peak_val >= 0.22:
+                        pause_before_resume = now_t - getattr(self, "last_breath_peak_time", now_t)
                         best_lag = min_lag + best_offset
                         period_s = best_lag / fps_est
                         instant_bpm = 60.0 / period_s
@@ -1109,13 +1199,42 @@ class VisionTracker:
                             self.breathing_bpm = round(instant_bpm, 1)
                         else:
                             self.breathing_bpm = round(0.75 * self.breathing_bpm + 0.25 * instant_bpm, 1)
-                        self.breathing_status = "Thở đều (Bình thường)"
+
+                        # Phân biệt "Thở chu kỳ sơ sinh (Periodic Breathing: nghỉ ngắn 5-10s rồi tự thở đều lại)" vs Ngưng thở (Apnea >= 20s)
+                        if 5.0 <= pause_before_resume <= 10.5:
+                            self.periodic_breathing_count = getattr(self, "periodic_breathing_count", 0) + 1
+                            self.breathing_status = "Thở chu kỳ sơ sinh lành tính (Đã thở đều lại)"
+                            if self.sleep_tracker is not None and hasattr(self.sleep_tracker, "record_periodic_breathing"):
+                                self.sleep_tracker.record_periodic_breathing(pause_before_resume)
+                        else:
+                            self.breathing_status = "Thở đều (Bình thường)"
+
+                        # Kiểm tra thở nhanh kéo dài (Tachypnea > 60 BPM chuẩn WHO)
+                        dt_tach = max(0.0, min(1.0, now_t - getattr(self, "last_tachypnea_check_time", now_t)))
+                        self.last_tachypnea_check_time = now_t
+                        if self.breathing_bpm > 60.0:
+                            self.tachypnea_sustained_seconds = getattr(self, "tachypnea_sustained_seconds", 0.0) + dt_tach
+                            if self.tachypnea_sustained_seconds >= 30.0:
+                                self._trigger_high_risk_double_check(
+                                    frame,
+                                    "apnea",
+                                    f"Nhịp thở nhanh kéo dài ({self.breathing_bpm:.1f} BPM > 60 BPM chuẩn WHO)",
+                                    dispatch_callback=self.on_apnea_callback
+                                )
+                                self.tachypnea_sustained_seconds = 0.0
+                        else:
+                            self.tachypnea_sustained_seconds = max(0.0, getattr(self, "tachypnea_sustained_seconds", 0.0) - dt_tach)
+
                         self.last_breath_peak_time = now_t
                         if 25.0 <= self.breathing_bpm <= 68.0:
                             self.sleep_breathing_samples.append(self.breathing_bpm)
                         return True
                     else:
-                        if (now_t - getattr(self, "last_breath_peak_time", 0.0)) > 5.0:
+                        still_gap = now_t - getattr(self, "last_breath_peak_time", 0.0)
+                        if 5.0 <= still_gap <= 10.5:
+                            self.breathing_bpm = 0.0
+                            self.breathing_status = "Thở chu kỳ sơ sinh (Nghỉ ngắn 5-10s sinh lý)"
+                        elif still_gap > 10.5:
                             self.breathing_bpm = 0.0
                             self.breathing_status = "Thở êm dịu (Dưới chăn)"
                 else:
@@ -1127,12 +1246,12 @@ class VisionTracker:
                 if (now_t - getattr(self, "last_breath_peak_time", 0.0)) > 5.0:
                     self.breathing_bpm = 0.0
 
-            # Cảnh báo ngưng thở khi bé nằm yên > 25s mà không có bất kỳ chuyển động thở nào
+            # Cảnh báo Ngưng thở bệnh lý (Apnea) chuẩn AAP/WHO: Chỉ báo động đỏ khi ngưng thở kéo dài >= 20s và lồng ngực phẳng hoàn toàn
             still_time = now_t - getattr(self, "last_breath_peak_time", now_t)
-            if still_time > 25.0 and len(self.chest_history) >= 35:
+            if still_time >= 20.0 and len(self.chest_history) >= 35:
                 vals = [v for t, v in self.chest_history]
                 if float(np.std(vals)) < 0.015:
-                    self._trigger_high_risk_double_check(frame, "apnea", "Không phát hiện vi cử động lồng ngực trong 25 giây", dispatch_callback=self.on_apnea_callback)
+                    self._trigger_high_risk_double_check(frame, "apnea", "Không phát hiện vi cử động lồng ngực kéo dài >= 20 giây (Nguy cơ Ngưng thở Apnea)", dispatch_callback=self.on_apnea_callback)
                     self.breathing_status = "Cảnh báo ngưng thở"
         else:
             self.last_motion_time = now_t
@@ -1142,17 +1261,33 @@ class VisionTracker:
 
         return (now_t - getattr(self, "last_breath_peak_time", 0.0)) < 4.0 and self.breathing_bpm > 0
 
-    def get_sleep_breathing_bpm(self) -> float:
-        """Trả về nhịp thở trung bình khi ngủ (lọc sạch lúc thức/cử động/ngoài nôi)."""
-        samples = getattr(self, "sleep_breathing_samples", None)
-        if samples and len(samples) >= 3:
+    def get_sleep_breathing_stats(self) -> dict:
+        """Trả về thống kê nhịp thở thực tế khi ngủ gồm median_bpm, min_bpm, max_bpm và sample_count."""
+        samples = [float(x) for x in getattr(self, "sleep_breathing_samples", []) if 25.0 <= float(x) <= 68.0]
+        if len(samples) >= 3:
             import statistics
-            med = float(statistics.median(samples))
-            if 25.0 <= med <= 65.0:
-                return round(med, 1)
-        if 25.0 <= self.breathing_bpm <= 65.0:
-            return round(self.breathing_bpm, 1)
-        return 38.5  # Chuẩn trung vị lâm sàng nhi khoa cho trẻ sơ sinh 1 tháng tuổi (30-60 BPM)
+            med = round(float(statistics.median(samples)), 1)
+            return {
+                "median_bpm": med,
+                "min_bpm": round(min(samples), 1),
+                "max_bpm": round(max(samples), 1),
+                "sample_count": len(samples),
+                "has_samples": True,
+                "display_vi": f"{med:.1f} BPM (Min {min(samples):.1f} – Max {max(samples):.1f} BPM • Chuẩn WHO: 30 – 60 BPM)"
+            }
+        return {
+            "median_bpm": 0.0,
+            "min_bpm": 0.0,
+            "max_bpm": 0.0,
+            "sample_count": len(samples),
+            "has_samples": False,
+            "display_vi": "Đang tích lũy mẫu đo quang học (Chuẩn tham chiếu WHO: 30 – 60 BPM)"
+        }
+
+    def get_sleep_breathing_bpm(self) -> float:
+        """Trả về nhịp thở trung vị thực tế khi ngủ (lọc sạch lúc thức/cử động/ngoài nôi). Chưa có mẫu trả về 0.0."""
+        stats = self.get_sleep_breathing_stats()
+        return float(stats["median_bpm"])
 
     def _safe_dispatch_callback(self, cb, *args, **kwargs):
         """Gọi callback an toàn với bọc ngoại lệ, ngăn chặn việc callback làm gián đoạn luồng video."""
@@ -1225,6 +1360,19 @@ class VisionTracker:
                     airway_crop=airway_crop
                 )
 
+                if not res.get("baby_present", True):
+                    diag = res.get("diagnosis_vi", "Không có em bé trong nôi")
+                    print(f"[VisionTracker] 🚼 Gemini xác nhận KHÔNG CÓ BÉ TRONG NÔI khi kiểm tra ({alert_type}): {diag}")
+                    self._apply_empty_crib_state(
+                        status_text="Bé không có trong nôi (AI Đã Xác Thực)",
+                        pose_text="Ngoài giường",
+                        hold_seconds=20.0
+                    )
+                    return
+
+                if self.sleep_tracker is not None and "is_baby_awake" in res:
+                    self.sleep_tracker.sync_gemini_wake_state(bool(res.get("is_baby_awake", False)))
+
                 if res.get("is_dangerous", False):
                     diag = res.get("diagnosis_vi", local_reason)
                     if alert_type == "covered_face":
@@ -1244,9 +1392,10 @@ class VisionTracker:
                     if dispatch_callback:
                         self._safe_dispatch_callback(dispatch_callback)
                 else:
-                    # Bác bỏ báo động giả
+                    # Bác bỏ báo động giả: Chặn cảnh báo cục bộ liên tục bằng gemini_suppressed_until
                     diag = res.get("diagnosis_vi", "An toàn")
                     print(f"[VisionTracker] ✅ Gemini đã dập báo động giả ({alert_type}): {diag}")
+                    self.gemini_suppressed_until = time.time() + 35.0  # Chặn báo động cục bộ lặp lại trong 35 giây
                     if alert_type == "covered_face":
                         self.covered_face_active = False
                         self.covered_face_frame_count = 0
@@ -1418,34 +1567,37 @@ class VisionTracker:
         def _worker():
             try:
                 frame_to_save = portrait_crop
-                use_gemini = (
-                    self.gemini_verifier is not None and 
-                    self.gemini_verifier.filter_moments_enabled and 
-                    self.gemini_verifier.is_ready()
-                )
+                filter_on = (self.gemini_verifier is not None and self.gemini_verifier.filter_moments_enabled)
                 
-                if use_gemini:
+                if filter_on:
+                    if not self.gemini_verifier.is_ready():
+                        print("[VisionTracker] 🚫 Tạm dừng lưu ảnh tự động vì bộ lọc AI đang bật nhưng Gemini chưa sẵn sàng (chống lưu ảnh Chụp Cục Bộ tào lao).")
+                        return
                     res = self.gemini_verifier.evaluate_cute_moment(frame_to_save, is_manual=False)
                     score = int(res.get("aesthetic_score", 0))
-                    is_approved = bool(res.get("approved", False) and res.get("privacy_safe", False) and score >= 7)
+                    is_approved = bool(
+                        res.get("checked_by_gemini", False)
+                        and res.get("approved", False)
+                        and res.get("privacy_safe", False)
+                        and score >= 7
+                    )
                     if not is_approved:
                         print(f"[VisionTracker] 🚫 Bỏ qua ảnh tự động: Gemini từ chối ({res.get('reason_vi')}, điểm {score}/10). Hủy bỏ để giữ album chất lượng cao.")
-                        # Thử lại sau 3 phút thay vì phải chờ cả 12 phút
                         self.last_moment_time = time.time() - (self.moment_capture_interval - 180.0)
                         return
                     
-                    # Không cắt lẹm thứ cấp vào mặt bé để giữ độ phân giải 1080p sắc nét và góc nhìn tự nhiên
-                    pass
+                    # Nếu Gemini đề xuất clean_crop_box hợp lệ thì áp dụng apply_smart_crop
+                    if res.get("clean_crop_box"):
+                        try:
+                            from gemini_verifier import GeminiHybridVerifier
+                            cropped_frame, was_cropped = GeminiHybridVerifier.apply_smart_crop(frame_to_save, res)
+                            if was_cropped and cropped_frame is not None and cropped_frame.size > 0:
+                                frame_to_save = cropped_frame
+                                res["auto_cropped"] = True
+                        except Exception as ce:
+                            print(f"[VisionTracker] Lỗi apply_smart_crop: {ce}")
                 else:
-                    caption = "Bé có nụ cười / biểu cảm đáng yêu" if has_special_expression else "Khoảnh khắc em bé ngủ ngoan"
-                    res = {
-                        "checked_by_gemini": False,
-                        "approved": True,
-                        "privacy_safe": True,
-                        "caption_vi": caption,
-                        "aesthetic_score": 8,
-                        "has_other_person": False
-                    }
+                    return
 
                 now_dt = datetime.now()
                 date_folder = now_dt.strftime("%Y-%m-%d")
@@ -1579,32 +1731,11 @@ class VisionTracker:
                                 self.safe_zone_polygon = copy.deepcopy(self.last_verified_safe_zone)
                             print(f"[VisionTracker] 🔄 Đã tự động Rollback về Tọa Độ Vàng gần nhất: {self.last_verified_safe_zone}")
                     else:
-                        # LỚP BẢO VỆ 2: CƠ CHẾ 2 BƯỚC XÁC THỰC (TWO-PHASE COMMIT)
-                        if need_init_crib:
-                            # Khởi động lần đầu chưa có nôi: Chấp nhận ngay để thiết lập ban đầu
-                            self._commit_safe_zone(clean_pts)
-                            print(f"[VisionTracker] ✨ [Khởi tạo ban đầu] Đã thiết lập Khung Nôi 3D: {clean_pts}")
-                        elif self.pending_crib_candidate is not None:
-                            # BƯỚC 2: Đã có đề xuất ở lần gọi trước, tiến hành đối chiếu xác thực chéo giữa 2 lần AI liên tiếp!
-                            diff = max(
-                                abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
-                                for p1, p2 in zip(clean_pts, self.pending_crib_candidate)
-                            )
-                            if diff < 0.18:
-                                # Cả 2 lần gọi AI liên tiếp đồng thuận trí về vị trí nôi mới! -> CHỐT HẠ & LƯU CẤU HÌNH
-                                self._commit_safe_zone(clean_pts)
-                                self.pending_crib_candidate = None
-                                self.pending_crib_hits = 0
-                                print(f"[VisionTracker] 🎯 [Bước 2/2: Xác thực & Chốt hạ] Khung nôi mới đã được xác thực 2 lần AI liên tiếp đồng thuận (độ lệch {round(diff, 3)} < 0.18)! Đã lưu an toàn.")
-                            else:
-                                # Hai lần gọi AI đưa tọa độ chênh lệch nhau -> AI đang dao động, cập nhật ứng viên và chờ thêm
-                                print(f"[VisionTracker] ⏳ [Đối chiếu] 2 lần gọi AI trả về tọa độ còn chênh lệch ({round(diff, 3)} >= 0.18). Giữ nguyên khung cũ và theo dõi tiếp.")
-                                self.pending_crib_candidate = clean_pts
-                        else:
-                            # BƯỚC 1: Ghi nhận đề xuất ứng viên lần đầu, chưa ghi đè config ngay!
-                            self.pending_crib_candidate = clean_pts
-                            self.pending_crib_hits = 1
-                            print(f"[VisionTracker] 🔍 [Bước 1/2: Đề xuất] Gemini đề xuất vị trí nôi mới: {clean_pts}. Đang giữ ở hàng đợi xác thực chéo lần kế tiếp...")
+                        # ÁP DỤNG NGAY LẬP TỨC KHI HỢP LỆ HÌNH HỌC (FAST AUTO-CALIBRATE)
+                        self._commit_safe_zone(clean_pts)
+                        self.pending_crib_candidate = None
+                        self.pending_crib_hits = 0
+                        print(f"[VisionTracker] 🎯 [Tự động Căn Nôi Tức Thì] Đã cập nhật Khung Nôi ôm trọn bé: {clean_pts}")
 
                 elif isinstance(tsz, list) and len(tsz) == 4:
                     clean_sz = []
@@ -1630,18 +1761,11 @@ class VisionTracker:
                     self.initial_crib_calibrated = True
 
                 if not res.get("baby_present", True):
-                    with self.lock:
-                        self.baby_detected = False
-                        self.adult_holding_baby = False
-                        self.baby_stable_detected = False
-                        self.last_baby_box = None
-                        self.gemini_anchor_box = None
-                        self.gemini_anchor_until = 0.0
-                        self.is_near_edge = False
-                        self.danger_zone_frame_count = 0
-                        if self.sleep_pose not in ("Người lớn trong phòng", "Ngoài giường"):
-                            self.sleep_pose = "Ngoài giường"
-                            self.baby_status = "Không có em bé trong nôi"
+                    self._apply_empty_crib_state(
+                        status_text="Không có em bé trong nôi (AI Đã Xác Thực)",
+                        pose_text="Ngoài giường",
+                        hold_seconds=20.0
+                    )
                     return
 
                 if self.sleep_tracker is not None and "is_baby_awake" in res:
@@ -1652,12 +1776,10 @@ class VisionTracker:
                 tbox = res.get("true_baby_box")
                 hdir = res.get("head_direction", "up")
 
-                # 2. Nếu AI Local đang đóng khung lệch (hoặc chưa bắt được bé), hiệu chỉnh ngay theo tọa độ của Gemini!
-                if (not acc or score < 78 or not self.baby_detected) and isinstance(tbox, list) and len(tbox) == 4:
+                # 2. Chỉ hiệu chỉnh tọa độ khung khi Local AI cũng đang phát hiện mặt hoặc khung xương bé trong nôi
+                # (Tuyệt đối không tự tạo khung bóng ma 55s trên nệm trống khi Local AI không thấy mặt/khung xương!)
+                if (not acc or score < 78) and self.baby_detected and isinstance(tbox, list) and len(tbox) == 4:
                     xmin, ymin, xmax, ymax = [float(v) for v in tbox]
-                    # BẢO VỆ CHỐNG HALLUCINATION:
-                    # Nếu Gemini đề xuất khung chữ nhật dính sát mép trên màn hình (ymin < 0.02 và ymax < 0.22) hoặc mép dưới (ymax > 0.98),
-                    # đây là người lớn thò tay/chân vào, tuyệt đối không gán làm anchor em bé!
                     is_border_strip = (ymin < 0.02 and (ymax - ymin) < 0.25) or (ymax > 0.98 and (ymax - ymin) < 0.25)
                     if not is_border_strip:
                         gx1 = int(np.clip(min(xmin, xmax) * w, 0, w - 20))
@@ -1681,7 +1803,7 @@ class VisionTracker:
                             self.gemini_anchor_box = g_box
                             self.gemini_anchor_u = new_u
                             self.gemini_anchor_pose = res.get("sleep_pose_vi", "Đang ngủ ngoan")
-                            self.gemini_anchor_until = time.time() + 55.0
+                            self.gemini_anchor_until = time.time() + 4.0
                         print(f"[VisionTracker] 🔧 Đã hiệu chỉnh nóng khung Tracking theo Gemini: box={g_box.tolist()}, head_dir={hdir}")
             except Exception as e:
                 print(f"[VisionTracker] Lỗi _audit_worker: {e}")
@@ -1689,6 +1811,46 @@ class VisionTracker:
                 self.pending_tracking_audit = False
 
         threading.Thread(target=_audit_worker, daemon=True).start()
+
+    def _apply_empty_crib_state(self, status_text: str = "Bé không có trong nôi", pose_text: str = "Ngoài giường", hold_seconds: float = 0.0):
+        """
+        Đưa toàn bộ biến trạng thái Tracking, Nhịp thở và Giấc ngủ về trạng thái 'Ngoài giường' (Nôi trống)
+        để đảm bảo không bao giờ đo nhịp thở ảo hay báo 'Đang ngủ / Đang thức' khi bé đã ra khỏi nôi.
+        """
+        with self.lock:
+            self.baby_detected = False
+            self.adult_holding_baby = False
+            self.baby_stable_detected = False
+            self.baby_stable_frames = 0
+            self.covered_face_active = False
+            self.covered_face_frame_count = 0
+            self.is_near_edge = False
+            self.danger_zone_frame_count = 0
+            self.prone_frame_count = 0
+            self.sleep_pose = pose_text
+            self.baby_status = status_text
+            self.motion_score = 0.0
+            self.smoothed_motion = 0.0
+            self.breathing_bpm = 0.0
+            self.breathing_status = "Ngoài giường"
+            self.prev_keypoints = None
+            self.prev_keypoints_conf = None
+            self.last_baby_box = None
+            self.last_face_box = None
+            self.gemini_anchor_box = None
+            self.gemini_anchor_until = 0.0
+            self.tracking_persistence_count = 0
+            self.baby_last_seen_time = 0.0
+            self.chest_history = []
+            self.prev_breathing_roi = None
+            if hold_seconds > 0:
+                self.gemini_empty_crib_until = time.time() + hold_seconds
+
+        if self.sleep_tracker is not None:
+            if hasattr(self.sleep_tracker, "sync_gemini_out_of_crib") and hold_seconds > 0:
+                self.sleep_tracker.sync_gemini_out_of_crib()
+            else:
+                self.sleep_tracker.update_state(False, False)
 
     def _process_frame(self, frame):
         h, w = frame.shape[:2]
@@ -1703,39 +1865,18 @@ class VisionTracker:
         # 0. Kiểm tra trực quan xem nôi/giường có bé hay trống rỗng (Crib Occupancy Check)
         is_occupied = self._check_crib_occupied(frame, h, w)
         if not is_occupied:
-            self.baby_detected = False
-            self.baby_stable_detected = False
-            self.baby_stable_frames = 0
-            self.covered_face_active = False
-            self.covered_face_frame_count = 0
-            self.sleep_pose = "Ngoài giường"
-            self.baby_status = "Bé không có trong nôi"
-            self.motion_score = 0.0
-            self.smoothed_motion = 0.0
-            self.breathing_bpm = 0.0
-            self.breathing_status = "Ngoài giường"
-            self.prev_keypoints = None
-            self.prev_keypoints_conf = None
-            self.last_baby_box = None
-            self.last_face_box = None
-            self.chest_history = []
-            self.prev_breathing_roi = None
-
-            if self.sleep_tracker:
-                self.sleep_tracker.update_state(False, False)
-
+            self._apply_empty_crib_state(status_text="Bé không có trong nôi", pose_text="Ngoài giường")
             if self.danger_zone_enabled:
                 pts = self._get_interpolated_crib_polygon(w, h)
                 cv2.polylines(annotated, [pts], isClosed=True, color=(70, 215, 90), thickness=2, lineType=cv2.LINE_AA)
-
             return annotated
 
         # 1. Quét nhận diện khuôn mặt chuyên dụng bằng YuNet (Face-First Detector)
         baby_face_info, has_adult_face, adult_face_box = self._detect_baby_face(frame)
         self.last_baby_face_info = baby_face_info
 
-        # 2. Run YOLO inference với conf=0.18 chuẩn xác, tối ưu imgsz=480 tăng tốc gấp đôi
-        results = self.model(frame, device=self.device, verbose=False, conf=0.18, imgsz=480)
+        # 2. Run YOLO inference với conf=0.22 chuẩn xác để loại bỏ nhiễu chăn gối, tối ưu imgsz=480 tăng tốc gấp đôi
+        results = self.model(frame, device=self.device, verbose=False, conf=0.22, imgsz=480)
         r = results[0]
 
         best_baby_idx, has_adult, adult_box, is_occluded = self._select_real_baby(r, h, w)
@@ -1744,6 +1885,57 @@ class VisionTracker:
             if adult_box is None and adult_face_box is not None:
                 afx, afy, afw, afh = adult_face_box
                 adult_box = np.array([max(0, afx - afw), max(0, afy - afh), min(w, afx + afw * 2), min(h, afy + afh * 4)])
+
+        # 2.5 KIỂM TRA KHÓA TRẠNG THÁI RỜI NÔI (Do Ba mẹ bấm nút xác nhận HOẶC do Gemini xác thực nôi trống):
+        # Trong thời gian khóa, chỉ khi phát hiện rõ ràng Mặt Bé (conf >= 0.68) HOẶC Khung Xương Bé đầy đủ (valid_kpts >= 5)
+        # nằm trong vùng Nôi liên tục >= 10 khung hình thì mới tự động mở khóa!
+        is_locked_empty = getattr(self, "baby_out_of_crib_confirmed", False) or (now_t < getattr(self, "gemini_empty_crib_until", 0.0))
+        if is_locked_empty:
+            has_strong_baby_return = False
+            if baby_face_info is not None and baby_face_info.get("in_crib", False) and float(baby_face_info.get("conf", 0.0)) >= 0.68:
+                has_strong_baby_return = True
+            elif best_baby_idx is not None:
+                kpt_d = r.keypoints.data[best_baby_idx].cpu().numpy()
+                if int(np.sum(kpt_d[:, 2] > 0.28)) >= 5 and float(np.mean(kpt_d[5:7, 2])) >= 0.30:
+                    has_strong_baby_return = True
+
+            if has_strong_baby_return:
+                self.baby_return_in_crib_frames = getattr(self, "baby_return_in_crib_frames", 0) + 1
+                if self.baby_return_in_crib_frames >= 10:
+                    self.baby_out_of_crib_confirmed = False
+                    self.gemini_empty_crib_until = 0.0
+                    self.baby_return_in_crib_frames = 0
+                    print("[VisionTracker] 👶 Phát hiện Mặt + Khung xương bé đã vào lại trong nôi -> Tự động BẬT LẠI chế độ giám sát!")
+            else:
+                self.baby_return_in_crib_frames = 0
+
+            if getattr(self, "baby_out_of_crib_confirmed", False) or (now_t < getattr(self, "gemini_empty_crib_until", 0.0)):
+                p_txt = "Ngoài giường (Đã xác nhận)" if getattr(self, "baby_out_of_crib_confirmed", False) else "Ngoài giường"
+                s_txt = "Ba mẹ xác nhận bé đã rời nôi • Chờ bé vào lại" if getattr(self, "baby_out_of_crib_confirmed", False) else "Bé không có trong nôi (AI Đã Xác Thực)"
+                self._apply_empty_crib_state(status_text=s_txt, pose_text=p_txt)
+                if self.danger_zone_enabled:
+                    pts = self._get_interpolated_crib_polygon(w, h)
+                    cv2.polylines(annotated, [pts], isClosed=True, color=(70, 215, 90), thickness=2, lineType=cv2.LINE_AA)
+                return annotated
+
+        # BẢO VỆ CHỐNG NHẬN NHẦM MẶT NGƯỜI LỚN NẰM NGOÀI NÔI THÀNH EM BÉ:
+        # Nếu khuôn mặt baby_face_info nằm hoàn toàn ngoài Safe Zone VÀ trùng vào vùng cơ thể người lớn (adult_box),
+        # thì chắc chắn đó là mặt của người lớn đang nằm trên giường cạnh nôi!
+        if baby_face_info is not None:
+            bfx, bfy, bfw, bfh = baby_face_info["bbox"]
+            fcx, fcy = bfx + bfw / 2.0, bfy + bfh / 2.0
+            face_in_safe = self._is_point_in_safe_zone(fcx, fcy, w, h, margin_px=25.0)
+            if not face_in_safe:
+                is_inside_adult = False
+                if adult_box is not None:
+                    ax1, ay1, ax2, ay2 = adult_box
+                    if (ax1 - 40 <= fcx <= ax2 + 40) and (ay1 - 40 <= fcy <= ay2 + 40):
+                        is_inside_adult = True
+                # Ngoài ra nếu không có người bé YOLO trong nôi (best_baby_idx is None) và mặt nằm tít mép trên khung hình (fcy < 0.25 * h) ngoài nôi -> Mặt người lớn
+                if is_inside_adult or (best_baby_idx is None and fcy < 0.25 * h):
+                    baby_face_info = None
+                    self.last_baby_face_info = None
+                    has_adult = True
 
         # Nếu YuNet 360° đã bắt được mặt bé rõ ràng (đặc biệt khi bé nằm ngang 90° hoặc quấn chăn),
         # kiểm tra xem khung YOLO có khớp với đầu bé không; nếu lệch hoặc bé nằm ngang thì ưu tiên Face-First 360°!
@@ -1799,6 +1991,14 @@ class VisionTracker:
 
             # 1. Calculate Pose & Swaddle State
             pose_text, pose_level = self._determine_pose(kpts_xy, kpts_conf)
+            now_head_t = time.time()
+            dt_head = max(0.0, min(1.0, now_head_t - getattr(self, "last_head_track_time", now_head_t)))
+            self.last_head_track_time = now_head_t
+            self.head_orientation = self._detect_head_orientation(kpts_xy=kpts_xy, kpts_conf=kpts_conf, baby_face_info=baby_face_info)
+            self.head_orientation_vi = "Nghiêng Trái" if self.head_orientation == "left" else ("Nghiêng Phải" if self.head_orientation == "right" else "Chính giữa")
+            if self.sleep_tracker is not None and self.sleep_tracker.current_state == "ASLEEP":
+                self.sleep_tracker.update_head_orientation(self.head_orientation, dt_head)
+
             visible_limbs = int(np.sum(kpts_conf[[7, 8, 9, 10, 13, 14, 15, 16]] > 0.25))
             torso_y1 = int(box_xyxy[1] + (box_xyxy[3] - box_xyxy[1]) * 0.32)
             torso_skin = self._check_skin_in_roi(frame, box_xyxy[0], torso_y1, box_xyxy[2], box_xyxy[3])
@@ -1809,23 +2009,42 @@ class VisionTracker:
 
             # Theo dõi thay đổi tư thế ngủ với Debounce 10 giây (Bé phải giữ tư thế mới >= 10s mới kích hoạt Gemini Audit)
             now_t = time.time()
-            if pose_text != getattr(self, "last_confirmed_pose", None):
-                if getattr(self, "pose_candidate", None) != pose_text:
-                    self.pose_candidate = pose_text
-                    self.pose_candidate_start_time = now_t
-                elif (now_t - self.pose_candidate_start_time) >= getattr(self, "pose_debounce_sec", 10.0):
-                    self.last_confirmed_pose = pose_text
-                    self.pose_changed_and_stabilized = True
-            else:
-                self.pose_candidate = None
-                self.pose_candidate_start_time = now_t
+            if has_adult:
+                self.adult_last_seen_time = now_t
+            adult_supervised = has_adult or ((now_t - getattr(self, "adult_last_seen_time", 0.0)) <= 15.0)
+            is_baby_active_or_awake = (
+                self.smoothed_motion >= 2.5
+                or (self.sleep_tracker is not None and self.sleep_tracker.current_state == "AWAKE")
+                or float(np.max(kpts_conf[:5])) >= 0.22
+            )
 
-            if self.prone_alert_enabled and pose_level == "danger":
-                self.prone_frame_count += 1
-                if self.prone_frame_count >= 35: # ~3.0 seconds debounce
-                    self._trigger_high_risk_double_check(frame, "prone", "Bé nằm sấp úp mặt xuống đệm", dispatch_callback=self.on_prone_callback)
+            if pose_level == "danger" and adult_supervised and is_baby_active_or_awake:
+                # Bấm giờ tự động Tummy Time (Tập nằm sấp khi thức có Ba mẹ giám sát - Chuẩn AAP)
+                self.tummy_time_active = True
+                pose_text = "🏋️ Đang tập Tummy Time (Có Ba mẹ giám sát)"
+                self.sleep_pose = pose_text
+                self.prone_frame_count = 0
+                if self.sleep_tracker is not None:
+                    self.sleep_tracker.update_tummy_time(dt_head)
             else:
-                self.prone_frame_count = max(0, self.prone_frame_count - 1)
+                self.tummy_time_active = False
+                if pose_text != getattr(self, "last_confirmed_pose", None):
+                    if getattr(self, "pose_candidate", None) != pose_text:
+                        self.pose_candidate = pose_text
+                        self.pose_candidate_start_time = now_t
+                    elif (now_t - self.pose_candidate_start_time) >= getattr(self, "pose_debounce_sec", 10.0):
+                        self.last_confirmed_pose = pose_text
+                        self.pose_changed_and_stabilized = True
+                else:
+                    self.pose_candidate = None
+                    self.pose_candidate_start_time = now_t
+
+                if self.prone_alert_enabled and pose_level == "danger":
+                    self.prone_frame_count += 1
+                    if self.prone_frame_count >= 35: # ~3.0 seconds debounce (hoặc ngay khi người lớn rời đi > 15s)
+                        self._trigger_high_risk_double_check(frame, "prone", "Bé nằm sấp không có người lớn giám sát (Nguy cơ ngạt thở)", dispatch_callback=self.on_prone_callback)
+                else:
+                    self.prone_frame_count = max(0, self.prone_frame_count - 1)
 
             # 2. Check Covered Face (mặt bị chăn gối khăn che khuất)
             face_confs = kpts_conf[:3]
@@ -1848,7 +2067,7 @@ class VisionTracker:
             if torso_mean >= 0.25 and face_mean < 0.18 and skin_ratio < 0.035 and (time.time() > self.gemini_suppressed_until):
                 face_hidden = True
 
-            if self.covered_face_alert and face_hidden:
+            if self.covered_face_alert and face_hidden and not getattr(self, "baby_out_of_crib_confirmed", False):
                 self.covered_face_frame_count += 1
                 if self.covered_face_frame_count >= 15: # ~1.2s - 1.5s debounce
                     self._trigger_gemini_alert_verify(frame, "covered_face", "Vùng mặt bé bị khuất hoặc có chăn/gối che")
@@ -1863,9 +2082,20 @@ class VisionTracker:
             is_inside_poly = self._is_point_in_safe_zone(bcx, bcy, w, h, margin_px=-10.0)
             self.is_near_edge = not is_inside_poly
 
-            if self.danger_zone_enabled and self.is_near_edge:
+            # Nếu đang ở chế độ "Ba mẹ xác nhận bé rời nôi", khi bé quay lại bên trong nôi >= 10 khung hình -> Tự động kích hoạt lại giám sát!
+            if getattr(self, "baby_out_of_crib_confirmed", False):
+                if is_inside_poly:
+                    self.baby_return_in_crib_frames = getattr(self, "baby_return_in_crib_frames", 0) + 1
+                    if self.baby_return_in_crib_frames >= 10:
+                        self.baby_out_of_crib_confirmed = False
+                        self.baby_return_in_crib_frames = 0
+                        print("[VisionTracker] 👶 Phát hiện bé đã được đặt trở lại nôi -> Tự động BẬT LẠI chế độ giám sát an toàn!")
+                else:
+                    self.baby_return_in_crib_frames = 0
+
+            if self.danger_zone_enabled and self.is_near_edge and not has_adult and not getattr(self, "baby_out_of_crib_confirmed", False):
                 self.danger_zone_frame_count += 1
-                if self.danger_zone_frame_count >= 20: # ~2.0s debounce
+                if self.danger_zone_frame_count >= 12: # ~0.8s debounce nhạy bén
                     self._trigger_high_risk_double_check(frame, "danger_zone", "Bé cựa quậy vượt mép nôi an toàn", dispatch_callback=self.on_danger_zone_callback)
             else:
                 self.danger_zone_frame_count = max(0, self.danger_zone_frame_count - 1)
@@ -2002,12 +2232,20 @@ class VisionTracker:
             self.last_face_box = np.array([fx, fy, fx + fw, fy + fh])
             self.had_visible_face = True
 
+            now_head_t = time.time()
+            dt_head = max(0.0, min(1.0, now_head_t - getattr(self, "last_head_track_time", now_head_t)))
+            self.last_head_track_time = now_head_t
+            self.head_orientation = self._detect_head_orientation(baby_face_info=baby_face_info)
+            self.head_orientation_vi = "Nghiêng Trái" if self.head_orientation == "left" else ("Nghiêng Phải" if self.head_orientation == "right" else "Chính giữa")
+            if self.sleep_tracker is not None and self.sleep_tracker.current_state == "ASLEEP":
+                self.sleep_tracker.update_head_orientation(self.head_orientation, dt_head)
+
             # 2. KIỂM TRA ĐƯỜNG THỞ MŨI - MIỆNG (KHÔNG QUÉT NHẦM GỐI ÔM BÊN CẠNH)
             is_obstructed, foreign_ratio = self._check_body_obstruction(
                 frame, body_box, baby_face_info["bbox"], landmarks=baby_face_info.get("landmarks")
             )
             
-            if is_obstructed and (time.time() > self.gemini_suppressed_until):
+            if is_obstructed and (time.time() > self.gemini_suppressed_until) and not getattr(self, "baby_out_of_crib_confirmed", False):
                 self.covered_face_frame_count += 1
                 if self.covered_face_frame_count >= 15: # ~1.2s - 1.5s debounce
                     self._trigger_gemini_alert_verify(frame, "covered_face", "Phát hiện vật cản che vùng mũi/miệng của bé")
@@ -2031,9 +2269,19 @@ class VisionTracker:
             is_inside_poly = self._is_point_in_safe_zone(fcx, fcy, w, h, margin_px=-5.0)
             self.is_near_edge = not is_inside_poly
 
-            if self.danger_zone_enabled and self.is_near_edge:
+            if getattr(self, "baby_out_of_crib_confirmed", False):
+                if is_inside_poly:
+                    self.baby_return_in_crib_frames = getattr(self, "baby_return_in_crib_frames", 0) + 1
+                    if self.baby_return_in_crib_frames >= 10:
+                        self.baby_out_of_crib_confirmed = False
+                        self.baby_return_in_crib_frames = 0
+                        print("[VisionTracker] 👶 Phát hiện khuôn mặt bé đã vào lại trong nôi -> Tự động BẬT LẠI chế độ giám sát an toàn!")
+                else:
+                    self.baby_return_in_crib_frames = 0
+
+            if self.danger_zone_enabled and self.is_near_edge and not has_adult and not getattr(self, "baby_out_of_crib_confirmed", False):
                 self.danger_zone_frame_count += 1
-                if self.danger_zone_frame_count >= 20: # ~2.0s debounce
+                if self.danger_zone_frame_count >= 12: # ~0.8s debounce nhạy bén
                     self._trigger_high_risk_double_check(frame, "danger_zone", "Bé cựa quậy vượt mép nôi an toàn", dispatch_callback=self.on_danger_zone_callback)
             else:
                 self.danger_zone_frame_count = max(0, self.danger_zone_frame_count - 1)
@@ -2093,15 +2341,15 @@ class VisionTracker:
             # Giữ nguyên video trong trẻo, không vẽ khung tracking đè lên người bé (Chỉ để lại viền nôi Safe Zone)
             pass
         elif has_adult:
-            # Phân biệt chính xác: Người lớn ngồi cạnh giường vs Bé đã được bế ra ngoài
+            # Phân biệt chính xác: Người lớn vừa che khuất thoáng qua (< 1.5s) vs Bé đã được bế ra khỏi nôi
             now_t = time.time()
-            baby_recently_seen = (now_t - getattr(self, "baby_last_seen_time", 0.0)) < 4.0
+            baby_recently_seen = (now_t - getattr(self, "baby_last_seen_time", 0.0)) < 1.5
             baby_ref_box = getattr(self, "last_baby_box", None) if baby_recently_seen else None
             is_in_safe_zone = False
             if baby_ref_box is not None:
                 bcx = (baby_ref_box[0] + baby_ref_box[2]) / 2.0
                 bcy = (baby_ref_box[1] + baby_ref_box[3]) / 2.0
-                is_in_safe_zone = self._is_point_in_safe_zone(bcx, bcy, w, h, margin_px=30.0)
+                is_in_safe_zone = self._is_point_in_safe_zone(bcx, bcy, w, h, margin_px=20.0)
 
             is_touching_baby = False
             if baby_ref_box is not None and adult_box is not None:
@@ -2117,7 +2365,7 @@ class VisionTracker:
                     if inter_area / baby_area > 0.25:
                         is_touching_baby = True
 
-            # NẾU BÉ VỪA ĐƯỢC PHÁT HIỆN GẦN ĐÂY (< 4.0s) VÀ ĐANG Ở TRONG SAFE ZONE: Bé đang nằm nôi, người lớn chỉ ngồi bên cạnh!
+            # NẾU BÉ VỪA ĐƯỢC PHÁT HIỆN GẦN ĐÂY (< 1.5s) VÀ ĐANG Ở TRONG SAFE ZONE: Người lớn vừa cúi vào nôi
             if is_in_safe_zone and baby_recently_seen:
                 self.baby_detected = True
                 self.adult_holding_baby = False
@@ -2127,11 +2375,11 @@ class VisionTracker:
                 if self.sleep_pose in ("Ngoài giường", "Người lớn trong phòng", "Đang được bế trên tay", "Không phát hiện bé"):
                     self.sleep_pose = "Nằm ngủ ngoan"
                 self.baby_status = "Bé đang nằm nôi • Ba mẹ ở cạnh"
-                if self.breathing_status in ("Ngoài giường", "Ba mẹ đang bế"):
-                    self.breathing_status = "Đang theo dõi nhịp thở"
+                self.breathing_bpm = 0.0
+                self.breathing_status = "Ba mẹ ở cạnh (Tạm dừng đo)"
             elif is_touching_baby and baby_recently_seen:
-                # Bé ở ngoài Safe Zone VÀ người lớn tiếp xúc bế bé
-                self.baby_detected = True
+                # Bé vừa được người lớn bế lên tay (< 1.5s): Tắt đo nhịp thở nôi ngay lập tức!
+                self.baby_detected = False
                 self.adult_holding_baby = True
                 self.baby_stable_detected = False
                 self.baby_stable_frames = 0
@@ -2139,100 +2387,37 @@ class VisionTracker:
                 self.covered_face_frame_count = 0
                 self.sleep_pose = "Đang được bế trên tay"
                 self.baby_status = "Ba mẹ đang bế / chăm sóc bé"
-                self.breathing_status = "Ba mẹ đang bế"
-                if self.breathing_bpm <= 5.0:
-                    self.breathing_bpm = 48.0
-            else:
-                # BÉ KHÔNG CÓ TRONG NÔI HOẶC ĐÃ RỜI ĐI > 4 GIÂY: Chỉ có người lớn trong phòng!
-                self.baby_detected = False
-                self.adult_holding_baby = False
-                self.baby_stable_detected = False
-                self.baby_stable_frames = 0
-                self.sleep_pose = "Người lớn trong phòng"
-                self.baby_status = "Bé đã rời nôi • Người lớn trong phòng"
                 self.breathing_bpm = 0.0
-                self.breathing_status = "Ngoài giường"
-                self.last_baby_box = None
-                self.gemini_anchor_box = None
-                self.gemini_anchor_until = 0.0
-                self.is_near_edge = False
-                self.danger_zone_frame_count = 0
+                self.breathing_status = "Ba mẹ đang bế (Tạm dừng đo)"
+            else:
+                # BÉ KHÔNG CÓ TRONG NÔI: Chỉ có người lớn trong phòng -> Đưa toàn bộ trạng thái về Ngoài giường!
+                self._apply_empty_crib_state(
+                    status_text="Bé đã rời nôi • Người lớn trong phòng",
+                    pose_text="Người lớn trong phòng"
+                )
 
             self.motion_score = 0.0
             self.smoothed_motion = 0.0
             self.lost_frames = 0
             self.prone_frame_count = 0
             self.danger_zone_frame_count = 0
-
-            # Không vẽ khung màu đè lên phụ huynh
-            pass
-        elif getattr(self, "gemini_anchor_box", None) is not None and time.time() < getattr(self, "gemini_anchor_until", 0.0):
-            # Giữ khóa mục tiêu em bé theo tọa độ chuẩn do Gemini vừa hiệu chỉnh nóng (Hot-Anchor)
-            self.baby_detected = True
-            self.adult_holding_baby = False
-            g_box = self.gemini_anchor_box
-            bx1, by1, bx2, by2 = g_box
-            s_box = self._smooth_box(g_box)
-            self.last_baby_box = s_box
-            self.tracking_persistence_count = 12
-            self.last_tracked_pose = getattr(self, "gemini_anchor_pose", "Đang ngủ ngoan")
-            self.last_tracked_status = "Đang ngủ ngoan"
-            self.last_tracked_bpm = self.breathing_bpm
-            self.sleep_pose = getattr(self, "gemini_anchor_pose", "Đang ngủ ngoan")
-            self.baby_status = "Đang ngủ ngoan (AI Đồng bộ)"
-            if self.breathing_monitor_enabled:
-                cx = int((bx1 + bx2) / 2)
-                cy = int((by1 + by2) / 2)
-                rw = max(25, int((bx2 - bx1) * 0.22))
-                rh = max(25, int((by2 - by1) * 0.22))
-                self._update_breathing(frame, time.time(), max(0, cx - rw), max(0, cy - rh), min(w, cx + rw), min(h, cy + rh))
         else:
-            # Kiểm tra tình huống MẶT BÉ VỪA BỊ CHE KHUẤT / TRÙM KHĂN ĐỘT NGỘT:
+            # Khi cả YuNet (khuôn mặt) VÀ YOLOv8-Pose (khung xương) đều KHÔNG phát hiện thấy bé trong nôi:
+            # Chỉ giữ Persistence buffer cực ngắn (~0.4s / 8 frames) để chống nhấp nháy 1-2 frame khi bé giật mình,
+            # TUYỆT ĐỐI KHÔNG tự đo nhịp thở trên đệm trống hay báo che mặt giả khi bé đã ra khỏi nôi!
             now_t = time.time()
-            face_recently_seen = (now_t - getattr(self, "baby_last_seen_time", 0.0) < 15.0) and (getattr(self, "last_face_box", None) is not None)
-            
-            is_sudden_occlusion = False
-            if self.covered_face_alert and face_recently_seen and not has_adult and (now_t > getattr(self, "gemini_suppressed_until", 0.0)):
-                fx1, fy1, fx2, fy2 = self.last_face_box
-                face_skin = self._check_skin_in_roi(frame, fx1, fy1, fx2, fy2)
-                if face_skin < 0.035:
-                    is_sudden_occlusion = True
-
-            if is_sudden_occlusion:
-                self.baby_detected = True
-                self.adult_holding_baby = False
-                self.sleep_pose = "Mặt bị che khuất (Nguy cơ ngạt)"
-                self.baby_status = "CẢNH BÁO: MẶT BÉ BỊ CHE KHUẤT!"
-                self.covered_face_frame_count += 1
-
-                if self.covered_face_frame_count >= 15: # ~1.2s - 1.5s
-                    self._trigger_gemini_alert_verify(frame, "covered_face", "Mặt bé vừa bị khăn/chăn trùm kín đột ngột")
-            elif getattr(self, "tracking_persistence_count", 0) > 0 and not has_adult and (now_t - getattr(self, "baby_last_seen_time", 0.0) < 1.5):
-                # Persistence buffer: duy trì vị trí bé thêm ~12 frame (~0.6s) để chống nhấp nháy khi bé trở mình
+            if getattr(self, "tracking_persistence_count", 0) > 0 and (now_t - getattr(self, "baby_last_seen_time", 0.0) < 0.45):
                 self.tracking_persistence_count -= 1
                 self.baby_detected = True
                 self.adult_holding_baby = False
                 self.sleep_pose = getattr(self, "last_tracked_pose", "Đang ngủ ngoan")
                 self.baby_status = getattr(self, "last_tracked_status", "Đang ngủ ngoan")
             else:
-                # Hoàn toàn không phát hiện bé và không có người lớn
-                self.adult_holding_baby = False
-                self.baby_detected = False
-                self.baby_stable_detected = False
-                self.baby_stable_frames = 0
-                self.covered_face_active = False
-                self.covered_face_frame_count = 0
-                self.sleep_pose = "Không phát hiện bé"
-                self.baby_status = "Bé không có trong nôi"
-                self.motion_score = 0.0
-                self.smoothed_motion = 0.0
-                self.breathing_bpm = 0.0
-                self.breathing_status = "Ngoài giường"
-                self.prev_keypoints = None
-                self.prev_keypoints_conf = None
-                self.last_baby_box = None
-                self.chest_history = []
-                self.prev_breathing_roi = None
+                # Hoàn toàn không phát hiện mặt bé và không phát hiện khung xương bé trong nôi -> Ngắt ngay lập tức!
+                self._apply_empty_crib_state(
+                    status_text="Bé không có trong nôi",
+                    pose_text="Không phát hiện bé"
+                )
 
         # Update Sleep & Wake Window Analytics Tracker
         if self.sleep_tracker:
@@ -2300,11 +2485,12 @@ class VisionTracker:
                     pt_arm_next = (p_curr + u_next * arm_len_next).astype(np.int32)
                     cv2.line(annotated, (int(p_curr[0]), int(p_curr[1])), (int(pt_arm_next[0]), int(pt_arm_next[1])), corner_color, c_thick, cv2.LINE_AA)
 
-            p_tl = pts[0]
-            cv2.putText(annotated, "KHUNG AN TOAN NOI", (int(p_tl[0]) + 4, max(18, int(p_tl[1]) - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.40, corner_color, 1, cv2.LINE_AA)
-
         # Chủ động tận dụng Quota Free dư thừa để gửi hình kiểm tra chéo & hiệu chỉnh Tracking AI Local
         self._maybe_trigger_tracking_audit(frame, annotated, h, w)
+
+        # Nếu có gắn PTZ Controller (Camera xoay 360) và đang bật Auto-Tracking bám theo bé
+        if getattr(self, "ptz_controller", None) is not None and self.baby_detected and self.last_baby_box is not None:
+            self.ptz_controller.auto_track_step(self.last_baby_box, w, h)
 
         return annotated
 
@@ -2618,9 +2804,21 @@ class VisionTracker:
                 return self.raw_frame.copy()
             return None
 
+    def set_baby_out_of_crib(self, out_of_crib: bool = True):
+        """Đặt trạng thái xác nhận bé đã rời khỏi nôi từ nút bấm Telegram hoặc Web."""
+        self.baby_out_of_crib_confirmed = bool(out_of_crib)
+        self.baby_return_in_crib_frames = 0
+        if out_of_crib:
+            self._apply_empty_crib_state(
+                status_text="Ba mẹ xác nhận bé đã rời nôi • Chờ bé vào lại",
+                pose_text="Ngoài giường (Đã xác nhận)",
+                hold_seconds=5.0
+            )
+
     def get_status(self):
         return {
             "baby_detected": self.baby_detected,
+            "baby_out_of_crib_confirmed": getattr(self, "baby_out_of_crib_confirmed", False),
             "adult_holding": getattr(self, "adult_holding_baby", False),
             "covered_face": getattr(self, "covered_face_active", False),
             "baby_status": self.baby_status,

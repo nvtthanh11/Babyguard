@@ -99,6 +99,11 @@ def main():
             )
 
     def on_prone():
+        if not vision_tracker.baby_detected or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
+            return
+        last_alert = gemini_verifier.last_alert_result.get("prone", {})
+        if last_alert.get("is_dangerous") is False and (time.time() - gemini_verifier.last_alert_verify_time.get("prone", 0.0) < 45.0):
+            return
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = "CẢNH BÁO NGUY HIỂM: Phát hiện bé nằm sấp / úp mặt xuống đệm!"
         if alert_manager.trigger_event(
@@ -110,8 +115,16 @@ def main():
             video_recorder.trigger_recording("prone", msg, on_complete_callback=handle_video_completion)
 
     def on_covered_face():
+        if not vision_tracker.baby_detected or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
+            return
         frame = vision_tracker.get_latest_frame(annotated=True)
-        ai_note = gemini_verifier.last_consultation.get("summary_vi", "Cần kiểm tra bé ngay!")
+        # Chỉ kiểm tra cảnh báo nếu không bị Gemini dập báo động giả
+        last_alert = gemini_verifier.last_alert_result.get("covered_face", {})
+        if last_alert.get("is_dangerous") is False and (time.time() - gemini_verifier.last_alert_verify_time.get("covered_face", 0.0) < 45.0):
+            print(f"[Main] 🛡️ Bỏ qua gửi Telegram do Gemini đã xác nhận an toàn: {last_alert.get('diagnosis_vi')}")
+            return
+
+        ai_note = last_alert.get("diagnosis_vi") or gemini_verifier.last_consultation.get("summary_vi", "Cần kiểm tra bé ngay!")
         msg = f"CẢNH BÁO KHẨN CẤP: Mặt bé bị che khuất! ({ai_note})"
         sleep_tracker.record_health_event("covered_face", msg, severity="WARNING")
         if alert_manager.trigger_event(
@@ -123,6 +136,12 @@ def main():
             video_recorder.trigger_recording("covered_face", msg, on_complete_callback=handle_video_completion)
 
     def on_danger_zone():
+        if not vision_tracker.baby_detected or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
+            return
+        last_alert = gemini_verifier.last_alert_result.get("danger_zone", {})
+        if last_alert.get("is_dangerous") is False and (time.time() - gemini_verifier.last_alert_verify_time.get("danger_zone", 0.0) < 45.0):
+            print(f"[Main] 🛡️ Bỏ qua gửi Telegram danger_zone do Gemini xác nhận an toàn: {last_alert.get('diagnosis_vi')}")
+            return
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = "CẢNH BÁO NGUY HIỂM: Bé đang lăn/di chuyển sát mép giường (nguy cơ ngã)!"
         sleep_tracker.record_health_event("danger_zone", msg, severity="WARNING")
@@ -136,6 +155,11 @@ def main():
 
     def on_apnea():
         if not config.get("breathing_monitor_enabled", True):
+            return
+        if not vision_tracker.baby_detected or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
+            return
+        last_alert = gemini_verifier.last_alert_result.get("apnea", {})
+        if last_alert.get("is_dangerous") is False and (time.time() - gemini_verifier.last_alert_verify_time.get("apnea", 0.0) < 45.0):
             return
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = "CẢNH BÁO KHẨN CẤP: Không phát hiện nhịp thở lồng ngực bé quá 20 giây!"
@@ -181,6 +205,7 @@ def main():
         show_baby_box=config.get("show_baby_box", False),
         show_skeleton=config.get("show_skeleton", False)
     )
+    alert_manager.on_baby_out_of_crib_callback = vision_tracker.set_baby_out_of_crib
 
     # 3. Audio Cry, Cough & Choke Detector
     def on_cry(*args, **kwargs):
@@ -240,6 +265,16 @@ def main():
         baby_state = verify_res.get("baby_state", "distress_crying")
         advice_vi = verify_res.get("clinical_advice_vi", "")
 
+        # Nếu Gemini xác nhận không có em bé trong nôi (baby_present == False) -> Ngắt ngay trạng thái nôi!
+        if verify_res.get("verified_by_gemini") and (verify_res.get("baby_present") is False or baby_state == "false_alarm"):
+            print(f"[BabyGuard AI] 🚼 Gemini xác nhận nôi trống khi kiểm tra âm thanh: {diag_vi}")
+            vision_tracker._apply_empty_crib_state(
+                status_text="Bé không có trong nôi (AI Đã Xác Thực)",
+                pose_text="Ngoài giường",
+                hold_seconds=20.0
+            )
+            return
+
         # TRƯỜNG HỢP A: BÉ CHỈ Ọ Ẹ SINH LÝ / CỰA MÌNH REM / TỰ TRẤN AN (should_alert == False)
         if not should_alert:
             print(f"[BabyGuard AI] 👶 Gemini dập cảnh báo khóc giả: {diag_vi} [{baby_state}]")
@@ -249,7 +284,7 @@ def main():
                 "continuous_sec": telem.get("continuous_seconds")
             }, severity="INFO")
             # Tự động mở mềm Tiếng Ồn Trắng / Nhạc Không Lời (từ 4%) để hỗ trợ bé ngủ sâu lại
-            if cur_cfg.get("auto_lullaby_on_cry", False) and not music_player.is_playing:
+            if (cur_cfg.get("auto_lullaby_on_cry", False) or cur_cfg.get("auto_soothing_enabled", False)) and not music_player.is_playing:
                 track = cur_cfg.get("selected_lullaby", "Tieng_on_trang_White_Noise.wav")
                 print(f"[BabyGuard AI] 🌊 Bé ọ ẹ chuyển giấc -> Mở mềm Tiếng Ồn Trắng hỗ trợ ngủ sâu: {track}")
                 music_player.play_track(track, loop=True)
@@ -258,7 +293,7 @@ def main():
         # TRƯỜNG HỢP B: BÉ THỰC SỰ ĐANG QUẤY KHÓC / ĐAU ĐỚN (should_alert == True)
         print(f"[BabyGuard AI] 🚨 Gemini XÁC THỰC BÉ KHÓC: {diag_vi} [{baby_state}]")
 
-        if cur_cfg.get("auto_lullaby_on_cry", False) and not music_player.is_playing:
+        if (cur_cfg.get("auto_lullaby_on_cry", False) or cur_cfg.get("auto_soothing_enabled", False)) and not music_player.is_playing:
             track = cur_cfg.get("selected_lullaby", "Tieng_on_trang_White_Noise.wav")
             print(f"[BabyGuard AI] 🌊 Bé khóc -> Khởi động mềm Tiếng Ồn Trắng / Nhạc không lời (từ 4%): {track}")
             music_player.play_track(track, loop=True)
@@ -297,6 +332,8 @@ def main():
         cur_cfg = load_config()
         if not cur_cfg.get("cough_alert_enabled", True):
             return
+        if (not vision_tracker.baby_detected) and (not getattr(vision_tracker, "adult_holding_baby", False)):
+            return
         frame = vision_tracker.get_latest_frame(annotated=True)
         msg = f"CẢNH BÁO: Phát hiện bé ho ({top_label})!"
         sleep_tracker.record_health_event("cough", msg, {"confidence": f"{prob*100:.1f}%", "volume": f"{volume*100:.1f}%"}, severity="INFO")
@@ -316,8 +353,36 @@ def main():
         cur_cfg = load_config()
         if not cur_cfg.get("choke_alert_enabled", True):
             return
+        if (not vision_tracker.baby_detected) and (not getattr(vision_tracker, "adult_holding_baby", False)):
+            return
         frame = vision_tracker.get_latest_frame(annotated=True)
-        msg = f"CẢNH BÁO KHẨN: Phát hiện dấu hiệu bé sặc sữa / ọc trớ ({top_label})!"
+        raw_frame = vision_tracker.get_latest_frame(annotated=False)
+        check_frame = raw_frame if raw_frame is not None else frame
+        diag_vi = f"Phát hiện dấu hiệu bé sặc sữa / ọc trớ ({top_label})"
+        advice_vi = "Kiểm tra ngay: Nghiêng đầu bé sang một bên, vỗ lưng nhẹ hoặc dùng dụng cụ hút sạch sữa trớ"
+
+        if gemini_verifier and gemini_verifier.is_ready() and check_frame is not None:
+            v_res = gemini_verifier.verify_high_risk_alert(
+                check_frame,
+                alert_type="choke",
+                local_reason=f"YAMNet phát hiện âm thanh nghi ngờ sặc/trớ ({top_label}, prob={prob*100:.1f}%, vol={volume*100:.1f}%). Hãy phân biệt Trớ sữa sinh lý lành tính (Happy Spitter) với Sặc sữa tắc nghẽn đường thở cấp cứu (Choking)."
+            )
+            if v_res.get("verified_by_gemini") and v_res.get("is_dangerous") is False:
+                spit_diag = v_res.get("diagnosis_vi", "Trớ sữa sinh lý lành tính (Happy Spitter) hoặc âm thanh sinh lý")
+                print(f"[BabyGuard AI] 🛡️ Gemini xác nhận không phải sặc cấp cứu: {spit_diag}")
+                sleep_tracker.record_health_event(
+                    "spit_up",
+                    f"Trớ sữa sinh lý (Happy Spitter): {spit_diag}",
+                    {"confidence": f"{v_res.get('confidence', 90)}%", "advice": v_res.get("first_aid_vi", "")},
+                    severity="INFO"
+                )
+                return
+            if v_res.get("diagnosis_vi"):
+                diag_vi = v_res["diagnosis_vi"]
+            if v_res.get("first_aid_vi"):
+                advice_vi = v_res["first_aid_vi"]
+
+        msg = f"CẢNH BÁO KHẨN: {diag_vi}!"
         sleep_tracker.record_health_event("choke", msg, {"confidence": f"{prob*100:.1f}%", "volume": f"{volume*100:.1f}%"}, severity="WARNING")
         if alert_manager.trigger_event(
             event_type="choke",
@@ -326,13 +391,15 @@ def main():
             extra_info={
                 "Độ tin cậy AI": f"{prob*100:.1f}%",
                 "Âm lượng": f"{volume*100:.1f}%",
-                "Hành động": "Kiểm tra ngay: Nghiêng đầu bé sang một bên, vỗ lưng nhẹ hoặc dùng dụng cụ hút sạch sữa trớ"
+                "Hành động": advice_vi
             }
         ):
             video_recorder.trigger_recording("choke", msg, on_complete_callback=handle_video_completion)
 
     def on_whimper(whimper_entry):
         """Ghi nhận âm thầm tiếng ọ ẹ / trở mình sinh lý REM để đối chiếu quy chuẩn quốc tế (AAP/Nelson)."""
+        if (not vision_tracker.baby_detected) or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
+            return
         msg = whimper_entry.get("note", "Bé ọ ẹ / trở mình (Sinh lý)")
         dur = whimper_entry.get("duration_seconds", 1.0)
         vol = whimper_entry.get("volume", 0.0)

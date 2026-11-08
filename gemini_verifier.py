@@ -21,9 +21,9 @@ USAGE_LOG_PATH = os.path.join(BASE_DIR, "logs", "gemini_usage.json")
 FREE_MODEL_POOL = [
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
-    "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
     "gemini-3-flash-preview",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
 ]
 
 
@@ -254,7 +254,7 @@ class GeminiHybridVerifier:
                 cfg = types.GenerateContentConfig(
                     response_mime_type="application/json" if json_mode else "text/plain",
                     temperature=temperature,
-                    http_options=types.HttpOptions(timeout=12000)
+                    http_options=types.HttpOptions(timeout=25000)
                 )
                 resp = client.models.generate_content(
                     model=m,
@@ -415,13 +415,13 @@ class GeminiHybridVerifier:
         now = time.time()
         elapsed = now - self.last_tracking_audit_time
         if need_initial_crib_calib:
-            min_interval = 15.0
+            min_interval = 5.0
         elif pose_changed:
-            min_interval = 30.0  # Sau khi tư thế mới giữ ổn định 10s, kích hoạt audit với giãn cách >= 30s
+            min_interval = 12.0  # Sau khi tư thế mới giữ ổn định, kích hoạt audit nhanh
         elif local_uncertain:
-            min_interval = 90.0  # Khi nôi trống / không bắt được bé, chỉ audit sau mỗi 90s để chống spam quota
+            min_interval = 45.0  # Khi nôi trống / không bắt được bé
         else:
-            min_interval = self.tracking_audit_interval_sec
+            min_interval = min(20.0, self.tracking_audit_interval_sec)
 
         if elapsed < min_interval:
             return False
@@ -489,6 +489,10 @@ B. KIỂM TRA & TỰ ĐỘNG CĂN CHỈNH KHUNG NÔI / TẤM ĐỆM EM BÉ (SAFE
 - true_safe_zone_polygon ([[x, y], [x, y], [x, y], [x, y]] từ 0.03 đến 0.97): Tọa độ 4 đỉnh đa giác tứ giác theo thứ tự [Top-Left, Top-Right, Bottom-Right, Bottom-Left] bao quanh TRỌN VẸN tấm đệm nơi em bé nằm theo đúng góc phối cảnh 3D xiên. TUYỆT ĐỐI KHÔNG ĐƯỢC để cạnh cắt ngang đầu/thân bé; cạnh trên phải chạy phía trên đỉnh đầu và gối bé để đảm bảo an toàn. Không bao gồm người lớn nằm cạnh.
 - true_safe_zone ([left, top, right, bottom] từ 0.03 đến 0.97): Tọa độ khung chữ nhật bao ngoài tấm đệm của em bé.
 
+C. KIỂM TOÁN AN TOÀN LÒNG NÔI THEO QUY TẮC ABC CỦA AAP (CRIB HAZARD AUDIT):
+- crib_safe_abc (boolean): Vùng xung quanh đầu và mũi/miệng của bé có thông thoáng, an toàn theo quy tắc ABC của AAP (Alone - Back - Crib) không?
+- crib_hazards_vi (danh sách chuỗi tiếng Việt): Liệt kê các vật thể mềm có nguy cơ gây ngạt đang nằm quá sát vùng đầu/mũi/miệng của bé (ví dụ: "Chăn dày trùm sát mặt", "Thú nhồi bông sát đầu bé", "Khăn xô vắt gần mũi miệng"). Nếu lòng nôi thông thoáng hoặc gối chặn nằm ở vị trí an toàn hai bên sườn, trả về mảng rỗng [].
+
 QUY ĐỊNH BẮT BUỘC VỀ ĐỊNH DẠNG TỌA ĐỘ:
 - TẤT CẢ các giá trị tọa độ x, y, left, top, right, bottom PHẢI LÀ SỐ THẬP PHÂN CHUẨN HÓA (FLOAT) TRONG KHOẢNG 0.03 ĐẾN 0.97 (ví dụ 0.25, 0.75).
 - TUYỆT ĐỐI KHÔNG DÙNG TỌA ĐỘ PIXEL LỚN HƠN 1.0 (ví dụ 270, 750, 1000) vì sẽ làm sai lệch hiển thị!
@@ -505,8 +509,10 @@ Trả về đúng JSON:
   "crib_zone_accurate": boolean,
   "true_safe_zone_polygon": [[float, float], [float, float], [float, float], [float, float]],
   "true_safe_zone": [float, float, float, float],
+  "crib_safe_abc": boolean,
+  "crib_hazards_vi": ["string"],
   "sleep_pose_vi": "string",
-  "feedback_vi": "Nhận xét ngắn gọn 1 câu tiếng Việt về trạng thái Thức/Ngủ, khung Tracking và Khung Nôi"
+  "feedback_vi": "Nhận xét ngắn gọn 1 câu tiếng Việt về trạng thái Thức/Ngủ, khung Tracking và độ thông thoáng lòng nôi cho Ba mẹ"
 }}
 """
         try:
@@ -528,12 +534,20 @@ Trả về đúng JSON:
             is_awake = bool(data.get("is_baby_awake", False))
             feedback = str(data.get("feedback_vi", "Đã tự động kiểm tra & căn chỉnh khung theo dõi."))
 
+            crib_safe_abc = bool(data.get("crib_safe_abc", True))
+            raw_hazards = data.get("crib_hazards_vi", [])
+            crib_hazards_vi = [str(x) for x in raw_hazards if x] if isinstance(raw_hazards, list) else []
+            if crib_hazards_vi and crib_safe_abc:
+                crib_safe_abc = False
+
             self.last_tracking_audit = {
                 "timestamp": time.strftime("%H:%M:%S"),
                 "baby_present": baby_present,
                 "is_baby_awake": is_awake,
                 "tracking_accurate": acc,
                 "crib_zone_accurate": crib_acc,
+                "crib_safe_abc": crib_safe_abc,
+                "crib_hazards_vi": crib_hazards_vi,
                 "accuracy_score": score,
                 "corrected": bool(baby_present and (not acc or not crib_acc or score < 78)),
                 "feedback_vi": feedback,
@@ -586,6 +600,8 @@ Trả về đúng JSON:
                 "head_direction": data.get("head_direction", "up"),
                 "true_safe_zone": clean_tsz,
                 "true_safe_zone_polygon": clean_tsz_poly,
+                "crib_safe_abc": crib_safe_abc,
+                "crib_hazards_vi": crib_hazards_vi,
                 "sleep_pose_vi": data.get("sleep_pose_vi", "Nằm ngửa"),
                 "feedback_vi": feedback
             }
@@ -702,26 +718,36 @@ Bức ảnh ghép 4 ô (Composite 4-Panel Matrix) gửi kèm gồm:
 - Ô 4 [Bottom-Right]: Cận cảnh 100% độ nét gốc vùng Mũi, Miệng, Đường thở & Lồng ngực của bé.
 
 HÃY ĐỐI SOÁT KỸ LƯỠNG GIỮA CÁC Ô ĐỂ PHÂN BIỆT:
+0. KIỂM TRA SỰ HIỆN DIỆN CỦA EM BÉ TRONG NÔI (baby_present):
+   - NẾU TRONG NÔI HOÀN TOÀN KHÔNG CÓ EM BÉ (chỉ có chăn gối trống, nệm trống, hoặc người lớn đã bế bé rời khỏi nôi): BẮT BUỘC đặt "baby_present": false và "is_dangerous": false!
+   - Chỉ khi thực sự có em bé trong khung hình mới đặt "baby_present": true.
+
 1. ĐỐI VỚI NGUY CƠ CHE MẶT / NGẠT THỞ (covered_face):
    - NGUY HIỂM THẬT (is_dangerous=true): Chăn, gối, thú bông hoặc nệm đang trùm lên hoặc đè trực tiếp vào MŨI/MIỆNG của bé ở Ô 3 và Ô 4 làm cản trở đường thở.
-   - BÁO ĐỘNG GIẢ (is_dangerous=false): Vùng MŨI và MIỆNG ở Ô 4 vẫn lộ rõ, thông thoáng khí quyển hoàn toàn. Gối/chăn chỉ nằm bên cạnh sườn, tay hoặc đỉnh đầu để chặn giật mình.
+   - BÁO ĐỘNG GIẢ (is_dangerous=false): Vùng MŨI và MIỆNG ở Ô 4 vẫn lộ rõ, thông thoáng khí quyển hoàn toàn. Gối/chăn chỉ nằm bên cạnh sườn, tay hoặc đỉnh đầu để chặn giật mình, hoặc không có bé trong nôi.
 
 2. ĐỐI VỚI NGUY CƠ NẰM SẤP (prone):
    - NGUY HIỂM THẬT (is_dangerous=true): Bé úp mặt thẳng đứng xuống mặt đệm, đường thở bị chặn.
-   - BÁO ĐỘNG GIẢ (is_dangerous=false): Bé nằm nghiêng một bên hoặc quay đầu sang bên thở bình thường.
+   - BÁO ĐỘNG GIẢ (is_dangerous=false): Bé nằm nghiêng một bên hoặc quay đầu sang bên thở bình thường, hoặc không có bé trong nôi.
 
 3. ĐỐI VỚI NGUY CƠ NGƯNG THỞ / BẤT THƯỜNG HÔ HẤP (apnea):
    - So sánh chuyển động lồng ngực/bụng qua Ô 1 -> Ô 2 -> Ô 3:
    - NGUY HIỂM THẬT (is_dangerous=true): Lồng ngực hoàn toàn bất động suốt 3 khung thời gian và có dấu hiệu suy hô hấp/bất thường.
-   - BÁO ĐỘNG GIẢ (is_dangerous=false): Bé chỉ đang ngủ sâu bình thường hoặc có vi chuyển động thở nhẹ, hoặc bé đã được người lớn bế ra khỏi nôi.
+   - BÁO ĐỘNG GIẢ (is_dangerous=false): Bé chỉ đang ngủ sâu bình thường hoặc có vi chuyển động thở nhẹ, hoặc bé đã được người lớn bế ra khỏi nôi (baby_present=false).
 
 4. ĐỐI VỚI NGUY CƠ VƯỢT KHUNG NÔI / MÉP GIƯỜNG (danger_zone):
    - NGUY HIỂM THẬT (is_dangerous=true): Bé đang trườn, bò, ngóc đầu hoặc lăn sát mép rơi ngã nguy hiểm (ví dụ mép giường không có rào chắn, thành nôi thấp).
    - BÁO ĐỘNG GIẢ (is_dangerous=false): Bé vẫn nằm an toàn trên tấm đệm hoặc giữa giường lớn, không có nguy cơ ngã tức thì (chỉ do khung nôi bị vẽ chật).
+
+5. ĐỐI VỚI TÍN HIỆU SẶC SỮA / TRỚ SỮA (choke):
+   - NGUY HIỂM THẬT - SẶC SỮA CẤP CỨU (Choking, is_dangerous=true): Bé có biểu hiện vật vã, ưỡn người, há miệng thở hắt, tím tái hoặc sữa trào ồ ạt lên mũi miệng gây tắc nghẽn đường thở cấp tính.
+   - SINH LÝ LÀNH TÍNH - TRỚ SỮA SINH LÝ (Happy Spitter / Regurgitation, is_dangerous=false): Bé vẫn ngủ yên hoặc sắc mặt hồng hào bình thường, chỉ rặn nhẹ hoặc ọc nhẹ một chút sữa ở khóe miệng mà không có dấu hiệu tắc nghẽn đường thở.
    - NẾU LÀ BÁO ĐỘNG GIẢ CỦA KHUNG NÔI: Hãy trả về tọa độ 4 đỉnh đa giác "corrected_safe_zone_polygon" [[x,y],[x,y],[x,y],[x,y]] (chuẩn hóa 0.03 - 0.97) bao quanh TRỌN VẸN toàn bộ tấm đệm của bé để hệ thống tự động mở rộng khung nôi ôm kín bé, không báo động giả nữa!
 
 Trả về đúng định dạng JSON:
 {{
+  "baby_present": boolean,
+  "is_baby_awake": boolean,
   "is_dangerous": boolean,
   "confidence": integer (0-100),
   "airway_clear": boolean,
@@ -741,7 +767,9 @@ Trả về đúng định dạng JSON:
                 temperature=0.05
             )
             data = json.loads(resp.text)
-            is_danger = bool(data.get("is_dangerous", False))
+            baby_present = bool(data.get("baby_present", True))
+            is_baby_awake = bool(data.get("is_baby_awake", False))
+            is_danger = bool(data.get("is_dangerous", False)) and baby_present
             corr_poly = data.get("corrected_safe_zone_polygon")
             clean_poly = None
             if isinstance(corr_poly, list) and len(corr_poly) == 4:
@@ -758,6 +786,8 @@ Trả về đúng định dạng JSON:
 
             result = {
                 "verified_by_gemini": True,
+                "baby_present": baby_present,
+                "is_baby_awake": is_baby_awake,
                 "is_dangerous": is_danger,
                 "airway_clear": bool(data.get("airway_clear", not is_danger)),
                 "confidence": int(data.get("confidence", 90)),
@@ -880,10 +910,11 @@ KHI NÀO MỚI CẦN BÁO ĐỘNG CHO BA MẸ (should_alert = true):
 - BÉ THỰC SỰ ĐANG QUẤY KHÓC / ĐAU ĐỚN (True Distress Crying): Bé tỉnh hẳn, hai mắt nhắm chặt nhăn nhó dữ dội, miệng há to hình chữ nhật khóc ngặt, tay chân quẫy đạp co quắp hoặc gồng cứng toàn thân qua các ô thời gian.
 - NGUY CƠ TẮC NGHẼN / NÔN TRỚ / KẸT TAY CHÂN / KHÓ THỞ: Bé có dấu hiệu đau bụng co thắt (colic), sặc sữa, trớ ọc cần ba mẹ vào vỗ về.
 
-LƯU Ý: Dù mặt bé có bị che khuất một phần (nghiêng góc, chăn che má), hãy đối soát động thái cơ thể (body agitation) và lồng ngực qua chuỗi 3 khung hình để đưa ra chẩn đoán chính xác nhất!
+LƯU Ý: Dù mặt bé có bị che khuất một phần (nghiêng góc, chăn che má), hãy đối soát động thái cơ thể (body agitation) và lồng ngực qua chuỗi 3 khung hình để đưa ra chẩn đoán chính xác nhất! Nếu trong nôi hoàn toàn không có em bé (chỉ có chăn gối trống), đặt "baby_present": false, "should_alert": false, "baby_state": "false_alarm".
 
 Trả về đúng định dạng JSON:
 {{
+  "baby_present": boolean,
   "should_alert": boolean,
   "is_real_distress": boolean,
   "baby_state": "active_rem_sleep" | "self_soothing" | "physiological_fussing" | "hunger_crying" | "pain_distress_crying" | "false_alarm",
@@ -904,15 +935,19 @@ Trả về đúng định dạng JSON:
                 temperature=0.05
             )
             data = json.loads(resp.text)
-            should_alert = bool(data.get("should_alert", False))
-            is_distress = bool(data.get("is_real_distress", should_alert))
+            baby_present = bool(data.get("baby_present", True))
+            should_alert = bool(data.get("should_alert", False)) and baby_present
+            is_distress = bool(data.get("is_real_distress", should_alert)) and baby_present
             state = str(data.get("baby_state", "distress_crying" if should_alert else "physiological_fussing"))
+            if not baby_present:
+                state = "false_alarm"
             diag = str(data.get("diagnosis_vi", "Đã kiểm tra chéo tiếng khóc qua Gemini AI."))
             advice = str(data.get("clinical_advice_vi", "Tiếp tục quan sát bé."))
             conf = int(data.get("confidence", 90))
 
             result = {
                 "verified_by_gemini": True,
+                "baby_present": baby_present,
                 "should_alert": should_alert,
                 "is_real_distress": is_distress,
                 "baby_state": state,
@@ -949,36 +984,46 @@ Trả về đúng định dạng JSON:
     # 2. GIÁM KHẢO KHOẢNH KHẮC ĐÁNG YÊU + TỰ ĐỘNG CẮT KHUNG CHÂN DUNG (SMART AUTO-CROP)
     # =========================================================================
     @staticmethod
-    def apply_smart_crop(frame_bgr, eval_res: dict):
+    def apply_smart_crop(frame_bgr, eval_res: dict) -> tuple:
         """
         Nếu xung quanh/rìa ảnh có người lớn bị góc xấu hoặc đồ vật lộn xộn nhưng em bé rất đáng yêu,
         tự động cắt (Crop) lấy riêng khung chân dung sạch sẽ của em bé theo tọa độ clean_crop_box của AI!
+        Trả về tuple: (cropped_frame, was_cropped: bool)
         """
-        if not eval_res.get("auto_cropped", False):
-            return frame_bgr
-        cbox = eval_res.get("clean_crop_box")
+        if frame_bgr is None or not isinstance(eval_res, dict):
+            return frame_bgr, False
+        cbox = eval_res.get("clean_crop_box") or eval_res.get("baby_box")
         if not isinstance(cbox, list) or len(cbox) != 4:
-            return frame_bgr
+            return frame_bgr, False
         try:
             h, w = frame_bgr.shape[:2]
             xmin, ymin, xmax, ymax = [float(v) for v in cbox]
+            if max(xmin, ymin, xmax, ymax) > 1.0:
+                if max(xmin, ymin, xmax, ymax) <= 1000.0:
+                    xmin, xmax = xmin / 1000.0, xmax / 1000.0
+                    ymin, ymax = ymin / 1000.0, ymax / 1000.0
+                else:
+                    xmin, xmax = xmin / float(w), xmax / float(w)
+                    ymin, ymax = ymin / float(h), ymax / float(h)
             x1 = max(0, int(min(xmin, xmax) * w))
             y1 = max(0, int(min(ymin, ymax) * h))
             x2 = min(w, int(max(xmin, xmax) * w))
             y2 = min(h, int(max(ymin, ymax) * h))
             if (x2 - x1) >= int(w * 0.22) and (y2 - y1) >= int(h * 0.22):
-                return frame_bgr[y1:y2, x1:x2].copy()
+                # Chỉ đánh dấu was_cropped=True nếu khung cắt thực sự thu gọn hơn khung gốc
+                if (x2 - x1) < int(w * 0.98) or (y2 - y1) < int(h * 0.98):
+                    return frame_bgr[y1:y2, x1:x2].copy(), True
         except Exception:
             pass
-        return frame_bgr
+        return frame_bgr, False
 
     def evaluate_cute_moment(self, frame_bgr, is_manual: bool = False) -> dict:
         """
         Kiểm duyệt thông minh 2 chế độ (Smart Dual-Mode Moderation & Auto-Crop):
-        - Chế độ 1 (Giữ toàn khung - family_wide): Không có người lớn, HOẶC có bố/mẹ mặc đồ lịch sự kín đáo
+        - Chế độ 1 (Giữ toàn khung - family_wide): Không có người lớn, HOẶC có ba/mẹ mặc đồ lịch sự kín đáo
           và lên hình nguyên vẹn, đẹp đẽ cùng bé -> Lưu toàn khung hình.
         - Chế độ 2 (Tự động cắt cận cảnh bé - baby_portrait): Em bé ngủ/thức đáng yêu và kín đáo, NHƯNG ở rìa ảnh
-          có bố/mẹ nằm quay lưng, bị cắt nửa mặt, trang phục chưa chỉnh tề hoặc vướng màn hình phụ ->
+          có ba/mẹ nằm quay lưng, bị cắt nửa mặt, trang phục chưa chỉnh tề hoặc vướng màn hình phụ ->
           THAY VÌ TỪ CHỐI BỎ PHÍ KHOẢNH KHẮC CỦA BÉ, AI trả về tọa độ clean_crop_box chỉ lấy riêng vùng em bé
           trên tấm nôi, cắt bỏ 100% phần người lớn/vật lộn xộn ở bên ngoài!
         - Chế độ 3 (Từ chối - reject): Chỉ từ chối khi chính em bé đang thay tã, mặt bé bị che khuất, hoặc phần
@@ -1109,14 +1154,17 @@ Trả về đúng định dạng JSON:
                     and score >= 7
                 )
 
+            raw_cbox = data.get("clean_crop_box", None)
+            has_valid_cbox = bool(isinstance(raw_cbox, list) and len(raw_cbox) == 4)
             result = {
                 "checked_by_gemini": True,
                 "approved": approved,
                 "privacy_safe": privacy_safe,
                 "baby_face_clear": baby_face_clear,
                 "has_other_person": not no_adults,
+                "auto_cropped": has_valid_cbox,
                 "aesthetic_score": score,
-                "clean_crop_box": data.get("clean_crop_box", None),
+                "clean_crop_box": raw_cbox if has_valid_cbox else None,
                 "caption_vi": str(data.get("caption_vi", f"Khoảnh khắc đáng yêu của {self.baby_name}")),
                 "reason_vi": str(data.get("reason_vi", "Đã đánh giá chất lượng chân dung qua AI"))
             }
@@ -1356,7 +1404,9 @@ Trả về đúng định dạng JSON:
         cycle_label = "chu kỳ 24h qua (tính từ 07:00 sáng hôm qua)"
         longest_nap = float(sleep_summary.get("longest_nap_minutes", 0.0))
         sleep_score = int(sleep_summary.get("sleep_score", 85))
-        avg_bpm = float(sleep_summary.get("avg_bpm", 38.5))
+        avg_bpm = float(sleep_summary.get("avg_bpm", 0.0))
+        min_bpm = float(sleep_summary.get("min_bpm", 0.0))
+        max_bpm = float(sleep_summary.get("max_bpm", 0.0))
         delta_summary = sleep_summary.get("delta_summary", {})
 
         if tracked_hours < 3.0 and y_sleep > 2.0:
@@ -1373,6 +1423,7 @@ Trả về đúng định dạng JSON:
             whimper_count = int(yesterday.get("whimper_count") or y_counts.get("whimper_count", 0))
             cough_count = int(yesterday.get("cough_count") or y_counts.get("cough_count", 0))
             choke_count = int(yesterday.get("choke_risk_count") or y_counts.get("choke_risk_count", 0))
+            spit_up_count = int(yesterday.get("spit_up_count") or y_counts.get("spit_up_count", 0))
             apnea_count = int(yesterday.get("apnea_count") or y_counts.get("apnea_count", 0))
             
             y_delta = sleep_summary.get("delta_summary_yesterday") or {}
@@ -1385,6 +1436,7 @@ Trả về đúng định dạng JSON:
             whimper_count = int(sleep_summary.get("whimper_count", 0))
             cough_count = int(sleep_summary.get("cough_count", 0))
             choke_count = int(sleep_summary.get("choke_risk_count", 0))
+            spit_up_count = int(sleep_summary.get("spit_up_count", 0))
             apnea_count = int(sleep_summary.get("apnea_count", 0))
             hourly_clusters = delta_summary.get("hourly_clusters", {})
 
@@ -1399,7 +1451,8 @@ Trả về đúng định dạng JSON:
             cough_count=cough_count,
             choke_count=choke_count,
             avg_bpm=avg_bpm,
-            age_days=age_days
+            age_days=age_days,
+            spit_up_count=spit_up_count
         )
         wh_eval = health_eval["whimper"]
         cg_eval = health_eval["cough"]
@@ -1407,14 +1460,32 @@ Trả về đúng định dạng JSON:
         rp_eval = health_eval["respiration"]
 
         if avg_bpm < 20.0:
-            if yesterday and yesterday.get("avg_bpm", 0) > 20:
+            if yesterday and yesterday.get("avg_bpm", 0) > 20 and yesterday.get("avg_bpm") != 38.5:
                 avg_bpm = float(yesterday["avg_bpm"])
             else:
-                avg_bpm = 38.5
+                avg_bpm = 0.0
+
+        if avg_bpm >= 20.0:
+            if min_bpm > 0 and max_bpm > 0 and min_bpm != max_bpm:
+                bpm_display_str = f"{avg_bpm:.1f} BPM (Dao động {min_bpm:.1f} – {max_bpm:.1f} BPM • Chuẩn sơ sinh WHO: 30 - 60 BPM)"
+            else:
+                bpm_display_str = f"{avg_bpm:.1f} BPM (Chuẩn sơ sinh WHO: 30 - 60 BPM)"
+        else:
+            bpm_display_str = "Đang tích lũy mẫu đo quang học (Chuẩn tham chiếu WHO: 30 - 60 BPM)"
 
         camera_offline = round(max(0.0, 24.0 - tracked_hours), 1)
         growth = sleep_summary.get("growth_data", {})
         growth_str = f"Cân nặng: {growth.get('weight_kg', 'Chưa nhập')} kg | Chiều cao: {growth.get('height_cm', 'Chưa nhập')} cm ({growth.get('weight_status', 'Đang cập nhật')})"
+        head_orient = sleep_summary.get("head_orientation", {})
+        ho_left = int(head_orient.get("left_pct", 33))
+        ho_center = int(head_orient.get("center_pct", 34))
+        ho_right = int(head_orient.get("right_pct", 33))
+        ho_advice = head_orient.get("plagiocephaly_advice_vi", "Luân phiên đổi hướng quay đầu của bé giữa các cữ ngủ ngửa để phòng ngừa bẹp đầu lệch tư thế (Plagiocephaly).")
+        head_orient_str = f"{ho_left}% Nghiêng Trái • {ho_center}% Chính Giữa • {ho_right}% Nghiêng Phải ({ho_advice})"
+        tummy_info = sleep_summary.get("tummy_time", {})
+        tummy_mins = float(tummy_info.get("total_minutes", 0.0))
+        tummy_advice = tummy_info.get("advice_vi", "Khuyến nghị AAP: Tập nằm sấp (Tummy Time) 10-20 phút/ngày khi thức dưới sự giám sát của Ba mẹ.")
+        tummy_str = f"{tummy_mins} phút hôm nay ({tummy_advice})"
 
         notable_clusters = []
         for h_key, cl in sorted(hourly_clusters.items()):
@@ -1450,8 +1521,10 @@ Dưới đây là hồ sơ dữ liệu sinh học thực tế của em bé {baby
 - Cữ ngủ liền mạch dài nhất: {longest_nap} phút
 - Điểm chất lượng giấc ngủ: {sleep_score}/100
 - Số lần giật mình sinh lý Moro/REM: {sleep_summary.get("rem_twitch_count", 0)} lần
-- Nhịp thở quang học lồng ngực trung bình: {avg_bpm:.1f} BPM (Cảnh báo nguy cơ ngưng thở: {apnea_count} lần)
+- Nhịp thở quang học lồng ngực khi ngủ: {bpm_display_str} (Cảnh báo nguy cơ ngưng thở: {apnea_count} lần)
 - Thống kê âm thanh AI: {crying_count} lần quấy khóc kéo dài, {whimper_count} lần ọ ẹ / trở mình sinh lý, {cough_count} cơn ho, {choke_count} cảnh báo sặc sữa/ọc trớ.
+- Cân bằng hướng quay đầu khi ngủ chống Bẹp đầu lệch (Plagiocephaly - Chuẩn AAP): {head_orient_str}
+- Thời lượng vận động nằm sấp khi thức có giám sát (Tummy Time - Chuẩn AAP): {tummy_str}
 - Chỉ số thể trạng & tăng trưởng: {growth_str}
 
 2. ĐỐI CHIẾU QUY CHUẨN Y KHOA QUỐC TẾ (CLINICAL BENCHMARKS):
@@ -1462,7 +1535,7 @@ Dưới đây là hồ sơ dữ liệu sinh học thực tế của em bé {baby
   -> Đánh giá: {cg_eval['status_vi']}.
   -> Ý nghĩa lâm sàng: {cg_eval['clinical_meaning_vi']}
 • Cảnh báo sặc sữa: {choke_count} lần (Chuẩn an toàn cấp cứu AHA & AAP: 0 lần).
-• Nhịp thở khi ngủ: {avg_bpm:.1f} BPM (Chuẩn sơ sinh WHO: 30 - 60 BPM).
+• Nhịp thở khi ngủ: {bpm_display_str}.
 
 3. PHÂN TÍCH CỤM BIẾN ĐỘNG THEO TỪNG KHUNG GIỜ (HOURLY CLUSTERS):
 {cluster_text}
@@ -1472,7 +1545,7 @@ LƯU Ý Y KHOA QUAN TRỌNG VỀ ĐỘ CHÍNH XÁC:
 2. VỀ TIẾNG Ọ Ẹ & CƠN HO (ĐỐI CHIẾU CHUẨN QUỐC TẾ):
    - Phân tích số lần ọ ẹ ({whimper_count} lần) so với chuẩn AAP/Nelson (15-35 lần/ngày trong chu kỳ ngủ động REM). Giải thích rõ cho ba mẹ đây là phản xạ sinh lý hoàn toàn lành tính khi chuyển giấc và não bộ đang tích cực phát triển, bé đang tập tự trấn an (self-soothing) để nối tiếp cữ ngủ, ba mẹ KHÔNG nên bế ẵm hay đánh thức bé.
    - Dựa trên số lần ho thực tế ({cough_count} lần) đối chiếu chuẩn BTS & CHEST (<= 10 lần/ngày rải rác là phản xạ sinh lý tự nhiên bình thường để làm sạch bụi/dịch hầu họng).
-   - Nếu có cụm ho/khẹc tập trung vào khung giờ sau bú: Giải thích đây là phản xạ trào ngược sinh lý nhẹ (GER) thường gặp ở trẻ sơ sinh, hướng dẫn vỗ ợ hơi kỹ 15-20 phút sau bú, giữ đầu cao 15-30 độ sau ăn.
+   - Nếu có cụm ho/khẹc tập trung vào khung giờ sau bú: Phân biệt rõ Trớ sữa sinh lý lành tính (Happy Spitter / Regurgitation) với Sặc sữa cấp cứu (Choking), và hướng dẫn chuẩn an toàn AAP 2022: "Bế vác thẳng đứng và vỗ ợ hơi kỹ 15–20 phút SAU KHI BÚ (lúc thức); khi đặt bé xuống ngủ BẮT BUỘC đặt nằm ngửa trên bề mặt nôi/đệm phẳng hoàn toàn (0 độ), không kê gối hay nâng nghiêng đệm ngủ".
 3. VỀ THỂ TRẠNG: Đối chiếu theo bảng chuẩn WHO một cách khoa học, khách quan, mang tính khích lệ và đồng hành cùng ba mẹ.
 4. VĂN PHONG: Chuẩn mực y khoa, ấm áp, tạo sự an tâm và tin cậy cho phụ huynh.
 
@@ -1534,9 +1607,11 @@ Trả về đúng định dạng JSON:
                 f"{unmonitored_text}"
                 f"• Cữ dài nhất: <b>{longest_nap} phút</b> | Điểm giấc ngủ AI: <b>{sleep_score}/100</b>\n"
                 f"• Chu kỳ: <b>{sleep_summary.get('deep_ratio_pct', 55)}% NREM</b> (Sâu) | <b>{sleep_summary.get('rem_ratio_pct', 45)}% REM</b> (Động)\n"
+                f"• <b>Cân bằng hướng đầu (Chống bẹp đầu AAP):</b> <b>{ho_left}% Trái</b> • <b>{ho_center}% Giữa</b> • <b>{ho_right}% Phải</b>\n"
+                f"• <b>Vận động Tummy Time (Có Ba mẹ giám sát):</b> <b>{tummy_mins} phút</b>\n"
                 f"👉 <i>{summary_vi}</i>\n\n"
                 f"🫁 <b>2. HÔ HẤP, HO & ĐỐI CHIẾU QUY CHUẨN QUỐC TẾ (AAP/BTS/CHEST):</b>\n"
-                f"• Nhịp thở khi ngủ: <b>{avg_bpm:.1f} BPM</b> (Chuẩn WHO: 30 - 60 BPM • {rp_eval['badge_symbol']} {rp_eval['status_vi']})\n"
+                f"• Nhịp thở khi ngủ: <b>{bpm_display_str}</b> ({rp_eval['badge_symbol']} {rp_eval['status_vi']})\n"
                 f"• <b>Tiếng ọ ẹ sinh lý (REM/Moro):</b> <b>{whimper_count} lần</b> (Chuẩn AAP/Nelson: 15 - 35 lần/ngày • <b>{wh_eval['badge_symbol']} {wh_eval['status_vi']}</b>)\n"
                 f"• <b>Cơn ho bảo vệ đường thở:</b> <b>{cough_count} lần</b> (Chuẩn BTS/CHEST: ≤ 10 lần/ngày • <b>{cg_eval['badge_symbol']} {cg_eval['status_vi']}</b>)\n"
                 f"• Nguy cơ sặc/trớ sữa: <b>{choke_count} lần</b> (Chuẩn an toàn: 0 lần) | Quấy khóc: <b>{crying_count} lần</b>\n"

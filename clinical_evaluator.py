@@ -88,7 +88,7 @@ def evaluate_cough_count(count: int, age_days: int = 34) -> dict:
         status_vi = "Lưu tâm nhẹ / Theo dõi trào ngược sau bú"
         badge_color = "warning"
         badge_symbol = "🟡"
-        clinical_meaning = f"Ghi nhận {count} cơn ho. Tần suất ho tăng nhẹ, thường liên quan đến trào ngược dạ dày thực quản sinh lý (GER) hoặc bú quá no/bú nhanh. Ba mẹ cần vỗ ợ hơi kỹ 15-20 phút sau bú và giữ đầu cao 15-30 độ."
+        clinical_meaning = f"Ghi nhận {count} cơn ho. Tần suất ho tăng nhẹ, thường liên quan đến trào ngược dạ dày thực quản sinh lý (GER) hoặc bú quá no/bú nhanh. Ba mẹ cần Bế vác thẳng đứng và vỗ ợ hơi kỹ 15–20 phút SAU KHI BÚ (lúc thức); khi đặt bé xuống ngủ BẮT BUỘC đặt nằm ngửa trên bề mặt nôi/đệm phẳng hoàn toàn (0 độ), không kê gối hay nâng nghiêng đệm ngủ."
     else:
         status = "ABNORMAL"
         status_vi = "Bất thường / Cần khám Bác sĩ Nhi khoa"
@@ -108,33 +108,45 @@ def evaluate_cough_count(count: int, age_days: int = 34) -> dict:
     }
 
 
-def evaluate_choke_count(count: int) -> dict:
+def evaluate_choke_count(count: int, spit_up_count: int = 0) -> dict:
     """
-    Đối chiếu cảnh báo sặc sữa / tắc nghẽn đường thở
+    Đối chiếu cảnh báo sặc sữa cấp cứu (Choking) và phân biệt rõ với Trớ sữa sinh lý lành tính (Happy Spitter / Regurgitation).
     Chuẩn AHA & AAP Pediatric Life Support.
     """
     count = max(0, int(count))
+    spit_up_count = max(0, int(spit_up_count))
     if count == 0:
         status = "SAFE"
-        status_vi = "An toàn tuyệt đối (0 lần)"
+        status_vi = "An toàn tuyệt đối (0 lần sặc cấp cứu)"
         badge_color = "success"
         badge_symbol = "🟢"
-        clinical_meaning = "Hệ thống ghi nhận 0 lần sự cố tắc nghẽn đường thở do sặc sữa. Phản xạ nuốt và đường thở của bé được bảo vệ tối ưu."
+        if spit_up_count > 0:
+            clinical_meaning = (
+                f"Hệ thống ghi nhận 0 lần sặc sữa tắc nghẽn đường thở cấp cứu (Choking). "
+                f"Có {spit_up_count} lần trớ sữa sinh lý lành tính (Happy Spitter / Regurgitation) do cơ vòng thực quản dưới chưa hoàn thiện: "
+                f"Ba mẹ lưu ý Bế vác thẳng đứng và vỗ ợ hơi kỹ 15–20 phút SAU KHI BÚ (lúc thức); khi đặt bé xuống ngủ BẮT BUỘC đặt nằm ngửa trên bề mặt nôi/đệm phẳng hoàn toàn (0 độ), không kê gối hay nâng nghiêng đệm ngủ."
+            )
+        else:
+            clinical_meaning = "Hệ thống ghi nhận 0 lần sự cố tắc nghẽn đường thở do sặc sữa (Choking). Phản xạ nuốt và đường thở của bé được bảo vệ tối ưu."
     else:
         status = "EMERGENCY"
-        status_vi = "Báo động khẩn cấp (Nguy cơ sặc sữa)"
+        status_vi = "Báo động khẩn cấp (Nguy cơ sặc sữa / Choking)"
         badge_color = "danger"
         badge_symbol = "🔴"
-        clinical_meaning = f"Hệ thống phát hiện {count} lần bé có dấu hiệu ho sặc hoặc trào dịch nghi sặc sữa. Ba mẹ cần tuân thủ ngay phác đồ sơ cứu 5 lần vỗ lưng : 5 lần ấn ngực của AHA!"
+        clinical_meaning = (
+            f"Hệ thống phát hiện {count} lần bé có dấu hiệu thở hắt/tắc nghẽn đường thở nghi Sặc sữa cấp cứu (Choking - khác với trớ sữa sinh lý Happy Spitter). "
+            f"Ba mẹ cần nghiêng đầu bé sang một bên để dịch thoát ra và tuân thủ phác đồ sơ cứu 5 lần vỗ lưng : 5 lần ấn ngực của AHA nếu có tắc nghẽn!"
+        )
 
     return {
         "count": count,
+        "spit_up_count": spit_up_count,
         "status": status,
         "status_vi": status_vi,
         "badge_color": badge_color,
         "badge_symbol": badge_symbol,
-        "benchmark_range": "0 lần",
-        "citation": "Chuẩn an toàn cấp cứu AHA & AAP",
+        "benchmark_range": "0 lần sặc cấp cứu (Choking)",
+        "citation": "Chuẩn an toàn cấp cứu AHA & AAP 2022",
         "clinical_meaning_vi": clinical_meaning
     }
 
@@ -182,13 +194,13 @@ def evaluate_respiration(bpm: float, age_months: int = 1) -> dict:
     }
 
 
-def evaluate_full_daily_health(whimper_count: int, cough_count: int, choke_count: int, avg_bpm: float, age_days: int = 34) -> dict:
+def evaluate_full_daily_health(whimper_count: int, cough_count: int, choke_count: int, avg_bpm: float, age_days: int = 34, spit_up_count: int = 0) -> dict:
     """
     Tổng hợp toàn diện bảng đối chiếu quy chuẩn quốc tế cho báo cáo nhi khoa 24h.
     """
     whimper_eval = evaluate_whimper_count(whimper_count, age_days)
     cough_eval = evaluate_cough_count(cough_count, age_days)
-    choke_eval = evaluate_choke_count(choke_count)
+    choke_eval = evaluate_choke_count(choke_count, spit_up_count=spit_up_count)
     resp_eval = evaluate_respiration(avg_bpm)
 
     # Đánh giá chung toàn bộ thể trạng

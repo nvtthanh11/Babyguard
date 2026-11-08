@@ -159,6 +159,30 @@ def calculate_exact_age(birth_date_str: str, target_date: date = None) -> dict:
     }
 
 
+def interpolate_who_standard(gender: str, total_days: int) -> tuple:
+    """
+    Nội suy tuyến tính (Linear Interpolation) chuẩn WHO theo TỪNG NGÀY TUỔI chính xác (total_days / 30.4375)
+    giữa 2 mốc tháng liền kề trong bảng WHO_STANDARDS.
+    Trả về: (w_med, w_min, w_max, l_med, l_min, l_max, exact_months_float)
+    """
+    gender_key = "girl" if str(gender).lower() in ("girl", "gái", "female", "f") else "boy"
+    table = WHO_STANDARDS.get(gender_key, WHO_STANDARDS["boy"])
+    exact_m = max(0.0, min(12.0, float(total_days) / 30.4375))
+    m_low = int(math.floor(exact_m))
+    m_high = min(12, m_low + 1)
+    frac = exact_m - m_low
+
+    row_low = table.get(m_low, table[0])
+    row_high = table.get(m_high, row_low)
+
+    interp = [round(row_low[i] + frac * (row_high[i] - row_low[i]), 2) for i in range(6)]
+    # Làm tròn chiều dài (cm) tới 1 chữ số thập phân
+    interp[3] = round(interp[3], 1)
+    interp[4] = round(interp[4], 1)
+    interp[5] = round(interp[5], 1)
+    return (interp[0], interp[1], interp[2], interp[3], interp[4], interp[5], round(exact_m, 2))
+
+
 class GrowthTracker:
     def __init__(self, data_path: str = None):
         self.data_path = data_path or GROWTH_FILE
@@ -293,56 +317,84 @@ class GrowthTracker:
 
     def evaluate_growth(self, birth_date_str: str, gender: str = "boy") -> dict:
         """
-        Đối chiếu các số đo mới nhất của bé với Tiêu chuẩn Tăng trưởng Trẻ em của WHO (WHO Child Growth Standards).
+        Đối chiếu các số đo mới nhất của bé với Tiêu chuẩn Tăng trưởng Trẻ em của WHO (WHO Child Growth Standards)
+        sử dụng Nội suy tuyến tính theo từng ngày tuổi và tính tốc độ tăng cân (g/ngày).
         """
         latest = self.get_latest_record()
         if not latest:
             return {"has_data": False}
 
-        age_info = calculate_exact_age(birth_date_str)
+        latest_date = parse_date(latest.get("date")) or date.today()
+        age_info = calculate_exact_age(birth_date_str, target_date=latest_date)
+        total_days = age_info["total_days"]
         months = min(12, age_info["full_months"])
         gender_key = "girl" if str(gender).lower() in ("girl", "gái", "female", "f") else "boy"
 
-        standards = WHO_STANDARDS.get(gender_key, WHO_STANDARDS["boy"])
-        std_row = standards.get(months, standards[1])
+        w_med, w_min, w_max, l_med, l_min, l_max, exact_m = interpolate_who_standard(gender_key, total_days)
+        actual_w = float(latest.get("weight_kg", 0.0))
+        actual_l = float(latest.get("height_cm", 0.0))
 
-        w_med, w_min, w_max, l_med, l_min, l_max = std_row
-        actual_w = latest.get("weight_kg", 0.0)
-        actual_l = latest.get("height_cm", 0.0)
-
-        # Đánh giá cân nặng
+        # Đánh giá cân nặng đối chiếu chuẩn nội suy WHO (-2SD, Trung vị, +2SD)
         if actual_w < w_min:
-            w_status = "Nhẹ cân so với chuẩn WHO"
+            w_status = f"Nhẹ cân so với chuẩn WHO (< {w_min:.1f} kg)"
             w_color = "amber"
         elif actual_w > w_max:
-            w_status = "Vượt trên chuẩn WHO (+2SD)"
+            w_status = f"Vượt trên chuẩn WHO (+2SD > {w_max:.1f} kg)"
             w_color = "cyan"
+        elif actual_w < (w_med - 0.25):
+            w_status = f"Nằm trong ngưỡng an toàn chuẩn WHO (dưới mức trung vị {w_med:.1f} kg)"
+            w_color = "emerald"
+        elif actual_w > (w_med + 0.25):
+            w_status = f"Nằm trong ngưỡng an toàn chuẩn WHO (trên mức trung vị {w_med:.1f} kg)"
+            w_color = "emerald"
         else:
-            w_status = "Đạt chuẩn trung vị WHO (Rất tốt)"
+            w_status = f"Đạt chuẩn trung vị WHO ({w_med:.1f} kg - Rất tốt)"
             w_color = "emerald"
 
-        # Đánh giá chiều cao
+        # Đánh giá chiều cao đối chiếu chuẩn nội suy WHO (-2SD, Trung vị, +2SD)
         if actual_l < l_min:
-            l_status = "Thấp hơn chuẩn WHO (-2SD)"
+            l_status = f"Thấp hơn chuẩn WHO (-2SD < {l_min:.1f} cm)"
             l_color = "amber"
         elif actual_l > l_max:
-            l_status = "Cao vượt trội so với chuẩn WHO"
+            l_status = f"Cao vượt trội so với chuẩn WHO (+2SD > {l_max:.1f} cm)"
             l_color = "cyan"
+        elif actual_l < (l_med - 1.2):
+            l_status = f"Nằm trong ngưỡng an toàn chuẩn WHO (dưới mức trung vị {l_med:.1f} cm)"
+            l_color = "emerald"
+        elif actual_l > (l_med + 1.2):
+            l_status = f"Nằm trong ngưỡng an toàn chuẩn WHO (trên mức trung vị {l_med:.1f} cm)"
+            l_color = "emerald"
         else:
-            l_status = "Phát triển chiều cao lý tưởng (Chuẩn WHO)"
+            l_status = f"Đạt chuẩn trung vị chiều cao WHO ({l_med:.1f} cm - Lý tưởng)"
             l_color = "emerald"
 
-        # Tốc độ tăng trưởng nếu có >= 2 bản ghi
+        # Tính tốc độ tăng cân trung bình (gram/ngày) từ lúc sinh (records[0]) và từ lần đo trước (records[-2])
         growth_velocity = ""
+        velocity_from_birth_g_day = 0.0
+        velocity_recent_g_day = 0.0
+
+        if len(self.records) >= 1:
+            birth_rec = self.records[0]
+            d_birth = parse_date(birth_rec.get("date")) or parse_date(birth_date_str)
+            d_curr = parse_date(latest.get("date"))
+            if d_birth and d_curr and (d_curr - d_birth).days > 0:
+                days_from_birth = (d_curr - d_birth).days
+                w_gain_birth_g = (actual_w - float(birth_rec.get("weight_kg", actual_w))) * 1000.0
+                velocity_from_birth_g_day = round(w_gain_birth_g / days_from_birth, 1)
+
         if len(self.records) >= 2:
             prev = self.records[-2]
             d_prev = parse_date(prev.get("date"))
             d_curr = parse_date(latest.get("date"))
             if d_prev and d_curr and (d_curr - d_prev).days > 0:
                 days_gap = (d_curr - d_prev).days
-                w_gain = actual_w - prev.get("weight_kg", 0.0)
-                l_gain = actual_l - prev.get("height_cm", 0.0)
-                growth_velocity = f"Tăng +{w_gain*1000:.0f}g và +{l_gain:.1f}cm trong {days_gap} ngày"
+                w_gain = actual_w - float(prev.get("weight_kg", 0.0))
+                l_gain = actual_l - float(prev.get("height_cm", 0.0))
+                velocity_recent_g_day = round((w_gain * 1000.0) / days_gap, 1)
+                growth_velocity = (
+                    f"Tăng +{w_gain*1000:.0f}g ({velocity_recent_g_day:.1f}g/ngày) và +{l_gain:.1f}cm trong {days_gap} ngày "
+                    f"• Trung bình từ lúc sinh: {velocity_from_birth_g_day:.1f}g/ngày (Chuẩn vàng sơ sinh: 25 - 35g/ngày)"
+                )
 
         return {
             "has_data": True,
@@ -351,17 +403,22 @@ class GrowthTracker:
             "gender": "Bé Trai" if gender_key == "boy" else "Bé Gái",
             "who_standards": {
                 "month": months,
+                "exact_months": exact_m,
+                "total_days": total_days,
                 "weight_median": w_med,
                 "weight_range": f"{w_min} - {w_max} kg",
                 "length_median": l_med,
                 "length_range": f"{l_min} - {l_max} cm",
-                "citation": "Tiêu chuẩn Tăng trưởng Trẻ em của Tổ chức Y tế Thế giới (WHO Child Growth Standards)"
+                "velocity_benchmark": "25 - 35 g/ngày (0 - 3 tháng đầu)",
+                "citation": "Tiêu chuẩn Tăng trưởng Trẻ em của Tổ chức Y tế Thế giới (WHO Child Growth Standards - Nội suy theo ngày tuổi)"
             },
             "weight_status": w_status,
             "weight_color": w_color,
             "length_status": l_status,
             "length_color": l_color,
             "growth_velocity": growth_velocity,
+            "velocity_from_birth_g_day": velocity_from_birth_g_day,
+            "velocity_recent_g_day": velocity_recent_g_day,
             "history": self.records,
             "ai_analysis": self.get_latest_ai_analysis()
         }
@@ -411,11 +468,21 @@ class GrowthTracker:
             except Exception:
                 pass
 
-        age_info = calculate_exact_age(birth_date_str)
+        d_curr_obj = parse_date(curr_date) or date.today()
+        age_info = calculate_exact_age(birth_date_str, target_date=d_curr_obj)
+        total_days = age_info["total_days"]
         months = min(12, age_info["full_months"])
         gender_key = "girl" if str(gender).lower() in ("girl", "gái", "female", "f") else "boy"
-        std_row = WHO_STANDARDS.get(gender_key, WHO_STANDARDS["boy"]).get(months, (4.5, 3.4, 5.7, 54.7, 51.1, 58.4))
-        w_med, w_min, w_max, l_med, l_min, l_max = std_row
+        w_med, w_min, w_max, l_med, l_min, l_max, _ = interpolate_who_standard(gender_key, total_days)
+
+        vel_birth_g_day = 0.0
+        if len(self.records) >= 1:
+            birth_rec = self.records[0]
+            d_b = parse_date(birth_rec.get("date")) or parse_date(birth_date_str)
+            if d_b and (d_curr_obj - d_b).days > 0:
+                vel_birth_g_day = round(((w - float(birth_rec.get("weight_kg", w))) * 1000.0) / (d_curr_obj - d_b).days, 1)
+                if vel_birth_g_day > 0:
+                    velocity_str = f"{velocity_str} | Trung bình từ lúc sinh: {vel_birth_g_day}g/ngày (Chuẩn vàng: 25-35g/ngày)"
 
         if w < w_min:
             status_badge = "⚠️ Cần theo dõi thêm (Dưới dải an toàn WHO)"

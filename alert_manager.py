@@ -23,6 +23,8 @@ class AlertManager:
         self.events = self._load_events()
         self._bot_update_offset = 0
         self.recent_bot_contacts = []
+        self.on_baby_out_of_crib_callback = None
+        self.snooze_until = 0.0
         self.first_aid_data = self._load_first_aid_protocols()
         threading.Thread(target=self._bot_auto_reply_loop, daemon=True).start()
 
@@ -214,6 +216,9 @@ class AlertManager:
                             uid = upd.get("update_id", 0)
                             if uid >= self._bot_update_offset:
                                 self._bot_update_offset = uid + 1
+                            if "callback_query" in upd:
+                                self._handle_callback_query(bot_token, upd["callback_query"])
+                                continue
                             contact = self._record_bot_contact(upd)
                             if contact:
                                 self._reply_chat_id_to_user(bot_token, contact)
@@ -245,24 +250,145 @@ class AlertManager:
     def _reply_chat_id_to_user(self, bot_token: str, contact: dict):
         try:
             baby_name = self.config.get("baby_name", "Bé")
-            reply_text = (
-                f"🤖 <b>BabyGuard AI — Hệ Thống Trông Trẻ ({baby_name})</b>\n\n"
-                f"👋 Xin chào <b>{contact['name']}</b>!\n"
-                f"🔑 Mã <b>Telegram Chat ID</b> của bạn là:\n"
-                f"<code>{contact['chat_id']}</code>\n\n"
-                f"👉 <i>Hãy copy mã số trên và nhập vào ô <b>Chat ID</b> trong mục Cài đặt của BabyGuard AI để nhận cảnh báo cùng gia đình nhé!</i>"
-            )
+            cid = contact["chat_id"]
+            last_text = contact.get("last_text", "").strip()
+            
+            # Kiểm tra xem người dùng có bấm /start với mã ghép nối (access_key) không
+            # Ví dụ: /start bg_fa4ad9fb3fef38ab5005549f2792ab75
+            current_access_key = str(self.config.get("access_key", "")).strip()
+            is_start_pair = False
+            token_arg = ""
+            if last_text.startswith("/start"):
+                parts = last_text.split()
+                if len(parts) > 1:
+                    token_arg = parts[1].strip()
+                    if current_access_key and token_arg == current_access_key:
+                        is_start_pair = True
+
+            # Tự động lưu chat_id vào cấu hình nếu đúng mã token hoặc chưa có người nhận nào
+            recipients = self.config.get("telegram_recipients", [])
+            existing_ids = [str(r.get("chat_id", "")) for r in recipients if isinstance(r, dict)]
+            primary_cid = str(self.config.get("telegram_chat_id", "")).strip()
+            
+            should_auto_add = is_start_pair or (not primary_cid and not existing_ids)
+            if should_auto_add:
+                new_person = {
+                    "name": contact["name"],
+                    "username": contact.get("username", ""),
+                    "chat_id": cid,
+                    "added_at": datetime.now().strftime("%H:%M:%S - %d/%m/%Y")
+                }
+                if cid not in existing_ids:
+                    recipients.append(new_person)
+                    self.config["telegram_recipients"] = recipients
+                if not primary_cid or is_start_pair:
+                    self.config["telegram_chat_id"] = cid
+                self.config["telegram_enabled"] = True
+                
+                # Lưu vào config.json trên ổ đĩa
+                cfg_path = os.path.join(BASE_DIR, "config.json")
+                if os.path.exists(cfg_path):
+                    try:
+                        with open(cfg_path, "r", encoding="utf-8") as f:
+                            disk_cfg = json.load(f)
+                        disk_cfg["telegram_chat_id"] = self.config["telegram_chat_id"]
+                        disk_cfg["telegram_recipients"] = self.config["telegram_recipients"]
+                        disk_cfg["telegram_enabled"] = True
+                        with open(cfg_path, "w", encoding="utf-8") as f:
+                            json.dump(disk_cfg, f, ensure_ascii=False, indent=2)
+                        print(f"[AlertManager] ✅ ĐÃ TỰ ĐỘNG GHÉP NỐI THÀNH CÔNG TELEGRAM: {contact['name']} ({cid})")
+                    except Exception as ce:
+                        print(f"[AlertManager] Lỗi lưu auto-pair config: {ce}")
+
+            fixed_cam_url = f"https://babyguard.site/cam?token={current_access_key}" if current_access_key else "https://cam.babyguard.site"
+
+            if is_start_pair or should_auto_add:
+                reply_text = (
+                    f"🎉 <b>KẾT NỐI THÀNH CÔNG BABYGUARD AI!</b>\n\n"
+                    f"👋 Xin chào <b>{contact['name']}</b>!\n"
+                    f"Hệ thống đã nhận diện và tự động kết nối với Camera của <b>{baby_name}</b>.\n\n"
+                    f"🔗 <b>ĐƯỜNG LINK XEM CAMERA CỐ ĐỊNH CỦA GIA ĐÌNH:</b>\n"
+                    f"👉 <a href=\"{fixed_cam_url}\"><b>{fixed_cam_url}</b></a>\n\n"
+                    f"🛡️ <i>Từ bây giờ, mọi cảnh báo bé lật sấp, trớ sữa, ngạt thở và Báo cáo giấc ngủ 07:00 sáng sẽ được gửi thẳng về đây 24/7!</i>"
+                )
+            else:
+                reply_text = (
+                    f"🤖 <b>BabyGuard AI — Hệ Thống Trông Trẻ ({baby_name})</b>\n\n"
+                    f"👋 Xin chào <b>{contact['name']}</b>!\n"
+                    f"🔑 Mã <b>Telegram Chat ID</b> của bạn là:\n"
+                    f"<code>{contact['chat_id']}</code>\n\n"
+                    f"🔗 <b>Link xem camera cố định:</b>\n"
+                    f"👉 <a href=\"{fixed_cam_url}\"><b>{fixed_cam_url}</b></a>\n\n"
+                    f"👉 <i>Hệ thống đã tự động ghi nhận bạn vào danh bạ nhận cảnh báo!</i>"
+                )
+
             requests.post(
                 f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                json={"chat_id": contact["chat_id"], "text": reply_text, "parse_mode": "HTML"},
+                json={
+                    "chat_id": contact["chat_id"],
+                    "text": reply_text,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": True
+                },
                 timeout=8,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[AlertManager] Lỗi gửi reply Telegram: {e}")
+
+    def _handle_callback_query(self, bot_token: str, cb_query: dict):
+        try:
+            cb_id = cb_query.get("id")
+            data = str(cb_query.get("data", ""))
+            msg = cb_query.get("message", {})
+            chat_id = msg.get("chat", {}).get("id")
+            user = cb_query.get("from", {})
+            user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or "Ba/Mẹ"
+
+            if data == "baby_out_of_crib":
+                if callable(self.on_baby_out_of_crib_callback):
+                    self.on_baby_out_of_crib_callback(True)
+                ack_text = "✅ Đã xác nhận bé rời nôi! Tạm ngưng cảnh báo cho đến khi đặt bé vào lại."
+                reply_msg = (
+                    f"👶 <b>[{user_name} ĐÃ XÁC NHẬN BÉ RỜI NÔI]</b>\n"
+                    f"• Hệ thống đã <b>tạm ngưng các cảnh báo nôi trống</b> (mép giường, che mặt, ngưng thở).\n"
+                    f"• Camera vẫn đang tracking liên tục và sẽ <b>tự động bật lại bảo vệ</b> ngay khi phát hiện bé được đặt trở lại vào nôi!"
+                )
+            elif data == "snooze_15m":
+                self.snooze_until = time.time() + 15 * 60
+                ack_text = "⏸️ Đã tạm tắt chuông cảnh báo trong 15 phút!"
+                reply_msg = f"⏸️ <b>[{user_name}]</b> đã tạm tắt thông báo cảnh báo trong <b>15 phút</b>."
+            elif data == "resume_monitoring":
+                self.snooze_until = 0.0
+                if callable(self.on_baby_out_of_crib_callback):
+                    self.on_baby_out_of_crib_callback(False)
+                ack_text = "🟢 Đã bật lại giám sát an toàn ngay lập tức!"
+                reply_msg = f"🟢 <b>[{user_name}]</b> đã bật lại chế độ giám sát an toàn cho bé."
+            else:
+                return
+
+            requests.post(
+                f"https://api.telegram.org/bot{bot_token}/answerCallbackQuery",
+                json={"callback_query_id": cb_id, "text": ack_text, "show_alert": False},
+                timeout=6
+            )
+            if chat_id:
+                inline_kb = {
+                    "inline_keyboard": [
+                        [{"text": "🟢 Bật lại giám sát ngay", "callback_data": "resume_monitoring"}]
+                    ]
+                } if data in ("baby_out_of_crib", "snooze_15m") else None
+                payload = {"chat_id": chat_id, "text": reply_msg, "parse_mode": "HTML"}
+                if inline_kb:
+                    payload["reply_markup"] = inline_kb
+                requests.post(f"https://api.telegram.org/bot{bot_token}/sendMessage", json=payload, timeout=8)
+        except Exception as e:
+            print(f"[AlertManager] Lỗi xử lý nút bấm Telegram: {e}")
 
     def _can_alert(self, event_type: str) -> bool:
         if event_type == "whimper":
             # Tiếng ọ ẹ sinh lý REM: Chỉ ghi log nhật ký y tế, tuyệt đối KHÔNG bao giờ báo động Telegram hay hú còi
+            return False
+        if time.time() < getattr(self, "snooze_until", 0.0):
             return False
         base_cooldown = self.config.get("alert_cooldown_seconds", 120)
         # Routine motion has longer cooldown to avoid flooding local logs
@@ -361,22 +487,30 @@ class AlertManager:
             import re
             clean_photo_cap = self._safe_photo_caption(caption, max_len=950)
             plain_photo_cap = re.sub(r'<[^>]+>', '', clean_photo_cap)
+            reply_markup_json = json.dumps({
+                "inline_keyboard": [
+                    [
+                        {"text": "👶 Đã bế bé ra ngoài (Tạm dừng)", "callback_data": "baby_out_of_crib"},
+                        {"text": "⏸️ Tắt chuông 15p", "callback_data": "snooze_15m"}
+                    ]
+                ]
+            })
 
             for r in recipients:
                 try:
                     chat_id = r["chat_id"]
-                    # 1. Gửi ảnh kèm chú thích an toàn (luôn dưới 1,000 ký tự)
+                    # 1. Gửi ảnh kèm chú thích an toàn (luôn dưới 1,000 ký tự) và nút bấm tương tác
                     sent_photo = False
                     if photo_path and os.path.exists(photo_path):
                         try:
                             with open(photo_path, "rb") as f:
-                                resp = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": clean_photo_cap, "parse_mode": "HTML"}, timeout=12)
+                                resp = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": clean_photo_cap, "parse_mode": "HTML", "reply_markup": reply_markup_json}, timeout=12)
                             if resp.status_code == 200:
                                 sent_photo = True
                             else:
                                 # Thử lại với plain text nếu parse HTML bị từ chối
                                 with open(photo_path, "rb") as f:
-                                    resp2 = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": plain_photo_cap}, timeout=12)
+                                    resp2 = requests.post(photo_url, files={"photo": f}, data={"chat_id": chat_id, "caption": plain_photo_cap, "reply_markup": reply_markup_json}, timeout=12)
                                 if resp2.status_code == 200:
                                     sent_photo = True
                         except Exception as pe:
@@ -384,10 +518,10 @@ class AlertManager:
 
                     # 2. Nếu nội dung ban đầu quá dài (> 950 ký tự), gửi thêm tin nhắn văn bản hướng dẫn đầy đủ
                     if len(caption) > 950:
-                        requests.post(msg_url, data={"chat_id": chat_id, "text": caption, "parse_mode": "HTML"}, timeout=10)
+                        requests.post(msg_url, data={"chat_id": chat_id, "text": caption, "parse_mode": "HTML", "reply_markup": reply_markup_json}, timeout=10)
                     elif not sent_photo:
                         # Fallback nếu không có ảnh hoặc gửi ảnh lỗi hoàn toàn -> gửi văn bản
-                        requests.post(msg_url, data={"chat_id": chat_id, "text": caption, "parse_mode": "HTML"}, timeout=10)
+                        requests.post(msg_url, data={"chat_id": chat_id, "text": caption, "parse_mode": "HTML", "reply_markup": reply_markup_json}, timeout=10)
 
                     print(f"[AlertManager] Telegram alert sent to {r['name']} ({chat_id}) [photo={sent_photo}]")
                 except Exception as e:
@@ -396,17 +530,44 @@ class AlertManager:
         threading.Thread(target=_send, daemon=True).start()
 
     def _get_compact_view_link(self) -> str:
-        """Tạo link xem trực tiếp 1 chạm siêu nhanh không cần mật khẩu cho ba mẹ."""
+        """Tạo link xem trực tiếp 1 chạm siêu nhanh không cần mật khẩu/PIN cho ba mẹ (đã mã hóa đường dẫn)."""
         url = str(self.config.get("remote_access_url", "")).strip()
-        if not url or "trycloudflare.com" in url or "cam.babyguard.site" in url or url == "https://babyguard.site":
-            url = "https://babyguard.site/cam"
-
         acc_key = str(self.config.get("access_key", "")).strip()
-        if acc_key and "?k=" not in url and "&k=" not in url:
-            separator = "&" if "?" in url else "?"
-            url = f"{url}{separator}k={acc_key}"
+        if not acc_key:
+            try:
+                cfg_path = os.path.join(BASE_DIR, "config.json")
+                if os.path.exists(cfg_path):
+                    with open(cfg_path, "r", encoding="utf-8") as f:
+                        disk_cfg = json.load(f)
+                    acc_key = str(disk_cfg.get("access_key", "")).strip()
+                if not acc_key:
+                    import secrets
+                    acc_key = "bg_" + secrets.token_hex(16)
+                    self.config["access_key"] = acc_key
+                    if os.path.exists(cfg_path):
+                        disk_cfg["access_key"] = acc_key
+                        with open(cfg_path, "w", encoding="utf-8") as f:
+                            json.dump(disk_cfg, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
 
-        return f'\n🔗 <b><a href="{url}">👉 BẤM XEM CAMERA NGAY (1 GIÂY)</a></b>'
+        if not url or url == "https://babyguard.site":
+            base_cam_url = "https://cam.babyguard.site"
+        else:
+            base_cam_url = url.rstrip("/")
+
+        if acc_key:
+            if "/cam/" not in base_cam_url and "/v/" not in base_cam_url:
+                if base_cam_url.endswith("/cam"):
+                    full_url = f"{base_cam_url}/{acc_key}"
+                else:
+                    full_url = f"{base_cam_url}/cam/{acc_key}"
+            else:
+                full_url = base_cam_url
+        else:
+            full_url = f"{base_cam_url}/cam" if not base_cam_url.endswith("/cam") else base_cam_url
+
+        return f'\n🔗 <b><a href="{full_url}">👉 BẤM XEM CAMERA NGAY (1 GIÂY)</a></b>'
 
     @staticmethod
     def _chunk_telegram_text(text: str, max_chars: int = 3850) -> list:
@@ -708,7 +869,6 @@ class AlertManager:
                     counts["choke_risk_count"] += 1
                 elif t == "spit_up":
                     counts["spit_up_count"] += 1
-                    counts["choke_risk_count"] += 1
                 elif t == "apnea":
                     counts["apnea_count"] += 1
                 elif t == "prone":
@@ -734,6 +894,7 @@ class AlertManager:
                 if tots:
                     counts["cough_count"] = max(counts["cough_count"], int(tots.get("cough_count", 0)))
                     counts["choke_risk_count"] = max(counts["choke_risk_count"], int(tots.get("choke_risk_count", 0)))
+                    counts["spit_up_count"] = max(counts["spit_up_count"], int(tots.get("spit_up_count", 0)))
                     counts["crying_count"] = max(counts["crying_count"], int(tots.get("crying_count", 0)))
                     counts["whimper_count"] = max(counts["whimper_count"], int(tots.get("whimper_count", 0)))
                     counts["apnea_count"] = max(counts["apnea_count"], int(tots.get("apnea_count", 0)))

@@ -70,6 +70,8 @@ class AudioCryDetector:
         self.continuous_cry_seconds = 0.0
         self.last_sound_active_time = 0.0
         self.last_cry_callback_trigger_time = 0.0
+        self.last_cough_callback_time = 0.0
+        self.last_choke_callback_time = 0.0
         self.whimper_history = deque(maxlen=30)         # Lưu timestamp các lần ọ ẹ ngắn (< 4s) trong 60s
         self.acoustic_sliding_window = deque(maxlen=24) # Bộ đệm 12 giây gần nhất (@ 2Hz) để tính duty-cycle & xu hướng âm lượng
         self.acoustic_event_log = deque(maxlen=40)      # Nhật ký tiến trình âm thanh gần nhất chuyển cho Gemini thẩm định
@@ -79,8 +81,9 @@ class AudioCryDetector:
         self.target_classes = [11, 19, 20, 21, 22]
         # Nhóm Ho & Viêm Họng: 42: Cough, 43: Throat clearing, 37: Wheeze
         self.cough_classes = [42, 43, 37]
-        # Nhóm Sặc Sữa & Nguy Cơ Ngạt: 39: Gasp, 41: Snort, 34: Grunt
-        self.choke_classes = [39, 41, 34]
+        # Nhóm Sặc Sữa & Nguy Cơ Ngạt: Chỉ giữ class 39 (Gasp - thở hắt/ngộp thở); loại bỏ 34 (Grunt) và 41 (Snort) về nhóm sinh lý
+        self.choke_classes = [39]
+        self.physiological_classes = [34, 41]
         # Speech & vocal classes (tiếng người lớn nói chuyện, dỗ bé)
         self.speech_classes = [0, 1, 2, 3, 5, 65]
         # Laughter / Giggle / Baby laughter (13, 14, 15, 16)
@@ -220,7 +223,7 @@ class AudioCryDetector:
                     infant_cry = float(scores[20])   # YAMNet class 20: Baby cry, infant cry
                     raw_scream = float(scores[11])   # YAMNet class 11: Screaming
                     raw_whimper = float(scores[21])  # YAMNet class 21: Whimper (tiếng ọ ẹ / khóc thút thít)
-                    raw_grunt = float(scores[34])    # YAMNet class 34: Grunt (tiếng rặn / rên sinh lý)
+                    raw_grunt = float(max(scores[34], scores[41]))  # YAMNet class 34 (Grunt) & 41 (Snort) - âm thanh sinh lý
                     raw_cough = float(max(scores[c] for c in self.cough_classes))
                     raw_choke = float(max(scores[c] for c in self.choke_classes))
                     raw_speech = float(max(scores[c] for c in self.speech_classes))
@@ -235,12 +238,20 @@ class AudioCryDetector:
 
                     if is_adult_speech:
                         cal_cry = 0.0
+                        cal_cough = 0.0
+                        cal_choke = 0.0
+                        is_genuine_cry_sound = False
+                        is_whimper_sound = False
                         self.cry_consecutive_frames = 0
                         self.continuous_cry_seconds = 0.0
                         self.cry_start_time = None
                         self.cry_probability = max(0.0, self.cry_probability - 0.08)
+                        self.cough_probability = max(0.0, self.cough_probability - 0.08)
+                        self.choke_probability = max(0.0, self.choke_probability - 0.08)
                     else:
                         cal_cry = self._calibrate_cry(raw_cry)
+                        cal_cough = self._calibrate_cough(raw_cough)
+                        cal_choke = self._calibrate_choke(raw_choke)
                         is_genuine_cry_sound = (cal_cry >= self.cry_threshold or infant_cry >= 0.14 or raw_scream >= 0.18)
                         is_whimper_sound = (raw_whimper >= 0.12 or raw_grunt >= 0.12 or (0.10 <= cal_cry < self.cry_threshold))
 
@@ -283,9 +294,6 @@ class AudioCryDetector:
                                     self.cry_start_time = None
                                     self.continuous_cry_seconds = 0.0
                                     self.cry_consecutive_frames = 0
-
-                    cal_cough = self._calibrate_cough(raw_cough)
-                    cal_choke = self._calibrate_choke(raw_choke)
 
                     # --- BỘ TÍNH TOÁN CỬA SỔ TRƯỢT 12 GIÂY & DUTY-CYCLE & XU HƯỚNG ÂM LƯỢNG ---
                     self.acoustic_sliding_window.append({
@@ -410,10 +418,14 @@ class AudioCryDetector:
                                 self.on_cry_callback(self.cry_probability, vol, top_label)
 
                     if self.cough_alert_enabled and self.cough_probability >= self.cough_threshold and self.on_cough_callback:
-                        self.on_cough_callback(self.cough_probability, vol, top_label)
+                        if (now_t - self.last_cough_callback_time) >= 20.0:
+                            self.last_cough_callback_time = now_t
+                            self.on_cough_callback(self.cough_probability, vol, top_label)
 
                     if self.choke_alert_enabled and self.choke_probability >= self.choke_threshold and self.on_choke_callback:
-                        self.on_choke_callback(self.choke_probability, vol, top_label)
+                        if (now_t - self.last_choke_callback_time) >= 30.0:
+                            self.last_choke_callback_time = now_t
+                            self.on_choke_callback(self.choke_probability, vol, top_label)
 
                 except Exception as e:
                     print(f"[AudioDetector] Inference error: {e}")

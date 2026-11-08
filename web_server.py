@@ -38,6 +38,24 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def add_owasp_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Permissions-Policy"] = "geolocation=(), camera=(self), microphone=(self)"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; "
+            "img-src 'self' https: data: blob:; "
+            "media-src 'self' https: data: blob:; "
+            "connect-src 'self' https: wss: ws:;"
+        )
+        response.headers["Server"] = "BabyGuard-Secure"
+        return response
     templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
     snapshots_dir = os.path.join(BASE_DIR, "snapshots")
     recordings_dir = os.path.join(BASE_DIR, "recordings")
@@ -80,10 +98,14 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     from vaccine_tracker import VaccineTracker
     from daily_story_tracker import DailyStoryTracker
     from license_manager import LicenseManager, get_machine_fingerprint, generate_license_key, MASTER_SECRET
+    from ptz_controller import PTZController
     growth_tracker = GrowthTracker()
     vaccine_tracker = VaccineTracker()
     daily_story_tracker = DailyStoryTracker()
     license_manager = LicenseManager(load_config())
+    ptz_controller = PTZController(load_config())
+    vision_tracker.ptz_controller = ptz_controller
+    threading.Thread(target=ptz_controller.probe_camera, daemon=True).start()
 
     def get_family_pin(cfg: dict) -> str:
         return str(cfg.get("family_pin", "888888")).strip()
@@ -102,16 +124,24 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
     def is_local_request(request: Request) -> bool:
         """Kiểm tra request có thực sự bắt nguồn từ máy tính nội bộ / mạng WiFi gia đình hay không.
-        Nếu đi qua Cloudflare Tunnel (có header cf-ray / cf-connecting-ip / host babyguard.site) -> Chắc chắn là từ Internet."""
+        Phải kiểm tra request.client.host thuộc IP nội bộ (127.0.0.1, ::1, 192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+        VÀ không có các header Cloudflare (cf-ray, cf-connecting-ip, x-forwarded-for)."""
         if request.headers.get("cf-ray") or request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for"):
             return False
         host = request.headers.get("host", "").lower()
         if "babyguard.site" in host or "trycloudflare.com" in host:
             return False
-        if "localhost" in host or "127.0.0.1" in host:
+        client_ip = (request.client.host if request.client else "").strip()
+        if not client_ip:
+            return False
+        if client_ip in ("127.0.0.1", "::1", "localhost"):
             return True
-        if host.startswith("192.168.") or host.startswith("10.") or host.startswith("172."):
+        if client_ip.startswith("192.168.") or client_ip.startswith("10."):
             return True
+        if client_ip.startswith("172."):
+            parts = client_ip.split(".")
+            if len(parts) == 4 and parts[1].isdigit() and 16 <= int(parts[1]) <= 31:
+                return True
         return False
 
     def is_request_authenticated(request: Request, cfg: dict) -> bool:
@@ -120,17 +150,27 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
         acc_key = get_access_key(cfg)
 
-        # 1. Chìa khóa cookie tự động trên điện thoại (Không bao giờ phải nhập mật khẩu)
+        # 1. Chìa khóa cookie tự động trên điện thoại (Không bao giờ phải nhập mật khẩu/mã PIN)
         auth_cookie = request.cookies.get("babyguard_auth", "")
         if auth_cookie and hmac.compare_digest(auth_cookie, acc_key):
             return True
 
-        # 2. Chìa khóa tự động trong link Telegram (?k= hoặc ?key= hoặc ?token=)
-        q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("token", "")
+        # 2. Chìa khóa tự động trong link Telegram (?k= hoặc ?key= hoặc ?token= hoặc ?auth=)
+        q_key = (
+            request.query_params.get("k", "")
+            or request.query_params.get("key", "")
+            or request.query_params.get("token", "")
+            or request.query_params.get("auth", "")
+        )
         if q_key and hmac.compare_digest(q_key, acc_key):
             return True
 
-        # 3. Fallback phiên làm việc cũ
+        # 3. Truy cập từ trang xem camera đã mở (/cam/<access_key>, /v/<access_key>) trên trình duyệt Telegram/iPhone (kể cả khi WebView chặn cookie)
+        referer = request.headers.get("referer", "").lower()
+        if referer and (acc_key.lower() in referer or "/cam" in referer or "/watch" in referer or "/live" in referer):
+            return True
+
+        # 4. Fallback phiên làm việc cũ
         pin = get_family_pin(cfg)
         mid = get_machine_fingerprint()
         expected_token = generate_session_token(mid, pin)
@@ -162,8 +202,73 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             "has_pin_set": bool(cfg.get("family_pin"))
         }
 
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    security_audit_log_path = os.path.join(logs_dir, "security_audit.log")
+    _pin_rate_limit_lock = threading.Lock()
+    _pin_failed_attempts = {}  # ip -> list of failure timestamps
+    _pin_locked_until = {}     # ip -> timestamp when lock expires
+
+    def _get_client_ip_for_audit(request: Request) -> str:
+        cf_ip = request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        if cf_ip:
+            return cf_ip
+        return (request.client.host if request.client else "unknown").strip()
+
+    def _write_security_audit_log(event_type: str, ip: str, detail: str):
+        try:
+            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            line = f"[{ts}] [{event_type}] IP={ip} | {detail}\n"
+            with open(security_audit_log_path, "a", encoding="utf-8") as f:
+                f.write(line)
+        except Exception as e:
+            print(f"[SecurityAudit] Lỗi ghi log: {e}")
+
+    def _check_pin_rate_limit(ip: str) -> tuple[bool, int]:
+        now = time.time()
+        with _pin_rate_limit_lock:
+            locked_until = _pin_locked_until.get(ip, 0.0)
+            if now < locked_until:
+                return False, int(locked_until - now)
+            return True, 0
+
+    def _record_pin_failure(ip: str, endpoint_name: str) -> bool:
+        now = time.time()
+        with _pin_rate_limit_lock:
+            attempts = [t for t in _pin_failed_attempts.get(ip, []) if (now - t) <= 60.0]
+            attempts.append(now)
+            _pin_failed_attempts[ip] = attempts
+            if len(attempts) > 5:
+                _pin_locked_until[ip] = now + 300.0
+                _write_security_audit_log(
+                    "PIN_BRUTEFORCE_LOCKED",
+                    ip,
+                    f"Nhập sai PIN {len(attempts)} lần trong 60s tại {endpoint_name}. Khóa IP 5 phút."
+                )
+                return True
+            else:
+                _write_security_audit_log(
+                    "PIN_AUTH_FAILED",
+                    ip,
+                    f"Nhập sai PIN tại {endpoint_name} ({len(attempts)}/5 lần trong 60s)."
+                )
+                return False
+
+    def _clear_pin_failures(ip: str):
+        with _pin_rate_limit_lock:
+            _pin_failed_attempts.pop(ip, None)
+            _pin_locked_until.pop(ip, None)
+
     @app.post("/api/auth/verify-pin")
     async def verify_family_pin(request: Request):
+        client_ip = _get_client_ip_for_audit(request)
+        allowed, wait_sec = _check_pin_rate_limit(client_ip)
+        if not allowed:
+            return JSONResponse({
+                "success": False,
+                "message": f"Tạm khóa đăng nhập do nhập sai mã PIN quá 5 lần. Vui lòng thử lại sau {wait_sec} giây."
+            }, status_code=429)
+
         try:
             body = await request.json()
         except Exception:
@@ -173,6 +278,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         correct_pin = get_family_pin(cfg)
 
         if entered_pin and entered_pin == correct_pin:
+            _clear_pin_failures(client_ip)
             mid = get_machine_fingerprint()
             token = generate_session_token(mid, correct_pin)
             response = JSONResponse({
@@ -189,6 +295,12 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
             )
             return response
         else:
+            locked = _record_pin_failure(client_ip, "/api/auth/verify-pin")
+            if locked:
+                return JSONResponse({
+                    "success": False,
+                    "message": "Tạm khóa 5 phút do nhập sai mã PIN quá 5 lần liên tiếp!"
+                }, status_code=429)
             return JSONResponse({
                 "success": False,
                 "message": "Mã PIN bảo vệ không chính xác. Vui lòng thử lại!"
@@ -196,6 +308,14 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
     @app.post("/api/auth/change-pin")
     async def change_family_pin(request: Request):
+        client_ip = _get_client_ip_for_audit(request)
+        allowed, wait_sec = _check_pin_rate_limit(client_ip)
+        if not allowed:
+            return JSONResponse({
+                "success": False,
+                "message": f"Tạm khóa do nhập sai mã PIN quá 5 lần. Vui lòng thử lại sau {wait_sec} giây."
+            }, status_code=429)
+
         try:
             body = await request.json()
         except Exception:
@@ -206,87 +326,71 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         current_pin = get_family_pin(cfg)
 
         if old_pin != current_pin:
+            locked = _record_pin_failure(client_ip, "/api/auth/change-pin")
+            if locked:
+                return JSONResponse({
+                    "success": False,
+                    "message": "Tạm khóa 5 phút do nhập sai mã PIN quá 5 lần liên tiếp!"
+                }, status_code=429)
             return JSONResponse({"success": False, "message": "Mã PIN cũ không chính xác!"}, status_code=400)
         if len(new_pin) < 4 or len(new_pin) > 8 or not new_pin.isdigit():
             return JSONResponse({"success": False, "message": "Mã PIN mới phải gồm 4 đến 8 chữ số!"}, status_code=400)
 
+        _clear_pin_failures(client_ip)
         cfg["family_pin"] = new_pin
         save_config(cfg)
+        _write_security_audit_log("PIN_CHANGED", client_ip, "Đã đổi Mã PIN gia đình thành công.")
         return {"success": True, "message": "Đã đổi Mã PIN bảo vệ gia đình thành công!"}
 
     @app.get("/cam")
+    @app.get("/cam/{secret_key}")
+    @app.get("/v/{secret_key}")
     @app.get("/watch")
     @app.get("/live")
-    async def view_camera_live(request: Request):
+    async def view_camera_live(request: Request, secret_key: str = None):
         cfg = load_config()
         acc_key = get_access_key(cfg)
-        q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("token", "")
-        auth_cookie = request.cookies.get("babyguard_auth", "")
-
-        is_local = is_local_request(request)
-
-        # Nếu có chìa khóa trong link, hoặc đã có cookie hợp lệ, hoặc là mạng nội bộ gia đình:
-        # => MỞ THẲNG DASHBOARD XEM CAMERA NGAY LẬP TỨC TRONG 1 GIÂY, KHÔNG HỎI MẬT KHẨU!
-        if is_local or (q_key and hmac.compare_digest(q_key, acc_key)) or (auth_cookie and hmac.compare_digest(auth_cookie, acc_key)):
-            response = templates.TemplateResponse(
-                request=request,
-                name="index.html",
-                context={"is_hub": True, "requires_pairing": False}
-            )
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-            response.headers["Pragma"] = "no-cache"
-            response.set_cookie(
-                key="babyguard_auth",
-                value=acc_key,
-                max_age=365 * 86400,
-                httponly=True,
-                samesite="lax"
-            )
-            return response
-
-        # Người lạ trên mạng gõ bừa vào /cam mà không có chìa khóa bí mật -> Đẩy về màn hình ghép nối /app
-        return RedirectResponse(url="/app", status_code=302)
+        # Ba mẹ bấm vào link camera (/cam, /cam/{secret_key}, /v/{secret_key}, /watch, /live)
+        # => MỞ THẲNG DASHBOARD XEM CAMERA NGAY LẬP TỨC TRONG 1 GIÂY, KHÔNG BAO GIỜ HỎI MÃ PIN HAY GHÉP NỐI!
+        response = templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context={"is_hub": True, "requires_pairing": False}
+        )
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.set_cookie(
+            key="babyguard_auth",
+            value=acc_key,
+            max_age=365 * 86400,
+            httponly=True,
+            samesite="lax"
+        )
+        return response
 
     @app.get("/app")
     @app.get("/setup")
     @app.get("/dashboard")
     @app.get("/control")
     async def view_app_dashboard(request: Request):
-        """Cổng mở Giao diện Ứng dụng BabyGuard AI (Phân biệt rõ: Máy tính nội bộ vs Điện thoại kết nối từ xa)."""
+        """Cổng mở Giao diện Ứng dụng BabyGuard AI — Mở thẳng không cần nhập Mã PIN."""
         cfg = load_config()
         acc_key = get_access_key(cfg)
-        is_local = is_local_request(request)
-
-        q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("auth", "") or request.query_params.get("token", "")
-        auth_cookie = request.cookies.get("babyguard_auth", "")
-        has_valid_key = (q_key and hmac.compare_digest(q_key, acc_key)) or (auth_cookie and hmac.compare_digest(auth_cookie, acc_key))
-
-        # 1. Nếu mở từ máy nội bộ gia đình HOẶC có chìa khóa xác thực đúng:
-        if is_local or has_valid_key:
-            response = templates.TemplateResponse(
-                request=request,
-                name="index.html",
-                context={"is_hub": True, "requires_pairing": False}
-            )
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-            response.headers["Pragma"] = "no-cache"
-            response.set_cookie(
-                key="babyguard_auth",
-                value=acc_key,
-                max_age=365 * 86400,
-                httponly=True,
-                samesite="lax"
-            )
-            return response
-
-        # 2. Khách mở từ điện thoại / ngoài mạng mà CHƯA CÓ CHÌA KHÓA:
-        # => Trả về giao diện index nhưng ở chế độ Pairing Screen (KHÔNG SET COOKIE BA'S MAC MINI!)
-        # Bảo vệ quyền riêng tư tuyệt đối cho gia đình ba!
-        return templates.TemplateResponse(
+        response = templates.TemplateResponse(
             request=request,
             name="index.html",
-            context={"is_hub": False, "requires_pairing": True}
+            context={"is_hub": True, "requires_pairing": False}
         )
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.set_cookie(
+            key="babyguard_auth",
+            value=acc_key,
+            max_age=365 * 86400,
+            httponly=True,
+            samesite="lax"
+        )
+        return response
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
@@ -295,80 +399,48 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
 
         # =========================================================================
         # 1. TÊN MIỀN BÁN HÀNG CÔNG KHAI: babyguard.site & www.babyguard.site
-        # TUYỆT ĐỐI 100% LUÔN LUÔN TRẢ VỀ TRANG BÁN HÀNG (LANDING PAGE docs/index.html)!
-        # KHÔNG BAO GIỜ HIỂN THỊ CAMERA NHÀ DÙ CÓ COOKIE HAY BẤT KỲ ĐIỀU KIỆN GÌ!
+        # Nếu có tham số ?k= hoặc ?key= trên link gốc thì chuyển vào camera ngay,
+        # còn nếu truy cập trang chủ babyguard.site bình thường thì hiển thị Landing Page bán hàng!
         # =========================================================================
         if raw_host in ("babyguard.site", "www.babyguard.site"):
+            q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("token", "")
+            if q_key:
+                cfg = load_config()
+                acc_key = get_access_key(cfg)
+                if hmac.compare_digest(q_key, acc_key):
+                    response = templates.TemplateResponse(
+                        request=request,
+                        name="index.html",
+                        context={"is_hub": True, "requires_pairing": False}
+                    )
+                    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                    response.set_cookie(key="babyguard_auth", value=acc_key, max_age=365 * 86400, httponly=True, samesite="lax")
+                    return response
             if os.path.exists(landing_file):
                 return FileResponse(landing_file, media_type="text/html")
             return HTMLResponse("<h1>BabyGuard AI Official Website</h1>", status_code=200)
 
         # =========================================================================
-        # 2. TÊN MIỀN CAMERA TỪ XA CHO BA MẸ: cam.babyguard.site
+        # 2. TÊN MIỀN CAMERA TỪ XA CHO BA MẸ: cam.babyguard.site / trycloudflare.com / Local
+        # Bấm vào link là mở thẳng Camera ngay lập tức trong 1 giây, không hỏi PIN!
         # =========================================================================
-        if raw_host == "cam.babyguard.site":
-            cfg = load_config()
-            acc_key = get_access_key(cfg)
-            auth_cookie = request.cookies.get("babyguard_auth", "")
-            q_key = request.query_params.get("k", "") or request.query_params.get("key", "") or request.query_params.get("auth", "") or request.query_params.get("token", "")
-
-            # Nếu có chìa khóa xác thực (đã ghép nối qua cookie hoặc link magic ?k=...)
-            if (auth_cookie and hmac.compare_digest(auth_cookie, acc_key)) or (q_key and hmac.compare_digest(q_key, acc_key)):
-                response = templates.TemplateResponse(
-                    request=request,
-                    name="index.html",
-                    context={"is_hub": True, "requires_pairing": False}
-                )
-                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-                response.headers["Pragma"] = "no-cache"
-                response.set_cookie(
-                    key="babyguard_auth",
-                    value=acc_key,
-                    max_age=365 * 86400,
-                    httponly=True,
-                    samesite="lax"
-                )
-                return response
-
-            # Nếu chưa ghép nối hoặc người lạ -> Chuyển về màn hình ghép nối bảo mật
-            return templates.TemplateResponse(
-                request=request,
-                name="index.html",
-                context={"is_hub": False, "requires_pairing": True}
-            )
-
-        # =========================================================================
-        # 3. TRUY CẬP CỤC BỘ TRÊN MÁY TÍNH NÔI BÉ / MẠNG WIFI NỘI BỘ (Local Network)
-        # (localhost / 127.0.0.1 / 192.168.x.x / 10.x.x.x)
-        # =========================================================================
-        is_local = is_local_request(request)
-        if is_local or raw_host in ("localhost", "127.0.0.1") or raw_host.startswith("192.168.") or raw_host.startswith("10."):
-            cfg = load_config()
-            acc_key = get_access_key(cfg)
-            response = templates.TemplateResponse(
-                request=request,
-                name="index.html",
-                context={"is_hub": True, "requires_pairing": False}
-            )
-            response.set_cookie(
-                key="babyguard_auth",
-                value=acc_key,
-                max_age=365 * 86400,
-                httponly=True,
-                samesite="lax"
-            )
-            return response
-
-        # =========================================================================
-        # 4. MẶC ĐỊNH AN TOÀN TUYỆT ĐỐI CHO MỌI HOST KHÁC:
-        # =========================================================================
-        if os.path.exists(landing_file):
-            return FileResponse(landing_file, media_type="text/html")
-        return templates.TemplateResponse(
+        cfg = load_config()
+        acc_key = get_access_key(cfg)
+        response = templates.TemplateResponse(
             request=request,
             name="index.html",
-            context={"is_hub": False, "requires_pairing": True}
+            context={"is_hub": True, "requires_pairing": False}
         )
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.set_cookie(
+            key="babyguard_auth",
+            value=acc_key,
+            max_age=365 * 86400,
+            httponly=True,
+            samesite="lax"
+        )
+        return response
 
     @app.get("/manifest.json")
     async def get_manifest():
@@ -570,22 +642,33 @@ echo "🍼 CÀI ĐẶT TỰ ĐỘNG BABYGUARD AI CHO MACOS (1-CLICK NATIVE)"
 echo "=========================================================="
 TARGET_DIR="/Applications"
 DEST_APP="$TARGET_DIR/BabyGuard AI.app"
+RUNTIME_DIR="$HOME/BabyGuard_AI"
 TEMP_ZIP="/tmp/BabyGuard_Mac.zip"
+
+# Gỡ bỏ cờ cách ly cho mọi file BabyGuard trong thư mục Downloads (nếu có)
+xattr -cr "$HOME/Downloads/BabyGuard"* 2>/dev/null || true
 
 echo "⬇️ Đang tải BabyGuard AI từ https://babyguard.site..."
 curl -fsSL -o "$TEMP_ZIP" "https://babyguard.site/download/BabyGuard_Mac.zip"
 
 echo "📦 Đang cài đặt vào Thư mục Ứng dụng (/Applications)..."
+rm -rf "/tmp/bg_mac_extract"
+mkdir -p "/tmp/bg_mac_extract"
+unzip -q -o "$TEMP_ZIP" -d "/tmp/bg_mac_extract"
+rm -f "$TEMP_ZIP"
+
 if [ -d "$DEST_APP" ]; then
     rm -rf "$DEST_APP"
 fi
-unzip -q -o "$TEMP_ZIP" -d "$TARGET_DIR"
-rm -f "$TEMP_ZIP"
+cp -R "/tmp/bg_mac_extract/BabyGuard AI.app" "$DEST_APP"
+rm -rf "/tmp/bg_mac_extract"
 
-echo "🛡️ Đang gỡ bỏ cờ cách ly macOS Gatekeeper..."
+echo "🛡️ Đang gỡ bỏ hoàn toàn cờ cách ly macOS Gatekeeper (Chống báo lỗi Thùng rác)..."
 xattr -cr "$DEST_APP" 2>/dev/null || true
 xattr -dr com.apple.quarantine "$DEST_APP" 2>/dev/null || true
-chmod -R 755 "$DEST_APP" 2>/dev/null || true
+chmod +x "$DEST_APP/Contents/MacOS/BabyGuard AI" 2>/dev/null || true
+chmod +x "$DEST_APP/Contents/Resources/start.sh" "$DEST_APP/Contents/Resources/stop.sh" 2>/dev/null || true
+codesign --force --deep -s - "$DEST_APP" 2>/dev/null || true
 
 echo "🎉 Cài đặt hoàn tất! Đang khởi chạy BabyGuard AI..."
 open "$DEST_APP"
@@ -674,6 +757,8 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     async def get_pairing_info(request: Request):
         """Trả về thông tin kết nối và đường dẫn mã QR ghép nối cho điện thoại của ba mẹ."""
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         acc_key = get_access_key(cfg)
         port = cfg.get("web_port", 8080)
 
@@ -929,7 +1014,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         }
 
     @app.post("/api/system/perform_update")
-    def perform_system_update():
+    def perform_system_update(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         git_dir = os.path.join(BASE_DIR, ".git")
         if os.path.exists(git_dir):
             try:
@@ -1033,7 +1121,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         return {"active": bool(t_url), "url": t_url, "type": "config"}
 
     @app.post("/api/tunnel/restart")
-    def restart_tunnel():
+    def restart_tunnel(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         if tunnel_manager is None:
             return {"success": False, "error": "Chưa kích hoạt Tunnel Manager"}
         new_url = tunnel_manager.restart()
@@ -1043,41 +1134,64 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         return {"success": False, "error": "Không thể lấy link mới lúc này"}
 
     @app.get("/api/events")
-    def api_events():
+    def api_events(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         return alert_manager.get_events()
 
     @app.get("/api/snapshots/{filename:path}")
-    def get_snapshot(filename: str):
-        file_path = os.path.join(snapshots_dir, filename)
+    def get_snapshot(request: Request, filename: str):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        clean_fn = filename.replace("\\", "/").lstrip("/")
+        file_path = os.path.join(snapshots_dir, clean_fn)
+        real_snapshots_dir = os.path.realpath(snapshots_dir)
+        if not os.path.realpath(file_path).startswith(real_snapshots_dir):
+            return JSONResponse({"error": "Invalid path"}, status_code=403)
         if not os.path.exists(file_path):
-            base = os.path.basename(filename)
+            base = os.path.basename(clean_fn)
             cand = glob.glob(os.path.join(snapshots_dir, "**", base), recursive=True)
             if cand:
                 file_path = cand[0]
-        if os.path.exists(file_path):
+        if os.path.exists(file_path) and os.path.realpath(file_path).startswith(real_snapshots_dir):
             return FileResponse(file_path)
         return JSONResponse({"error": "File not found"}, status_code=404)
 
     @app.get("/api/recordings")
-    def api_recordings():
+    def api_recordings(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         return video_recorder.get_recordings()
 
     @app.get("/api/recordings/{filename:path}")
-    def get_recording_file(filename: str):
-        file_path = os.path.join(recordings_dir, filename)
+    def get_recording_file(request: Request, filename: str):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        clean_fn = filename.replace("\\", "/").lstrip("/")
+        file_path = os.path.join(recordings_dir, clean_fn)
+        real_recordings_dir = os.path.realpath(recordings_dir)
+        if not os.path.realpath(file_path).startswith(real_recordings_dir):
+            return JSONResponse({"error": "Invalid path"}, status_code=403)
         if not os.path.exists(file_path):
-            base = os.path.basename(filename)
+            base = os.path.basename(clean_fn)
             cand = glob.glob(os.path.join(recordings_dir, "**", base), recursive=True)
             if cand:
                 file_path = cand[0]
-        if os.path.exists(file_path):
+        if os.path.exists(file_path) and os.path.realpath(file_path).startswith(real_recordings_dir):
             media_type = "video/mp4" if filename.endswith(".mp4") else "image/jpeg"
             return FileResponse(file_path, media_type=media_type)
         return JSONResponse({"error": "File not found"}, status_code=404)
 
     # --- TWO-WAY AUDIO TALKBACK ---
     @app.post("/api/talkback")
-    async def talkback(audio_file: UploadFile = File(...)):
+    async def talkback(request: Request, audio_file: UploadFile = File(...)):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         try:
             ts = int(time.time() * 1000)
             temp_in = f"/tmp/talkback_in_{ts}.webm"
@@ -1108,7 +1222,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
     # --- WHITE NOISE & INSTRUMENTAL LULLABY PLAYER APIS (CLOSED-LOOP MIC CALIBRATION) ---
     @app.get("/api/music/list")
-    def get_music_list():
+    def get_music_list(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         return music_player.get_playlist()
 
     class PlayMusicRequest(BaseModel):
@@ -1118,8 +1235,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         adaptive_mic: bool | None = None
 
     @app.post("/api/music/play")
-    def play_music(req: PlayMusicRequest):
+    def play_music(request: Request, req: PlayMusicRequest):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         cfg["selected_lullaby"] = req.filename
         if req.volume is not None:
             cfg["lullaby_max_volume"] = float(req.volume)
@@ -1138,8 +1257,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         selected_lullaby: str | None = None
 
     @app.post("/api/music/config")
-    def update_music_config(req: MusicConfigRequest):
+    def update_music_config(request: Request, req: MusicConfigRequest):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         max_vol = None
         if req.max_volume_pct is not None:
             max_vol = max(0.05, min(1.0, float(req.max_volume_pct) / 100.0))
@@ -1160,23 +1281,32 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         return {"success": True, "status": music_player.get_status()}
 
     @app.post("/api/music/stop")
-    def stop_music():
+    def stop_music(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         music_player.stop()
         return {"success": True, "status": music_player.get_status()}
 
     @app.post("/api/music/upload")
-    async def upload_music(files: list[UploadFile] = File(None), file: UploadFile = File(None)):
+    async def upload_music(request: Request, files: list[UploadFile] = File(None), file: UploadFile = File(None)):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         uploaded = []
         all_files = []
         if files:
             all_files.extend(files)
         if file:
             all_files.append(file)
+        real_music_dir = os.path.realpath(music_dir)
         for f in all_files:
             if not f.filename:
                 continue
             safe_name = os.path.basename(f.filename).replace(" ", "_")
             dest = os.path.join(music_dir, safe_name)
+            if not os.path.realpath(dest).startswith(real_music_dir):
+                continue
             content = await f.read()
             with open(dest, "wb") as fp:
                 fp.write(content)
@@ -1184,8 +1314,15 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         return {"success": True, "uploaded": uploaded, "playlist": music_player.get_playlist()}
 
     @app.delete("/api/music/{filename}")
-    def delete_music(filename: str):
-        success = music_player.delete_track(filename)
+    def delete_music(request: Request, filename: str):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        safe_fn = os.path.basename(filename)
+        file_path = os.path.join(music_dir, safe_fn)
+        if not os.path.realpath(file_path).startswith(os.path.realpath(music_dir)):
+            return JSONResponse({"error": "Invalid path"}, status_code=403)
+        success = music_player.delete_track(safe_fn)
         return {"success": success, "playlist": music_player.get_playlist()}
 
     # --- SLEEP ANALYTICS & MORNING 07:00 PEDIATRIC AI REPORT APIS ---
@@ -1222,21 +1359,32 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         summary_dict["crying_count"] = max(int(daily_counts.get("crying_count", 0)), int(delta_tots.get("crying_count", 0)))
         summary_dict["cough_count"] = max(int(daily_counts.get("cough_count", 0)), int(delta_tots.get("cough_count", 0)))
         summary_dict["choke_risk_count"] = max(int(daily_counts.get("choke_risk_count", 0)), int(delta_tots.get("choke_risk_count", 0)))
+        summary_dict["spit_up_count"] = max(int(daily_counts.get("spit_up_count", 0)), int(delta_tots.get("spit_up_count", 0)))
         summary_dict["apnea_count"] = max(int(daily_counts.get("apnea_count", 0)), int(delta_tots.get("apnea_count", 0)))
 
         # Nhịp thở lâm sàng đo khi ngủ (loại bỏ lúc thức / cử động / ngoài nôi)
         vis_bpm = 0.0
-        if vision_tracker and hasattr(vision_tracker, "get_sleep_breathing_bpm"):
+        breath_stats = {}
+        if vision_tracker and hasattr(vision_tracker, "get_sleep_breathing_stats"):
+            breath_stats = vision_tracker.get_sleep_breathing_stats()
+            vis_bpm = float(breath_stats.get("median_bpm", 0.0))
+        elif vision_tracker and hasattr(vision_tracker, "get_sleep_breathing_bpm"):
             vis_bpm = vision_tracker.get_sleep_breathing_bpm()
         elif vision_tracker:
             vis_bpm = vision_tracker.breathing_bpm
         if vis_bpm < 20.0:
             hist = summary_dict.get("daily_history", [])
-            if hist and hist[0].get("avg_bpm", 0) > 20:
+            if hist and hist[0].get("avg_bpm", 0) > 20 and hist[0].get("avg_bpm") != 38.5:
                 vis_bpm = float(hist[0]["avg_bpm"])
             else:
-                vis_bpm = 38.5
+                vis_bpm = 0.0
         summary_dict["avg_bpm"] = round(vis_bpm, 1)
+        summary_dict["min_bpm"] = breath_stats.get("min_bpm", 0.0)
+        summary_dict["max_bpm"] = breath_stats.get("max_bpm", 0.0)
+        summary_dict["breathing_display_vi"] = breath_stats.get(
+            "display_vi",
+            f"{vis_bpm:.1f} BPM (Chuẩn WHO: 30 – 60 BPM)" if vis_bpm >= 20.0 else "Đang tích lũy mẫu đo quang học (Chuẩn tham chiếu WHO: 30 – 60 BPM)"
+        )
 
         # Đối chiếu Quy chuẩn Y khoa Quốc tế (AAP, AASM, BTS, CHEST, WHO, Nelson Pediatrics)
         try:
@@ -1246,7 +1394,8 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                 cough_count=summary_dict["cough_count"],
                 choke_count=summary_dict["choke_risk_count"],
                 avg_bpm=summary_dict["avg_bpm"],
-                age_days=age_info.get("total_days", 34)
+                age_days=age_info.get("total_days", 34),
+                spit_up_count=summary_dict.get("spit_up_count", 0)
             )
         except Exception as c_err:
             print(f"[WebServer] Lỗi tính clinical_benchmarks: {c_err}")
@@ -1269,6 +1418,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                 "crying_count": max(int(y_counts.get("crying_count", 0)), int(y_tots.get("crying_count", 0))),
                 "cough_count": max(int(y_counts.get("cough_count", 0)), int(y_tots.get("cough_count", 0))),
                 "choke_risk_count": max(int(y_counts.get("choke_risk_count", 0)), int(y_tots.get("choke_risk_count", 0))),
+                "spit_up_count": max(int(y_counts.get("spit_up_count", 0)), int(y_tots.get("spit_up_count", 0))),
                 "apnea_count": max(int(y_counts.get("apnea_count", 0)), int(y_tots.get("apnea_count", 0)))
             }
 
@@ -1502,6 +1652,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     @app.post("/api/health/log-event")
     async def log_health_event_api(request: Request):
         """API cho phép phụ huynh ghi nhận nhanh các sự kiện: Ho, Sặc sữa, Trớ sữa, Cữ bú, Vỗ ợ hơi..."""
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         try:
             body = await request.json()
         except Exception:
@@ -1536,7 +1689,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         })
 
     @app.get("/api/health/events")
-    def get_health_events_api(limit: int = 50, event_type: str = None):
+    def get_health_events_api(request: Request, limit: int = 50, event_type: str = None):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         if alert_manager:
             return {
                 "success": True,
@@ -1551,18 +1707,26 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     def _resolve_moment_file(filename: str):
         if not filename:
             return None
+        real_moments_dir = os.path.realpath(moments_dir)
         clean_name = filename.replace("\\", "/").lstrip("/")
         p = os.path.join(moments_dir, clean_name)
+        if not os.path.realpath(p).startswith(real_moments_dir):
+            return None
         if os.path.exists(p) and os.path.isfile(p):
             return p
         base = os.path.basename(clean_name)
         cand = glob.glob(os.path.join(moments_dir, "**", base), recursive=True)
         if cand:
-            return cand[0]
+            cand_path = cand[0]
+            if os.path.realpath(cand_path).startswith(real_moments_dir):
+                return cand_path
         return None
 
     @app.post("/api/take-snapshot")
-    def take_snapshot():
+    def take_snapshot(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         # 1. Lấy khung hình an toàn qua get_snapshot_frame
         frame = None
         face_info = None
@@ -1642,7 +1806,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         }
 
     @app.get("/api/moments")
-    def get_moments():
+    def get_moments(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         files = []
         meta_map = gemini_verifier.load_moments_metadata() if gemini_verifier else {}
         if os.path.exists(moments_dir):
@@ -1681,6 +1848,12 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                     date_display = d_formatted
 
                 m_info = meta_map.get(base, {}) or meta_map.get(rel_path, {})
+                if cfg.get("gemini_filter_moments", True):
+                    is_manual = bool(m_info.get("is_manual", False))
+                    is_checked = bool(m_info.get("checked_by_gemini", False))
+                    is_approved = bool(m_info.get("approved", True))
+                    if not is_manual and (not is_checked or not is_approved):
+                        continue
                 files.append({
                     "filename": rel_path,
                     "base_filename": base,
@@ -1693,19 +1866,26 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                     "caption_vi": m_info.get("caption_vi", "Khoảnh khắc đáng yêu của bé"),
                     "aesthetic_score": m_info.get("aesthetic_score", None),
                     "has_other_person": m_info.get("has_other_person", False),
-                    "checked_by_gemini": m_info.get("checked_by_gemini", False)
+                    "checked_by_gemini": m_info.get("checked_by_gemini", False),
+                    "is_manual": bool(m_info.get("is_manual", False))
                 })
         return files
 
     @app.get("/api/moments/{filename:path}")
-    def get_moment_file(filename: str):
+    def get_moment_file(request: Request, filename: str):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         p = _resolve_moment_file(filename)
         if p and os.path.exists(p):
             return FileResponse(p, media_type="image/jpeg")
         return JSONResponse({"error": "File not found"}, status_code=404)
 
     @app.delete("/api/moments/{filename:path}")
-    def delete_moment(filename: str):
+    def delete_moment(request: Request, filename: str):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         p = _resolve_moment_file(filename)
         if p and os.path.exists(p):
             try:
@@ -1723,6 +1903,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
     @app.post("/api/moments/batch-delete")
     async def batch_delete_moments(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         try:
             data = await request.json()
             filenames = data.get("filenames", [])
@@ -1747,6 +1930,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
     @app.post("/api/moments/batch-download")
     async def batch_download_moments(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         try:
             data = await request.json()
             filenames = data.get("filenames", [])
@@ -1777,6 +1963,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
     @app.post("/api/moments/create-video")
     async def create_moments_video(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         try:
             data = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
             filenames = data.get("filenames", [])
@@ -1817,16 +2006,22 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
     @app.post("/api/recordings/send-telegram")
     async def send_recording_to_telegram(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         try:
             data = await request.json()
             raw_fn = data.get("filename", "").replace("\\", "/").lstrip("/")
             if not raw_fn:
                 return JSONResponse({"success": False, "error": "Thiếu tên tệp video"}, status_code=400)
 
+            real_rec_dir = os.path.realpath(video_recorder.recordings_dir)
             p = os.path.join(video_recorder.recordings_dir, raw_fn)
+            if not os.path.realpath(p).startswith(real_rec_dir):
+                return JSONResponse({"success": False, "error": "Invalid path"}, status_code=403)
             if not os.path.exists(p):
                 cand = glob.glob(os.path.join(video_recorder.recordings_dir, "**", os.path.basename(raw_fn)), recursive=True)
-                if cand:
+                if cand and os.path.realpath(cand[0]).startswith(real_rec_dir):
                     p = cand[0]
                 else:
                     return JSONResponse({"success": False, "error": "Tệp video không tồn tại"}, status_code=404)
@@ -1872,17 +2067,25 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         return {"url": "https://statistical-study-jewellery-citations.trycloudflare.com"}
 
     @app.get("/api/config")
-    def get_config():
-        return load_config()
+    def get_config(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        return cfg
 
     @app.get("/api/settings/google-drive")
-    def get_google_drive_settings():
+    def get_google_drive_settings(request: Request):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         from google_drive_sync import get_google_drive_status
         return get_google_drive_status(cfg)
 
     @app.post("/api/settings/google-drive/scan")
-    def scan_google_drive_settings():
+    def scan_google_drive_settings(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         from google_drive_sync import detect_macos_google_drive_path
         detected = detect_macos_google_drive_path()
         return {
@@ -1892,8 +2095,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         }
 
     @app.post("/api/settings/google-drive")
-    def update_google_drive_settings(payload: dict):
+    def update_google_drive_settings(request: Request, payload: dict):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         if "enabled" in payload:
             cfg["google_drive_enabled"] = bool(payload["enabled"])
         if "path" in payload:
@@ -1920,8 +2125,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         return res
 
     @app.post("/api/license/self-activate")
-    def self_activate_license():
+    def self_activate_license(request: Request):
         """Dành riêng cho tác giả/nhà phát triển: tự sinh và kích hoạt Master Lifetime Key cho máy hiện tại."""
+        if not is_local_request(request):
+            return JSONResponse({"error": "Forbidden: Local access only"}, status_code=403)
         mid = get_machine_fingerprint()
         key = generate_license_key(mid, tier="LIFETIME")
         cfg = load_config()
@@ -2127,27 +2334,39 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
         if "order" in body or body.get("notification_type") == "ORDER_PAID":
             order_data = body.get("order", {})
-            amount = float(order_data.get("order_amount", 0) or order_data.get("amount", 0) or 49000)
+            amount = float(order_data.get("order_amount", 0) or order_data.get("amount", 0) or 0)
             order_code = str(order_data.get("order_invoice_number") or order_data.get("id") or "")
         elif "transferAmount" in body or body.get("transferType") == "in":
-            amount = float(body.get("transferAmount", 0) or 49000)
+            amount = float(body.get("transferAmount", 0) or 0)
             order_code = str(body.get("code") or body.get("content") or "")
         else:
-            amount = float(body.get("amount", 0) or body.get("transferAmount", 0) or 49000)
-            order_code = str(body.get("content") or body.get("description") or "BabyGuard Lifetime")
+            amount = float(body.get("amount", 0) or body.get("transferAmount", 0) or 0)
+            order_code = str(body.get("content") or body.get("description") or "")
 
-        # Trích xuất Machine Short ID nếu có trong nội dung chuyển khoản (VD: 'BG F7A7' hoặc 'BG 29BF')
+        # Trích xuất Machine Short ID bắt buộc phải có mã đơn hàng BG (VD: 'BG F7A7' hoặc 'BG 29BF')
         import re
         target_short_id = ""
-        m_match = re.search(r'BG[\s_-]?([A-Za-z0-9]{4,16})', order_code, re.IGNORECASE)
+        m_match = re.search(r'\bBG[\s_-]?([A-Za-z0-9]{4,16})\b', order_code, re.IGNORECASE)
         if m_match:
             target_short_id = m_match.group(1).upper()
         else:
-            # Tìm trong cả raw payload
-            raw_str = json.dumps(body)
-            m_raw = re.search(r'BG[\s_-]?([A-Za-z0-9]{4,16})', raw_str, re.IGNORECASE)
+            raw_content = f"{body.get('content', '')} {body.get('description', '')} {body.get('code', '')}"
+            m_raw = re.search(r'\bBG[\s_-]?([A-Za-z0-9]{4,16})\b', raw_content, re.IGNORECASE)
             if m_raw:
                 target_short_id = m_raw.group(1).upper()
+
+        if not target_short_id or amount < 49000:
+            client_ip = _get_client_ip_for_audit(request)
+            _write_security_audit_log(
+                "SEPAY_WEBHOOK_IGNORED",
+                client_ip,
+                f"Bỏ qua giao dịch không khớp chuẩn BabyGuard (amount={amount}, order_code='{order_code[:60]}')."
+            )
+            return {
+                "success": False,
+                "status": "IGNORED_UNMATCHED_TRANSACTION",
+                "message": "Giao dịch không chứa mã đơn hàng BG hợp lệ hoặc số tiền < 49.000đ. Đã bỏ qua an toàn."
+            }
 
         # Lưu lịch sử giao dịch SePay
         sepay_history_path = os.path.join(BASE_DIR, "sepay_transactions.json")
@@ -2248,8 +2467,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         }
 
     @app.post("/api/sepay/simulate-test-payment")
-    def simulate_sepay_test_payment():
+    def simulate_sepay_test_payment(request: Request):
         """Cho phép trải nghiệm luồng tự động kích hoạt tức thì 100% trong 1 click."""
+        if not is_local_request(request):
+            return JSONResponse({"error": "Forbidden: Local access only"}, status_code=403)
         mid = get_machine_fingerprint()
         lifetime_key = generate_license_key(mid, tier="LIFETIME")
         cfg = load_config()
@@ -2326,8 +2547,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         value: bool
 
     @app.post("/api/config/toggle")
-    def toggle_config(payload: ConfigToggle):
+    def toggle_config(request: Request, payload: ConfigToggle):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         if payload.key == "language":
             val = "en" if payload.value is True else ("vi" if payload.value is False else str(payload.value))
             cfg["language"] = val
@@ -2348,8 +2571,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
     # --- PEDIATRIC GROWTH TRACKING & MONTHLY REMINDER APIS ---
     @app.get("/api/growth")
-    def get_growth_api():
+    def get_growth_api(request: Request):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         gender = cfg.get("baby_gender", "boy")
         growth_eval = growth_tracker.evaluate_growth(b_date, gender)
@@ -2372,7 +2597,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         note: str | None = ""
 
     @app.post("/api/growth")
-    def add_growth_api(payload: GrowthRecordPayload):
+    def add_growth_api(request: Request, payload: GrowthRecordPayload):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         rec = growth_tracker.add_record(
             weight_kg=payload.weight_kg,
             height_cm=payload.height_cm,
@@ -2380,7 +2608,6 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             record_date_str=payload.date,
             note=payload.note
         )
-        cfg = load_config()
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         gender = cfg.get("baby_gender", "boy")
         b_name = cfg.get("baby_name", "Bé")
@@ -2426,9 +2653,11 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         }
 
     @app.delete("/api/growth/{date_str}")
-    def delete_growth_api(date_str: str):
-        success = growth_tracker.delete_record(date_str)
+    def delete_growth_api(request: Request, date_str: str):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        success = growth_tracker.delete_record(date_str)
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         gender = cfg.get("baby_gender", "boy")
         growth_eval = growth_tracker.evaluate_growth(b_date, gender)
@@ -2457,22 +2686,26 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         completed: bool = False
 
     @app.get("/api/vaccines")
-    def get_vaccines():
+    def get_vaccines(request: Request):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         sched = vaccine_tracker.get_schedule(b_date)
         sched["baby_name"] = cfg.get("baby_name", "Bé A Siu")
         return sched
 
     @app.post("/api/vaccines/update")
-    def update_vaccine_status(req: VaccineUpdateRequest):
+    def update_vaccine_status(request: Request, req: VaccineUpdateRequest):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         success = vaccine_tracker.update_record(
             vaccine_id=req.vaccine_id,
             completed=req.completed,
             injected_date=req.injected_date,
             note=req.note
         )
-        cfg = load_config()
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         return {
             "success": success,
@@ -2480,7 +2713,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         }
 
     @app.post("/api/vaccines/add")
-    def add_custom_vaccine(req: VaccineAddRequest):
+    def add_custom_vaccine(request: Request, req: VaccineAddRequest):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         new_item = vaccine_tracker.add_custom_vaccine(
             milestone_id=req.milestone_id,
             name=req.name,
@@ -2489,7 +2725,6 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             note=req.note,
             completed=req.completed
         )
-        cfg = load_config()
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         return {
             "success": True,
@@ -2498,9 +2733,11 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         }
 
     @app.delete("/api/vaccines/{vaccine_id}")
-    def delete_custom_vaccine(vaccine_id: str):
-        success = vaccine_tracker.delete_custom_vaccine(vaccine_id)
+    def delete_custom_vaccine(request: Request, vaccine_id: str):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        success = vaccine_tracker.delete_custom_vaccine(vaccine_id)
         b_date = cfg.get("baby_birth_date", "2026-09-05")
         return {
             "success": success,
@@ -2563,6 +2800,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         sound_alert_on_mac: bool = None
         cry_threshold: float = None
         cough_threshold: float = None
+        choke_threshold: float = None
         motion_threshold: float = None
         alert_cooldown_seconds: int = None
         record_on_event: bool = None
@@ -2575,6 +2813,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         danger_zone_enabled: bool = None
         cry_alert_enabled: bool = None
         cough_alert_enabled: bool = None
+        choke_alert_enabled: bool = None
         breathing_monitor_enabled: bool = None
         sleep_analytics_enabled: bool = None
         wake_window_predictor: bool = None
@@ -2588,10 +2827,13 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         danger_zone_x_percent: float = None
         auto_lullaby_on_cry: bool = None
         selected_lullaby: str = None
+        ptz_auto_tracking: bool = None
 
     @app.post("/api/config")
-    def update_config(payload: ConfigUpdate):
+    def update_config(request: Request, payload: ConfigUpdate):
         cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         raw_dict = payload.dict(exclude_unset=True)
         update_data = {k: v for k, v in raw_dict.items() if v is not None}
 
@@ -2616,6 +2858,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         elif "camera_index" in update_data or "camera_source_type" in update_data:
             vision_tracker.switch_camera(int(cfg.get("camera_index", 0)))
 
+        ptz_controller.update_config(cfg)
+        if "camera_source_type" in update_data or "camera_rtsp_url" in update_data or "camera_index" in update_data:
+            threading.Thread(target=ptz_controller.probe_camera, args=(src_type, rtsp_url), daemon=True).start()
+
         # Đổi nóng cổng Micro thu âm nếu người dùng thay đổi
         if "audio_device_index" in update_data and hasattr(audio_detector, "switch_device"):
             audio_detector.switch_device(int(cfg.get("audio_device_index", 0)))
@@ -2624,6 +2870,8 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             audio_detector.cry_threshold = cfg.get("cry_threshold", 0.3)
         if "cough_threshold" in update_data:
             audio_detector.cough_threshold = cfg.get("cough_threshold", 0.25)
+        if "choke_threshold" in update_data:
+            audio_detector.choke_threshold = cfg.get("choke_threshold", 0.20)
         if "motion_threshold" in update_data:
             vision_tracker.motion_threshold = cfg.get("motion_threshold", 18.0)
             
@@ -2632,7 +2880,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             if k in update_data and hasattr(vision_tracker, k):
                 setattr(vision_tracker, k, update_data[k])
                 
-        for k in ["cry_alert_enabled", "cough_alert_enabled"]:
+        for k in ["cry_alert_enabled", "cough_alert_enabled", "choke_alert_enabled"]:
             if k in update_data and hasattr(audio_detector, k):
                 setattr(audio_detector, k, update_data[k])
 
@@ -2683,6 +2931,70 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             save_config(cfg)
         return {"success": True, "config": cfg}
 
+    @app.get("/api/camera/ptz/status")
+    def get_camera_ptz_status(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        return ptz_controller.get_status()
+
+    @app.post("/api/camera/ptz/probe")
+    async def probe_camera_ptz(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        src_type = body.get("camera_source_type")
+        rtsp_url = body.get("camera_rtsp_url")
+        onvif_port = body.get("onvif_port")
+        res = ptz_controller.probe_camera(source_type=src_type, rtsp_url=rtsp_url, onvif_port=onvif_port)
+        return res
+
+    @app.post("/api/camera/ptz/move")
+    async def move_camera_ptz(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        direction = str(body.get("direction", "stop")).strip().lower()
+        speed = float(body.get("speed", 0.5))
+        duration = float(body.get("duration", 0.45))
+        return ptz_controller.move(direction=direction, speed=speed, duration=duration)
+
+    @app.post("/api/camera/ptz/auto-track")
+    async def toggle_camera_ptz_auto_track(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        enabled = bool(body.get("enabled", False))
+        cfg["ptz_auto_tracking"] = enabled
+        save_config(cfg)
+        ptz_controller.update_config(cfg)
+        return {"success": True, "auto_tracking": ptz_controller.auto_tracking_enabled}
+
+    @app.post("/api/crib/baby-out")
+    async def set_baby_out_of_crib_api(request: Request):
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        out_of_crib = bool(body.get("out_of_crib", True))
+        vision_tracker.set_baby_out_of_crib(out_of_crib)
+        return {"success": True, "baby_out_of_crib_confirmed": vision_tracker.baby_out_of_crib_confirmed}
+
     # --- HARDWARE DISCOVERY (USB UVC CHIP DESCRIPTOR + AVFOUNDATION), WIFI RTSP/OUI SCANNER & LIVE PREVIEW ---
     USB_VENDOR_MAP = {
         "1133": "Logitech",
@@ -2702,11 +3014,14 @@ Start-Process "$destDir\\BabyGuard AI.bat"
     }
 
     @app.get("/api/hardware/devices")
-    def get_hardware_devices():
+    def get_hardware_devices(request: Request):
         """
         Đọc trực tiếp thông tin phần cứng từ chip USB UVC (VendorID/ProductID) và AVFoundation
         để chỉ hiển thị ĐÚNG những chiếc Camera thực sự đang cắm vào máy (không tạo cổng ảo).
         """
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         cameras = []
         sp_meta = {}
         try:
@@ -2889,8 +3204,11 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         return final_label, brand_code, device_serial
 
     @app.get("/api/hardware/scan-wifi-cameras")
-    def scan_wifi_cameras():
+    def scan_wifi_cameras(request: Request):
         """Quét mạng Wi-Fi nội bộ (LAN) kết hợp RTSP Handshake & MAC OUI để nhận diện hãng Camera IP."""
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         local_ip = "192.168.1.1"
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -3045,13 +3363,16 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         scanned_cameras: list = None  # Danh sách các Camera đã quét để tự động dò khớp theo Mã Xác Thực / Serial
 
     @app.post("/api/hardware/preview-camera")
-    def preview_camera(req: CameraPreviewRequest):
+    def preview_camera(request: Request, req: CameraPreviewRequest):
         """
         Chụp 1 bức ảnh trực tiếp từ chiếc Camera được chọn (cổng USB hoặc Camera Wi-Fi).
         Đặc biệt: Nếu nhà có nhiều Camera trong danh sách quét và khách chỉ nhập Mã Xác Thực (Mật khẩu)
         hoặc Mã Serial của chiếc Camera phòng bé (không cần biết IP nào), hệ thống sẽ TỰ ĐỘNG DÒ
         trong danh sách đã quét để bắt đúng chiếc Camera khớp với mã đó!
         """
+        cfg = load_config()
+        if not is_request_authenticated(request, cfg):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
         resolved_source = req.camera_index
         frame = None
         matched_ip = (req.ip or "").strip()
@@ -3142,13 +3463,18 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             return {"success": False, "error": "Lỗi mã hóa khung hình xem thử."}
 
         b64_img = base64.b64encode(buf.tobytes()).decode("utf-8")
+        ptz_info = ptz_controller.probe_camera(
+            source_type=req.source_type,
+            rtsp_url=str(resolved_source) if req.source_type == "rtsp" else ""
+        )
         return {
             "success": True,
             "image_base64": f"data:image/jpeg;base64,{b64_img}",
             "resolution": f"{w}x{h}",
             "resolved_source": resolved_source,
             "matched_ip": matched_ip,
-            "matched_brand": matched_brand
+            "matched_brand": matched_brand,
+            "ptz_status": ptz_info
         }
 
     # --- MULTI-RECIPIENT FAMILY TELEGRAM APIS ---

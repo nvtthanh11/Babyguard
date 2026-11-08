@@ -87,6 +87,7 @@ class DailyDeltaTracker:
                 "whimper_count": 0,
                 "cough_count": 0,
                 "choke_risk_count": 0,
+                "spit_up_count": 0,
                 "crying_minutes": 0.0,
                 "crying_count": 0,
                 "apnea_count": 0,
@@ -144,6 +145,7 @@ class DailyDeltaTracker:
                     "whimper_count": 0,
                     "cough_count": 0,
                     "choke_risk_count": 0,
+                    "spit_up_count": 0,
                     "crying_minutes": 0.0,
                     "crying_count": 0,
                     "apnea_count": 0,
@@ -168,6 +170,7 @@ class DailyDeltaTracker:
                     "whimper_count": 0,
                     "cough_count": 0,
                     "choke_risk_count": 0,
+                    "spit_up_count": 0,
                     "crying_minutes": 0.0,
                     "crying_count": 0,
                     "apnea_count": 0,
@@ -184,7 +187,10 @@ class DailyDeltaTracker:
             elif "cough" in ev:
                 bucket["cough_count"] = bucket.get("cough_count", 0) + 1
                 totals["cough_count"] = totals.get("cough_count", 0) + 1
-            elif "choke" in ev or "spit" in ev or "reflux" in ev:
+            elif "spit" in ev or "reflux" in ev:
+                bucket["spit_up_count"] = bucket.get("spit_up_count", 0) + 1
+                totals["spit_up_count"] = totals.get("spit_up_count", 0) + 1
+            elif "choke" in ev:
                 bucket["choke_risk_count"] = bucket.get("choke_risk_count", 0) + 1
                 totals["choke_risk_count"] = totals.get("choke_risk_count", 0) + 1
             elif "cry" in ev:
@@ -274,6 +280,7 @@ class DailyDeltaTracker:
                         totals = {
                             "cough_count": 0,
                             "choke_risk_count": 0,
+                            "spit_up_count": 0,
                             "crying_minutes": 0.0,
                             "crying_count": 0,
                             "apnea_count": 0,
@@ -291,6 +298,7 @@ class DailyDeltaTracker:
                                         "time_range": f"{dt.hour:02d}:00 - {(dt.hour+1)%24:02d}:00",
                                         "cough_count": 0,
                                         "choke_risk_count": 0,
+                                        "spit_up_count": 0,
                                         "crying_minutes": 0.0,
                                         "crying_count": 0,
                                         "apnea_count": 0,
@@ -302,7 +310,10 @@ class DailyDeltaTracker:
                                 if "cough" in t:
                                     b["cough_count"] += 1
                                     totals["cough_count"] += 1
-                                elif "choke" in t or "spit" in t:
+                                elif "spit" in t or "reflux" in t:
+                                    b["spit_up_count"] += 1
+                                    totals["spit_up_count"] += 1
+                                elif "choke" in t:
                                     b["choke_risk_count"] += 1
                                     totals["choke_risk_count"] += 1
                                 elif "cry" in t:
@@ -389,6 +400,9 @@ class SleepTracker:
         self.total_sleep_today = 0  # in seconds (các cữ đã kết thúc)
         self.total_awake_today = 0  # in seconds (tổng thời gian thức trong ngày)
         self.wake_count_today = 0
+        self.head_orientation_seconds = {"left": 0.0, "right": 0.0, "center": 0.0}
+        self.tummy_time_seconds = 0.0
+        self.periodic_breathing_count = 0
         self.sessions = []
         self.daily_history = []  # Lịch sử tổng kết các ngày trước
         self.daily_ai_report = None  # Báo cáo phân tích chuyên sâu cuối ngày của Gemini AI
@@ -433,13 +447,22 @@ class SleepTracker:
                         h.setdefault("crying_count", c_tot.get("crying_count", 0))
                         h.setdefault("crying_minutes", c_tot.get("crying_minutes", 0.0))
                         h.setdefault("apnea_count", c_tot.get("apnea_count", 0))
-                        h.setdefault("avg_bpm", 38.5)
+                        h.setdefault("avg_bpm", 0.0)
 
                 if saved_date == cur_cycle_date:
                     self.today_date = cur_cycle_date
                     self.total_sleep_today = int(data.get("total_sleep_today", 0))
                     self.total_awake_today = int(data.get("total_awake_today", 0))
                     self.wake_count_today = int(data.get("wake_count_today", 0))
+                    saved_ho = data.get("head_orientation_seconds", {})
+                    if isinstance(saved_ho, dict):
+                        self.head_orientation_seconds = {
+                            "left": float(saved_ho.get("left", 0.0)),
+                            "right": float(saved_ho.get("right", 0.0)),
+                            "center": float(saved_ho.get("center", 0.0))
+                        }
+                    self.tummy_time_seconds = float(data.get("tummy_time_seconds", 0.0))
+                    self.periodic_breathing_count = int(data.get("periodic_breathing_count", 0))
                     raw_sessions = data.get("sessions", [])
                     clean_sessions = [s for s in raw_sessions if float(s.get("duration_minutes", 0)) >= 3.0]
                     self.sessions = clean_sessions
@@ -480,6 +503,13 @@ class SleepTracker:
             "total_sleep_today": int(self.total_sleep_today),
             "total_awake_today": int(self.total_awake_today),
             "wake_count_today": int(self.wake_count_today),
+            "head_orientation_seconds": {
+                "left": round(float(self.head_orientation_seconds.get("left", 0.0)), 1),
+                "right": round(float(self.head_orientation_seconds.get("right", 0.0)), 1),
+                "center": round(float(self.head_orientation_seconds.get("center", 0.0)), 1)
+            },
+            "tummy_time_seconds": round(float(self.tummy_time_seconds), 1),
+            "periodic_breathing_count": int(self.periodic_breathing_count),
             "current_state": self.current_state,
             "state_since": self.state_since,
             "rem_twitch_count": self.rem_twitch_count,
@@ -493,6 +523,132 @@ class SleepTracker:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
+
+    def update_head_orientation(self, orientation: str, dt: float):
+        """
+        Tracking Cân bằng Hướng quay đầu khi ngủ chống Bẹp đầu lệch (Plagiocephaly Prevention - Chuẩn AAP):
+        Ghi nhận thời gian (giây) bé quay đầu sang Trái ('left'), Phải ('right') hoặc Chính giữa ('center') khi đang ngủ.
+        """
+        if dt <= 0 or dt > 5.0:
+            return
+        side = str(orientation or "center").lower()
+        if side not in ("left", "right", "center"):
+            side = "center"
+        with self.lock:
+            if self.current_state == "ASLEEP":
+                self.head_orientation_seconds[side] = float(self.head_orientation_seconds.get(side, 0.0)) + float(dt)
+
+    def get_head_orientation_stats(self) -> dict:
+        """
+        Tính tỷ lệ % thời gian bé nằm nghiêng đầu Trái vs Phải vs Chính giữa trong 24h.
+        Nếu lệch > 70% về 1 bên -> Cảnh báo nguy cơ Bẹp đầu tư thế (Positional Plagiocephaly) chuẩn AAP.
+        """
+        l_sec = float(self.head_orientation_seconds.get("left", 0.0))
+        r_sec = float(self.head_orientation_seconds.get("right", 0.0))
+        c_sec = float(self.head_orientation_seconds.get("center", 0.0))
+        total_sec = l_sec + r_sec + c_sec
+        if total_sec < 10.0:
+            return {
+                "left_pct": 33,
+                "right_pct": 33,
+                "center_pct": 34,
+                "total_minutes": 0.0,
+                "has_data": False,
+                "is_imbalanced": False,
+                "dominant_side": "balanced",
+                "status_vi": "Đang tích lũy dữ liệu hướng đầu khi ngủ",
+                "plagiocephaly_advice_vi": "Khuyến nghị AAP: Luân phiên đổi hướng quay đầu của bé (Trái/Phải) giữa các cữ ngủ ngửa để phòng ngừa hội chứng bẹp đầu lệch tư thế (Plagiocephaly)."
+            }
+        l_pct = int(round((l_sec / total_sec) * 100))
+        r_pct = int(round((r_sec / total_sec) * 100))
+        c_pct = max(0, 100 - l_pct - r_pct)
+        is_imb = (l_pct > 70 or r_pct > 70)
+        if l_pct > 70:
+            dom = "left"
+            status_vi = f"⚠️ Lệch Trái ({l_pct}% Trái • {c_pct}% Giữa • {r_pct}% Phải)"
+            advice_vi = (
+                f"Cảnh báo Bẹp đầu tư thế (AAP Plagiocephaly): Bé đang quay đầu sang TRÁI tới {l_pct}% thời gian ngủ. "
+                f"Ở cữ ngủ tiếp theo, Ba mẹ hãy nhẹ nhàng xoay đầu bé hướng sang PHẢI hoặc đổi chiều đặt đầu nôi để hộp sọ bé tròn đều."
+            )
+        elif r_pct > 70:
+            dom = "right"
+            status_vi = f"⚠️ Lệch Phải ({l_pct}% Trái • {c_pct}% Giữa • {r_pct}% Phải)"
+            advice_vi = (
+                f"Cảnh báo Bẹp đầu tư thế (AAP Plagiocephaly): Bé đang quay đầu sang PHẢI tới {r_pct}% thời gian ngủ. "
+                f"Ở cữ ngủ tiếp theo, Ba mẹ hãy nhẹ nhàng xoay đầu bé hướng sang TRÁI hoặc đổi chiều đặt đầu nôi để hộp sọ bé tròn đều."
+            )
+        else:
+            dom = "balanced"
+            status_vi = f"Cân bằng tốt ({l_pct}% Trái • {c_pct}% Giữa • {r_pct}% Phải)"
+            advice_vi = (
+                f"Hướng quay đầu khi ngủ của bé phân bổ cân đối ({l_pct}% Trái - {c_pct}% Giữa - {r_pct}% Phải), "
+                f"giúp phòng ngừa hiệu quả hội chứng bẹp đầu lệch tư thế (Plagiocephaly) theo chuẩn AAP."
+            )
+        return {
+            "left_pct": l_pct,
+            "right_pct": r_pct,
+            "center_pct": c_pct,
+            "total_minutes": round(total_sec / 60.0, 1),
+            "has_data": True,
+            "is_imbalanced": is_imb,
+            "dominant_side": dom,
+            "status_vi": status_vi,
+            "plagiocephaly_advice_vi": advice_vi
+        }
+
+    def update_tummy_time(self, dt: float):
+        """
+        Tracking & Bấm giờ tự động 'Tummy Time' (Tập nằm sấp khi thức có Ba mẹ giám sát - Chuẩn AAP):
+        Cộng dồn số giây bé tập Tummy Time trong ngày.
+        """
+        if dt <= 0 or dt > 5.0:
+            return
+        with self.lock:
+            self.tummy_time_seconds = float(getattr(self, "tummy_time_seconds", 0.0)) + float(dt)
+
+    def get_tummy_time_stats(self, age_months: int = 1) -> dict:
+        """
+        Thống kê thời lượng tập Tummy Time trong ngày đối chiếu khuyến nghị AAP:
+        - Sơ sinh (0-1 tháng): 10 - 15 phút/ngày (chia thành 2-3 lần ngắn 3-5 phút).
+        - Nhũ nhi (2-3 tháng): 15 - 30 phút/ngày.
+        """
+        mins = round(float(getattr(self, "tummy_time_seconds", 0.0)) / 60.0, 1)
+        target_min = 10.0 if age_months <= 1 else 20.0
+        target_max = 20.0 if age_months <= 1 else 30.0
+        if mins >= target_min:
+            status_vi = f"Đạt mục tiêu vận động AAP ({mins} phút)"
+            badge = "emerald"
+            advice_vi = f"Tuyệt vời! Bé đã tập Tummy Time được {mins} phút hôm nay (có Ba mẹ giám sát), giúp tăng cường cơ cổ, vai và chống bẹp đầu."
+        elif mins > 0:
+            status_vi = f"Đang tích lũy ({mins}/{int(target_min)} phút)"
+            badge = "cyan"
+            advice_vi = f"Hôm nay bé đã tập Tummy Time được {mins} phút. Ba mẹ có thể cho bé tập thêm 1-2 hiệp ngắn (3-5 phút/lần) khi bé thức tỉnh táo."
+        else:
+            status_vi = "Chưa ghi nhận hiệp tập hôm nay"
+            badge = "cyan"
+            advice_vi = f"Khuyến nghị AAP: Khi bé thức tỉnh táo và cách cữ bú ít nhất 30 phút, Ba mẹ hãy cho bé tập nằm sấp (Tummy Time) {int(target_min)}–{int(target_max)} phút/ngày dưới sự giám sát trực tiếp."
+        return {
+            "total_seconds": round(float(getattr(self, "tummy_time_seconds", 0.0)), 1),
+            "total_minutes": mins,
+            "target_min_minutes": target_min,
+            "target_max_minutes": target_max,
+            "status_vi": status_vi,
+            "badge_color": badge,
+            "advice_vi": advice_vi
+        }
+
+    def record_periodic_breathing(self, pause_seconds: float = 6.0):
+        """
+        Ghi nhận hiện tượng 'Thở chu kỳ sơ sinh lành tính (Periodic Breathing)':
+        Trẻ sơ sinh < 2 tháng tuổi có nhịp nghỉ thở ngắn 5–10 giây rồi tự thở đều trở lại (hoàn toàn bình thường, không phải ngưng thở bệnh lý Apnea >= 20s).
+        """
+        with self.lock:
+            self.periodic_breathing_count = int(getattr(self, "periodic_breathing_count", 0)) + 1
+        self.delta_tracker.record_event(
+            "periodic_breathing",
+            f"Thở chu kỳ sơ sinh lành tính: nghỉ ngắn {pause_seconds:.1f}s rồi tự thở đều lại (Chuẩn sinh lý AAP)",
+            severity="INFO"
+        )
 
     def save_daily_ai_report(self, report_dict: dict):
         with self.lock:
@@ -535,6 +691,34 @@ class SleepTracker:
                 self._save_data()
                 print("[SleepTracker] 😴 Gemini xác nhận bé đang NGỦ NGOAN -> Chuyển sang cữ ngủ (ASLEEP).")
 
+    def sync_gemini_out_of_crib(self):
+        """
+        Đồng bộ tức thì trạng thái 'Ngoài giường (OUT)' khi Gemini xác nhận baby_present=False
+        hoặc khi Ba mẹ xác nhận đã bế bé rời nôi. Ngừng ngay việc cộng giờ ngủ/giờ thức ảo.
+        """
+        now = time.time()
+        with self.lock:
+            self.gemini_awake_hint = False
+            self.gemini_hint_until = 0.0
+            if self.current_state != "OUT":
+                duration = int(now - self.state_since)
+                if self.current_state == "ASLEEP" and duration >= 180:
+                    self.total_sleep_today += duration
+                    self.wake_count_today += 1
+                    session = {
+                        "start": datetime.fromtimestamp(self.state_since).strftime("%H:%M"),
+                        "end": datetime.fromtimestamp(now).strftime("%H:%M"),
+                        "duration_minutes": round(duration / 60.0, 1),
+                        "date": self.today_date
+                    }
+                    self.sessions.insert(0, session)
+                self.current_state = "OUT"
+                self.state_since = now
+                self.pending_state = None
+                self.pending_since = 0.0
+                self._save_data()
+                print("[SleepTracker] 🚼 Xác nhận bé không có trong nôi -> Chuyển ngay sang trạng thái Ngoài giường (OUT).")
+
     def check_cycle_rollover(self, now: float = None):
         """Chủ động kiểm tra và lật chu kỳ ngày mới (07:00 sáng) ngay cả khi camera không có luồng hình ảnh."""
         if now is None:
@@ -560,20 +744,23 @@ class SleepTracker:
                     "crying_minutes": prev_totals.get("crying_minutes", 0.0),
                     "apnea_count": prev_totals.get("apnea_count", 0),
                     "covered_face_count": prev_totals.get("covered_face_count", 0),
-                    "avg_bpm": 38.5
+                    "avg_bpm": 0.0
                 })
                 self.daily_history = self.daily_history[:14]
                 self.today_date = cur_cycle_date
                 self.total_sleep_today = 0
                 self.total_awake_today = 0
                 self.wake_count_today = 0
+                self.head_orientation_seconds = {"left": 0.0, "right": 0.0, "center": 0.0}
+                self.tummy_time_seconds = 0.0
+                self.periodic_breathing_count = 0
                 self.sessions = []
                 self.daily_ai_report = None
                 self.delta_tracker.check_rollover(cur_cycle_date)
                 self._save_data()
                 print(f"[SleepTracker] 🌅 Đã lật chu kỳ ngày mới sang ngày {cur_cycle_date} (Khóa 07:00 sáng).")
 
-    def update_state(self, baby_detected: bool, is_moving: bool, motion_score: float = 0.0):
+    def update_state(self, baby_detected: bool, is_moving: bool, motion_score: float = 0.0, is_crying: bool = False):
         now = time.time()
         self.check_cycle_rollover(now)
         with self.lock:
@@ -595,14 +782,16 @@ class SleepTracker:
 
             # Xác định trạng thái mục tiêu dựa trên Mật độ vận động & Tiêu chí Bất Động Sinh Học
             is_still = (motion_score < 4.0 and not is_moving and self.activity_level_pct < 12)
+            gemini_confirms_awake = (now < self.gemini_hint_until and self.gemini_awake_hint is True)
 
             if not baby_detected:
                 raw_target = "OUT"
             else:
-                if now < self.gemini_hint_until and self.gemini_awake_hint is True:
-                    raw_target = "AWAKE" if not is_still else "ASLEEP"
+                if gemini_confirms_awake or is_crying:
+                    raw_target = "AWAKE"
                 elif self.current_state == "ASLEEP":
-                    raw_target = "AWAKE" if (self.activity_level_pct >= 28 or (is_moving and motion_score > 12.0)) else "ASLEEP"
+                    # Chỉ đề xuất chuyển sang AWAKE nếu mật độ vận động cao >= 40% (còn cựa quậy ngắn < 60-90s là pha Ngủ động REM)
+                    raw_target = "AWAKE" if (self.activity_level_pct >= 40 and (is_moving or motion_score > 14.0)) else "ASLEEP"
                 elif self.current_state == "AWAKE":
                     raw_target = "ASLEEP" if is_still else "AWAKE"
                 else:
@@ -626,7 +815,7 @@ class SleepTracker:
 
             # --- CƠ CHẾ DEBOUNCE SINH HỌC HAI CHIỀU (NGỦ <-> THỨC <-> NGOÀI NÔI) ---
             if raw_target == self.current_state:
-                if self.pending_state == "AWAKE" and self.activity_level_pct >= 25:
+                if self.pending_state == "AWAKE" and self.activity_level_pct >= 40:
                     pass
                 else:
                     self.pending_state = None
@@ -638,7 +827,8 @@ class SleepTracker:
                 else:
                     pending_dur = now - self.pending_since
                     if self.current_state == "ASLEEP" and raw_target == "AWAKE":
-                        required_wait = 25.0
+                        # Nếu có xác nhận từ Gemini hoặc tiếng khóc thực sự thì chuyển nhanh; nếu chỉ vận động thì chờ đủ 90s liên tục với activity_level_pct >= 40%
+                        required_wait = 5.0 if (gemini_confirms_awake or is_crying) else 90.0
                     elif self.current_state == "ASLEEP" and raw_target == "OUT":
                         required_wait = 25.0
                     elif self.current_state in ("AWAKE", "OUT") and raw_target == "ASLEEP":
@@ -774,13 +964,14 @@ class SleepTracker:
             wh_cnt = int(d_tots.get("whimper_count", 0))
             cg_cnt = int(d_tots.get("cough_count", 0))
             ck_cnt = int(d_tots.get("choke_risk_count", 0))
+            sp_cnt = int(d_tots.get("spit_up_count", 0))
             wh_eval = clinical_evaluator.evaluate_whimper_count(wh_cnt)
             cg_eval = clinical_evaluator.evaluate_cough_count(cg_cnt)
-            ck_eval = clinical_evaluator.evaluate_choke_count(ck_cnt)
+            ck_eval = clinical_evaluator.evaluate_choke_count(ck_cnt, spit_up_count=sp_cnt)
 
             wh_badge = "emerald" if wh_eval["status"] == "NORMAL" else ("amber" if wh_eval["status"] == "BORDERLINE" else "rose")
             cg_badge = "emerald" if cg_eval["status"] == "NORMAL" else ("amber" if cg_eval["status"] == "BORDERLINE" else "rose")
-            ck_badge = "emerald" if ck_eval["status"] == "SAFE" else "rose"
+            ck_badge = "emerald" if ck_eval["status"] in ("SAFE", "NORMAL") else "rose"
 
             rows.append({
                 "metric": "Tiếng ọ ẹ sinh lý (REM/Moro)",
@@ -797,11 +988,27 @@ class SleepTracker:
                 "badge_color": cg_badge
             })
             rows.append({
-                "metric": "Phòng chống sặc sữa & dị vật",
-                "measured": f"{ck_cnt} lần",
-                "standard": "0 lần (Chuẩn cấp cứu AHA/AAP)",
+                "metric": "Phòng chống sặc sữa & Trớ sữa sinh lý (Happy Spitter)",
+                "measured": f"Sặc cấp cứu: {ck_cnt} lần • Trớ sinh lý: {sp_cnt} lần" if sp_cnt > 0 else f"{ck_cnt} lần",
+                "standard": "Sặc: 0 lần (Chuẩn AHA/AAP) • Trớ nhẹ: ≤ 3 lần",
                 "status": ck_eval["status_vi"],
                 "badge_color": ck_badge
+            })
+            ho_stats = self.get_head_orientation_stats()
+            rows.append({
+                "metric": "Cân bằng hướng quay đầu chống Bẹp đầu lệch (Plagiocephaly)",
+                "measured": f"Trái {ho_stats['left_pct']}% • Giữa {ho_stats['center_pct']}% • Phải {ho_stats['right_pct']}%",
+                "standard": "Không lệch > 70% về 1 bên (Chuẩn AAP)",
+                "status": ho_stats["status_vi"],
+                "badge_color": "amber" if ho_stats["is_imbalanced"] else "emerald"
+            })
+            tt_stats = self.get_tummy_time_stats(int(standards.get("age_months", 1)))
+            rows.append({
+                "metric": "Vận động nằm sấp khi thức có giám sát (Tummy Time)",
+                "measured": f"{tt_stats['total_minutes']} phút",
+                "standard": f"{int(tt_stats['target_min_minutes'])} – {int(tt_stats['target_max_minutes'])} phút / ngày (Chuẩn AAP)",
+                "status": tt_stats["status_vi"],
+                "badge_color": tt_stats["badge_color"]
             })
         except Exception as e_bench:
             print(f"[SleepTracker] Lỗi gán clinical rows: {e_bench}")
@@ -849,7 +1056,7 @@ class SleepTracker:
             )
             ai_tips = [
                 "Luôn tuân thủ quy tắc ngủ an toàn ABC của AAP: Bé nằm ngửa (Back), giường phẳng thoáng (Alone in Crib), không để chăn gối mềm xung quanh.",
-                "Vỗ ợ hơi kỹ sau mỗi cữ bú; nếu bé hay trớ sữa, có thể nâng đầu nôi nhẹ 10-15° và giữ ấm vùng bụng.",
+                "Bế vác thẳng đứng và vỗ ợ hơi kỹ 15–20 phút SAU KHI BÚ (lúc thức); khi đặt bé xuống ngủ BẮT BUỘC đặt nằm ngửa trên bề mặt nôi/đệm phẳng hoàn toàn (0 độ), không kê gối hay nâng nghiêng đệm ngủ.",
                 "Duy trì nhiệt độ phòng ngủ lý tưởng từ 26°C – 27.5°C và ánh sáng dịu trước cữ ngủ tối 30 phút."
             ]
             ai_citations = [
@@ -1024,6 +1231,9 @@ class SleepTracker:
                 "cycle_anchor": "07:00",
                 "cycle_anchor_display": "07:00 AM (Chuẩn AAP/AASM)",
                 "pediatric_standards": standards,
+                "head_orientation": self.get_head_orientation_stats(),
+                "tummy_time": self.get_tummy_time_stats(age_months),
+                "periodic_breathing_count": int(getattr(self, "periodic_breathing_count", 0)),
                 "delta_summary": self.delta_tracker.get_cluster_summary(),
                 "wake_window": {
                     "optimal_minutes": wake_window_optimal,
