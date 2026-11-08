@@ -1,8 +1,10 @@
 // BabyGuard AI Service Worker (PWA Offline Shell & Instant OTA Auto-Update)
-const CACHE_NAME = 'babyguard-v2.2';
+const CACHE_NAME = 'babyguard-v2.3';
 const STATIC_ASSETS = [
   '/',
+  '/station',
   '/manifest.json',
+  '/static/js/peerjs.min.js',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png'
 ];

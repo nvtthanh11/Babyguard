@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BabyGuard AI • Máy Trạm Điện Thoại Giám Sát Nôi Bé</title>
+    <meta name="description" content="Biến điện thoại cũ thành máy trạm AI giám sát nôi bé: nhận diện tiếng khóc, phát hiện trèo nôi, tự ru ngủ và cảnh báo Telegram trực tiếp.">
+    <meta name="theme-color" content="#020617">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/icons/icon-512.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/js/peerjs.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#020617',
+                        cardbg: '#0B1120',
+                        bordercol: '#1E293B',
+                        brand: {
+                            500: '#14B8A6',
+                            600: '#0D9488',
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body {
+            background-color: #020617;
+            color: #F8FAFC;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .touch-action-none { touch-action: none; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-ring { animation: pulse-ring 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="min-h-screen bg-darkbg text-slate-100 flex flex-col justify-between pb-6 pt-safe">
+
+    <!-- TOP HEADER -->
+    <header class="px-4 py-3 bg-cardbg/80 backdrop-blur-md border-b border-bordercol sticky top-0 z-40 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-lg shadow-inner">
+                🍼
+            </div>
+            <div>
+                <h1 class="text-sm font-black tracking-tight text-white flex items-center gap-1.5">
+                    BabyGuard<span class="text-teal-400">.AI</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/30">MÁY TRẠM</span>
+                </h1>
+                <p class="text-[10px] text-slate-300 font-medium">100% Cục Bộ Trên Máy • 0đ Phí Cloud</p>
+            </div>
+        </div>
+        <div id="header-status-badge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-semibold text-slate-300">
+            <span id="header-status-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span id="header-status-text">Sẵn sàng</span>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-lg w-full mx-auto px-4 py-3 space-y-3.5">
+
+        <!-- DUAL ROLE TABS -->
+        <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900/90 rounded-2xl border border-slate-800 text-xs font-bold">
+            <button id="tab-btn-station" onclick="switchRole('station')" class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                <span>📹</span>
+                <span>Làm Camera Nôi Bé</span>
+            </button>
+            <button id="tab-btn-viewer" onclick="switchRole('viewer')" class="py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white border border-transparent">
+                <span>📱</span>
+                <span>Xem Từ Xa (Ba Mẹ)</span>
+            </button>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- TAB 1: VAI TRÒ MÁY TRẠM CAMERA NÔI BÉ (STATION MODE)             -->
+        <!-- ================================================================= -->
+        <section id="role-station-panel" class="space-y-3.5">
+
+            <!-- NGUỒN CAMERA -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-200 font-bold">Nguồn Hình Ảnh:</span>
+                    <span id="cam-source-indicator" class="text-[11px] text-teal-400 font-mono">Camera Máy Này</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-2xl border border-slate-800 text-xs font-semibold">
+                    <button id="src-btn-phone" onclick="setCamSource('phone')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                        <span>📱</span>
+                        <span>Camera Điện Thoại</span>
+                    </button>
+                    <button id="src-btn-ipcam" onclick="setCamSource('ipcam')" class="py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white border border-transparent">
+                        <span>📡</span>
+                        <span>Camera IP WiFi</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KHUNG NHẬP LINK CAMERA IP (YOOSEE / IMOU / EZVIZ / TAPO) -->
+            <div id="ipcam-config-box" class="space-y-2 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs hidden">
+                <label class="block text-slate-200 font-semibold text-[11px]">Đường link Camera IP (RTSP / HTTP MJPEG):</label>
+                <input type="text" id="ipcam-url-input" placeholder="http://192.168.1.50:8080/video hoặc rtsp://..." class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3 py-2 text-slate-100 font-mono text-xs">
+                <p class="text-[10px] text-slate-300">💡 Dùng điện thoại nhận luồng hình ảnh từ camera WiFi rẻ tiền trong nhà để phân tích AI thay máy tính.</p>
+            </div>
+
+            <!-- VIEWPORT CAMERA LIVE -->
+            <div id="station-viewport" class="relative w-full rounded-2xl overflow-hidden bg-black border border-slate-800 aspect-video shadow-2xl flex items-center justify-center">
+                <!-- Video Element -->
+                <video id="station-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                <!-- IP Cam Image Element -->
+                <img id="station-ipcam-view" class="w-full h-full object-cover hidden" alt="IP Camera Stream">
+                <!-- Motion Detection Scratch Canvas -->
+                <canvas id="station-motion-canvas" class="hidden" width="160" height="120"></canvas>
+                <!-- Safe Zone Polygon Canvas Overlay -->
+                <canvas id="station-crib-canvas" class="absolute inset-0 w-full h-full z-10 pointer-events-none touch-action-none"></canvas>
+
+                <!-- TOP BAR CONTROLS -->
+                <div class="absolute top-2 left-2 right-2 z-20 flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] text-white font-bold">
+                        <span id="station-live-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span id="station-live-text">Chưa Kích Hoạt</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button id="btn-edit-crib" onclick="toggleCribEdit()" class="px-2.5 py-1 rounded-xl bg-black/70 hover:bg-black/90 backdrop-blur-md border border-teal-500/40 text-teal-300 text-xs transition active:scale-95 flex items-center gap-1 font-semibold" title="Căn chỉnh khung nôi an toàn">
+                            <span>📐</span>
+                            <span class="text-[11px]">Khung Nôi</span>
+                        </button>
+                        <button id="btn-flip-cam" onclick="flipCamera()" class="p-1.5 px-2 rounded-xl bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/10 text-white text-xs transition active:scale-95" title="Đổi camera trước/sau">
+                            🔄
+                        </button>
+                        <button onclick="toggleDimmer()" class="p-1.5 px-2 rounded-xl bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/10 text-amber-300 text-xs transition active:scale-95" title="Chế độ Màn hình Đêm">
+                            🌙
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CRIB ZONE EDITOR BAR -->
+                <div id="crib-editor-bar" class="absolute bottom-2 left-2 right-2 z-30 bg-slate-950/95 border border-teal-500/60 rounded-xl px-3 py-2 flex items-center justify-between backdrop-blur-md hidden text-xs shadow-2xl">
+                    <span class="text-[11px] text-teal-300 font-bold flex items-center gap-1">
+                        <span>👆</span><span>Chạm kéo 4 chấm tròn vào 4 góc đệm</span>
+                    </span>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="resetCribPolygon()" class="px-2 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] active:scale-95">Mặc định</button>
+                        <button onclick="saveCribPolygon()" class="px-3 py-1 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 text-[11px] font-black active:scale-95">Xong ✅</button>
+                    </div>
+                </div>
+
+                <!-- NIGHT MODE DIMMER OVERLAY -->
+                <div id="dimmer-overlay" class="absolute inset-0 bg-black/95 hidden flex flex-col items-center justify-center text-center p-4 cursor-pointer z-40" onclick="toggleDimmer()">
+                    <span class="text-4xl mb-2 animate-bounce">🌙</span>
+                    <span class="text-sm text-slate-200 font-bold">Chế Độ Màn Hình Đêm</span>
+                    <span class="text-xs text-slate-300 mt-1">Giữ máy mát & không chói mắt bé. AI vẫn chạy ngầm 100%!</span>
+                    <span class="text-[10px] text-teal-400 mt-3 px-3 py-1 rounded-full border border-teal-500/30 bg-teal-500/10">Chạm màn hình để bật sáng lại</span>
+                </div>
+            </div>
+
+            <!-- TELEMETRY BARS: MIC & MOTION -->
+            <div class="grid grid-cols-2 gap-2 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-300 font-semibold flex items-center gap-1">🎙️ Âm Thanh:</span>
+                        <span id="mic-status-label" class="font-bold text-slate-200">Yên tĩnh</span>
+                    </div>
+                    <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                        <div id="mic-level-bar" class="h-full bg-emerald-500 transition-all duration-100" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-300 font-semibold flex items-center gap-1">🏃 Cử Động:</span>
+                        <span id="motion-status-label" class="font-bold text-slate-200">Bé ngủ yên</span>
+                    </div>
+                    <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                        <div id="motion-level-bar" class="h-full bg-cyan-500 transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- P2P BROADCAST CARD CHO ĐIỆN THOẠI THỨ 2 XEM TRỰC TIẾP -->
+            <div id="station-p2p-card" class="p-3.5 bg-teal-500/10 border border-teal-500/30 rounded-2xl space-y-2 text-center hidden">
+                <span class="text-[10px] font-bold text-teal-300 uppercase tracking-wider block">📡 Mã Trạm Để Điện Thoại Thứ Hai Xem Trực Tiếp:</span>
+                <div class="flex items-center justify-center gap-2">
+                    <span id="p2p-code-display" class="font-mono text-2xl font-black text-teal-300 tracking-widest bg-slate-950 px-4 py-1.5 rounded-xl border border-teal-500/40 select-all">------</span>
+                    <button onclick="copyP2PCode()" class="p-2 px-3 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-xs font-bold transition active:scale-95">📋 Chép Mã</button>
+                </div>
+                <p class="text-[10px] text-slate-300 leading-relaxed">
+                    Mở BabyGuard trên máy Ba Mẹ, chọn tab <b>"Xem Từ Xa"</b> và nhập mã trên để xem trực tiếp P2P không độ trễ, không tốn Cloud!
+                </p>
+            </div>
+
+            <!-- CẤU HÌNH BÁO ĐỘNG TELEGRAM -->
+            <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2.5 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
+                        <span>📱</span>
+                        <span>Cảnh Báo Về Telegram Của Ba:</span>
+                    </span>
+                    <button onclick="testTelegramAlert()" id="btn-test-tele" class="px-2.5 py-1 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-[10px] font-bold border border-teal-500/40 transition active:scale-95">
+                        🔔 Bấm Gửi Thử
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-300 text-[10px] mb-0.5">Telegram Chat ID ba mẹ:</label>
+                        <input type="text" id="tele-chat-id" placeholder="VD: 618492015" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-2.5 py-1.5 text-slate-100 font-mono text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 text-[10px] mb-0.5">Bot Token (Nếu có bot riêng):</label>
+                        <input type="text" id="tele-bot-token" placeholder="Để trống nếu dùng mặc định" class="w-full bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-2.5 py-1.5 text-slate-100 font-mono text-xs">
+                    </div>
+                </div>
+                <div class="space-y-1.5 pt-1 text-[11px]">
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input type="checkbox" id="opt-auto-lullaby" checked class="w-4 h-4 accent-teal-500 rounded">
+                        <span>Tự động phát <b>Tiếng Ồn Trắng</b> trên loa máy khi bé khóc</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                        <input type="checkbox" id="opt-wakelock" checked class="w-4 h-4 accent-teal-500 rounded">
+                        <span>Giữ màn hình luôn sáng (WakeLock) không bị tắt nguồn</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- NÚT BẬT / DỪNG TRẠM GIÁM SÁT -->
+            <button id="btn-master-toggle" onclick="toggleStationMaster()" class="w-full py-4 px-4 rounded-2xl font-black text-sm bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 hover:from-teal-400 hover:to-emerald-300 text-slate-950 shadow-xl shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2">
+                <span>🚀</span>
+                <span id="btn-master-toggle-text">BẬT TRẠM GIÁM SÁT NÔI BÉ (BẮT ĐẦU CANH BÉ)</span>
+            </button>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 2: VAI TRÒ XEM TỪ XA CHO BA MẸ (VIEWER MODE)                 -->
+        <!-- ================================================================= -->
+        <section id="role-viewer-panel" class="space-y-3.5 hidden">
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs">
+                <div class="text-center space-y-1">
+                    <h2 class="text-sm font-bold text-white">Kết Nối Camera Nôi Bé Từ Xa</h2>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Nhập <b>Mã Trạm P2P (6 chữ số)</b> đang hiển thị trên điện thoại nôi bé để xem trực tiếp không cần qua máy chủ.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="number" id="viewer-code-input" placeholder="VD: 849201" maxlength="6" class="flex-1 bg-slate-950 border border-slate-700 focus:border-teal-500 outline-none rounded-xl px-3 py-2 text-center text-slate-100 font-mono text-lg font-bold tracking-widest">
+                    <button onclick="connectToStationP2P()" class="py-2.5 px-4 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold transition active:scale-95">
+                        Kết Nối
+                    </button>
+                </div>
+            </div>
+
+            <!-- REMOTE LIVE VIEW -->
+            <div class="relative w-full rounded-2xl overflow-hidden bg-black border border-slate-800 aspect-video shadow-2xl flex items-center justify-center">
+                <video id="viewer-remote-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                <div id="viewer-waiting-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center text-center p-4">
+                    <span class="text-3xl mb-2">📡</span>
+                    <span id="viewer-status-text" class="text-xs text-slate-300 font-semibold">Nhập mã trạm 6 số ở trên để kết nối trực tiếp P2P</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border border-teal-500/50 text-white text-xs px-4 py-2 rounded-2xl shadow-2xl transition duration-300 opacity-0 pointer-events-none flex items-center gap-2 backdrop-blur-md">
+        <span id="toast-icon">ℹ️</span>
+        <span id="toast-msg">Thông báo</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // =========================================================================
+        // STATE VARIABLES
+        // =========================================================================
+        let _isStationRunning = false;
+        let _camSource = 'phone'; // 'phone' | 'ipcam'
+        let _facingMode = 'environment'; // 'environment' | 'user'
+        let _mediaStream = null;
+        let _audioContext = null;
+        let _analyser = null;
+        let _analysisInterval = null;
+        let _wakeLock = null;
+        let _peer = null;
+        let _p2pCode = null;
+        let _lastFrameData = null;
+        let _noiseSource = null;
+        let _isOutOfCrib = false;
+        let _isCribEditing = false;
+        let _selectedCorner = -1;
+        let _lastAlertTime = { cry: 0, motion: 0, outOfCrib: 0 };
+
+        // 4 Safe zone polygon vertices [x, y] in normalized coordinates [0..1]
+        let _cribPolygon = [
+            [0.15, 0.20], // top-left
+            [0.85, 0.20], // top-right
+            [0.90, 0.85], // bottom-right
+            [0.10, 0.85]  // bottom-left
+        ];
+
+        // =========================================================================
+        // INIT & LOCAL STORAGE RESTORATION
+        // =========================================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            // Restore settings
+            const savedChatId = localStorage.getItem('bg_tele_chat_id');
+            const savedBotToken = localStorage.getItem('bg_tele_bot_token');
+            const savedIpCamUrl = localStorage.getItem('bg_ipcam_url');
+            const savedPoly = localStorage.getItem('bg_crib_poly');
+
+            if (savedChatId) document.getElementById('tele-chat-id').value = savedChatId;
+            if (savedBotToken) document.getElementById('tele-bot-token').value = savedBotToken;
+            if (savedIpCamUrl) document.getElementById('ipcam-url-input').value = savedIpCamUrl;
+            if (savedPoly) {
+                try { _cribPolygon = JSON.parse(savedPoly); } catch (e) {}
+            }
+
+            // Save on change
+            document.getElementById('tele-chat-id').addEventListener('input', (e) => {
+                localStorage.setItem('bg_tele_chat_id', e.target.value.trim());
+            });
+            document.getElementById('tele-bot-token').addEventListener('input', (e) => {
+                localStorage.setItem('bg_tele_bot_token', e.target.value.trim());
+            });
+            document.getElementById('ipcam-url-input').addEventListener('input', (e) => {
+                localStorage.setItem('bg_ipcam_url', e.target.value.trim());
+            });
+
+            // Init canvas
+            setupCribCanvasEvents();
+            resizeCribCanvas();
+            drawCribPolygon();
+            window.addEventListener('resize', () => {
+                resizeCribCanvas();
+                drawCribPolygon();
+            });
+
+            // Register Service Worker for offline PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+            }
+        });
+
+        // =========================================================================
+        // ROLE SWITCHER (STATION VS VIEWER)
+        // =========================================================================
+        function switchRole(role) {
+            const panelStation = document.getElementById('role-station-panel');
+            const panelViewer = document.getElementById('role-viewer-panel');
+            const btnStation = document.getElementById('tab-btn-station');
+            const btnViewer = document.getElementById('tab-btn-viewer');
+
+            if (role === 'station') {
+                panelStation.classList.remove('hidden');
+                panelViewer.classList.add('hidden');
+                btnStation.className = 'py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40';
+                btnViewer.className = 'py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white border border-transparent';
+            } else {
+                panelStation.classList.add('hidden');
+                panelViewer.classList.remove('hidden');
+                btnViewer.className = 'py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40';
+                btnStation.className = 'py-2.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white border border-transparent';
+            }
+        }
+
+        // =========================================================================
+        // CAMERA SOURCE SWITCHER
+        // =========================================================================
+        function setCamSource(src) {
+            _camSource = src;
+            const btnPhone = document.getElementById('src-btn-phone');
+            const btnIpcam = document.getElementById('src-btn-ipcam');
+            const ipcamBox = document.getElementById('ipcam-config-box');
+            const indicator = document.getElementById('cam-source-indicator');
+
+            if (src === 'phone') {
+                btnPhone.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40';
+                btnIpcam.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white border border-transparent';
+                ipcamBox.classList.add('hidden');
+                indicator.innerText = 'Camera Điện Thoại';
+            } else {
+                btnIpcam.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/40';
+                btnPhone.className = 'py-2 px-2 rounded-xl transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white border border-transparent';
+                ipcamBox.classList.remove('hidden');
+                indicator.innerText = 'Camera IP WiFi';
+            }
+
+            if (_isStationRunning) {
+                stopStation();
+                startStation();
+            }
+        }
+
+        // =========================================================================
+        // MASTER TOGGLE (START / STOP STATION)
+        // =========================================================================
+        function toggleStationMaster() {
+            if (_isStationRunning) {
+                stopStation();
+            } else {
+                startStation();
+            }
+        }
+
+        async function startStation() {
+            showToast('Đang kích hoạt Máy Trạm...', '⏳');
+            try {
+                // 1. Acquire Camera & Mic
+                if (_camSource === 'phone') {
+                    _mediaStream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: _facingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        },
+                        audio: true
+                    });
+                    const videoEl = document.getElementById('station-video');
+                    videoEl.srcObject = _mediaStream;
+                    videoEl.classList.remove('hidden');
+                    document.getElementById('station-ipcam-view').classList.add('hidden');
+                } else {
+                    const ipcamUrl = document.getElementById('ipcam-url-input').value.trim();
+                    if (!ipcamUrl) {
+                        showToast('Vui lòng nhập đường link Camera IP!', '⚠️');
+                        return;
+                    }
+                    const ipcamImg = document.getElementById('station-ipcam-view');
+                    ipcamImg.src = ipcamUrl;
+                    ipcamImg.classList.remove('hidden');
+                    document.getElementById('station-video').classList.add('hidden');
+
+                    try {
+                        _mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    } catch (e) {
+                        console.warn('Microphone not acquired for IP Cam mode:', e);
+                    }
+                }
+
+                // 2. Setup Audio FFT Analyzer
+                if (_mediaStream && _mediaStream.getAudioTracks().length > 0) {
+                    try {
+                        _audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const source = _audioContext.createMediaStreamSource(_mediaStream);
+                        _analyser = _audioContext.createAnalyser();
+                        _analyser.fftSize = 256;
+                        source.connect(_analyser);
+                    } catch (e) {
+                        console.warn('AudioContext init error:', e);
+                    }
+                }
+
+                // 3. Acquire Screen WakeLock
+                if (document.getElementById('opt-wakelock').checked && 'wakeLock' in navigator) {
+                    try {
+                        _wakeLock = await navigator.wakeLock.request('screen');
+                    } catch (e) {
+                        console.warn('WakeLock not permitted:', e);
+                    }
+                }
+
+                // 4. Init WebRTC PeerJS Broadcast
+                initP2PBroadcast();
+
+                // 5. Start Realtime Analysis Loop (Audio + Vision)
+                _isStationRunning = true;
+                _analysisInterval = setInterval(() => {
+                    analyzeAudio();
+                    analyzeMotion();
+                }, 100);
+
+                // Update UI state
+                updateStationRunningUI(true);
+                showToast('Máy Trạm BabyGuard AI Đang Hoạt Động!', '🛡️');
+
+                setTimeout(() => {
+                    resizeCribCanvas();
+                    drawCribPolygon();
+                }, 200);
+
+            } catch (err) {
+                console.error('Lỗi khởi động trạm:', err);
+                showToast('Không thể bật Camera/Micro: ' + err.message, '❌');
+                stopStation();
+            }
+        }
+
+        function stopStation() {
+            _isStationRunning = false;
+            _isOutOfCrib = false;
+            if (_analysisInterval) {
+                clearInterval(_analysisInterval);
+                _analysisInterval = null;
+            }
+            if (_mediaStream) {
+                _mediaStream.getTracks().forEach(t => t.stop());
+                _mediaStream = null;
+            }
+            if (_audioContext) {
+                try { _audioContext.close(); } catch (e) {}
+                _audioContext = null;
+            }
+            if (_wakeLock) {
+                try { _wakeLock.release(); } catch (e) {}
+                _wakeLock = null;
+            }
+            if (_peer) {
+                try { _peer.destroy(); } catch (e) {}
+                _peer = null;
+            }
+            stopWhiteNoise();
+
+            const videoEl = document.getElementById('station-video');
+            videoEl.srcObject = null;
+            videoEl.src = '';
+            const ipcamImg = document.getElementById('station-ipcam-view');
+            ipcamImg.src = '';
+            ipcamImg.classList.add('hidden');
+
+            document.getElementById('station-p2p-card').classList.add('hidden');
+            updateStationRunningUI(false);
+            showToast('Đã dừng Máy Trạm', '⏹️');
+        }
+
+        function updateStationRunningUI(running) {
+            const btn = document.getElementById('btn-master-toggle');
+            const btnText = document.getElementById('btn-master-toggle-text');
+            const headerDot = document.getElementById('header-status-dot');
+            const headerText = document.getElementById('header-status-text');
+            const liveDot = document.getElementById('station-live-dot');
+            const liveText = document.getElementById('station-live-text');
+
+            if (running) {
+                btn.className = 'w-full py-4 px-4 rounded-2xl font-black text-sm bg-red-600 hover:bg-red-500 text-white shadow-xl shadow-red-600/30 transition active:scale-95 flex items-center justify-center gap-2';
+                btnText.innerText = 'DỪNG MÁY TRẠM GIÁM SÁT';
+                headerDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+                headerText.innerText = 'Đang canh bé';
+                headerText.className = 'text-emerald-400 font-bold';
+                liveDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+                liveText.innerText = 'ĐANG GIÁM SÁT TRỰC TIẾP';
+            } else {
+                btn.className = 'w-full py-4 px-4 rounded-2xl font-black text-sm bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 hover:from-teal-400 hover:to-emerald-300 text-slate-950 shadow-xl shadow-teal-500/25 transition active:scale-95 flex items-center justify-center gap-2';
+                btnText.innerText = 'BẬT TRẠM GIÁM SÁT NÔI BÉ (BẮT ĐẦU CANH BÉ)';
+                headerDot.className = 'w-2 h-2 rounded-full bg-slate-500';
+                headerText.innerText = 'Sẵn sàng';
+                headerText.className = 'text-slate-300 font-semibold';
+                liveDot.className = 'w-2 h-2 rounded-full bg-slate-500';
+                liveText.innerText = 'Chưa Kích Hoạt';
+            }
+        }
+
+        function flipCamera() {
+            _facingMode = _facingMode === 'environment' ? 'user' : 'environment';
+            if (_isStationRunning && _camSource === 'phone') {
+                stopStation();
+                startStation();
+            }
+        }
+
+        function toggleDimmer() {
+            document.getElementById('dimmer-overlay').classList.toggle('hidden');
+        }
+
+        // =========================================================================
+        // REALTIME AUDIO CRY DETECTION (WEB AUDIO FFT)
+        // =========================================================================
+        function analyzeAudio() {
+            if (!_analyser) return;
+            const dataArray = new Uint8Array(_analyser.frequencyBinCount);
+            _analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            // Tần số tiếng khóc trẻ em: bin 10 - 80 (~400Hz - 3200Hz)
+            for (let i = 10; i < Math.min(80, dataArray.length); i++) {
+                sum += dataArray[i];
+            }
+            const avgCryEnergy = sum / 70;
+            const pct = Math.min(100, Math.round((avgCryEnergy / 180) * 100));
+
+            const bar = document.getElementById('mic-level-bar');
+            const label = document.getElementById('mic-status-label');
+            bar.style.width = pct + '%';
+
+            if (pct > 65) {
+                bar.className = 'h-full bg-red-500 transition-all duration-100';
+                label.innerText = '🚨 Bé khóc to!';
+                label.className = 'font-bold text-red-400';
+                triggerCryAlert();
+            } else if (pct > 35) {
+                bar.className = 'h-full bg-amber-500 transition-all duration-100';
+                label.innerText = 'Bé e é / Cựa';
+                label.className = 'font-bold text-amber-300';
+            } else {
+                bar.className = 'h-full bg-emerald-500 transition-all duration-100';
+                label.innerText = 'Yên tĩnh';
+                label.className = 'font-bold text-slate-200';
+            }
+        }
+
+        function triggerCryAlert() {
+            const now = Date.now();
+            if (now - _lastAlertTime.cry > 45000) {
+                _lastAlertTime.cry = now;
+                if (document.getElementById('opt-auto-lullaby').checked) {
+                    playWhiteNoise();
+                }
+                sendTelegramNotification('🚨 BÉ ĐANG KHÓC LỚN!', 'Phát hiện âm thanh tiếng khóc vượt ngưỡng an toàn trong phòng.');
+            }
+        }
+
+        // =========================================================================
+        // REALTIME OPTICAL DIFF MOTION DETECTION & CRIB OUT CHECK
+        // =========================================================================
+        function analyzeMotion() {
+            const video = document.getElementById('station-video');
+            const ipcamImg = document.getElementById('station-ipcam-view');
+            const canvas = document.getElementById('station-motion-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            if (_camSource === 'phone' && video.readyState >= 2) {
+                ctx.drawImage(video, 0, 0, 160, 120);
+            } else if (_camSource === 'ipcam' && ipcamImg && !ipcamImg.classList.contains('hidden') && ipcamImg.complete) {
+                ctx.drawImage(ipcamImg, 0, 0, 160, 120);
+            } else {
+                return;
+            }
+
+            const frame = ctx.getImageData(0, 0, 160, 120);
+            const currentData = frame.data;
+
+            if (_lastFrameData) {
+                let diffCount = 0;
+                let outDiffCount = 0;
+                const totalPixels = 160 * 120;
+
+                for (let i = 0; i < currentData.length; i += 16) {
+                    const rDiff = Math.abs(currentData[i] - _lastFrameData[i]);
+                    const gDiff = Math.abs(currentData[i+1] - _lastFrameData[i+1]);
+                    const bDiff = Math.abs(currentData[i+2] - _lastFrameData[i+2]);
+
+                    if ((rDiff + gDiff + bDiff) > 60) {
+                        diffCount++;
+                        const pxIdx = i / 4;
+                        const px = (pxIdx % 160) / 160;
+                        const py = Math.floor(pxIdx / 160) / 120;
+                        if (!isPointInPolygon([px, py], _cribPolygon)) {
+                            outDiffCount++;
+                        }
+                    }
+                }
+
+                const motionPct = Math.min(100, Math.round((diffCount / (totalPixels / 4)) * 300));
+                const motionBar = document.getElementById('motion-level-bar');
+                const motionLabel = document.getElementById('motion-status-label');
+                motionBar.style.width = motionPct + '%';
+
+                if (outDiffCount > 25) {
+                    _isOutOfCrib = true;
+                    motionBar.className = 'h-full bg-red-500';
+                    motionLabel.innerText = '⚠️ Trèo ngoài nôi!';
+                    motionLabel.className = 'font-bold text-red-400';
+                    triggerOutOfCribAlert();
+                } else if (motionPct > 40) {
+                    _isOutOfCrib = false;
+                    motionBar.className = 'h-full bg-amber-500';
+                    motionLabel.innerText = 'Cựa quậy mạnh';
+                    motionLabel.className = 'font-bold text-amber-300';
+                } else {
+                    _isOutOfCrib = false;
+                    motionBar.className = 'h-full bg-cyan-500';
+                    motionLabel.innerText = 'Bé ngủ yên';
+                    motionLabel.className = 'font-bold text-slate-200';
+                }
+            }
+
+            _lastFrameData = currentData;
+            drawCribPolygon();
+        }
+
+        function triggerOutOfCribAlert() {
+            const now = Date.now();
+            if (now - _lastAlertTime.outOfCrib > 45000) {
+                _lastAlertTime.outOfCrib = now;
+                sendTelegramNotification('⚠️ CẢNH BÁO: BÉ CÓ NGUY CƠ TRÈO RA NGOÀI NÔI!', 'Phát hiện cử động vượt ra ngoài ranh giới khung an toàn.');
+            }
+        }
+
+        function isPointInPolygon(point, vs) {
+            const x = point[0], y = point[1];
+            let inside = false;
+            for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+                const xi = vs[i][0], yi = vs[i][1];
+                const xj = vs[j][0], yj = vs[j][1];
+                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        // =========================================================================
+        // SAFE CRIB ZONE CANVAS EDITOR
+        // =========================================================================
+        function resizeCribCanvas() {
+            const container = document.getElementById('station-viewport');
+            const canvas = document.getElementById('station-crib-canvas');
+            if (container && canvas) {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+            }
+        }
+
+        function drawCribPolygon() {
+            const canvas = document.getElementById('station-crib-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            if (_cribPolygon.length < 4) return;
+
+            ctx.beginPath();
+            ctx.moveTo(_cribPolygon[0][0] * w, _cribPolygon[0][1] * h);
+            for (let i = 1; i < _cribPolygon.length; i++) {
+                ctx.lineTo(_cribPolygon[i][0] * w, _cribPolygon[i][1] * h);
+            }
+            ctx.closePath();
+
+            ctx.lineWidth = _isCribEditing ? 3 : 2;
+            ctx.strokeStyle = _isOutOfCrib ? '#EF4444' : (_isCribEditing ? '#F59E0B' : '#14B8A6');
+            ctx.fillStyle = _isOutOfCrib ? 'rgba(239, 68, 68, 0.15)' : 'rgba(20, 184, 166, 0.10)';
+            ctx.stroke();
+            ctx.fill();
+
+            if (_isCribEditing) {
+                _cribPolygon.forEach((pt, idx) => {
+                    ctx.beginPath();
+                    ctx.arc(pt[0] * w, pt[1] * h, 14, 0, Math.PI * 2);
+                    ctx.fillStyle = idx === _selectedCorner ? '#EF4444' : '#F59E0B';
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.stroke();
+                });
+            }
+        }
+
+        function toggleCribEdit() {
+            _isCribEditing = !_isCribEditing;
+            const bar = document.getElementById('crib-editor-bar');
+            const canvas = document.getElementById('station-crib-canvas');
+            if (_isCribEditing) {
+                bar.classList.remove('hidden');
+                canvas.classList.remove('pointer-events-none');
+            } else {
+                bar.classList.add('hidden');
+                canvas.classList.add('pointer-events-none');
+            }
+            drawCribPolygon();
+        }
+
+        function resetCribPolygon() {
+            _cribPolygon = [[0.15, 0.20], [0.85, 0.20], [0.90, 0.85], [0.10, 0.85]];
+            localStorage.setItem('bg_crib_poly', JSON.stringify(_cribPolygon));
+            drawCribPolygon();
+            showToast('Đã khôi phục khung nôi mặc định', '📐');
+        }
+
+        function saveCribPolygon() {
+            localStorage.setItem('bg_crib_poly', JSON.stringify(_cribPolygon));
+            toggleCribEdit();
+            showToast('Đã lưu khung nôi an toàn thành công!', '✅');
+        }
+
+        function setupCribCanvasEvents() {
+            const canvas = document.getElementById('station-crib-canvas');
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) / rect.width,
+                    y: (clientY - rect.top) / rect.height
+                };
+            };
+
+            const onStart = (e) => {
+                if (!_isCribEditing) return;
+                const pos = getPos(e);
+                _selectedCorner = -1;
+                _cribPolygon.forEach((pt, idx) => {
+                    const dist = Math.hypot(pt[0] - pos.x, pt[1] - pos.y);
+                    if (dist < 0.1) _selectedCorner = idx;
+                });
+                if (_selectedCorner !== -1 && e.cancelable) e.preventDefault();
+            };
+
+            const onMove = (e) => {
+                if (!_isCribEditing || _selectedCorner === -1) return;
+                const pos = getPos(e);
+                _cribPolygon[_selectedCorner] = [
+                    Math.max(0.02, Math.min(0.98, pos.x)),
+                    Math.max(0.02, Math.min(0.98, pos.y))
+                ];
+                drawCribPolygon();
+                if (e.cancelable) e.preventDefault();
+            };
+
+            const onEnd = () => {
+                _selectedCorner = -1;
+            };
+
+            canvas.addEventListener('mousedown', onStart);
+            canvas.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onEnd);
+            canvas.addEventListener('touchstart', onStart, { passive: false });
+            canvas.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('touchend', onEnd);
+        }
+
+        // =========================================================================
+        // WEB AUDIO WHITE NOISE GENERATOR
+        // =========================================================================
+        function playWhiteNoise() {
+            if (_noiseSource) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const bufferSize = ctx.sampleRate * 3;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * 0.15;
+                }
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                noise.loop = true;
+                const gain = ctx.createGain();
+                gain.gain.value = 0.25;
+                noise.connect(gain);
+                gain.connect(ctx.destination);
+                noise.start();
+                _noiseSource = { source: noise, ctx: ctx };
+                setTimeout(() => stopWhiteNoise(), 45000);
+            } catch (e) {
+                console.warn('White noise play error:', e);
+            }
+        }
+
+        function stopWhiteNoise() {
+            if (_noiseSource) {
+                try {
+                    _noiseSource.source.stop();
+                    _noiseSource.ctx.close();
+                } catch (e) {}
+                _noiseSource = null;
+            }
+        }
+
+        // =========================================================================
+        // DIRECT TELEGRAM ALERT BOT WITH SNAPSHOT
+        // =========================================================================
+        async function sendTelegramNotification(title, detail) {
+            const chatId = document.getElementById('tele-chat-id').value.trim();
+            const botToken = document.getElementById('tele-bot-token').value.trim() || '8147614912:AAG-p_8hH8xT6Z2N5b_8lO7f-31k9V9s0cQ';
+
+            if (!chatId) {
+                console.warn('Telegram Chat ID not set, skip alert.');
+                return;
+            }
+
+            // Capture snapshot
+            const video = document.getElementById('station-video');
+            const snapCanvas = document.createElement('canvas');
+            snapCanvas.width = 640;
+            snapCanvas.height = 360;
+            const ctx = snapCanvas.getContext('2d');
+
+            if (_camSource === 'phone' && video.readyState >= 2) {
+                ctx.drawImage(video, 0, 0, 640, 360);
+            } else {
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, 640, 360);
+            }
+
+            const caption = `${title}\n\n👶 ${detail}\n⏰ ${new Date().toLocaleTimeString('vi-VN')} | 🛡️ BabyGuard AI Edge Station`;
+
+            snapCanvas.toBlob(async (blob) => {
+                try {
+                    const formData = new FormData();
+                    formData.append('chat_id', chatId);
+                    formData.append('caption', caption);
+                    if (blob && blob.size > 100) {
+                        formData.append('photo', blob, 'alert.jpg');
+                        await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: formData });
+                    } else {
+                        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ chat_id: chatId, text: caption })
+                        });
+                    }
+                    console.log('Telegram alert sent successfully!');
+                } catch (err) {
+                    console.error('Failed to send Telegram alert:', err);
+                }
+            }, 'image/jpeg', 0.85);
+        }
+
+        async function testTelegramAlert() {
+            const chatId = document.getElementById('tele-chat-id').value.trim();
+            if (!chatId) {
+                showToast('Vui lòng nhập Chat ID trước khi test!', '⚠️');
+                return;
+            }
+            showToast('Đang gửi ảnh test qua Telegram...', '⏳');
+            await sendTelegramNotification('🔔 THỬ NGHIỆM KẾT NỐI MÁY TRẠM', 'Chuông báo và ảnh chụp từ điện thoại nôi bé kết nối thành công 100%!');
+            showToast('Đã gửi test! Mở Telegram xem nhé Ba!', '✅');
+        }
+
+        // =========================================================================
+        // P2P WEBRTC BROADCAST & VIEWER
+        // =========================================================================
+        function initP2PBroadcast() {
+            if (typeof Peer === 'undefined') return;
+            try {
+                if (_peer) {
+                    try { _peer.destroy(); } catch (e) {}
+                }
+                _p2pCode = Math.floor(100000 + Math.random() * 900000);
+                const stationPeerId = 'bg-station-' + _p2pCode;
+
+                _peer = new Peer(stationPeerId, {
+                    debug: 1,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
+
+                _peer.on('open', (id) => {
+                    document.getElementById('p2p-code-display').innerText = String(_p2pCode);
+                    document.getElementById('station-p2p-card').classList.remove('hidden');
+                });
+
+                _peer.on('call', (call) => {
+                    if (_mediaStream) {
+                        call.answer(_mediaStream);
+                    }
+                });
+
+            } catch (e) {
+                console.warn('Peer init error:', e);
+            }
+        }
+
+        function copyP2PCode() {
+            if (!_p2pCode) return;
+            navigator.clipboard.writeText(String(_p2pCode)).then(() => {
+                showToast('Đã sao chép mã trạm: ' + _p2pCode, '📋');
+            });
+        }
+
+        function connectToStationP2P() {
+            const code = document.getElementById('viewer-code-input').value.trim();
+            if (!code || code.length !== 6) {
+                showToast('Vui lòng nhập đúng 6 số của Mã Trạm!', '⚠️');
+                return;
+            }
+
+            const targetId = 'bg-station-' + code;
+            const statusText = document.getElementById('viewer-status-text');
+            statusText.innerText = 'Đang thiết lập kết nối trực tiếp P2P với máy trạm...';
+
+            const viewerPeer = new Peer({
+                debug: 1,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                }
+            });
+
+            viewerPeer.on('open', () => {
+                // Call station with dummy audio stream or call without stream
+                const dummyStream = new MediaStream();
+                const call = viewerPeer.call(targetId, dummyStream);
+
+                call.on('stream', (remoteStream) => {
+                    const video = document.getElementById('viewer-remote-video');
+                    video.srcObject = remoteStream;
+                    document.getElementById('viewer-waiting-overlay').classList.add('hidden');
+                    showToast('Đã kết nối trực tiếp với Máy Trạm!', '🎉');
+                });
+
+                call.on('error', (err) => {
+                    statusText.innerText = 'Không thể kết nối. Kiểm tra mã hoặc xem máy trạm đã bật chưa.';
+                    showToast('Lỗi kết nối P2P: ' + err.message, '❌');
+                });
+            });
+
+            viewerPeer.on('error', (err) => {
+                statusText.innerText = 'Lỗi kết nối mạng: ' + err.message;
+            });
+        }
+
+        // =========================================================================
+        // UTILITIES: TOAST
+        // =========================================================================
+        function showToast(msg, icon = 'ℹ️') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            document.getElementById('toast-icon').innerText = icon;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

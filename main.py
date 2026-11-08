@@ -533,4 +533,26 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        err_msg = traceback.format_exc()
+        try:
+            log_file = os.path.join(BASE_DIR, "babyguard_crash.log")
+            with open(log_file, "w", encoding="utf-8") as f:
+                f.write(err_msg)
+        except Exception:
+            pass
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(
+                    0,
+                    f"BabyGuard AI gặp lỗi khi khởi động:\n\n{str(e)}\n\nChi tiết lỗi đã được ghi vào tệp:\nbabyguard_crash.log",
+                    "BabyGuard AI - Thông Báo Khởi Động",
+                    0x10 | 0x0
+                )
+            except Exception:
+                pass
+        raise

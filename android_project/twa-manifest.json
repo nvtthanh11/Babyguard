@@ -12,7 +12,7 @@
   "navigationDividerColorDark": "#1F293D",
   "backgroundColor": "#020617",
   "enableNotifications": true,
-  "startUrl": "/app",
+  "startUrl": "/station",
   "iconUrl": "http://localhost:8080/static/icons/icon-512.png",
   "maskableIconUrl": "http://localhost:8080/static/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
@@ -20,8 +20,8 @@
     "path": "/Volumes/SSD/WORK/baby_monitor/android_project/babyguard.keystore",
     "alias": "babyguard"
   },
-  "appVersionName": "1.0.0",
-  "appVersionCode": 1,
+  "appVersionName": "2.0.0",
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap",
   "webManifestUrl": "http://localhost:8080/manifest.json",
@@ -39,5 +39,5 @@
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "displayOverride": [],
-  "appVersion": "1.0.0"
+  "appVersion": "2.0.0"
 }

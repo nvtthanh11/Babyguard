@@ -347,30 +347,43 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         return {"success": True, "message": "Đã đổi Mã PIN bảo vệ gia đình thành công!"}
 
     @app.get("/cam")
-    @app.get("/cam/{secret_key}")
-    @app.get("/v/{secret_key}")
-    @app.get("/watch")
-    @app.get("/live")
-    @app.get("/station")
-    @app.get("/station/{secret_key}")
-    async def view_camera_live(request: Request, secret_key: str = None):
-        cfg = load_config()
-        acc_key = get_access_key(cfg)
-        is_station = "/station" in request.url.path
+    @app.api_route("/station", methods=["GET", "HEAD"])
+    @app.api_route("/station/{secret_key}", methods=["GET", "HEAD"])
+    async def view_station_mode(request: Request, secret_key: str = None):
+        """Chế độ Máy Trạm AI độc lập trên điện thoại (Phone Station Mode)."""
         response = templates.TemplateResponse(
             request=request,
-            name="index.html",
-            context={"is_hub": True, "requires_pairing": False, "initial_role": "station" if is_station else "viewer"}
+            name="station.html",
+            context={}
         )
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
-        response.set_cookie(
-            key="babyguard_auth",
-            value=acc_key,
-            max_age=365 * 86400,
-            httponly=True,
-            samesite="lax"
+        return response
+
+    @app.api_route("/cam/{secret_key}", methods=["GET", "HEAD"])
+    @app.api_route("/v/{secret_key}", methods=["GET", "HEAD"])
+    @app.api_route("/watch", methods=["GET", "HEAD"])
+    @app.api_route("/live", methods=["GET", "HEAD"])
+    async def view_camera_live(request: Request, secret_key: str = None):
+        cfg = load_config()
+        acc_key = get_access_key(cfg)
+        # Nếu vào /watch hoặc /live mà không có secret_key khớp -> bắt ghép nối
+        is_matched = secret_key and secret_key == acc_key
+        response = templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context={"is_hub": True, "requires_pairing": not is_matched}
         )
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        if is_matched:
+            response.set_cookie(
+                key="babyguard_auth",
+                value=acc_key,
+                max_age=365 * 86400,
+                httponly=True,
+                samesite="lax"
+            )
         return response
 
     @app.get("/app")
@@ -558,6 +571,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.api_route("/download/BabyGuard_Windows.zip", methods=["GET", "HEAD"])
     async def download_windows_app():
         candidates = [
+            os.path.join(BASE_DIR, "docs", "download", "BabyGuard_Windows.zip"),
             os.path.join(static_dir, "BabyGuard_Windows.zip"),
             os.path.join(BASE_DIR, "dist", "BabyGuard_Windows.zip"),
             os.path.join(static_dir, "BabyGuard_AI_v2.0_Commercial.zip"),
@@ -581,6 +595,7 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.api_route("/download/BabyGuard_Mac.pkg", methods=["GET", "HEAD"])
     async def download_mac_pkg():
         candidates = [
+            os.path.join(BASE_DIR, "docs", "download", "BabyGuard_Mac.pkg"),
             os.path.join(static_dir, "BabyGuard_Mac.pkg"),
             os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.pkg"),
             os.path.join(static_dir, "download", "BabyGuard_Mac.pkg")
