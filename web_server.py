@@ -378,23 +378,30 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.get("/dashboard")
     @app.get("/control")
     async def view_app_dashboard(request: Request):
-        """Cổng mở Giao diện Ứng dụng BabyGuard AI — Mở thẳng không cần nhập Mã PIN."""
+        """Cổng mở Giao diện Ứng dụng BabyGuard AI."""
+        # Nếu là truy cập từ xa bên ngoài qua babyguard.site -> BẮT BUỘC GHÉP NỐI (requires_pairing = True)
+        # để khách hàng không xem trộm camera nhà chủ máy chủ!
+        is_local = is_local_request(request)
+        is_authed = is_request_authenticated(request, load_config())
+        needs_pairing = not (is_local or is_authed)
+
         cfg = load_config()
         acc_key = get_access_key(cfg)
         response = templates.TemplateResponse(
             request=request,
             name="index.html",
-            context={"is_hub": True, "requires_pairing": False}
+            context={"is_hub": is_local, "requires_pairing": needs_pairing}
         )
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
-        response.set_cookie(
-            key="babyguard_auth",
-            value=acc_key,
-            max_age=365 * 86400,
-            httponly=True,
-            samesite="lax"
-        )
+        if is_local or is_authed:
+            response.set_cookie(
+                key="babyguard_auth",
+                value=acc_key,
+                max_age=365 * 86400,
+                httponly=True,
+                samesite="lax"
+            )
         return response
 
     @app.get("/", response_class=HTMLResponse)
