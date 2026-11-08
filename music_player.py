@@ -1,3 +1,4 @@
+import sys
 import os
 import glob
 import time
@@ -13,7 +14,10 @@ except Exception:
     HAS_SOUNDDEVICE = False
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 TRACK_CATALOG_META = {
     "Tieng_on_trang_White_Noise.wav": {

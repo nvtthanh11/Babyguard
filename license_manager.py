@@ -10,7 +10,10 @@ from datetime import datetime, timedelta
 
 MASTER_SECRET = b"BabyGuardAI_Commercial_Proprietary_Salt_2026_SecureCore_x86_arm64"
 TRIAL_DAYS = 14
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(BASE_DIR, ".babyguard_license_state")
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 

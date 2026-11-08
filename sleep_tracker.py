@@ -1,3 +1,4 @@
+import sys
 import os
 import json
 import time
@@ -6,7 +7,10 @@ from collections import deque
 from datetime import datetime, date, timedelta
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_pediatric_standards(age_months: int = 1) -> dict:

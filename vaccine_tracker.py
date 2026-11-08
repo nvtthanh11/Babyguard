@@ -1,3 +1,4 @@
+import sys
 """
 BabyGuard AI - National & Private Vaccination Schedule Tracker
 Quản lý Lịch Tiêm Chủng Mở Rộng Quốc Gia (Bộ Y Tế - Thông tư 52/2025/TT-BYT)
@@ -10,7 +11,10 @@ import os
 import json
 from datetime import datetime, date, timedelta
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 VACCINE_FILE = os.path.join(BASE_DIR, "baby_vaccines.json")
 
 # Danh mục lịch tiêm chủng chuẩn quốc gia & dịch vụ theo mốc tuổi

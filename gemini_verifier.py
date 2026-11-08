@@ -1,3 +1,4 @@
+import sys
 import os
 import json
 import time
@@ -13,7 +14,10 @@ try:
 except ImportError:
     HAS_GENAI = False
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MOMENTS_META_PATH = os.path.join(BASE_DIR, "moments", "moments_meta.json")
 USAGE_LOG_PATH = os.path.join(BASE_DIR, "logs", "gemini_usage.json")
 

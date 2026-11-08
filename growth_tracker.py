@@ -1,3 +1,4 @@
+import sys
 """
 BabyGuard AI - Growth & Pediatric Standards Tracker
 Quản lý ngày sinh, tính toán tuổi chính xác theo ngày/tuần/tháng,
@@ -9,7 +10,10 @@ import json
 import math
 from datetime import datetime, date, timedelta
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 GROWTH_FILE = os.path.join(BASE_DIR, "baby_growth.json")
 
 # Bảng chuẩn tăng trưởng WHO (WHO Child Growth Standards 0 - 12 tháng)

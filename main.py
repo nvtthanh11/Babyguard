@@ -17,7 +17,10 @@ from tunnel_manager import TunnelManager
 from web_server import create_app
 from auto_updater import AutoUpdateWorker
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 YAMNET_MODEL_PATH = os.path.join(BASE_DIR, "models", "yamnet.tflite")
 YOLO_MODEL_PATH = os.path.join(BASE_DIR, "models", "yolov8n-pose.pt")
@@ -494,7 +497,7 @@ def main():
             audio_detector.stop()
             music_player.stop()
     else:
-        # GUI Desktop Mode: Mở Cửa Sổ Ứng Dụng Độc Lập Native (Không mở trình duyệt Safari/Chrome)
+        # GUI Desktop Mode: Mở Cửa Sổ Ứng Dụng Độc Lập Native hoặc Trình Duyệt
         server_thread = threading.Thread(
             target=lambda: uvicorn.run(app, host=host, port=port, log_level="warning"),
             daemon=True
@@ -503,21 +506,24 @@ def main():
         time.sleep(1.2)
 
         try:
-            import webview
-            print("[BabyGuard AI] 🚀 Đang khởi chạy Cửa Sổ Ứng Dụng Độc Lập Native...")
-            window = webview.create_window(
-                title="BabyGuard AI • Giám Sát An Toàn & Giấc Ngủ Cho Bé",
-                url=f"http://127.0.0.1:{port}/app",
-                width=1280,
-                height=820,
-                min_size=(960, 600),
-                text_select=False
-            )
-            webview.start()
-        except Exception as e:
-            print(f"[BabyGuard AI] Ghi chú cửa sổ GUI: {e}. Đang duy trì chế độ chạy liên tục.")
-            while True:
-                time.sleep(1)
+            try:
+                import webview
+                print("[BabyGuard AI] 🚀 Đang khởi chạy Cửa Sổ Ứng Dụng Độc Lập Native...")
+                window = webview.create_window(
+                    title="BabyGuard AI • Giám Sát An Toàn & Giấc Ngủ Cho Bé",
+                    url=f"http://127.0.0.1:{port}/app",
+                    width=1280,
+                    height=820,
+                    min_size=(960, 600),
+                    text_select=False
+                )
+                webview.start()
+            except Exception as e:
+                print(f"[BabyGuard AI] ⚠️ Cửa sổ Webview không sẵn sàng ({e}), tự động mở Trình duyệt Web mặc định...")
+                import webbrowser
+                webbrowser.open(f"http://localhost:{port}/app")
+                while True:
+                    time.sleep(2)
         finally:
             auto_updater.stop()
             tunnel_manager.stop()

@@ -1,3 +1,4 @@
+import sys
 """
 BabyGuard AI - Daily Meaningful Story & Character Building Module
 "1 Ngày 1 Câu Chuyện Ý Nghĩa & Phương Pháp Dạy Con Thông Minh"
@@ -14,7 +15,10 @@ import json
 import time
 from datetime import date, datetime, timedelta
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STORIES_FILE = os.path.join(BASE_DIR, "baby_daily_stories.json")
 STORY_LOG_FILE = os.path.join(BASE_DIR, "logs", "daily_stories_history.log")
 

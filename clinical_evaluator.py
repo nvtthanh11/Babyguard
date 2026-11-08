@@ -1,3 +1,4 @@
+import sys
 """
 BabyGuard AI - Clinical Benchmark Evaluator
 Đối chiếu số lượng ọ ẹ, số lượng ho, nhịp thở và sặc sữa với quy chuẩn quốc tế
@@ -7,7 +8,10 @@ BabyGuard AI - Clinical Benchmark Evaluator
 import os
 import json
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BENCHMARK_FILE = os.path.join(BASE_DIR, "medical_knowledge", "infant_clinical_benchmarks.json")
 
 _CACHED_BENCHMARKS = None

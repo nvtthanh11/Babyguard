@@ -1,3 +1,4 @@
+import sys
 import os
 import io
 import re
@@ -26,7 +27,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, music_player, sleep_tracker, config_path: str, gemini_verifier=None, tunnel_manager=None):
@@ -347,15 +351,16 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.get("/v/{secret_key}")
     @app.get("/watch")
     @app.get("/live")
+    @app.get("/station")
+    @app.get("/station/{secret_key}")
     async def view_camera_live(request: Request, secret_key: str = None):
         cfg = load_config()
         acc_key = get_access_key(cfg)
-        # Ba mẹ bấm vào link camera (/cam, /cam/{secret_key}, /v/{secret_key}, /watch, /live)
-        # => MỞ THẲNG DASHBOARD XEM CAMERA NGAY LẬP TỨC TRONG 1 GIÂY, KHÔNG BAO GIỜ HỎI MÃ PIN HAY GHÉP NỐI!
+        is_station = "/station" in request.url.path
         response = templates.TemplateResponse(
             request=request,
             name="index.html",
-            context={"is_hub": True, "requires_pairing": False}
+            context={"is_hub": True, "requires_pairing": False, "initial_role": "station" if is_station else "viewer"}
         )
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"

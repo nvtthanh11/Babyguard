@@ -10109,6 +10109,18 @@
             pollStatus();
             setInterval(pollStatus, 1000);
             setInterval(fetchEvents, 5000);
+
+            // Kiểm tra nếu truy cập từ link /station hoặc ?mode=station -> Tự động bật vai trò Trạm Camera Điện Thoại
+            const urlParams = new URLSearchParams(window.location.search);
+            const path = window.location.pathname;
+            if (path.includes('/station') || urlParams.get('mode') === 'station' || urlParams.get('role') === 'station') {
+                if (typeof openMobilePairModal === 'function') {
+                    openMobilePairModal();
+                }
+                if (typeof switchMobileRole === 'function') {
+                    switchMobileRole('station');
+                }
+            }
         });
     </script>
 </body>
