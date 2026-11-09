@@ -99,6 +99,7 @@ class VisionTracker:
         self.danger_zone_x_percent = self.safe_zone_right
         self.show_baby_box = bool(show_baby_box)
         self.show_skeleton = bool(show_skeleton)
+        self.surface_material_vi = "Vùng đệm an toàn"
         self.covered_face_alert = covered_face_alert
         self.breathing_monitor_enabled = breathing_monitor_enabled
         self.cute_moments_enabled = cute_moments_enabled
@@ -1688,6 +1689,9 @@ class VisionTracker:
                 if not res.get("audited", False):
                     return
 
+                if res.get("surface_material_vi"):
+                    self.surface_material_vi = res.get("surface_material_vi")
+
                 # 1. CƠ CHẾ XÁC THỰC 2 BƯỚC + BẢO VỆ VẬT LÝ + ROLLBACK AN TOÀN CHO KHUNG NÔI 3D
                 tsz_poly = res.get("true_safe_zone_polygon")
                 tsz = res.get("true_safe_zone")
@@ -2832,12 +2836,14 @@ class VisionTracker:
             "breathing_bpm": self.breathing_bpm,
             "breathing_status": self.breathing_status,
             "inside_safe_zone": not getattr(self, "is_near_edge", False) if self.baby_detected else True,
+            "surface_material_vi": getattr(self, "surface_material_vi", "Vùng đệm an toàn"),
             "safe_zone": {
                 "enabled": self.danger_zone_enabled,
                 "top": self.safe_zone_top,
                 "bottom": self.safe_zone_bottom,
                 "left": self.safe_zone_left,
                 "right": self.safe_zone_right,
-                "polygon": getattr(self, "safe_zone_polygon", None)
+                "polygon": getattr(self, "safe_zone_polygon", None),
+                "surface_material_vi": getattr(self, "surface_material_vi", "Vùng đệm an toàn")
             }
         }

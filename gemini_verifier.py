@@ -479,7 +479,10 @@ QUY TẮC CỐT LÕI (CHỐNG NHẬN NHẦM NGƯỜI LỚN & VẬT DỤNG):
 - Chỉ khi thực sự nhìn thấy em bé sơ sinh (đầu bé sơ sinh, thân bé sơ sinh trên đệm): mới đặt baby_present = true.
 
 Hãy quan sát bức ảnh và tự động kiểm tra + căn chỉnh cả 2 khung này, đồng thời phân biệt bé đang NGỦ hay đang THỨC:
-A. KIỂM TRA TRACKING CƠ THỂ & TRẠNG THÁI THỨC/NGỦ CỦA EM BÉ:
+A. NHẬN DIỆN BỀ MẶT NÂNG ĐỠ & CHẤT LIỆU THỰC TẾ:
+- surface_material_vi (string): Quan sát trực tiếp ảnh chụp camera và mô tả tự do, chính xác bằng tiếng Việt về chất liệu và loại bề mặt thực tế mà bé đang nằm lên (ví dụ: 'Chiếu cói trên sàn', 'Đệm bông ép bọc vải cotton', 'Thảm xốp ghép EVA', 'Cũi gỗ sồi có quây nệm', 'Gối chữ U chống trào ngược', 'Giường đệm lò xo có chèn gối xung quanh'...). TUYỆT ĐỐI KHÔNG GÁN CỨNG theo bất kỳ danh sách nào, nhìn thấy chất liệu/bề mặt gì thì mô tả chính xác chất liệu/bề mặt đó.
+
+B. KIỂM TRA TRACKING CƠ THỂ & TRẠNG THÁI THỨC/NGỦ CỦA EM BÉ:
 - baby_present (boolean): Thực tế có em bé sơ sinh đang nằm trong ảnh không?
 - is_baby_awake (boolean): Em bé đang THỨC (mở mắt nhìn, mút tay, đạp chân tay, ngóc đầu, chơi đùa -> true) hay đang NGỦ (nhắm mắt nằm yên -> false)?
 - tracking_accurate (boolean): Khung xanh dương "EM BE" đã bao quanh ĐÚNG cơ thể thực tế của em bé VÀ vùng đo nhịp thở nằm đúng trên thân/ngực bé chưa?
@@ -488,12 +491,12 @@ A. KIỂM TRA TRACKING CƠ THỂ & TRẠNG THÁI THỨC/NGỦ CỦA EM BÉ:
 - true_head_box ([xmin, ymin, xmax, ymax] từ 0.0 đến 1.0): Tọa độ phần đầu thực tế của em bé (trả về null nếu không có em bé).
 - head_direction ("right" | "left" | "up" | "down"): Đỉnh đầu của em bé đang hướng về phía nào?
 
-B. KIỂM TRA & TỰ ĐỘNG CĂN CHỈNH KHUNG NÔI / TẤM ĐỆM EM BÉ (SAFE ZONE 3D):
-- crib_zone_accurate (boolean): Khung viền xanh lá cây hiện tại đã bao quanh hợp lý vùng tấm đệm/nôi nơi em bé nằm chưa? (Nếu khung xanh lá đang cắt ngang qua đầu/cổ bé, quá hẹp hoặc bị lệch khỏi tấm đệm trắng của bé -> false).
-- true_safe_zone_polygon ([[x, y], [x, y], [x, y], [x, y]] từ 0.03 đến 0.97): Tọa độ 4 đỉnh đa giác tứ giác theo thứ tự [Top-Left, Top-Right, Bottom-Right, Bottom-Left] bao quanh TRỌN VẸN tấm đệm nơi em bé nằm theo đúng góc phối cảnh 3D xiên. TUYỆT ĐỐI KHÔNG ĐƯỢC để cạnh cắt ngang đầu/thân bé; cạnh trên phải chạy phía trên đỉnh đầu và gối bé để đảm bảo an toàn. Không bao gồm người lớn nằm cạnh.
-- true_safe_zone ([left, top, right, bottom] từ 0.03 đến 0.97): Tọa độ khung chữ nhật bao ngoài tấm đệm của em bé.
+C. KIỂM TRA & TỰ ĐỘNG CĂN CHỈNH KHUNG BỀ MẶT AN TOÀN / KHUNG NÔI (SAFE ZONE 3D):
+- crib_zone_accurate (boolean): Khung viền xanh lá cây hiện tại đã bao quanh hợp lý vùng bề mặt nâng đỡ nơi em bé nằm chưa? (Nếu khung xanh lá đang cắt ngang qua đầu/cổ bé, quá hẹp hoặc bị lệch khỏi bề mặt nâng đỡ của bé -> false).
+- true_safe_zone_polygon ([[x, y], [x, y], [x, y], [x, y]] từ 0.03 đến 0.97): Tọa độ 4 đỉnh đa giác tứ giác theo thứ tự [Top-Left, Top-Right, Bottom-Right, Bottom-Left] bao quanh TRỌN VẸN bề mặt nâng đỡ nơi em bé nằm (Thảm/Nôi/Đệm/Chiếu) theo đúng góc phối cảnh 3D xiên. Bé không được vượt qua khung này vì dễ nguy hiểm rơi ngã. TUYỆT ĐỐI KHÔNG ĐƯỢC để cạnh cắt ngang đầu/thân bé; cạnh trên phải chạy phía trên đỉnh đầu và gối bé để đảm bảo an toàn. Không bao gồm người lớn nằm cạnh.
+- true_safe_zone ([left, top, right, bottom] từ 0.03 đến 0.97): Tọa độ khung chữ nhật bao ngoài bề mặt an toàn của em bé.
 
-C. KIỂM TOÁN AN TOÀN LÒNG NÔI THEO QUY TẮC ABC CỦA AAP (CRIB HAZARD AUDIT):
+D. KIỂM TOÁN AN TOÀN LÒNG NÔI THEO QUY TẮC ABC CỦA AAP (CRIB HAZARD AUDIT):
 - crib_safe_abc (boolean): Vùng xung quanh đầu và mũi/miệng của bé có thông thoáng, an toàn theo quy tắc ABC của AAP (Alone - Back - Crib) không?
 - crib_hazards_vi (danh sách chuỗi tiếng Việt): Liệt kê các vật thể mềm có nguy cơ gây ngạt đang nằm quá sát vùng đầu/mũi/miệng của bé (ví dụ: "Chăn dày trùm sát mặt", "Thú nhồi bông sát đầu bé", "Khăn xô vắt gần mũi miệng"). Nếu lòng nôi thông thoáng hoặc gối chặn nằm ở vị trí an toàn hai bên sườn, trả về mảng rỗng [].
 
@@ -503,6 +506,7 @@ QUY ĐỊNH BẮT BUỘC VỀ ĐỊNH DẠNG TỌA ĐỘ:
 
 Trả về đúng JSON:
 {{
+  "surface_material_vi": "string",
   "baby_present": boolean,
   "is_baby_awake": boolean,
   "tracking_accurate": boolean,
@@ -531,6 +535,7 @@ Trả về đúng JSON:
                 temperature=0.05
             )
             data = json.loads(resp.text)
+            surface_material = str(data.get("surface_material_vi", "Vùng đệm an toàn")).strip()
             acc = bool(data.get("tracking_accurate", True))
             crib_acc = bool(data.get("crib_zone_accurate", True))
             score = int(data.get("accuracy_score", 90))
@@ -546,6 +551,7 @@ Trả về đúng JSON:
 
             self.last_tracking_audit = {
                 "timestamp": time.strftime("%H:%M:%S"),
+                "surface_material_vi": surface_material,
                 "baby_present": baby_present,
                 "is_baby_awake": is_awake,
                 "tracking_accurate": acc,
@@ -594,6 +600,7 @@ Trả về đúng JSON:
 
             return {
                 "audited": True,
+                "surface_material_vi": surface_material,
                 "baby_present": baby_present,
                 "is_baby_awake": is_awake,
                 "tracking_accurate": acc,
@@ -1284,25 +1291,31 @@ Trả về JSON:
         prompt = """
 Bạn là Kỹ sư Thị giác Máy tính & Chuyên gia An toàn Nôi Em Bé (AI Crib 3D Calibration Specialist).
 Hãy phân tích khung hình camera giám sát này và xác định:
-1. Tọa độ đa giác 4 đỉnh (3D Perspective Quadrilateral) bao quanh TRỌN VẸN VÙNG TẤM ĐỆM / NÔI AN TOÀN của bé theo đúng góc phối cảnh 3D xiên của camera:
+1. Nhận diện BỀ MẶT NÂNG ĐỠ & CHẤT LIỆU THỰC TẾ mà em bé đang nằm lên:
+   - Quan sát trực tiếp ảnh chụp camera và mô tả tự do, chính xác bằng tiếng Việt về chất liệu và loại bề mặt thực tế (ví dụ: 'Chiếu cói trên sàn', 'Đệm bông ép bọc vải cotton', 'Thảm xốp ghép EVA', 'Cũi gỗ sồi có quây nệm', 'Gối chữ U chống trào ngược', 'Giường đệm lò xo có chèn gối xung quanh'...).
+   - TUYỆT ĐỐI KHÔNG GÁN CỨNG hay giới hạn trong danh sách từ ngữ nào, nhìn thấy chất liệu/bề mặt gì thì mô tả chính xác chất liệu/bề mặt đó.
+   - Điền vào trường "surface_material_vi".
+2. Tọa độ đa giác 4 đỉnh (3D Perspective Quadrilateral) bao quanh TRỌN VẸN VÙNG BỀ MẶT AN TOÀN NÀY (Thảm / Nôi / Đệm / Chiếu) theo đúng góc phối cảnh 3D xiên của camera:
    - QUY TẮC BẮT BUỘC:
+     + Khung an toàn phải bám sát theo đúng ranh giới của bề mặt nâng đỡ đó mà bé không được vượt qua (vì vượt qua mép này bé sẽ có nguy cơ bị rơi ngã nguy hiểm).
      + Toàn bộ đầu em bé, gối nằm của bé, thân bé, chăn và gối ôm cạnh bé PHẢI NẰM HOÀN TOÀN 100% BÊN TRONG safe_zone_polygon.
      + TUYỆT ĐỐI KHÔNG ĐƯỢC để cạnh trên hay bất kỳ cạnh nào cắt ngang qua đầu, cổ hay cơ thể em bé!
      + Cạnh trên (Top edge) phải chạy phía TRÊN đỉnh đầu và gối của bé ít nhất 5-8% chiều cao ảnh để chừa khoảng thở an toàn.
      + Cạnh phải (Right edge) phải mở rộng qua hết gối/đệm của bé.
-     + Nếu có người lớn nằm ngủ cạnh bé trên giường lớn, đa giác Safe Zone 3D chỉ bao quanh tấm đệm/nôi của em bé, ranh giới cạnh trên chạy sát mép đệm bé mà không bao người lớn.
+     + Nếu có người lớn nằm ngủ cạnh bé trên giường lớn, đa giác Safe Zone 3D chỉ bao quanh tấm đệm/thảm của em bé, ranh giới cạnh trên chạy sát mép đệm bé mà không bao người lớn.
    - safe_zone_polygon: [[x_tl, y_tl], [x_tr, y_tr], [x_br, y_br], [x_bl, y_bl]] theo thứ tự:
-     + Top-Left (Góc trên bên trái tấm đệm/nôi)
-     + Top-Right (Góc trên bên phải tấm đệm/nôi)
-     + Bottom-Right (Góc dưới bên phải tấm đệm/nôi)
-     + Bottom-Left (Góc dưới bên trái tấm đệm/nôi)
+     + Top-Left (Góc trên bên trái tấm bề mặt nâng đỡ/nôi)
+     + Top-Right (Góc trên bên phải tấm bề mặt nâng đỡ/nôi)
+     + Bottom-Right (Góc dưới bên phải tấm bề mặt nâng đỡ/nôi)
+     + Bottom-Left (Góc dưới bên trái tấm bề mặt nâng đỡ/nôi)
      (Tất cả x, y là số float từ 0.02 đến 0.98 chuẩn hóa theo chiều rộng và chiều cao ảnh).
-2. Tọa độ khung chữ nhật bao ngoài: safe_zone_top, safe_zone_bottom, safe_zone_left, safe_zone_right.
-3. Danh sách các vật thể đang có trong nôi (gối ôm, gối chặn, chăn, thú bông...).
-4. Nhận xét ngắn gọn bằng tiếng Việt về mức độ thông thoáng và an toàn của nôi hiện tại.
+3. Tọa độ khung chữ nhật bao ngoài: safe_zone_top, safe_zone_bottom, safe_zone_left, safe_zone_right.
+4. Danh sách các vật thể đang có trên bề mặt (gối ôm, gối chặn, chăn, thú bông...).
+5. Nhận xét ngắn gọn bằng tiếng Việt về mức độ thông thoáng và an toàn của bề mặt hiện tại.
 
 Trả về đúng định dạng JSON:
 {
+  "surface_material_vi": "Mô tả chất liệu và bề mặt thực tế",
   "safe_zone_polygon": [[float, float], [float, float], [float, float], [float, float]],
   "safe_zone_top": float,
   "safe_zone_bottom": float,
@@ -1358,8 +1371,10 @@ Trả về đúng định dạng JSON:
                 valid_poly = [[left, top], [right, top], [right, bottom], [left, bottom]]
 
             self.status_text = "Đã căn chỉnh nôi thành công"
+            surface_material_vi = str(data.get("surface_material_vi", "Vùng đệm an toàn")).strip()
             return {
                 "success": True,
+                "surface_material_vi": surface_material_vi,
                 "safe_zone": {
                     "top": round(top, 3),
                     "bottom": round(bottom, 3),

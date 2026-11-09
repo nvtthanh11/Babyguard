@@ -391,10 +391,16 @@
                         
                         <!-- HUD Overlays on Top of Video -->
                         <div class="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-20 flex justify-between items-start pointer-events-none gap-2">
-                            <!-- Posture Badge -->
-                            <div id="hud-pose-badge" class="pointer-events-auto bg-slate-950/85 backdrop-blur-md border border-slate-700/70 text-slate-200 text-[10.5px] sm:text-xs font-semibold px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg max-w-[55%] truncate">
-                                <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-                                <span id="hud-pose-text" class="truncate">Đang nhận diện tư thế...</span>
+                            <!-- Left: Posture & Surface Badges -->
+                            <div class="flex flex-wrap items-center gap-1.5 max-w-[65%]">
+                                <div id="hud-pose-badge" class="pointer-events-auto bg-slate-950/85 backdrop-blur-md border border-slate-700/70 text-slate-200 text-[10.5px] sm:text-xs font-semibold px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg truncate">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                                    <span id="hud-pose-text" class="truncate">Đang nhận diện tư thế...</span>
+                                </div>
+                                <div id="hud-surface-badge" class="pointer-events-auto bg-slate-950/85 backdrop-blur-md border border-emerald-500/40 text-emerald-300 text-[10px] sm:text-xs font-semibold px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg truncate" title="Loại bề mặt an toàn đang giám sát">
+                                    <span class="text-xs">🛡️</span>
+                                    <span id="hud-surface-text" class="truncate">Vùng đệm an toàn</span>
+                                </div>
                             </div>
 
                             <!-- Real-time Vital Badge -->
@@ -5506,6 +5512,9 @@
                 document.getElementById('hud-pose-text').innerText = pose;
                 document.getElementById('hud-breathing').innerText = bpmText;
                 document.getElementById('hud-sound').innerText = `${a.volume || 0}%`;
+                const surfText = (v.safe_zone && v.safe_zone.surface_material_vi) || v.surface_material_vi || "Vùng đệm an toàn";
+                const surfEl = document.getElementById('hud-surface-text');
+                if (surfEl && surfText) surfEl.innerText = surfText;
 
                 // Update Vital Sidebar
                 document.getElementById('vital-breathing-bpm').innerText = bpmValue;
@@ -6710,6 +6719,10 @@
                                 [d.safe_zone.left, d.safe_zone.bottom]
                             ];
                         }
+                    }
+                    if (d.surface_material_vi) {
+                        const surfEl = document.getElementById('hud-surface-text');
+                        if (surfEl) surfEl.innerText = d.surface_material_vi;
                     }
                     const opinionEl = document.getElementById('vital-gemini-opinion');
                     if (opinionEl && d.safety_advice_vi) {

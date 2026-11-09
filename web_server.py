@@ -3643,6 +3643,11 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         res = gemini_verifier.auto_calibrate_crib(frame)
         if res.get("success") and "safe_zone" in res:
             sz = res["safe_zone"]
+            surface_material_vi = res.get("surface_material_vi", "Vùng đệm an toàn")
+            cfg = load_config()
+            cfg["crib_surface_material"] = surface_material_vi
+            if hasattr(vision_tracker, "surface_material_vi"):
+                vision_tracker.surface_material_vi = surface_material_vi
             if "polygon" in sz and isinstance(sz["polygon"], list) and len(sz["polygon"]) == 4:
                 clean_poly = [[round(max(0.01, min(0.99, float(p[0]))), 3),
                                round(max(0.01, min(0.99, float(p[1]))), 3)] for p in sz["polygon"]]

@@ -205,9 +205,10 @@ def main():
         breathing_monitor_enabled=config.get("breathing_monitor_enabled", True),
         cute_moments_enabled=config.get("cute_moments_enabled", True),
         moments_dir=os.path.join(BASE_DIR, "moments"),
-        show_baby_box=config.get("show_baby_box", False),
+        show_baby_box=config.get("show_baby_box", True),
         show_skeleton=config.get("show_skeleton", False)
     )
+    vision_tracker.surface_material_vi = config.get("crib_surface_material", "Vùng đệm an toàn")
     alert_manager.on_baby_out_of_crib_callback = vision_tracker.set_baby_out_of_crib
 
     # 3. Audio Cry, Cough & Choke Detector
