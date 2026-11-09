@@ -335,15 +335,15 @@ class GeminiHybridVerifier:
             self.key_health = "quota_exceeded"
             self.key_health_label = "⚠️ Tạm hết Quota Free (Đang chờ hồi)"
             self.status_text = "Các model trong Pool đang chờ hồi Quota"
-        elif "API_KEY_INVALID" in err_upper or "EXPIRED" in err_upper or "400" in err_upper or "403" in err_upper or "PERMISSION_DENIED" in err_upper:
+        elif "API_KEY_INVALID" in err_upper or "KEY_EXPIRED" in err_upper or ("API_KEY" in err_upper and "EXPIRED" in err_upper) or ("400" in err_upper and "INVALID" in err_upper) or "PERMISSION_DENIED" in err_upper:
             self.key_health = "expired_or_invalid"
             self.key_health_label = "❌ API Key Hết Hạn / Không hợp lệ"
             self.status_text = "API Key hết hạn hoặc sai mã"
         else:
-            # Lỗi mạng / 503 tạm thời -> KHÔNG khóa is_ready()
+            # Lỗi mạng / 504 DEADLINE_EXCEEDED / 503 tạm thời -> KHÔNG khóa is_ready()
             if self.key_health not in ("expired_or_invalid", "missing"):
                 self.key_health = "valid"
-            self.key_health_label = "⚠️ Máy chủ AI đang bận tạm thời"
+            self.key_health_label = "✅ API Sẵn Sàng (Vừa gặp gián đoạn mạng tạm thời)"
             self.status_text = "Đang tự động thử lại với model dự phòng"
 
     def is_ready(self) -> bool:

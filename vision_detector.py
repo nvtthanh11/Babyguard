@@ -988,13 +988,12 @@ class VisionTracker:
             has_baby_anatomy = has_visible_face_pose or has_turned_head_skeleton
             is_border_touch = person_info.get("touches_border", False) and (face_conf < 0.25)
 
-            if person_info["is_adult"] or is_border_touch or (not has_baby_anatomy) or (not person_info["in_crib_zone"]):
-                if person_info["is_adult"] or is_border_touch:
-                    adult_candidates.append((idx, human_score, xyxy.astype(int), person_info))
-            else:
-                # Chỉ nhận ứng viên em bé thực sự nằm bên trong vùng nôi (in_crib_zone == True)
-                crib_bonus = 2.0
-                baby_candidates.append((idx, human_score + crib_bonus, xyxy.astype(int), person_info, False))
+            if person_info["is_adult"] or is_border_touch:
+                adult_candidates.append((idx, human_score, xyxy.astype(int), person_info))
+            elif has_baby_anatomy:
+                # Ưu tiên ứng viên nằm trong nôi, nhưng nếu bé ở ngoài nôi vẫn bắt chuẩn em bé để tracking & cảnh báo nguy cơ!
+                crib_bonus = 2.0 if person_info.get("in_crib_zone", False) else 0.0
+                baby_candidates.append((idx, human_score + crib_bonus, xyxy.astype(int), person_info, not person_info.get("in_crib_zone", False)))
 
         if baby_candidates:
             baby_candidates.sort(key=lambda x: x[1], reverse=True)
@@ -1779,9 +1778,9 @@ class VisionTracker:
                 tbox = res.get("true_baby_box")
                 hdir = res.get("head_direction", "up")
 
-                # 2. Chỉ hiệu chỉnh tọa độ khung khi Local AI cũng đang phát hiện mặt hoặc khung xương bé trong nôi
-                # (Tuyệt đối không tự tạo khung bóng ma 55s trên nệm trống khi Local AI không thấy mặt/khung xương!)
-                if (not acc or score < 78) and self.baby_detected and isinstance(tbox, list) and len(tbox) == 4:
+                # 2. Hiệu chỉnh nóng hoặc khôi phục tracking khi Gemini xác nhận tọa độ em bé
+                # (Đặc biệt khi Local AI bị che khuất hoặc mất dấu em bé: not self.baby_detected)
+                if (not acc or score < 78 or not self.baby_detected) and isinstance(tbox, list) and len(tbox) == 4:
                     xmin, ymin, xmax, ymax = [float(v) for v in tbox]
                     is_border_strip = (ymin < 0.02 and (ymax - ymin) < 0.25) or (ymax > 0.98 and (ymax - ymin) < 0.25)
                     if not is_border_strip:
@@ -1797,17 +1796,18 @@ class VisionTracker:
                             "up": np.array([0.0, 1.0], dtype=float),
                             "down": np.array([0.0, -1.0], dtype=float),
                         }
-                        new_u = dir_map.get(str(hdir).lower(), np.array([-1.0, 0.0], dtype=float))
+                        new_u = dir_map.get(str(hdir).lower(), np.array([0.0, 1.0], dtype=float))
 
                         with self.lock:
+                            self.baby_detected = True
                             self.smoothed_box = g_box.astype(float)
                             self.last_baby_box = g_box
                             self.smoothed_spine_u = new_u
                             self.gemini_anchor_box = g_box
                             self.gemini_anchor_u = new_u
-                            self.gemini_anchor_pose = res.get("sleep_pose_vi", "Đang ngủ ngoan")
-                            self.gemini_anchor_until = time.time() + 4.0
-                        print(f"[VisionTracker] 🔧 Đã hiệu chỉnh nóng khung Tracking theo Gemini: box={g_box.tolist()}, head_dir={hdir}")
+                            self.gemini_anchor_pose = res.get("sleep_pose_vi", "Đang nằm ngủ")
+                            self.gemini_anchor_until = time.time() + 6.0
+                        print(f"[VisionTracker] 🎯 [Gemini Khôi phục Tracking] Đã ghim khung Tracking vào em bé: box={g_box.tolist()}, head_dir={hdir}")
             except Exception as e:
                 print(f"[VisionTracker] Lỗi _audit_worker: {e}")
             finally:
