@@ -433,6 +433,8 @@ def main():
     music_player.attach_audio_detector(audio_detector)
 
     # Start AI Workers
+    vision_tracker.eco_camera_mode = config.get("eco_camera_mode", False)
+    audio_detector.eco_camera_mode = config.get("eco_camera_mode", False)
     vision_tracker.start()
     audio_detector.start()
 

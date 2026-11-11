@@ -201,6 +201,9 @@ class AudioCryDetector:
     def _inference_loop(self):
         """Background thread running YAMNet inference 2 times per second with DSP Bandpass & Envelope Follower."""
         while self.is_running:
+            if getattr(self, "eco_camera_mode", False):
+                time.sleep(0.5)
+                continue
             start_time = time.time()
             with self.lock:
                 waveform = self.audio_buffer.copy()

@@ -99,6 +99,7 @@ class VisionTracker:
         self.danger_zone_x_percent = self.safe_zone_right
         self.show_baby_box = bool(show_baby_box)
         self.show_skeleton = bool(show_skeleton)
+        self.eco_camera_mode = False
         self.surface_material_vi = "Vùng đệm an toàn"
         self.covered_face_alert = covered_face_alert
         self.breathing_monitor_enabled = breathing_monitor_enabled
@@ -1862,6 +1863,15 @@ class VisionTracker:
     def _process_frame(self, frame):
         h, w = frame.shape[:2]
         now_t = time.time()
+
+        # CHẾ ĐỘ CAMERA THƯỜNG (ECO MODE - MÁY YẾU / TIẾT KIỆM CPU & PIN)
+        if getattr(self, "eco_camera_mode", False):
+            self.baby_detected = False
+            self.baby_status = "Camera thường (Đã tắt AI)"
+            self.sleep_pose = "Camera thường"
+            self.breathing_bpm = 0.0
+            self.breathing_status = "Đã tạm dừng AI"
+            return frame
         if (now_t - getattr(self, "last_temporal_cache_time", 0.0)) >= 0.5:
             self.last_temporal_cache_time = now_t
             self.temporal_frame_cache.append((now_t, cv2.resize(frame, (640, 360))))
@@ -2824,6 +2834,7 @@ class VisionTracker:
 
     def get_status(self):
         return {
+            "eco_camera_mode": getattr(self, "eco_camera_mode", False),
             "baby_detected": self.baby_detected,
             "baby_out_of_crib_confirmed": getattr(self, "baby_out_of_crib_confirmed", False),
             "adult_holding": getattr(self, "adult_holding_baby", False),

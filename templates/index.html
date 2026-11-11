@@ -854,6 +854,24 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 
+                <!-- Toggle 0: Chế độ Camera Thường (Eco Mode / Máy Cấu Hình Yếu) -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-3 p-5 rounded-3xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-slate-950 border border-emerald-500/40 flex items-center justify-between gap-4 shadow-xl">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🌿</span>
+                            <span class="font-extrabold text-sm text-emerald-300">Chế Độ Camera Thường (Eco Mode • Máy Cấu Hình Yếu / Tiết Kiệm Pin)</span>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold px-2.5 py-0.5 rounded-full">Giảm Tải CPU &lt; 2%</span>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed max-w-4xl">
+                            Khi bật công tắc này, toàn bộ mô hình AI nhận diện (YOLO, đo nhịp thở lồng ngực, quét khuôn mặt, kiểm tra tư thế) sẽ tạm dừng. Hệ thống biến thành <strong>Camera IP giám sát thông thường</strong>: máy chạy siêu nhẹ, siêu mát, không tốn pin mà vẫn xem trực tiếp và đàm thoại 2 chiều mượt mà.
+                        </p>
+                    </div>
+                    <label class="toggle-switch shrink-0">
+                        <input type="checkbox" id="toggle-eco_camera_mode" onchange="handleToggle('eco_camera_mode', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
                 <!-- Toggle 1: Giám sát nhịp thở & Ngưng thở -->
                 <div class="p-5 rounded-3xl bg-cardbg border border-bordercol flex items-start justify-between gap-4 hover:border-slate-700 transition">
                     <div class="space-y-1.5">

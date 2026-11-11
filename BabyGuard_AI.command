@@ -29,11 +29,9 @@ if [ -n "$PID" ]; then
     echo -e "Trạng thái hiện tại: ${GREEN}${BOLD}● ĐANG HOẠT ĐỘNG${NC} (PID: $PID)"
     echo -e "🌐 Địa chỉ Dashboard:  ${CYAN}http://localhost:8080${NC}"
     
-    # Đọc link xem từ xa nếu có
-    REMOTE_URL=$(grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' "$APP_DIR/logs/tunnel.log" 2>/dev/null | tail -n 1)
-    if [ -n "$REMOTE_URL" ]; then
-        echo -e "📱 Link xem từ xa 4G:  ${YELLOW}${BOLD}$REMOTE_URL${NC}"
-    fi
+    # Link xem từ xa chính thức
+    echo -e "📱 Link xem từ xa (4G/5G): ${YELLOW}${BOLD}https://cam.babyguard.site${NC}"
+    echo -e "🛒 Trang chủ & Tải App:    ${CYAN}https://babyguard.site${NC}"
     echo -e "${CYAN}------------------------------------------------------------${NC}"
     echo -e "${BOLD}BabyGuard AI đang mở. Chọn thao tác của bạn:${NC}"
     echo ""

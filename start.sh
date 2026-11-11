@@ -57,12 +57,14 @@ fi
 
 # 3. Kích hoạt Cloudflare Tunnel nếu có
 if [ -n "$CLOUDFLARE_BIN" ]; then
-    if ! pgrep -f "cloudflared tunnel" > /dev/null; then
+    if [ ! -f "$HOME/.cloudflared/config.yml" ] && ! pgrep -f "cloudflared" > /dev/null; then
         echo "🌐 Đang kích hoạt đường truyền xem từ xa Cloudflare..."
         $CLOUDFLARE_BIN tunnel --url http://localhost:8080 > "$DIR/logs/tunnel.log" 2>&1 &
         sleep 4
+        REMOTE_URL=$(grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' "$DIR/logs/tunnel.log" | tail -n 1)
+    else
+        REMOTE_URL="https://cam.babyguard.site"
     fi
-    REMOTE_URL=$(grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' "$DIR/logs/tunnel.log" | tail -n 1)
 fi
 
 # 4. Lấy địa chỉ IP nội bộ
