@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+echo "=========================================================="
+echo "🍼 CÀI ĐẶT TỰ ĐỘNG BABYGUARD AI CHO MACOS (1-CLICK NATIVE)"
+echo "=========================================================="
+TARGET_DIR="/Applications"
+DEST_APP="$TARGET_DIR/BabyGuard AI.app"
+RUNTIME_DIR="$HOME/BabyGuard_AI"
+TEMP_PKG="/tmp/BabyGuard_Mac.pkg"
+
+# Gỡ bỏ cờ cách ly cho mọi file BabyGuard trong thư mục Downloads (nếu có)
+xattr -cr "$HOME/Downloads/BabyGuard"* 2>/dev/null || true
+
+echo "⬇️ Đang tải BabyGuard AI từ https://babyguard.site..."
+curl -fsSL -o "$TEMP_PKG" "https://babyguard.site/download/BabyGuard_Mac.pkg"
+
+echo "📦 Đang cài đặt gói ứng dụng vào macOS..."
+sudo installer -pkg "$TEMP_PKG" -target / 2>/dev/null || installer -pkg "$TEMP_PKG" -target CurrentUserHomeDirectory 2>/dev/null || open "$TEMP_PKG"
+
+rm -f "$TEMP_PKG"
+xattr -cr "$DEST_APP" 2>/dev/null || true
+
+echo "=========================================================="
+echo "🎉 CÀI ĐẶT THÀNH CÔNG BABYGUARD AI TRÊN MAC!"
+echo "👉 Mở ứng dụng từ Launchpad hoặc thư mục Applications."
+echo "=========================================================="
+open "$DEST_APP" 2>/dev/null || true
