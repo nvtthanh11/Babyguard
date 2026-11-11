@@ -595,9 +595,9 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
     @app.api_route("/download/BabyGuard_Mac.pkg", methods=["GET", "HEAD"])
     async def download_mac_pkg():
         candidates = [
+            os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.pkg"),
             os.path.join(BASE_DIR, "docs", "download", "BabyGuard_Mac.pkg"),
             os.path.join(static_dir, "BabyGuard_Mac.pkg"),
-            os.path.join(BASE_DIR, "dist", "BabyGuard_Mac.pkg"),
             os.path.join(static_dir, "download", "BabyGuard_Mac.pkg")
         ]
         for c in candidates:
