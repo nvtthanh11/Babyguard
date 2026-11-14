@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BabyGuard Studio — Trung Tâm Quản Trị Nội Dung</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            sans: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            canvas: '#090a0f',
+            card: 'rgba(255, 255, 255, 0.03)',
+            'card-border': 'rgba(255, 255, 255, 0.08)',
+            accent: '#7aa6ff',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #08090d; color: #f4f4f5; }
+    .glass-card { background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); }
+    .glass-input { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; }
+    .glass-input:focus { border-color: #7aa6ff; outline: none; box-shadow: 0 0 0 2px rgba(122, 166, 255, 0.2); }
+  </style>
+</head>
+<body class="font-sans min-h-screen antialiased flex flex-col justify-between selection:bg-white/20 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-white/[0.08] bg-black/40 backdrop-blur-xl sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="w-8 h-8 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center font-display font-bold text-white text-sm">B</span>
+        <div>
+          <h1 class="font-display font-bold text-base text-white tracking-tight">BabyGuard Studio</h1>
+          <p class="text-[10px] font-mono text-white/40 uppercase tracking-widest">Trung Tâm Quản Trị Nội Dung</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <a href="/" target="_blank" class="px-3.5 py-1.5 rounded-lg border border-white/15 hover:border-white/30 text-white/80 hover:text-white text-xs font-medium transition flex items-center gap-1.5">
+          <span>👁️ Xem Trang Chủ</span>
+        </a>
+        <button onclick="saveAndPublish()" id="btn-save" class="px-4 py-1.5 rounded-lg bg-white hover:bg-white/90 text-black text-xs font-bold transition shadow-sm flex items-center gap-1.5 active:scale-95">
+          <span>🚀 Xuất Bản Lên Web</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full flex-1 space-y-6">
+
+    <!-- STATUS NOTIFICATION -->
+    <div id="status-box" class="hidden p-3.5 rounded-xl border text-xs font-mono flex items-center justify-between transition-all">
+      <span id="status-msg"></span>
+      <button onclick="document.getElementById('status-box').classList.add('hidden')" class="text-white/60 hover:text-white">✕</button>
+    </div>
+
+    <!-- NAVIGATION TABS -->
+    <div class="flex items-center gap-2 overflow-x-auto border-b border-white/[0.08] pb-3 text-xs font-medium">
+      <button onclick="switchTab('pricing')" id="tab-btn-pricing" class="px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 transition">
+        💰 Giá & Bán Hàng
+      </button>
+      <button onclick="switchTab('hero')" id="tab-btn-hero" class="px-4 py-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white border border-transparent transition">
+        📢 Tiêu Đề & Khẩu Hiệu
+      </button>
+      <button onclick="switchTab('downloads')" id="tab-btn-downloads" class="px-4 py-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white border border-transparent transition">
+        🔗 Đường Dẫn Tải Về
+      </button>
+      <button onclick="switchTab('security')" id="tab-btn-security" class="px-4 py-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white border border-transparent transition">
+        🛡️ Cảnh Báo Bảo Mật
+      </button>
+      <button onclick="switchTab('faq')" id="tab-btn-faq" class="px-4 py-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white border border-transparent transition">
+        ❓ Câu Hỏi Thường Gặp
+      </button>
+      <button onclick="switchTab('raw')" id="tab-btn-raw" class="px-4 py-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white border border-transparent transition font-mono">
+        { } JSON Gốc
+      </button>
+    </div>
+
+    <!-- TAB 1: PRICING & PAYMENT -->
+    <section id="tab-pricing" class="tab-pane space-y-6">
+      <div class="glass-card rounded-2xl p-6 space-y-5">
+        <div>
+          <h2 class="text-lg font-bold text-white">Chính Sách Giá & Thời Gian Dùng Thử</h2>
+          <p class="text-xs text-white/50">Cấu hình giá bán 1 lần duy nhất, số ngày dùng thử miễn phí và thông tin thanh toán VietQR.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Giá Bán Hiển Thị</label>
+            <input type="text" id="inp-pricing-amount" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm" placeholder="49.000đ">
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Giá Tiền Số (Số để tạo mã QR)</label>
+            <input type="number" id="inp-pricing-raw-amount" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm" placeholder="49000">
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Số Ngày Dùng Thử Miễn Phí</label>
+            <input type="number" id="inp-pricing-trial-days" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm" placeholder="14">
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Tên Gói</label>
+            <input type="text" id="inp-pricing-plan-name" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm" placeholder="Bản Quyền Vĩnh Viễn Trọn Đời">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Mô Tả Gói Giá</label>
+          <textarea id="inp-pricing-desc" rows="3" class="glass-input w-full p-3.5 rounded-xl text-xs leading-relaxed"></textarea>
+        </div>
+
+        <div class="border-t border-white/[0.08] pt-5 space-y-4">
+          <h3 class="text-sm font-bold text-white">Tài Khoản Nhận Tiền VietQR</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Ngân Hàng</label>
+              <input type="text" id="inp-pay-bank" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm" placeholder="MB Bank">
+            </div>
+            <div>
+              <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Số Tài Khoản</label>
+              <input type="text" id="inp-pay-acc" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm" placeholder="1550107316004">
+            </div>
+            <div>
+              <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Chủ Tài Khoản</label>
+              <input type="text" id="inp-pay-holder" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm" placeholder="Nguyen Vu Truong Thanh">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: HERO & SLOGAN -->
+    <section id="tab-hero" class="tab-pane hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 space-y-5">
+        <div>
+          <h2 class="text-lg font-bold text-white">Tiêu Đề & Khẩu Hiệu Trang Chủ</h2>
+          <p class="text-xs text-white/50">Nội dung hiển thị đầu tiên khi khách hàng vào trang web.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Tiêu Đề Dòng 1 (Display Big)</label>
+            <input type="text" id="inp-hero-t1" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-display font-bold">
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Tiêu Đề Dòng 2 (Display Big)</label>
+            <input type="text" id="inp-hero-t2" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-display font-bold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Tag Nhỏ Đầu Trang (Eyebrow)</label>
+          <input type="text" id="inp-hero-eyebrow" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-mono">
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Đoạn Văn Giới Thiệu (Subtitle)</label>
+          <textarea id="inp-hero-desc" rows="3" class="glass-input w-full p-3.5 rounded-xl text-xs leading-relaxed"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Dòng Thông Báo Trên Cùng (Top Banner)</label>
+          <input type="text" id="inp-banner-text" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs">
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: DOWNLOAD LINKS -->
+    <section id="tab-downloads" class="tab-pane hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 space-y-5">
+        <div>
+          <h2 class="text-lg font-bold text-white">Đường Dẫn Tải Về Trực Tiếp</h2>
+          <p class="text-xs text-white/50">Dán link tải từ GitHub Releases vào đây để khách hàng tải file online 24/7 tốc độ cao.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Link Tải Windows (.ZIP) — GitHub Releases</label>
+            <input type="text" id="inp-dl-win" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-mono" placeholder="https://github.com/.../BabyGuard_Windows.zip">
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Link Tải macOS (.PKG) — GitHub Releases</label>
+            <input type="text" id="inp-dl-mac" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-mono" placeholder="https://github.com/.../BabyGuard_Mac.pkg">
+          </div>
+          <div>
+            <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Link Tải Android App (.APK)</label>
+            <input type="text" id="inp-dl-android" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-mono" placeholder="/download/app.apk">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SECURITY WARNING -->
+    <section id="tab-security" class="tab-pane hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 space-y-5">
+        <div>
+          <h2 class="text-lg font-bold text-white">Nội Dung Cảnh Báo Camera Mạng</h2>
+          <p class="text-xs text-white/50">Phần phân tích rủi ro camera Cloud ngoài thị trường và giải pháp bảo mật của BabyGuard.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Tiêu Đề Cảnh Báo</label>
+          <input type="text" id="inp-sec-title" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-bold">
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-white/60 uppercase tracking-wider mb-1.5">Mô Tả Lá Chắn Bảo Mật BabyGuard (100% Local)</label>
+          <textarea id="inp-sec-local" rows="3" class="glass-input w-full p-3.5 rounded-xl text-xs leading-relaxed"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: FAQ -->
+    <section id="tab-faq" class="tab-pane hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 space-y-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-white">Câu Hỏi Thường Gặp (FAQ)</h2>
+            <p class="text-xs text-white/50">Chỉnh sửa các câu hỏi và câu trả lời hiển thị trên trang chủ.</p>
+          </div>
+          <button onclick="addFaqItem()" class="px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-xs font-medium">
+            + Thêm Câu Hỏi
+          </button>
+        </div>
+
+        <div id="faq-container" class="space-y-4"></div>
+      </div>
+    </section>
+
+    <!-- TAB 6: RAW JSON -->
+    <section id="tab-raw" class="tab-pane hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-white">Mã Nguồn JSON Toàn Diện</h2>
+            <p class="text-xs text-white/50">Xem hoặc chỉnh sửa trực tiếp cấu trúc JSON của website.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="downloadJsonFile()" class="px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-white text-xs font-mono">
+              ⬇ Tải content.json
+            </button>
+            <button onclick="copyJsonToClipboard()" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-mono">
+              📋 Sao Chép
+            </button>
+          </div>
+        </div>
+        <textarea id="inp-raw-json" rows="18" class="glass-input w-full p-4 rounded-xl text-xs font-mono leading-relaxed"></textarea>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-white/[0.08] py-6 text-center text-xs text-white/40 font-mono">
+    BabyGuard AI Studio • Tự Quản Lý Nội Dung Độc Lập
+  </footer>
+
+  <script>
+    let siteData = {};
+
+    // Load initial data from docs/content.json
+    async function loadData() {
+      try {
+        const res = await fetch('/content.json?v=' + Date.now());
+        if (res.ok) {
+          siteData = await res.json();
+          renderForms();
+          return;
+        }
+      } catch (e) {
+        console.warn("Could not fetch remote content.json, trying local storage", e);
+      }
+      const saved = localStorage.getItem('babyguard_site_data');
+      if (saved) {
+        try { siteData = JSON.parse(saved); } catch(e){}
+      }
+      renderForms();
+    }
+
+    function renderForms() {
+      if (!siteData.hero) return;
+      // Hero
+      document.getElementById('inp-hero-t1').value = siteData.hero.title_line1 || '';
+      document.getElementById('inp-hero-t2').value = siteData.hero.title_line2 || '';
+      document.getElementById('inp-hero-eyebrow').value = siteData.hero.eyebrow || '';
+      document.getElementById('inp-hero-desc').value = siteData.hero.description || '';
+      document.getElementById('inp-banner-text').value = siteData.top_banner ? siteData.top_banner.text : '';
+
+      // Pricing
+      document.getElementById('inp-pricing-amount').value = siteData.pricing ? siteData.pricing.amount : '49.000đ';
+      document.getElementById('inp-pricing-raw-amount').value = siteData.pricing ? siteData.pricing.raw_amount : 49000;
+      document.getElementById('inp-pricing-trial-days').value = siteData.pricing ? siteData.pricing.trial_days : 14;
+      document.getElementById('inp-pricing-plan-name').value = siteData.pricing ? siteData.pricing.plan_name : '';
+      document.getElementById('inp-pricing-desc').value = siteData.pricing ? siteData.pricing.description : '';
+
+      if (siteData.pricing && siteData.pricing.payment) {
+        document.getElementById('inp-pay-bank').value = siteData.pricing.payment.bank_name || '';
+        document.getElementById('inp-pay-acc').value = siteData.pricing.payment.account_number || '';
+        document.getElementById('inp-pay-holder').value = siteData.pricing.payment.account_holder || '';
+      }
+
+      // Downloads
+      if (siteData.downloads) {
+        document.getElementById('inp-dl-win').value = siteData.downloads.windows ? (siteData.downloads.windows.github_url || siteData.downloads.windows.url) : '';
+        document.getElementById('inp-dl-mac').value = siteData.downloads.mac ? (siteData.downloads.mac.github_url || siteData.downloads.mac.url) : '';
+        document.getElementById('inp-dl-android').value = siteData.downloads.android ? siteData.downloads.android.url : '';
+      }
+
+      // Security
+      if (siteData.security_warning) {
+        document.getElementById('inp-sec-title').value = siteData.security_warning.title || '';
+        document.getElementById('inp-sec-local').value = siteData.security_warning.local_solution ? siteData.security_warning.local_solution.desc : '';
+      }
+
+      // FAQ
+      renderFaq();
+
+      // Raw JSON
+      document.getElementById('inp-raw-json').value = JSON.stringify(siteData, null, 2);
+    }
+
+    function renderFaq() {
+      const container = document.getElementById('faq-container');
+      container.innerHTML = '';
+      if (!siteData.faq) return;
+      siteData.faq.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = "p-4 rounded-xl bg-black/30 border border-white/10 space-y-2.5 relative";
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono text-white/50">Câu hỏi #${index + 1}</span>
+            <button onclick="removeFaqItem(${index})" class="text-xs text-rose-400 hover:text-rose-300 font-mono">Xóa</button>
+          </div>
+          <input type="text" value="${item.q || ''}" onchange="updateFaqQ(${index}, this.value)" class="glass-input w-full px-3 py-2 rounded-lg text-xs font-bold" placeholder="Nhập câu hỏi...">
+          <textarea rows="3" onchange="updateFaqA(${index}, this.value)" class="glass-input w-full p-3 rounded-lg text-xs leading-relaxed" placeholder="Nhập câu trả lời...">${item.a || ''}</textarea>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function updateFaqQ(i, val) { siteData.faq[i].q = val; updateRawJson(); }
+    function updateFaqA(i, val) { siteData.faq[i].a = val; updateRawJson(); }
+    function addFaqItem() {
+      siteData.faq.push({ q: "Câu hỏi mới?", a: "Câu trả lời..." });
+      renderFaq();
+      updateRawJson();
+    }
+    function removeFaqItem(i) {
+      siteData.faq.splice(i, 1);
+      renderFaq();
+      updateRawJson();
+    }
+
+    function gatherDataFromInputs() {
+      // Hero
+      siteData.hero.title_line1 = document.getElementById('inp-hero-t1').value;
+      siteData.hero.title_line2 = document.getElementById('inp-hero-t2').value;
+      siteData.hero.eyebrow = document.getElementById('inp-hero-eyebrow').value;
+      siteData.hero.description = document.getElementById('inp-hero-desc').value;
+      if (siteData.top_banner) siteData.top_banner.text = document.getElementById('inp-banner-text').value;
+
+      // Pricing
+      if (siteData.pricing) {
+        siteData.pricing.amount = document.getElementById('inp-pricing-amount').value;
+        siteData.pricing.raw_amount = parseInt(document.getElementById('inp-pricing-raw-amount').value) || 49000;
+        siteData.pricing.trial_days = parseInt(document.getElementById('inp-pricing-trial-days').value) || 14;
+        siteData.pricing.plan_name = document.getElementById('inp-pricing-plan-name').value;
+        siteData.pricing.description = document.getElementById('inp-pricing-desc').value;
+        if (siteData.pricing.payment) {
+          siteData.pricing.payment.bank_name = document.getElementById('inp-pay-bank').value;
+          siteData.pricing.payment.account_number = document.getElementById('inp-pay-acc').value;
+          siteData.pricing.payment.account_holder = document.getElementById('inp-pay-holder').value;
+        }
+      }
+
+      // Downloads
+      const winVal = document.getElementById('inp-dl-win').value;
+      const macVal = document.getElementById('inp-dl-mac').value;
+      if (siteData.downloads) {
+        if (siteData.downloads.windows) {
+          siteData.downloads.windows.github_url = winVal;
+          siteData.downloads.windows.url = winVal;
+        }
+        if (siteData.downloads.mac) {
+          siteData.downloads.mac.github_url = macVal;
+          siteData.downloads.mac.url = macVal;
+        }
+        if (siteData.downloads.android) {
+          siteData.downloads.android.url = document.getElementById('inp-dl-android').value;
+        }
+      }
+
+      // Security
+      if (siteData.security_warning) {
+        siteData.security_warning.title = document.getElementById('inp-sec-title').value;
+        if (siteData.security_warning.local_solution) {
+          siteData.security_warning.local_solution.desc = document.getElementById('inp-sec-local').value;
+        }
+      }
+
+      updateRawJson();
+    }
+
+    function updateRawJson() {
+      document.getElementById('inp-raw-json').value = JSON.stringify(siteData, null, 2);
+      localStorage.setItem('babyguard_site_data', JSON.stringify(siteData));
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('[id^="tab-btn-"]').forEach(btn => {
+        btn.classList.remove('bg-white/10', 'text-white', 'border-white/20');
+        btn.classList.add('text-white/60', 'border-transparent');
+      });
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-btn-' + tabId);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white/10', 'text-white', 'border-white/20');
+        activeBtn.classList.remove('text-white/60', 'border-transparent');
+      }
+    }
+
+    async function saveAndPublish() {
+      gatherDataFromInputs();
+      const btn = document.getElementById('btn-save');
+      btn.innerText = "⏳ Đang Lưu...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/admin/save-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(siteData)
+        });
+        if (res.ok) {
+          const result = await res.json();
+          showStatus("success", "✅ Đã lưu và tự động cập nhật lên trang web thành công!");
+          btn.innerText = "🚀 Xuất Bản Lên Web";
+          btn.disabled = false;
+          return;
+        }
+      } catch (e) {
+        console.warn("Backend not available directly, downloading JSON file as fallback", e);
+      }
+
+      // Fallback: save to localStorage and trigger file download
+      downloadJsonFile();
+      showStatus("info", "💾 Đã lưu vào bộ nhớ trình duyệt và tải file content.json về máy của Ba!");
+      btn.innerText = "🚀 Xuất Bản Lên Web";
+      btn.disabled = false;
+    }
+
+    function downloadJsonFile() {
+      gatherDataFromInputs();
+      const blob = new Blob([JSON.stringify(siteData, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'content.json';
+      a.click();
+    }
+
+    function copyJsonToClipboard() {
+      gatherDataFromInputs();
+      navigator.clipboard.writeText(JSON.stringify(siteData, null, 2));
+      alert("Đã sao chép toàn bộ mã JSON vào bộ nhớ đệm!");
+    }
+
+    function showStatus(type, msg) {
+      const box = document.getElementById('status-box');
+      box.classList.remove('hidden', 'bg-emerald-950/60', 'border-emerald-500/40', 'text-emerald-300', 'bg-blue-950/60', 'border-blue-500/40', 'text-blue-300');
+      if (type === 'success') {
+        box.classList.add('bg-emerald-950/60', 'border-emerald-500/40', 'text-emerald-300');
+      } else {
+        box.classList.add('bg-blue-950/60', 'border-blue-500/40', 'text-blue-300');
+      }
+      document.getElementById('status-msg').innerText = msg;
+    }
+
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>

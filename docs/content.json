@@ -1,0 +1,151 @@
+{
+  "site_info": {
+    "name": "BabyGuard AI",
+    "slogan": "Thà báo nhầm còn hơn bỏ sót",
+    "tagline": "Giám Sát An Toàn & Giấc Ngủ Cho Bé",
+    "version": "v2.1.0",
+    "github_repo": "https://github.com/nvtthanh11/Babyguard",
+    "hotline": "0943.435.433"
+  },
+  "top_banner": {
+    "badge": "KHUYÊN DÙNG",
+    "text": "Bảo vệ bé 24/7 • Bắn tin tức thì qua Telegram của ba mẹ",
+    "cta_text": "Tải Về Dùng Thử Miễn Phí 14 Ngày →",
+    "cta_link": "#download"
+  },
+  "hero": {
+    "eyebrow": "AN TOÀN CHO BÉ • BẢO MẬT GIA ĐÌNH 100% LOCAL",
+    "title_line1": "Bảo vệ bé yêu.",
+    "title_line2": "Bảo mật tuyệt đối.",
+    "description": "Hệ thống AI giám sát giấc ngủ, đo nhịp thở không chạm, chống nằm sấp và nhận diện tiếng khóc. Toàn bộ hình ảnh xử lý trực tiếp trên máy tính tại phòng ngủ — Tuyệt đối không bao giờ đưa video riêng tư của con lên Cloud.",
+    "badge_trial": "Tải về miễn phí • 14 ngày sau mới thanh toán 49k (Dùng vĩnh viễn)"
+  },
+  "downloads": {
+    "windows": {
+      "name": "Windows (10 / 11)",
+      "file_type": ".ZIP",
+      "url": "https://cam.babyguard.site/download/windows-app",
+      "github_url": "https://github.com/nvtthanh11/Babyguard/releases/download/v2.1.0/BabyGuard_Windows.zip",
+      "note": "Bản cài đặt đầy đủ • Giải nén bấm đúp file .bat là chạy"
+    },
+    "mac": {
+      "name": "macOS (Apple Silicon & Intel)",
+      "file_type": ".PKG",
+      "url": "https://cam.babyguard.site/download/BabyGuard_Mac.pkg",
+      "github_url": "https://github.com/nvtthanh11/Babyguard/releases/download/v2.1.0/BabyGuard_Mac.pkg",
+      "note": "Bộ cài Apple Installer • Bấm đúp file .pkg là tự động kích hoạt"
+    },
+    "android": {
+      "name": "Android Mobile App",
+      "file_type": ".APK",
+      "url": "/download/app.apk",
+      "note": "Cài nhanh 5 giây • Quét mã QR xem camera 4G/5G"
+    },
+    "mac_cli": "curl -fsSL https://babyguard.site/install-mac | bash"
+  },
+  "security_warning": {
+    "badge": "HIỂM HỌA ĐỜI TƯ TỪ CAMERA CLOUD",
+    "title": "Cảnh Báo: Vì Sao Tuyệt Đối Không Nên Đặt Camera Mạng Ngoài Trong Phòng Ngủ Của Bé?",
+    "subtitle": "Thực trạng nhức nhối từ các camera giá rẻ kết nối Cloud bên thứ ba ngoài thị trường.",
+    "cloud_risks": [
+      {
+        "code": "RISK_01",
+        "title": "Rò Rỉ Video Phòng Ngủ & Cảnh Nhạy Cảm",
+        "desc": "Camera giá rẻ (Yoosee, Imou, Ezviz...) truyền toàn bộ luồng video lên máy chủ Cloud bên thứ ba (thường đặt ở nước ngoài). Hàng ngàn đoạn video phòng ngủ, cảnh mẹ cho con bú, trẻ nhỏ thay tã đã bị hacker rao bán trên các nhóm Telegram và web đen."
+      },
+      {
+        "code": "RISK_02",
+        "title": "Người Lạ Xâm Nhập & Trêu Ghẹo Bé Ban Đêm",
+        "desc": "Với mật khẩu mặc định hoặc lỗ hổng firmware, kẻ xấu từ xa dễ dàng xâm nhập theo dõi lịch sinh hoạt gia đình, thậm chí tự ý bật loa trên camera để nói chuyện, hù dọa trêu ghẹo bé giữa đêm khuya."
+      },
+      {
+        "code": "RISK_03",
+        "title": "Phí Thuê Bao Đắt Đỏ & Mất Mạng Là Vô Dụng",
+        "desc": "Bắt trả phí lưu trữ đám mây 500k - 1,5 triệu/năm. Đáng lo hơn, khi mất WiFi hoặc đứt cáp quang biển, camera trở nên vô dụng — không còn khả năng phát hiện hay cảnh báo khi bé lật úp hay ngạt thở."
+      }
+    ],
+    "local_solution": {
+      "title": "Lá Chắn Bảo Mật Tuyệt Đối Của BabyGuard AI (100% Local Edge AI)",
+      "desc": "Toàn bộ thuật toán AI phân tích hình ảnh và âm thanh trực tiếp trên chip máy tính tại phòng ngủ. KHÔNG BAO GIỜ gửi video lên Cloud của bên thứ ba. Mất mạng internet máy vẫn phát hiện bé khóc và lật úp hú còi báo động bình thường. Luồng xem từ xa trên điện thoại được mã hóa End-to-End điểm-tới-điểm bảo mật tuyệt đối!"
+    }
+  },
+  "features": [
+    {
+      "id": "prone_face",
+      "mono_tag": "AI POSE & YUNET",
+      "title": "Chống Lật Úp & Ngạt Mặt Tức Thì",
+      "desc": "Phát hiện ngay khi bé lật úp che mũi miệng hoặc chăn gối trùm kín mặt. Báo động chuông lớn tại phòng và gửi ảnh khẩn cấp qua Telegram của ba mẹ chỉ sau 2 giây."
+    },
+    {
+      "id": "breathing",
+      "mono_tag": "OPTICAL THORACIC SENSING",
+      "title": "Đo Nhịp Thở Không Chạm Bằng Quang Học",
+      "desc": "Phân tích biên độ lồng ngực với độ phân giải vi mô (0.1 mm/frame). Cảnh báo ngưng thở quá 15 giây mà không cần đeo thiết bị vướng víu vào người bé."
+    },
+    {
+      "id": "audio_cry",
+      "mono_tag": "ACOUSTIC CNN CLASSIFIER",
+      "title": "Lắng Nghe Tiếng Khóc & Ho Sặc Sữa",
+      "desc": "Mạng nơ-ron âm thanh lọc bỏ tạp âm quạt gió; phân biệt chính xác tiếng bé khóc đói, gắt ngủ và cơn ho sặc sữa nguy hiểm để ba mẹ can thiệp ngay."
+    },
+    {
+      "id": "safe_zone",
+      "mono_tag": "ADAPTIVE 4-POINT POLYGON",
+      "title": "Vùng An Toàn Đa Giác 4 Điểm Thích Ứng",
+      "desc": "Khung đa giác tùy biến theo góc camera bao trọn tấm nệm. AI tự nhận biết tư thế bé lăn lộn, chỉ báo động khi bé thực sự trườn bò sát mép giường có nguy cơ rơi ngã."
+    },
+    {
+      "id": "daily_stories",
+      "mono_tag": "07:00 AM DAILY TELEGRAM",
+      "title": "Kho Chuyện Kể Nhân Văn Nuôi Dạy Con",
+      "desc": "Mỗi sáng gửi tặng ba mẹ một câu chuyện ngụ ngôn giàu giá trị đạo đức (kiên trì, biết ơn, trung thực, nhân ái) kèm lời nhắn ngắn để ba mẹ thủ thỉ cùng con mỗi tối."
+    },
+    {
+      "id": "remote_stream",
+      "mono_tag": "END-TO-END ENCRYPTED STREAM",
+      "title": "Xem Từ Xa 4G/5G & Đàm Thoại 2 Chiều",
+      "desc": "Xem trực tiếp mượt mà trên điện thoại dù đang ở cơ quan hay đi công tác với độ trễ cực thấp. Nhấn giữ để truyền giọng nói ấm áp vỗ về con từ xa."
+    }
+  ],
+  "pricing": {
+    "amount": "49.000đ",
+    "raw_amount": 49000,
+    "trial_days": 14,
+    "plan_name": "Bản Quyền Vĩnh Viễn Trọn Đời",
+    "badge": "GÓI SỞ HỮU TRỌN ĐỜI DUY NHẤT",
+    "description": "Ba mẹ được tải về và dùng thử hoàn toàn MIỄN PHÍ 100% trong 14 ngày đầu tiên. Sau 14 ngày, nếu thực sự hài lòng và an tâm, chỉ thanh toán 49.000 VNĐ duy nhất một lần để sở hữu vĩnh viễn trọn đời.",
+    "benefits": [
+      "Tải về dùng thử miễn phí 100%, không cần thẻ tín dụng",
+      "14 ngày trải nghiệm đầy đủ 100% tính năng AI cao cấp",
+      "Mua 1 lần duy nhất — Sở hữu & sử dụng vĩnh viễn",
+      "0đ phí thuê bao tháng, 0đ phí duy trì hằng năm",
+      "Bảo mật 100% Local, tuyệt đối không rò rỉ video",
+      "Cập nhật miễn phí trọn đời các phiên bản AI mới",
+      "Tiết kiệm hơn 10 - 15 triệu đồng so với camera ngoại"
+    ],
+    "payment": {
+      "bank_name": "MB Bank (Ngân hàng Quân Đội)",
+      "account_number": "1550107316004",
+      "account_holder": "Nguyen Vu Truong Thanh",
+      "qr_bank_id": "970422"
+    }
+  },
+  "faq": [
+    {
+      "q": "BabyGuard AI hoạt động như thế nào, tôi cần mua thêm thiết bị gì không?",
+      "a": "Ba mẹ hoàn toàn KHÔNG CẦN mua thêm thiết bị chuyên dụng đắt đỏ nào! Chỉ cần tận dụng 1 chiếc máy tính có sẵn ở nhà (Laptop Windows, MacBook, PC văn phòng hoặc máy tính mini) cắm webcam USB hoặc dùng luôn camera laptop hướng vào nôi bé. Hệ thống sẽ biến chiếc camera đó thành trạm AI giám sát y tế thông minh."
+    },
+    {
+      "q": "Chính sách dùng thử miễn phí 14 ngày và phí 49.000 VNĐ như thế nào?",
+      "a": "Ba mẹ được tải về và dùng thử hoàn toàn MIỄN PHÍ 100% trong 14 ngày đầu tiên để trải nghiệm chất lượng thực tế mà không cần nhập thẻ tín dụng hay trả trước bất kỳ chi phí nào. Sau 14 ngày, nếu thực sự thấy BabyGuard AI mang lại sự an tâm tuyệt đối cho giấc ngủ của con, ba mẹ chỉ cần thanh toán duy nhất 1 lần 49.000 VNĐ để kích hoạt sở hữu vĩnh viễn trọn đời. Cam kết 0đ phí thuê bao tháng, 0đ phí duy trì hàng năm!"
+    },
+    {
+      "q": "Dữ liệu video phòng ngủ của con tôi có bị đưa lên mạng không?",
+      "a": "Tuyệt đối không! Toàn bộ luồng video và âm thanh chỉ được phân tích trực tiếp tại chỗ trên máy tính gia đình bạn (100% On-Device Edge AI). Không có bất kỳ video nào bị lưu trữ trên máy chủ của bên thứ ba, bảo vệ an toàn tối thượng cho không gian riêng tư của tổ ấm."
+    },
+    {
+      "q": "Nhà tôi dùng máy tính hoặc webcam cũ cấu hình yếu có chạy được không?",
+      "a": "Hoàn toàn được! BabyGuard AI được tối ưu hóa bằng mô hình AI lượng tử hóa siêu nhẹ (YOLOv8 Nano, YuNet ONNX) chạy mượt mà ngay cả trên những chiếc laptop cũ, PC văn phòng hoặc máy tính mini. Bạn có thể tận dụng bất kỳ webcam USB nào cắm vào là hệ thống tự nhận."
+    }
+  ]
+}

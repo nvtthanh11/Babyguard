@@ -3748,5 +3748,44 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             "usage": gemini_verifier.get_usage_stats()
         }
 
+    @app.get("/admin", response_class=HTMLResponse)
+    @app.get("/admin.html", response_class=HTMLResponse)
+    async def serve_admin_page():
+        admin_path = os.path.join(BASE_DIR, "docs", "admin.html")
+        if os.path.exists(admin_path):
+            with open(admin_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        return HTMLResponse("<h1>Admin page not found</h1>", status_code=404)
+
+    @app.get("/api/site-content")
+    async def get_site_content():
+        content_path = os.path.join(BASE_DIR, "docs", "content.json")
+        if os.path.exists(content_path):
+            with open(content_path, "r", encoding="utf-8") as f:
+                return JSONResponse(json.load(f))
+        return JSONResponse({"error": "content.json not found"}, status_code=404)
+
+    @app.post("/api/admin/save-content")
+    async def save_site_content(request: Request):
+        try:
+            data = await request.json()
+            content_path = os.path.join(BASE_DIR, "docs", "content.json")
+            with open(content_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+
+            def push_to_git():
+                try:
+                    import subprocess
+                    subprocess.run(["git", "add", "docs/content.json"], cwd=BASE_DIR, check=True)
+                    subprocess.run(["git", "commit", "-m", "chore(content): update site content from admin studio"], cwd=BASE_DIR, check=True)
+                    subprocess.run(["git", "push", "origin", "main"], cwd=BASE_DIR, check=True)
+                except Exception as ex:
+                    print(f"[AdminCMS] Git push notice: {ex}")
+
+            threading.Thread(target=push_to_git, daemon=True).start()
+            return JSONResponse({"status": "success", "message": "Đã lưu nội dung và tự động cập nhật lên GitHub Pages!"})
+        except Exception as e:
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
     return app
 
