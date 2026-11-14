@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="vi" class="scroll-smooth">
+<html lang="vi" class="dark scroll-smooth" style="background-color: #0b0f17; color-scheme: dark;">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0f17">
+  <meta name="supported-color-schemes" content="dark">
   <title>Điều Khoản Sử Dụng & Chính Sách Bảo Mật | BabyGuard AI</title>
   <meta name="description" content="Chính sách bảo mật dữ liệu trẻ em, sơ đồ kết nối trực tiếp nội bộ, tuyên bố miễn trừ y tế và cấu hình thiết bị tối thiểu của BabyGuard AI.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍼</text></svg>">
@@ -16,6 +19,7 @@
 
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
@@ -26,9 +30,11 @@
     }
   </script>
   <style>
+    :root, html { background-color: #0b0f17 !important; color-scheme: dark !important; }
     body {
-      background-color: #0b0f17;
-      color: #cbd5e1;
+      background-color: #0b0f17 !important;
+      color: #cbd5e1 !important;
+      color-scheme: dark !important;
     }
     .anchor-offset {
       scroll-margin-top: 90px;

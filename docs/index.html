@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="vi" class="dark scroll-smooth">
+<html lang="vi" class="dark scroll-smooth" style="background-color: #08090d; color-scheme: dark;">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#08090d">
+  <meta name="supported-color-schemes" content="dark">
   <title>BabyGuard AI — Giám Sát An Toàn & Giấc Ngủ Cho Bé | 100% Local AI</title>
   <meta name="description" content="BabyGuard AI là hệ thống AI giám sát giấc ngủ cho bé, đo nhịp thở không chạm, chống nằm sấp và nhận diện tiếng khóc. 100% xử lý Local trên máy tính, bảo mật tuyệt đối không đưa video lên Cloud.">
   <link rel="icon" href="/static/icons/icon.ico">
@@ -41,17 +44,26 @@
   </script>
 
   <style>
+    :root, html {
+      background-color: #08090d !important;
+      color-scheme: dark !important;
+    }
     body {
-      background-color: #08090d;
-      color: #e4e4e7;
+      background-color: #08090d !important;
+      color: #e4e4e7 !important;
+      color-scheme: dark !important;
       overflow-x: hidden;
+      min-height: 100vh;
     }
     .ambient-glow {
-      background: radial-gradient(circle at 50% 10%, rgba(122, 166, 255, 0.07), transparent 60%),
-                  radial-gradient(circle at 80% 30%, rgba(52, 211, 153, 0.04), transparent 50%);
+      background-color: #08090d !important;
+      background-image: radial-gradient(circle at 50% 10%, rgba(122, 166, 255, 0.08), transparent 60%),
+                        radial-gradient(circle at 80% 30%, rgba(52, 211, 153, 0.04), transparent 50%) !important;
+      background-repeat: no-repeat;
     }
     .glass-panel {
       background: rgba(255, 255, 255, 0.025);
+      background-color: rgba(14, 16, 23, 0.75);
       border: 1px solid rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -67,7 +79,7 @@
     }
   </style>
 </head>
-<body class="font-sans antialiased selection:bg-white/20 selection:text-white ambient-glow min-h-screen flex flex-col justify-between">
+<body class="bg-[#08090d] text-[#e4e4e7] font-sans antialiased selection:bg-white/20 selection:text-white ambient-glow min-h-screen flex flex-col justify-between" style="background-color: #08090d !important; color-scheme: dark !important;">
 
   <!-- TOP ANNOUNCEMENT BAR -->
   <aside class="border-b border-white/[0.06] bg-black/40 py-2.5 px-4 text-center text-xs font-mono">
