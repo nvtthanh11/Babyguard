@@ -920,11 +920,11 @@
       </div>
 
       <!-- MAIN SPOTLIGHT CONTAINER (Phóng to và bay lên trên) -->
-      <div id="feature-spotlight-box" class="relative max-w-5xl mx-auto rounded-3xl border-2 border-brand-200 bg-gradient-to-br from-brand-50/60 via-white to-slate-50 p-6 sm:p-10 shadow-2xl transition-all duration-500" title="Rê chuột vào để dừng chuyển slide tự động">
+      <div id="feature-spotlight-box" class="relative max-w-5xl mx-auto rounded-3xl border border-white/[0.08] bg-[#0e1017] p-6 sm:p-10 shadow-2xl transition-all duration-500" title="Rê chuột vào để dừng chuyển slide tự động">
         
         <!-- Timer progress bar indicator (5s) -->
-        <div class="absolute top-0 left-0 right-0 h-1.5 bg-white/[0.03] rounded-t-3xl overflow-hidden">
-          <div id="feature-timer-bar" class="h-full bg-gradient-to-r from-brand-500 to-accent-teal transition-all duration-100 ease-linear" style="width: 0%;"></div>
+        <div class="absolute top-0 left-0 right-0 h-1 bg-white/[0.03] rounded-t-3xl overflow-hidden">
+          <div id="feature-timer-bar" class="h-full bg-white/40 transition-all duration-100 ease-linear" style="width: 0%;"></div>
         </div>
 
         <div id="feature-spotlight-content" class="feature-spotlight-active grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -964,13 +964,13 @@
       </div>
 
       <!-- PRIVACY WARNING CALLOUT -->
-      <div class="p-5 sm:p-7 rounded-3xl bg-rose-50/90 border-2 border-rose-300 text-rose-950 flex flex-col sm:flex-row items-center gap-5 shadow-sm">
-        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-rose-200 border border-rose-300 flex items-center justify-center text-3xl shrink-0 shadow-inner">
-          🔒
+      <div class="p-5 sm:p-6 rounded-2xl bg-[#0e1017] border border-white/[0.08] text-white flex flex-col sm:flex-row items-center gap-4 shadow-sm">
+        <div class="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-xl shrink-0 font-mono text-white/70">
+          SEC
         </div>
-        <div class="space-y-1.5 text-center sm:text-left text-xs sm:text-sm">
-          <strong class="text-base sm:text-lg font-black text-rose-950 block">Cảnh Báo Nỗi Lo Bảo Mật: Hình Ảnh Phòng Ngủ Của Bé Có Bị Rò Rỉ?</strong>
-          <p class="leading-relaxed text-white/90 font-normal">
+        <div class="space-y-1 text-center sm:text-left text-xs sm:text-sm">
+          <strong class="text-sm sm:text-base font-bold text-white block">Cảnh Báo Nỗi Lo Bảo Mật: Hình Ảnh Phòng Ngủ Của Bé Có Bị Rò Rỉ?</strong>
+          <p class="leading-relaxed text-white/70 text-xs font-normal">
             Hầu hết camera gia đình thông thường (Ezviz, Xiaomi...) và camera nhập ngoại (Nanit, CuboAi) đều <strong>bắt buộc truyền dữ liệu hình ảnh phòng ngủ của bé lên máy chủ đám mây (Cloud) ở nước ngoài</strong>. Rất nhiều vụ việc rò rỉ clip riêng tư của trẻ đã từng xảy ra trên báo chí! 
             <strong>BabyGuard AI chạy 100% Edge AI cục bộ tại nhà:</strong> Toàn bộ video và âm thanh chỉ nằm trên chiếc máy tính của gia đình bạn, không một máy chủ trung gian nào trên thế giới có thể chạm tới!
           </p>
@@ -978,64 +978,64 @@
       </div>
 
       <!-- DESKTOP COMPARISON TABLE (Hiện trên máy tính & máy tính bảng) -->
-      <div class="hidden md:block overflow-x-auto rounded-3xl border border-white/[0.08] shadow-sm bg-[#0e1017]">
-        <table class="w-full text-left border-collapse text-sm">
+      <div class="hidden md:block overflow-x-auto rounded-2xl border border-white/[0.08] shadow-sm bg-[#0e1017]">
+        <table class="w-full text-left border-collapse text-xs">
           <thead>
-            <tr class="border-b border-white/[0.08] text-white/70 font-bold">
-              <th class="py-4 px-6 bg-white/[0.03]/80 text-white/90">Tiêu Chí / Tính Năng</th>
-              <th class="py-4 px-6 text-white/80">Camera Thường (Ezviz, Xiaomi)</th>
-              <th class="py-4 px-6 text-white/80">Camera Ngoại (Nanit, Cubo Ai)</th>
-              <th class="py-4 px-6 bg-brand-50 text-brand-900 font-black">🍼 BabyGuard AI</th>
+            <tr class="border-b border-white/[0.08] text-white/60 font-mono text-[11px]">
+              <th class="py-3.5 px-5 bg-white/[0.02] text-white/80">Tiêu Chí / Tính Năng</th>
+              <th class="py-3.5 px-5 text-white/60">Camera Thường (Ezviz, Xiaomi)</th>
+              <th class="py-3.5 px-5 text-white/60">Camera Ngoại (Nanit, Cubo Ai)</th>
+              <th class="py-3.5 px-5 bg-white/[0.04] text-white font-bold border-l border-r border-white/[0.08]">BabyGuard AI</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 text-white/90">
+          <tbody class="divide-y divide-white/[0.06] text-white/80">
             <tr>
-              <td class="py-4 px-6 font-semibold">Chống nằm sấp & che ngạt mặt</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">❌ Không hỗ trợ</td>
-              <td class="py-4 px-6 text-emerald-800 font-medium">✅ Có hỗ trợ</td>
-              <td class="py-4 px-6 bg-brand-50 font-black text-emerald-800">✅ Độc quyền: "Thà báo nhầm còn hơn bỏ sót"</td>
+              <td class="py-3.5 px-5 font-semibold text-white">Chống nằm sấp & che ngạt mặt</td>
+              <td class="py-3.5 px-5 text-white/50">Không hỗ trợ</td>
+              <td class="py-3.5 px-5 text-white/70">Có hỗ trợ</td>
+              <td class="py-3.5 px-5 bg-white/[0.04] font-semibold text-white border-l border-r border-white/[0.08]">Độc quyền: "Thà báo nhầm còn hơn bỏ sót"</td>
             </tr>
             <tr>
-              <td class="py-4 px-6 font-semibold">Bắn thông báo & ảnh qua Telegram</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">❌ Chỉ có app riêng hay bị trễ</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">❌ Bắt buộc mở app riêng</td>
-              <td class="py-4 px-6 bg-brand-50 font-black text-emerald-800">✅ Bắn tức thì qua Telegram của ba mẹ</td>
+              <td class="py-3.5 px-5 font-semibold text-white">Bắn thông báo & ảnh qua Telegram</td>
+              <td class="py-3.5 px-5 text-white/50">Chỉ có app riêng hay bị trễ</td>
+              <td class="py-3.5 px-5 text-white/50">Bắt buộc mở app riêng</td>
+              <td class="py-3.5 px-5 bg-white/[0.04] font-semibold text-white border-l border-r border-white/[0.08]">Bắn tức thì qua Telegram của ba mẹ</td>
             </tr>
             <tr>
-              <td class="py-4 px-6 font-semibold">Đo nhịp thở lồng ngực không chạm</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">❌ Không có</td>
-              <td class="py-4 px-6 text-amber-800 font-medium">⚠️ Bắt buộc mua vớ/đai phụ kiện</td>
-              <td class="py-4 px-6 bg-brand-50 font-black text-emerald-800">✅ Có sẵn (DSP Butterworth 28-75 BPM)</td>
+              <td class="py-3.5 px-5 font-semibold text-white">Đo nhịp thở lồng ngực không chạm</td>
+              <td class="py-3.5 px-5 text-white/50">Không có</td>
+              <td class="py-3.5 px-5 text-white/60">Bắt buộc mua vớ/đai phụ kiện</td>
+              <td class="py-3.5 px-5 bg-white/[0.04] font-semibold text-white border-l border-r border-white/[0.08]">Có sẵn (DSP Butterworth 28-75 BPM)</td>
             </tr>
             <tr>
-              <td class="py-4 px-6 font-semibold">Vùng an toàn 3D tự nới rộng nôi</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">❌ Không có</td>
-              <td class="py-4 px-6 text-amber-800 font-medium">⚠️ Khung chữ nhật thô cứng</td>
-              <td class="py-4 px-6 bg-brand-50 font-black text-emerald-800">✅ Tự động nới rộng ôm trọn đệm bé</td>
+              <td class="py-3.5 px-5 font-semibold text-white">Vùng an toàn 3D tự nới rộng nôi</td>
+              <td class="py-3.5 px-5 text-white/50">Không có</td>
+              <td class="py-3.5 px-5 text-white/60">Khung chữ nhật thô cứng</td>
+              <td class="py-3.5 px-5 bg-white/[0.04] font-semibold text-white border-l border-r border-white/[0.08]">Tự động nới rộng ôm trọn đệm bé</td>
             </tr>
             <tr>
-              <td class="py-4 px-6 font-semibold">Chuyện kể giáo dục đạo đức mỗi ngày</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">❌ Không có</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">❌ Không có</td>
-              <td class="py-4 px-6 bg-brand-50 font-black text-emerald-800">📖 Có kho 365 truyện nhân văn mỗi ngày</td>
+              <td class="py-3.5 px-5 font-semibold text-white">Chuyện kể giáo dục đạo đức mỗi ngày</td>
+              <td class="py-3.5 px-5 text-white/50">Không có</td>
+              <td class="py-3.5 px-5 text-white/50">Không có</td>
+              <td class="py-3.5 px-5 bg-white/[0.04] font-semibold text-white border-l border-r border-white/[0.08]">Kho 365 chuyện nhân văn mỗi ngày</td>
             </tr>
             <tr>
-              <td class="py-4 px-6 font-semibold">Bảo mật hình ảnh phòng ngủ</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">⚠️ Lưu máy chủ nước ngoài</td>
-              <td class="py-4 px-6 text-amber-800 font-medium">⚠️ Lưu Cloud AWS nước ngoài</td>
-              <td class="py-4 px-6 bg-brand-50 font-black text-emerald-800">🔒 100% Cục bộ trên máy tính gia đình</td>
+              <td class="py-3.5 px-5 font-semibold text-white">Bảo mật hình ảnh phòng ngủ</td>
+              <td class="py-3.5 px-5 text-white/50">Lưu máy chủ nước ngoài</td>
+              <td class="py-3.5 px-5 text-white/60">Lưu Cloud AWS nước ngoài</td>
+              <td class="py-3.5 px-5 bg-white/[0.04] font-semibold text-white border-l border-r border-white/[0.08]">100% Cục bộ trên máy tính gia đình</td>
             </tr>
             <tr>
-              <td class="py-4 px-6 font-semibold">Chi phí phần cứng ban đầu</td>
-              <td class="py-4 px-6 font-medium">500.000đ - 900.000đ</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">8.000.000đ - 12.000.000đ</td>
-              <td class="py-4 px-6 bg-brand-50 font-black text-emerald-800">0đ (Tận dụng webcam/laptop/ĐT cũ)</td>
+              <td class="py-3.5 px-5 font-semibold text-white">Chi phí phần cứng ban đầu</td>
+              <td class="py-3.5 px-5 text-white/70">500.000đ - 900.000đ</td>
+              <td class="py-3.5 px-5 text-white/70">8.000.000đ - 12.000.000đ</td>
+              <td class="py-3.5 px-5 bg-white/[0.04] font-semibold text-white border-l border-r border-white/[0.08]">0đ (Tận dụng webcam/laptop/ĐT cũ)</td>
             </tr>
             <tr>
-              <td class="py-4 px-6 font-semibold">Phí duy trì thuê bao (Subscription)</td>
-              <td class="py-4 px-6 font-medium">Miễn phí cơ bản</td>
-              <td class="py-4 px-6 text-rose-600 font-medium">❌ 2.500.000đ - 3.500.000đ / năm</td>
-              <td class="py-4 px-6 bg-brand-50 font-black text-emerald-800">🎉 Tải miễn phí • 14 ngày sau chỉ 49k dùng vĩnh viễn trọn đời</td>
+              <td class="py-3.5 px-5 font-semibold text-white">Phí duy trì thuê bao (Subscription)</td>
+              <td class="py-3.5 px-5 text-white/70">Miễn phí cơ bản</td>
+              <td class="py-3.5 px-5 text-white/70">2.500.000đ - 3.500.000đ / năm</td>
+              <td class="py-3.5 px-5 bg-white/[0.04] font-semibold text-white border-l border-r border-white/[0.08]">Tải miễn phí • 14 ngày sau chỉ 49k dùng vĩnh viễn trọn đời</td>
             </tr>
           </tbody>
         </table>
@@ -1213,28 +1213,25 @@
       </div>
 
       <!-- CẢNH BÁO NGUY HIỂM TỪ CAMERA MẠNG / CLOUD NGOÀI THỊ TRƯỜNG -->
-      <div class="bg-rose-950/40 border-2 border-rose-500/40 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-500/30 pb-4">
-          <div class="flex items-center gap-3">
-            <span class="text-3xl sm:text-4xl">⚠️</span>
-            <div>
-              <h4 class="text-lg sm:text-xl font-black text-rose-300 uppercase tracking-wide">
-                Cảnh Báo: Rủi Ro Khôn Lường Khi Dùng Camera Mạng Bên Ngoài
-              </h4>
-              <p class="text-xs text-rose-200/80">Tại sao ba mẹ tuyệt đối không nên đặt camera kết nối Cloud ngoài thị trường trong phòng ngủ của bé?</p>
-            </div>
+      <div class="bg-[#0e1017] border border-rose-500/30 rounded-2xl p-6 sm:p-8 space-y-6 relative">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
+          <div>
+            <h4 class="text-sm sm:text-base font-bold text-white tracking-tight uppercase">
+              Cảnh Báo: Rủi Ro Khôn Lường Khi Dùng Camera Mạng Bên Ngoài
+            </h4>
+            <p class="text-xs text-white/50">Tại sao ba mẹ tuyệt đối không nên đặt camera kết nối Cloud ngoài thị trường trong phòng ngủ của bé?</p>
           </div>
-          <span class="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-[11px] font-bold border border-rose-500/30 w-fit">
+          <span class="px-2.5 py-0.5 rounded border border-rose-500/30 text-rose-300 text-[10px] font-mono uppercase tracking-wider w-fit">
             Hiểm họa đời tư
           </span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- Rủi ro 1 -->
-          <div class="bg-[#0e1017]/80 border border-rose-500/20 rounded-2xl p-4.5 space-y-2.5">
-            <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
-              <span>🚨</span>
-              <span>Rò Rỉ Video Phòng Ngủ</span>
+          <div class="bg-black/40 border border-white/[0.06] rounded-xl p-4 space-y-2">
+            <span class="text-[10px] font-mono text-white/40 block">01</span>
+            <div class="text-white font-semibold text-xs">
+              Rò Rỉ Video Phòng Ngủ
             </div>
             <p class="text-xs text-white/60 leading-relaxed">
               Camera giá rẻ (Yoosee, Imou, Ezviz...) gửi toàn bộ dữ liệu video lên máy chủ Cloud bên thứ ba (thường ở nước ngoài). Hàng ngàn clip nhạy cảm cảnh mẹ cho con bú, trẻ sơ sinh thay tã đã bị hacker rao bán trên các hội nhóm Telegram và web đen.
@@ -1242,10 +1239,10 @@
           </div>
 
           <!-- Rủi ro 2 -->
-          <div class="bg-[#0e1017]/80 border border-rose-500/20 rounded-2xl p-4.5 space-y-2.5">
-            <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
-              <span>👤</span>
-              <span>Người Lạ Xâm Nhập & Trêu Bé</span>
+          <div class="bg-black/40 border border-white/[0.06] rounded-xl p-4 space-y-2">
+            <span class="text-[10px] font-mono text-white/40 block">02</span>
+            <div class="text-white font-semibold text-xs">
+              Người Lạ Xâm Nhập & Trêu Bé
             </div>
             <p class="text-xs text-white/60 leading-relaxed">
               Với mật khẩu mặc định hoặc lỗ hổng firmware, kẻ xấu từ xa dễ dàng xâm nhập, theo dõi nhất cử nhất động gia đình, thậm chí tự ý bật loa trên camera để nói chuyện, trêu ghẹo dọa nạt bé giữa đêm khuya.
@@ -1253,10 +1250,10 @@
           </div>
 
           <!-- Rủi ro 3 -->
-          <div class="bg-[#0e1017]/80 border border-rose-500/20 rounded-2xl p-4.5 space-y-2.5">
-            <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
-              <span>📶</span>
-              <span>Mất Mạng Là Mất An Toàn</span>
+          <div class="bg-black/40 border border-white/[0.06] rounded-xl p-4 space-y-2">
+            <span class="text-[10px] font-mono text-white/40 block">03</span>
+            <div class="text-white font-semibold text-xs">
+              Mất Mạng Là Mất An Toàn
             </div>
             <p class="text-xs text-white/60 leading-relaxed">
               Camera phụ thuộc hoàn toàn vào internet. Khi nhà mất WiFi, đứt cáp quang biển hoặc máy chủ sập, camera trở nên vô dụng — không còn khả năng phát hiện khi bé nằm sấp hay ngạt thở để báo động.
@@ -1265,18 +1262,15 @@
         </div>
 
         <!-- GIẢI PHÁP ĐỘC QUYỀN CỦA BABYGUARD AI -->
-        <div class="mt-4 p-4.5 rounded-2xl bg-emerald-950/60 border border-emerald-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <span class="text-3xl">🛡️</span>
-            <div>
-              <div class="text-sm font-black text-emerald-300">Lá Chắn Bảo Mật Tuyệt Đối Của BabyGuard AI (100% Local Edge AI)</div>
-              <div class="text-xs text-white/70">
-                Toàn bộ hình ảnh & âm thanh được xử lý trực tiếp trên máy tính tại nhà. <b>KHÔNG BAO GIỜ gửi video lên Cloud của bên thứ ba</b>. Mất mạng internet máy vẫn phát hiện bé khóc và lật úp bình thường. Xem từ xa mã hóa End-to-End điểm-tới-điểm an toàn 100%!
-              </div>
+        <div class="p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div class="space-y-0.5">
+            <div class="font-bold text-white text-xs sm:text-sm">Lá Chắn Bảo Mật Tuyệt Đối Của BabyGuard AI (100% Local Edge AI)</div>
+            <div class="text-[11px] text-white/60 leading-relaxed">
+              Toàn bộ hình ảnh & âm thanh được xử lý trực tiếp trên máy tính tại nhà. <strong>Không bao giờ gửi video lên Cloud</strong>. Mất mạng internet máy vẫn phát hiện bé khóc và lật úp bình thường.
             </div>
           </div>
-          <span class="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs shrink-0 text-center">
-            Cam Kết An Toàn 100%
+          <span class="px-2.5 py-1 rounded border border-emerald-500/30 text-emerald-400 font-mono text-[10px] tracking-wider shrink-0 text-center">
+            100% LOCAL SHIELD
           </span>
         </div>
       </div>
