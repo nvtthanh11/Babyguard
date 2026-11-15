@@ -97,6 +97,97 @@
     .marquee-track-stories:hover, .marquee-track-telegram:hover {
       animation-play-state: paused !important;
     }
+
+    /* Apple Pro Ambient Glow & Specular Accents */
+    .ambient-glow-cyan {
+      position: absolute;
+      width: 550px;
+      height: 550px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.16) 0%, rgba(14, 165, 233, 0.04) 45%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ambient-glow-purple {
+      position: absolute;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.13) 0%, rgba(99, 102, 241, 0.03) 45%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Specular Chamfered Rim Light Border */
+    .pro-card {
+      position: relative;
+      background-color: #0e1017;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pro-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.14) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+    .pro-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.75);
+    }
+    .pro-card:hover::before {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 45%, rgba(255, 255, 255, 0.3) 100%);
+    }
+
+    /* Shimmer Button Sweep */
+    @keyframes shimmerSweep {
+      0% { transform: translateX(-150%) skewX(-20deg); }
+      40%, 100% { transform: translateX(250%) skewX(-20deg); }
+    }
+    .btn-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-shimmer::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+      animation: shimmerSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      pointer-events: none;
+    }
+
+    /* Metallic Hero Text */
+    .metallic-text {
+      background: linear-gradient(180deg, #FFFFFF 20%, #A1A1AA 90%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .metallic-title {
+      background: linear-gradient(180deg, #FFFFFF 25%, #E4E4E7 65%, #A1A1AA 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    /* Breathing Pulse Indicator */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.6; transform: scale(1); filter: drop-shadow(0 0 2px currentColor); }
+      50% { opacity: 1; transform: scale(1.3); filter: drop-shadow(0 0 8px currentColor); }
+    }
+    .pulse-glow {
+      animation: pulseGlow 2.4s ease-in-out infinite;
+    }
   </style>
 </head>
 <body class="bg-[#08090d] text-[#e4e4e7] antialiased selection:bg-[#0e1017]/20 selection:text-white min-h-screen flex flex-col justify-between" style="background-color: #08090d !important; color-scheme: dark !important;">
@@ -173,20 +264,23 @@
 
   <!-- HERO SECTION -->
   <header class="relative pt-10 pb-16 lg:pt-14 lg:pb-20 overflow-hidden border-b border-white/[0.08]">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Ambient Studio Glow behind hero -->
+    <div class="ambient-glow-cyan -top-20 left-1/4 -translate-x-1/2"></div>
+    <div class="ambient-glow-purple -top-10 right-10"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
         
         <!-- LEFT TEXT COLUMN -->
         <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
           
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-white/70 text-[11px] font-mono">
-            <span class="flex h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.1] text-white/80 text-[11px] font-mono shadow-sm">
+            <span class="flex h-1.5 w-1.5 rounded-full bg-emerald-400 pulse-glow"></span>
             <span>Báo Động & Gửi Ảnh Telegram 24/7 Cho Ba Mẹ</span>
           </div>
 
-          <h1 class="hero-title text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold text-white tracking-tight leading-[1.2] pb-1">
-            <span class="block">Không Chỉ Quan Sát Bé —</span>
-            <span class="block text-white/90 mt-1">
+          <h1 class="hero-title text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold text-white tracking-tight leading-[1.18] pb-1">
+            <span class="block metallic-title">Không Chỉ Quan Sát Bé —</span>
+            <span class="block text-white/95 mt-1">
               Cùng Ba Mẹ Nuôi Dạy Con Lớn Khôn
             </span>
           </h1>
@@ -195,48 +289,59 @@
             Hệ sinh thái AI toàn diện: Biến bất kỳ chiếc webcam máy tính bình dân nào thành <strong>mắt thần phát hiện nằm sấp, che ngạt mặt, đo nhịp thở không chạm</strong> và gửi ảnh trực tiếp về Telegram. Đặc biệt, mỗi ngày mang đến <strong>một câu chuyện nhân văn sâu sắc</strong> giúp ba mẹ thắt chặt tình cảm gia đình.
           </p>
 
-          <div class="p-3.5 bg-[#0e1017] border border-white/[0.08] rounded-xl max-w-xl mx-auto lg:mx-0 text-left flex items-start gap-3 text-xs text-white/70 shadow-sm">
-            <span class="text-sm text-white/50 shrink-0 font-mono">01</span>
+          <div class="pro-card p-4 max-w-xl mx-auto lg:mx-0 text-left flex items-start gap-3 text-xs text-white/80 shadow-md">
+            <span class="text-sm text-white/40 shrink-0 font-mono font-bold">01</span>
             <div>
               <strong class="text-white">Kim chỉ nam an toàn tuyệt đối:</strong> <em>"Thà báo nhầm còn hơn bỏ sót."</em> Dù chỉ là một thoáng nghi ngờ bé bị chăn đè hay lật úp, hệ thống lập tức thông báo để ba mẹ an tâm kiểm tra ngay.
             </div>
           </div>
 
           <!-- ACTION BUTTONS -->
-          <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-1">
-            <button onclick="openDownloadModal()" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-sm shadow transition active:scale-95 flex items-center justify-center gap-2">
+          <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-1">
+            <button onclick="openDownloadModal()" class="btn-shimmer w-full sm:w-auto px-7 py-3.5 rounded-full bg-white hover:bg-neutral-100 text-black font-semibold text-sm shadow-[0_0_30px_rgba(255,255,255,0.22)] transition active:scale-95 flex items-center justify-center gap-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
               <span>Tải Dùng Thử 14 Ngày Miễn Phí</span>
             </button>
-            <a href="#author-story" class="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-[#0e1017] hover:bg-white/[0.04] text-white/80 font-medium text-sm border border-white/[0.08] shadow-sm transition flex items-center justify-center">
+            <a href="#author-story" class="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] text-white/90 font-medium text-sm border border-white/[0.12] shadow-sm transition flex items-center justify-center">
               <span>Tâm Sự Người Ba Sáng Lập</span>
             </a>
           </div>
 
-          <!-- TRUST BADGES -->
+          <!-- TRUST BADGES (APPLE PRO METRIC ACCENTS) -->
           <div class="pt-6 border-t border-white/[0.08] grid grid-cols-2 sm:grid-cols-4 gap-3 text-center lg:text-left">
-            <div class="p-3 bg-[#0e1017] rounded-xl border border-white/[0.08]">
-              <div class="text-xl sm:text-2xl font-bold text-white font-mono">0.05s</div>
-              <div class="text-[11px] text-white/50 font-medium mt-0.5">Tốc độ cảnh báo AI</div>
+            <div class="pro-card p-3.5">
+              <div class="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight flex items-center justify-center lg:justify-start gap-1.5">
+                <span class="metallic-text">0.05s</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-glow"></span>
+              </div>
+              <div class="text-[11px] text-white/60 font-medium mt-1">Tốc độ cảnh báo AI</div>
             </div>
-            <div class="p-3 bg-[#0e1017] rounded-xl border border-white/[0.08]">
-              <div class="text-xl sm:text-2xl font-bold text-white font-mono">49.000đ</div>
-              <div class="text-[11px] text-white/50 font-medium mt-0.5">Mua 1 lần dùng trọn đời</div>
+            <div class="pro-card p-3.5">
+              <div class="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight flex items-center justify-center lg:justify-start gap-1.5">
+                <span class="metallic-text">49.000₫</span>
+              </div>
+              <div class="text-[11px] text-white/60 font-medium mt-1">Mua 1 lần dùng trọn đời</div>
             </div>
-            <div class="p-3 bg-[#0e1017] rounded-xl border border-white/[0.08]">
-              <div class="text-xl sm:text-2xl font-bold text-white font-mono">100%</div>
-              <div class="text-[11px] text-white/50 font-medium mt-0.5">Bảo mật trên máy nhà</div>
+            <div class="pro-card p-3.5">
+              <div class="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight flex items-center justify-center lg:justify-start gap-1.5">
+                <span class="metallic-text">100%</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-glow"></span>
+              </div>
+              <div class="text-[11px] text-white/60 font-medium mt-1">Bảo mật trên máy nhà</div>
             </div>
-            <div class="p-3 bg-[#0e1017] rounded-xl border border-white/[0.08]">
-              <div class="text-xl sm:text-2xl font-bold text-white font-mono">0 VNĐ</div>
-              <div class="text-[11px] text-white/50 font-medium mt-0.5">Không phí thuê bao tháng</div>
+            <div class="pro-card p-3.5">
+              <div class="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight flex items-center justify-center lg:justify-start gap-1.5">
+                <span class="metallic-text">0 VNĐ</span>
+              </div>
+              <div class="text-[11px] text-white/60 font-medium mt-1">Không phí thuê bao tháng</div>
             </div>
           </div>
         </div>
 
         <!-- RIGHT MOCKUP: TELEGRAM REALTIME NOTIFICATIONS STREAM -->
         <div class="lg:col-span-5 relative mt-4 lg:mt-0">
-          <div class="relative mx-auto max-w-[340px] sm:max-w-[380px] rounded-[44px] p-3.5 bg-[#08090d] shadow-2xl ring-1 ring-slate-800">
+          <div class="ambient-glow-cyan top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-75 opacity-70"></div>
+          <div class="relative mx-auto max-w-[340px] sm:max-w-[380px] rounded-[44px] p-3.5 bg-[#08090d] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] ring-1 ring-white/10 relative z-10">
             <!-- Dynamic Island -->
             <div class="w-28 h-4 bg-[#0e1017] rounded-full mx-auto mb-3 flex items-center justify-center gap-1.5">
               <div class="w-2 h-2 rounded-full bg-slate-800"></div>
@@ -902,28 +1007,30 @@
   </section>
 
   <!-- SECTION 4: TÍNH NĂNG VƯỢT TRỘI (5S CIRCULAR ROTATING CAROUSEL VỚI ZOOM 130% KHI HOVER) -->
-  <section id="features" class="py-14 sm:py-24 bg-[#0e1017] border-b border-white/[0.08]">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+  <section id="features" class="py-14 sm:py-24 bg-[#0e1017] border-b border-white/[0.08] relative overflow-hidden">
+    <div class="ambient-glow-cyan top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-35"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
       
       <div class="text-center max-w-3xl mx-auto space-y-3">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] text-white/70 text-[11px] font-mono border border-white/[0.08]">
-          Đột Phá Công Nghệ Camera AI
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.03] text-white/80 text-[11px] font-mono border border-white/[0.1] shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-glow"></span>
+          <span>Đột Phá Công Nghệ Camera AI</span>
         </div>
-        <h2 class="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-          <span class="inline-block">Tính Năng Vượt Trội</span>
-          <span class="inline-block">Mắt Thần Bảo Vệ Bé</span>
+        <h2 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          <span class="inline-block metallic-title">Tính Năng Vượt Trội</span>
+          <span class="inline-block text-white/95">Mắt Thần Bảo Vệ Bé</span>
         </h2>
       </div>
 
       <!-- MAIN SPOTLIGHT CONTAINER (Phóng to và bay lên trên) -->
-      <div id="feature-spotlight-box" class="relative max-w-5xl mx-auto rounded-3xl border border-white/[0.08] bg-[#0e1017] p-6 sm:p-10 shadow-2xl transition-all duration-500" title="Rê chuột vào để dừng chuyển slide tự động">
-        
+      <div id="feature-spotlight-box" class="pro-card relative max-w-5xl mx-auto p-6 sm:p-10 shadow-2xl transition-all duration-500 overflow-hidden" title="Rê chuột vào để dừng chuyển slide tự động">
+        <div class="ambient-glow-cyan -top-16 -right-16 opacity-30"></div>
         <!-- Timer progress bar indicator (5s) -->
-        <div class="absolute top-0 left-0 right-0 h-1 bg-white/[0.03] rounded-t-3xl overflow-hidden">
-          <div id="feature-timer-bar" class="h-full bg-white/40 transition-all duration-100 ease-linear" style="width: 0%;"></div>
+        <div class="absolute top-0 left-0 right-0 h-1 bg-white/[0.04] rounded-t-3xl overflow-hidden">
+          <div id="feature-timer-bar" class="h-full bg-white/70 transition-all duration-100 ease-linear shadow-[0_0_8px_rgba(255,255,255,0.5)]" style="width: 0%;"></div>
         </div>
 
-        <div id="feature-spotlight-content" class="feature-spotlight-active grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div id="feature-spotlight-content" class="feature-spotlight-active grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
           <!-- Dynamic Content rendered via JS below -->
         </div>
 
@@ -2126,14 +2233,14 @@
         const thumb = document.createElement('div');
         thumb.className = `feature-thumb-card cursor-pointer py-3.5 px-2 rounded-2xl border text-center transition-all duration-300 relative select-none flex flex-col items-center justify-center min-h-[78px] ${
           idx === currentFeatureIndex 
-            ? 'bg-brand-600 text-white border-brand-500 shadow-lg scale-105 ring-2 ring-brand-400' 
-            : 'bg-[#0e1017] text-white/80 border-white/[0.08] hover:border-brand-400 hover:bg-[#08090d] shadow-sm'
+            ? 'bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105 font-bold' 
+            : 'bg-[#0e1017] text-white/70 border-white/[0.08] hover:border-white/30 hover:bg-white/[0.04] shadow-sm'
         }`;
         thumb.dataset.index = idx;
         
         thumb.innerHTML = `
           <div class="text-2xl mb-1 filter drop-shadow-sm">${feat.icon}</div>
-          <div class="text-[11px] font-bold leading-tight text-center">${feat.shortTitle || feat.title.split('&')[0].replace('AI', '').trim()}</div>
+          <div class="text-[11px] font-bold leading-tight text-center ${idx === currentFeatureIndex ? 'text-black' : 'text-white/80'}">${feat.shortTitle || feat.title.split('&')[0].replace('AI', '').trim()}</div>
         `;
 
         // User requirement: When user hovers on thumbnail icon, zoom 130% and hold until mouse leave!
@@ -2193,7 +2300,7 @@
             <div class="absolute -right-8 -top-8 w-32 h-32 rounded-full blur-2xl opacity-40" style="background: ${feat.glowColor}"></div>
             
             <div class="flex items-center justify-between pb-3 border-b border-white/[0.08] text-[11px] text-white/70">
-              <span class="font-bold text-brand-400">BabyGuard AI Core</span>
+              <span class="font-bold text-white/90 font-mono tracking-wider">BabyGuard AI Core</span>
               <span class="px-2 py-0.5 rounded-full bg-[#0e1017] text-emerald-400 border border-emerald-500/30 font-mono text-[10px]">● Active</span>
             </div>
 
@@ -2217,9 +2324,13 @@
       const thumbs = thumbsGrid.querySelectorAll('.feature-thumb-card');
       thumbs.forEach((th, idx) => {
         if (idx === currentFeatureIndex) {
-          th.className = 'feature-thumb-card cursor-pointer py-3.5 px-2 rounded-2xl border text-center transition-all duration-300 relative select-none flex flex-col items-center justify-center min-h-[78px] bg-brand-600 text-white border-brand-500 shadow-lg scale-105 ring-2 ring-brand-400';
+          th.className = 'feature-thumb-card cursor-pointer py-3.5 px-2 rounded-2xl border text-center transition-all duration-300 relative select-none flex flex-col items-center justify-center min-h-[78px] bg-white text-black border-white shadow-[0_0_25px_rgba(255,255,255,0.3)] scale-105 font-bold';
+          const label = th.querySelector('.text-\\[11px\\]');
+          if (label) { label.classList.remove('text-white/80'); label.classList.add('text-black'); }
         } else {
-          th.className = 'feature-thumb-card cursor-pointer py-3.5 px-2 rounded-2xl border text-center transition-all duration-300 relative select-none flex flex-col items-center justify-center min-h-[78px] bg-[#0e1017] text-white/80 border-white/[0.08] hover:border-brand-400 hover:bg-[#08090d] shadow-sm';
+          th.className = 'feature-thumb-card cursor-pointer py-3.5 px-2 rounded-2xl border text-center transition-all duration-300 relative select-none flex flex-col items-center justify-center min-h-[78px] bg-[#0e1017] text-white/70 border-white/[0.08] hover:border-white/30 hover:bg-white/[0.04] shadow-sm';
+          const label = th.querySelector('.text-\\[11px\\]');
+          if (label) { label.classList.remove('text-black'); label.classList.add('text-white/80'); }
         }
       });
     }
