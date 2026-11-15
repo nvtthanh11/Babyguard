@@ -32,6 +32,13 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+try:
+    from local_ai_crib import LocalCribDetector
+    _local_crib_detector = LocalCribDetector()
+except Exception as _ce:
+    print(f"[WebServer] LocalCribDetector init: {_ce}")
+    _local_crib_detector = None
+
 
 def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, music_player, sleep_tracker, config_path: str, gemini_verifier=None, tunnel_manager=None):
     app = FastAPI(title="BabyGuard AI")
@@ -1511,9 +1518,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
         threading.Thread(target=_bg, daemon=True).start()
 
-    # Luồng chạy ngầm điều phối Đánh Giá Giấc Ngủ Chuẩn AAP 07:00 Sáng & Giám sát Cụm Bất Thường Ban Ngày
+    # Luồng chạy ngầm điều phối Đánh Giá Giấc Ngủ Chuẩn AAP 07:00 Sáng, Giám sát Cụm Bất Thường Ban Ngày & Video Kỷ Niệm Cuối Tháng
     def _start_background_pediatric_scheduler():
         last_anomaly_check_time = 0.0
+        last_montage_check_time = 0.0
         while True:
             try:
                 time.sleep(15)
@@ -1565,6 +1573,45 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                             # Nếu có nguy cơ sặc hoặc ngưng thở, AlertManager đã có sẵn cooldown nội bộ
                             if alert_manager:
                                 alert_manager.trigger_event("cough", message=anomaly.get("reason"), extra_info=anomaly.get("counts"))
+
+                # 3. TỰ ĐỘNG TỔNG HỢP VIDEO KỶ NIỆM CUỐI THÁNG (Flipbook Monthly Video)
+                if (now_t - last_montage_check_time) >= 300.0:
+                    last_montage_check_time = now_t
+                    try:
+                        import calendar
+                        _, last_day = calendar.monthrange(now_dt.year, now_dt.month)
+                        target_month_str = None
+                        if now_dt.day == last_day and now_dt.hour >= 20:
+                            target_month_str = now_dt.strftime("%Y-%m")
+                        elif now_dt.day == 1 and now_dt.hour < 12:
+                            prev_month_date = now_dt.replace(day=1) - timedelta(days=1)
+                            target_month_str = prev_month_date.strftime("%Y-%m")
+
+                        if target_month_str:
+                            cfg = load_config()
+                            last_done = cfg.get("last_monthly_montage_done", "")
+                            if target_month_str != last_done:
+                                print(f"[WebServer] 🎬 Kích hoạt tự động tổng hợp Video Kỷ Niệm tháng {target_month_str}...")
+                                m_pat = os.path.join(BASE_DIR, "moments", f"{target_month_str}-*", "*.jpg")
+                                all_m = sorted([p for p in glob.glob(m_pat) if "rejected_backup" not in p])
+                                if len(all_m) >= 2 and video_recorder:
+                                    step = max(1, len(all_m) // 50)
+                                    selected = all_m[::step][:50]
+                                    m_year, m_month = target_month_str.split("-")
+                                    m_title = f"Bé A Siu - Kỷ Niệm Tháng {m_month}/{m_year}"
+                                    res_m = video_recorder.create_montage_video(
+                                        image_paths=selected,
+                                        title=m_title,
+                                        include_music=True
+                                    )
+                                    if res_m.get("success") and alert_manager and alert_manager.is_configured():
+                                        mp4_f = os.path.join(video_recorder.recordings_dir, res_m["filename"])
+                                        cap = f"🎬 <b>TỔNG KẾT THÁNG {m_month}/{m_year}: VIDEO KỶ NIỆM BÉ A SIU</b>\n✨ Được tạo tự động từ {res_m['count']} khoảnh khắc đẹp nhất kèm nhạc ru Brahms Lullaby."
+                                        alert_manager.send_telegram_video(mp4_f, cap, event_type="montage", force=True)
+                                cfg["last_monthly_montage_done"] = target_month_str
+                                save_config(cfg)
+                    except Exception as me:
+                        print(f"[WebServer] Lỗi kiểm tra video kỷ niệm cuối tháng: {me}")
             except Exception as se:
                 print(f"[WebServer] Lỗi background pediatric scheduler: {se}")
 
@@ -3633,13 +3680,63 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
     @app.post("/api/gemini/auto-calibrate")
     def auto_calibrate_crib():
-        if gemini_verifier is None:
-            return {"success": False, "error": "Module Gemini chưa được khởi tạo."}
         frame = vision_tracker.get_enhanced_low_light_frame() if hasattr(vision_tracker, "get_enhanced_low_light_frame") else None
         if frame is None:
             frame = vision_tracker.get_latest_frame(annotated=False)
         if frame is None:
             return {"success": False, "error": "Chưa nhận được khung hình từ camera."}
+
+        # 1. ƯU TIÊN SỐ 1: Quét nôi tức thì bằng AI Local Edge (YOLOv8) - 0 Cloud, 0 độ trễ, không tốn quota API
+        if _local_crib_detector is not None and _local_crib_detector.is_ready():
+            try:
+                local_res = _local_crib_detector.detect_crib_and_objects(frame)
+                if local_res.get("crib_found") and local_res.get("crib_box"):
+                    h, w = frame.shape[:2]
+                    bx1, by1, bx2, by2 = local_res["crib_box"]
+                    # Nới nhẹ 3% biên an toàn
+                    pad_x = int((bx2 - bx1) * 0.03)
+                    pad_y = int((by2 - by1) * 0.03)
+                    bx1 = max(0, bx1 - pad_x)
+                    by1 = max(0, by1 - pad_y)
+                    bx2 = min(w, bx2 + pad_x)
+                    by2 = min(h, by2 + pad_y)
+
+                    clean_poly = [
+                        [round(bx1 / w, 3), round(by1 / h, 3)],
+                        [round(bx2 / w, 3), round(by1 / h, 3)],
+                        [round(bx2 / w, 3), round(by2 / h, 3)],
+                        [round(bx1 / w, 3), round(by2 / h, 3)]
+                    ]
+                    
+                    if hasattr(vision_tracker, "_commit_safe_zone"):
+                        vision_tracker._commit_safe_zone(clean_poly)
+                    else:
+                        cfg = load_config()
+                        cfg["safe_zone_polygon"] = clean_poly
+                        cfg["safe_zone_top"] = round(by1 / h, 3)
+                        cfg["safe_zone_bottom"] = round(by2 / h, 3)
+                        cfg["safe_zone_left"] = round(bx1 / w, 3)
+                        cfg["safe_zone_right"] = round(bx2 / w, 3)
+                        save_config(cfg)
+                        
+                    return {
+                        "success": True,
+                        "source": "Local Edge AI (YOLOv8)",
+                        "message": "Đã tự động khóa vị trí nôi bằng AI Local trên máy tính (0 tốn cloud, 0 độ trễ)!",
+                        "safe_zone": {
+                            "polygon": clean_poly,
+                            "top": round(by1 / h, 3),
+                            "bottom": round(by2 / h, 3),
+                            "left": round(bx1 / w, 3),
+                            "right": round(bx2 / w, 3)
+                        }
+                    }
+            except Exception as le:
+                print(f"[WebServer] LocalCribDetector gặp ngoại lệ ({le}), chuyển sang Gemini dự phòng...")
+
+        # 2. DỰ PHÒNG: Nếu AI Local chưa nhận diện được thì mới gọi Gemini Cloud
+        if gemini_verifier is None:
+            return {"success": False, "error": "Chưa tìm thấy nôi tự động và module Gemini chưa sẵn sàng."}
         res = gemini_verifier.auto_calibrate_crib(frame)
         if res.get("success") and "safe_zone" in res:
             sz = res["safe_zone"]

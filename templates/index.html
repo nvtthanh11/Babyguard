@@ -127,6 +127,33 @@
             50% { opacity: .4; }
         }
 
+        /* Apple Pro Specular Rim Light & Ambient Glow */
+        .pro-card-glow {
+            position: relative;
+        }
+        .pro-card-glow::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.12) 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            z-index: 25;
+        }
+        .ambient-glow-stage {
+            position: absolute;
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.14) 0%, rgba(16, 185, 129, 0.03) 50%, transparent 70%);
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
         /* =========================================================================
            LIGHT THEME OVERRIDES (High-Contrast Medical / Apple Health Style)
            ========================================================================= */
@@ -386,8 +413,9 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-6 items-start">
                 
                 <!-- Main Video Stream Frame (col-span-2) -->
-                <div class="lg:col-span-2 space-y-3 sm:space-y-4">
-                    <div class="bg-cardbg rounded-2xl sm:rounded-3xl overflow-hidden border border-bordercol shadow-2xl relative">
+                <div class="lg:col-span-2 space-y-3 sm:space-y-4 relative">
+                    <div class="ambient-glow-stage -top-10 -left-10 opacity-70"></div>
+                    <div class="bg-cardbg rounded-2xl sm:rounded-3xl overflow-hidden border border-bordercol shadow-2xl relative pro-card-glow z-10">
                         
                         <!-- HUD Overlays on Top of Video -->
                         <div class="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-20 flex justify-between items-start pointer-events-none gap-2">

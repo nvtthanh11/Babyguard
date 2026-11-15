@@ -36,7 +36,13 @@ CYTHON_MODULES = [
     "license_manager.py",
     "auto_updater.py",
     "clinical_evaluator.py",
-    "web_server.py"
+    "web_server.py",
+    "local_ai_crib.py",
+    "local_ai_depth.py",
+    "local_ai_face.py",
+    "local_ai_audio.py",
+    "flipbook_maker.py",
+    "ptz_controller.py"
 ]
 
 ASSET_DIRS = [
@@ -449,8 +455,10 @@ Website chính thức: https://babyguard.site
                 rel_inside = os.path.relpath(full_path, COMMERCIAL_DIR)
                 zipf.write(full_path, os.path.join("BabyGuard_AI_v2.0_Commercial", rel_inside))
 
-    # Sao chép vào thư mục static để phục vụ tải về trực tiếp
+    # Sao chép vào thư mục static và docs/download để phục vụ tải về trực tiếp
     static_dir = os.path.join(ROOT_DIR, "static")
+    docs_download_dir = os.path.join(ROOT_DIR, "docs", "download")
+    os.makedirs(docs_download_dir, exist_ok=True)
     if os.path.exists(static_dir):
         down_dir = os.path.join(static_dir, "download")
         os.makedirs(down_dir, exist_ok=True)
@@ -458,10 +466,13 @@ Website chính thức: https://babyguard.site
             if os.path.exists(z):
                 shutil.copyfile(z, os.path.join(static_dir, os.path.basename(z)))
                 shutil.copyfile(z, os.path.join(down_dir, os.path.basename(z)))
+                # Đồng thời cập nhật docs/download cho máy chủ web
+                shutil.copyfile(z, os.path.join(docs_download_dir, os.path.basename(z)))
         # Đồng thời tạo bản sao BabyGuard_AI.zip trong static
         if os.path.exists(ZIP_OUTPUT):
             shutil.copyfile(ZIP_OUTPUT, os.path.join(static_dir, "BabyGuard_AI.zip"))
             shutil.copyfile(ZIP_OUTPUT, os.path.join(down_dir, "BabyGuard_AI.zip"))
+            shutil.copyfile(ZIP_OUTPUT, os.path.join(docs_download_dir, "BabyGuard_AI.zip"))
 
     print("=" * 70)
     print("🎉 ĐÓNG GÓI THƯƠNG MẠI HOÀN TẤT THÀNH CÔNG!")

@@ -25,6 +25,11 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+try:
+    from local_ai_audio import LocalAcousticFilter
+except ImportError:
+    LocalAcousticFilter = None
+
 
 class AudioCryDetector:
     def __init__(self, model_path: str, device_index: int = None, sample_rate: int = 16000, 
@@ -45,6 +50,9 @@ class AudioCryDetector:
         self.cry_alert_enabled = cry_alert_enabled
         self.cough_alert_enabled = cough_alert_enabled
         self.choke_alert_enabled = choke_alert_enabled
+        
+        # Local Edge AI VAD Filter
+        self.acoustic_filter = LocalAcousticFilter() if LocalAcousticFilter is not None else None
         
         # Audio buffer (holds 15600 samples = ~0.975s for YAMNet)
         self.buffer_size = 15600
@@ -242,6 +250,11 @@ class AudioCryDetector:
 
                     # BỘ LỌC CHỐNG BÁO ĐỘNG GIẢ TIẾNG NGƯỜI LỚN NÓI CHUYỆN:
                     is_adult_speech = (raw_speech >= 0.20) and (raw_speech >= raw_cry * 0.88) and (infant_cry < 0.12)
+                    if not is_adult_speech and getattr(self, "acoustic_filter", None) is not None and self.acoustic_filter.is_ready():
+                        vad_chunk = waveform[:512] if len(waveform) >= 512 else np.pad(waveform, (0, 512 - len(waveform)))
+                        vad_res = self.acoustic_filter.process_audio_chunk(vad_chunk)
+                        if vad_res.get("adult_speaking") and infant_cry < 0.16:
+                            is_adult_speech = True
 
                     if is_adult_speech:
                         cal_cry = 0.0

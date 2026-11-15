@@ -18,6 +18,21 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+try:
+    from local_ai_face import LocalFaceAnalyzer
+except ImportError:
+    LocalFaceAnalyzer = None
+
+try:
+    from local_ai_depth import LocalDepthEstimator
+except ImportError:
+    LocalDepthEstimator = None
+
+try:
+    from local_ai_crib import LocalCribDetector
+except ImportError:
+    LocalCribDetector = None
+
 
 class VisionTracker:
     def __init__(self, model_path: str = None, camera_index: int = 0,
@@ -162,6 +177,13 @@ class VisionTracker:
                 print("[VisionTracker] Loaded YuNet Face Detector successfully.")
             except Exception as e:
                 print(f"[VisionTracker] Warning: YuNet Face Detector failed: {e}")
+
+        # Local Edge AI Components
+        self.local_face = LocalFaceAnalyzer() if LocalFaceAnalyzer is not None else None
+        self.local_depth = LocalDepthEstimator() if LocalDepthEstimator is not None else None
+        self.local_crib = LocalCribDetector() if LocalCribDetector is not None else None
+        self.last_depth_check_time = 0.0
+        self.last_smile_time = 0.0
         
         # Select device (Apple Silicon Metal MPS or CPU)
         self.device = "mps" if torch.backends.mps.is_available() else "cpu"
@@ -1253,6 +1275,17 @@ class VisionTracker:
             # Cảnh báo Ngưng thở bệnh lý (Apnea) chuẩn AAP/WHO: Chỉ báo động đỏ khi ngưng thở kéo dài >= 20s và lồng ngực phẳng hoàn toàn
             still_time = now_t - getattr(self, "last_breath_peak_time", now_t)
             if still_time >= 20.0 and len(self.chest_history) >= 35:
+                # Nếu AI Local nhận diện mắt bé đang mở nhìn quanh -> Bé hoàn toàn tỉnh táo, hoãn báo động ngưng thở giả
+                if getattr(self, "local_face", None) is not None and self.local_face.is_ready():
+                    try:
+                        face_eye = self.local_face.analyze_face(frame, getattr(self, "last_baby_box", None))
+                        if face_eye.get("is_awake", False):
+                            self.last_breath_peak_time = now_t
+                            self.breathing_status = "Bé đang thức (Mắt mở)"
+                            return True
+                    except Exception:
+                        pass
+
                 vals = [v for t, v in self.chest_history]
                 if float(np.std(vals)) < 0.015:
                     self._trigger_high_risk_double_check(frame, "apnea", "Không phát hiện vi cử động lồng ngực kéo dài >= 20 giây (Nguy cơ Ngưng thở Apnea)", dispatch_callback=self.on_apnea_callback)
@@ -1352,6 +1385,21 @@ class VisionTracker:
             cy2 = min(fh, fy2 + pad_h)
             if (cx2 - cx1) >= 40 and (cy2 - cy1) >= 40:
                 airway_crop = frame_copy[cy1:cy2, cx1:cx2].copy()
+
+        # 1. THẨM ĐỊNH ĐỘ SÂU 3D BẰNG LOCAL AI (Depth Anything V2) TRƯỚC KHI GỌI CLOUD
+        if alert_type == "danger_zone" and getattr(self, "local_depth", None) is not None and self.local_depth.is_ready():
+            try:
+                dmap = self.local_depth.estimate_depth(frame_copy)
+                c_res = self.local_depth.check_climbing_risk_3d(dmap, self.last_baby_box, getattr(self, "crib_box", None))
+                if not c_res.get("is_climbing", False):
+                    # Bé vẫn nằm sát mặt đệm an toàn, không có nguy cơ trèo ngã 3D -> Dập báo động giả cục bộ ngay tức thì!
+                    print(f"[VisionTracker] 🛡️ Depth Anything 3D AI xác nhận bé vẫn nằm an toàn trên nệm (điểm nâng {c_res.get('elevation_score')}). Dập báo động vượt nôi cục bộ!")
+                    self.is_near_edge = False
+                    self.danger_zone_frame_count = 0
+                    self.pending_alert_verifications[alert_type] = False
+                    return
+            except Exception as e_depth:
+                pass
 
         def _worker():
             try:
@@ -1528,10 +1576,19 @@ class VisionTracker:
         except Exception:
             thumb_gray = None
 
-        # 1. Đo lường biến đổi biểu cảm khuôn mặt từ 5 điểm mốc YuNet (Mắt, Mũi, 2 Khóe Miệng)
+        # 1. Đo lường biến đổi biểu cảm khuôn mặt từ 5 điểm mốc YuNet (Mắt, Mũi, 2 Khóe Miệng) & LocalFaceAnalyzer
         landmarks = baby_face_info.get("landmarks")
         has_special_expression = False
         curr_geom = None
+
+        if getattr(self, "local_face", None) is not None and self.local_face.is_ready():
+            try:
+                face_ana = self.local_face.analyze_face(portrait_crop)
+                if face_ana.get("is_smiling"):
+                    has_special_expression = True
+                    print(f"[VisionTracker] 😊 AI Local phát hiện nụ cười bé (Điểm {face_ana.get('smile_score')}) -> Kích hoạt lưu ảnh & chuyển Gemini thẩm định!")
+            except Exception as e_face:
+                pass
         if landmarks is not None and len(landmarks) == 5:
             try:
                 re, le, nose, rm, lm = [np.array(p, dtype=np.float32) for p in landmarks]
@@ -1651,6 +1708,30 @@ class VisionTracker:
             return
 
         need_init_crib = not getattr(self, "initial_crib_calibrated", False)
+        # 1. ƯU TIÊN SỐ 1: Tự động định vị Nôi bằng AI Local Edge (YOLOv8) - Không gọi Gemini
+        if need_init_crib and getattr(self, "local_crib", None) is not None and self.local_crib.is_ready():
+            try:
+                crib_res = self.local_crib.detect_crib_and_objects(raw_frame)
+                if crib_res.get("crib_found") and crib_res.get("crib_box"):
+                    bx1, by1, bx2, by2 = crib_res["crib_box"]
+                    pad_x = int((bx2 - bx1) * 0.03)
+                    pad_y = int((by2 - by1) * 0.03)
+                    bx1 = max(0, bx1 - pad_x)
+                    by1 = max(0, by1 - pad_y)
+                    bx2 = min(w, bx2 + pad_x)
+                    by2 = min(h, by2 + pad_y)
+                    clean_poly = [
+                        [round(bx1 / w, 3), round(by1 / h, 3)],
+                        [round(bx2 / w, 3), round(by1 / h, 3)],
+                        [round(bx2 / w, 3), round(by2 / h, 3)],
+                        [round(bx1 / w, 3), round(by2 / h, 3)]
+                    ]
+                    self._commit_safe_zone(clean_poly)
+                    self.initial_crib_calibrated = True
+                    print("[VisionTracker] 🎯 Đã tự động khóa vị trí Nôi bằng AI Local Edge (YOLOv8) thành công!")
+                    return
+            except Exception as e_crib:
+                print(f"[VisionTracker] Lỗi tự động căn nôi cục bộ: {e_crib}")
         local_uncertain = (not self.baby_detected) or (getattr(self, "lost_frames", 0) > 3)
         pose_stabilized = getattr(self, "pose_changed_and_stabilized", False)
         if not self.gemini_verifier.should_run_tracking_audit(
