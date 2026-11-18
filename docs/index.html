@@ -197,12 +197,12 @@
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2 text-center sm:text-left">
       <div class="flex items-center justify-center sm:justify-start gap-2">
         <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-        <span class="font-mono text-white/50 uppercase tracking-wider text-[10px] sm:text-[11px]">Sứ Mệnh:</span>
-        <span class="font-medium text-white text-[11px] sm:text-xs">"Thà báo nhầm còn hơn bỏ sót."</span>
+        <span class="font-mono text-white/50 uppercase tracking-wider text-[10px] sm:text-[11px]" data-i18n="mission_label">Sứ Mệnh:</span>
+        <span class="font-medium text-white text-[11px] sm:text-xs" data-i18n="mission_text">"Thà báo nhầm còn hơn bỏ sót."</span>
       </div>
       <div class="flex items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-white/50">
-        <span class="hidden md:inline">Bảo vệ bé 24/7 • Bắn tin tức thì qua Telegram của ba mẹ</span>
-        <a href="#download" class="px-2.5 py-0.5 rounded bg-white/[0.08] hover:bg-white/[0.15] text-white font-medium transition text-[10px] sm:text-xs border border-white/[0.1]">
+        <span class="hidden md:inline" data-i18n="mission_sub">Bảo vệ bé 24/7 • Bắn tin tức thì qua Telegram của ba mẹ</span>
+        <a href="#download" class="px-2.5 py-0.5 rounded bg-white/[0.08] hover:bg-white/[0.15] text-white font-medium transition text-[10px] sm:text-xs border border-white/[0.1]" data-i18n="trial_btn">
           Dùng Thử 14 Ngày →
         </a>
       </div>
@@ -237,8 +237,20 @@
 
       <!-- CTA & MOBILE TOGGLE -->
       <div class="flex items-center gap-2 sm:gap-3">
+        <!-- LANGUAGE TOGGLE -->
+        <button id="langToggleBtn" onclick="toggleLanguage()" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.12] text-white/90 text-xs font-semibold transition border border-white/[0.1] cursor-pointer" aria-label="Đổi ngôn ngữ">
+          <span id="langFlag">🇻🇳</span>
+          <span id="langText" class="font-mono text-[11px]">VI</span>
+        </button>
+
+        <!-- ADMIN LINK -->
+        <a href="/admin.html" class="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-white/50 hover:text-white text-[11px] font-mono transition border border-white/[0.06]" title="Trung tâm quản trị nội dung website">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Admin</span>
+        </a>
+
         <button onclick="openDownloadModal()" class="hidden xs:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white hover:bg-neutral-200 text-black font-semibold text-xs transition active:scale-95 shadow-sm">
-          <span>Tải Về Ngay</span>
+          <span data-i18n="nav_download">Tải Về Ngay</span>
         </button>
 
         <!-- Hamburger Button -->
@@ -1846,7 +1858,7 @@
             </div>
           </div>
           <div class="pt-6">
-            <a href="https://cam.babyguard.site/download/windows-app" class="w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-xs sm:text-sm text-center shadow flex items-center justify-center gap-2 active:scale-95 transition">
+            <a href="/download/BabyGuard_Windows.zip" class="w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-xs sm:text-sm text-center shadow flex items-center justify-center gap-2 active:scale-95 transition">
               <span>TẢI BỘ CÀI WINDOWS (.ZIP)</span>
             </a>
           </div>
@@ -1871,7 +1883,7 @@
             </div>
           </div>
           <div class="pt-6 space-y-2.5">
-            <a href="https://cam.babyguard.site/download/BabyGuard_Mac.pkg" onclick="try{navigator.clipboard.writeText('curl -fsSL https://babyguard.site/install-mac | bash');}catch(e){}" class="w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-xs sm:text-sm text-center shadow flex items-center justify-center gap-2 active:scale-95 transition">
+            <a href="/download/BabyGuard_Mac.pkg" onclick="try{navigator.clipboard.writeText('curl -fsSL https://babyguard.site/install-mac | bash');}catch(e){}" class="w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black font-semibold text-xs sm:text-sm text-center shadow flex items-center justify-center gap-2 active:scale-95 transition">
               <span>TẢI GÓI CÀI ĐẶT MAC (.PKG)</span>
             </a>
             <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] text-[10px] space-y-1.5">
@@ -2046,11 +2058,12 @@
         <div class="md:col-span-4 space-y-3">
           <h5 class="text-white font-bold text-sm">Chính Sách & Pháp Lý</h5>
           <ul class="space-y-2 text-white/60">
-            <li><a href="/policy#medical-disclaimer" class="hover:text-white transition">Khuyến Cáo Y Tế & Miễn Trừ Trách Nhiệm</a></li>
-            <li><a href="/policy#privacy-policy" class="hover:text-white transition">Chính Sách Bảo Mật Trẻ Em (COPPA)</a></li>
-            <li><a href="/policy#terms-of-service" class="hover:text-white transition">Điều Khoản Dịch Vụ & Bản Quyền</a></li>
-            <li><a href="/policy#refund-support" class="hover:text-white transition">Chính Sách Dùng Thử 14 Ngày & Hoàn Tiền</a></li>
-            <li><a href="/policy#system-requirements" class="hover:text-white transition">Yêu Cầu Cấu Hình Thiết Bị Tối Thiểu</a></li>
+            <li><a href="/policy.html#medical-disclaimer" class="hover:text-white transition">Khuyến Cáo Y Tế & Miễn Trừ Trách Nhiệm</a></li>
+            <li><a href="/policy.html#privacy-policy" class="hover:text-white transition">Chính Sách Bảo Mật Trẻ Em (Nghị định 13/2023)</a></li>
+            <li><a href="/policy.html#terms-of-service" class="hover:text-white transition">Điều Khoản Cấp Phép Bản Quyền (EULA)</a></li>
+            <li><a href="/policy.html#support-policy" class="hover:text-white transition">Cam Kết Dịch Vụ & Hỗ Trợ Kỹ Thuật</a></li>
+            <li><a href="/policy.html#system-requirements" class="hover:text-white transition">Yêu Cầu Cấu Hình Thiết Bị Tối Thiểu</a></li>
+            <li><a href="/admin.html" class="hover:text-white text-blue-400 font-mono transition">⚙️ Trung Tâm Quản Trị (Admin Studio)</a></li>
             <li><a href="https://t.me/nvtthanh11" target="_blank" class="hover:text-white transition">Kênh hỗ trợ kỹ thuật Telegram 24/7</a></li>
           </ul>
         </div>
@@ -2062,11 +2075,11 @@
           Bản quyền © 2026 BabyGuard AI. Phát triển với sự tận tâm vì trẻ em Việt Nam.
         </div>
         <div class="flex flex-wrap gap-4">
-          <a href="/policy#medical-disclaimer" class="hover:text-white/70 transition">Miễn Trừ Y Tế</a>
-          <a href="/policy#privacy-policy" class="hover:text-white/70 transition">Bảo Mật Quyền Riêng Tư</a>
-          <a href="/policy#terms-of-service" class="hover:text-white/70 transition">Điều Khoản</a>
-          <a href="/policy#refund-support" class="hover:text-white/70 transition">Hoàn Tiền</a>
-          <a href="/policy#system-requirements" class="hover:text-white/70 transition">Cấu Hình Tối Thiểu</a>
+          <a href="/policy.html#medical-disclaimer" class="hover:text-white/70 transition">Miễn Trừ Y Tế</a>
+          <a href="/policy.html#privacy-policy" class="hover:text-white/70 transition">Bảo Mật Quyền Riêng Tư</a>
+          <a href="/policy.html#terms-of-service" class="hover:text-white/70 transition">Điều Khoản EULA</a>
+          <a href="/policy.html#support-policy" class="hover:text-white/70 transition">Hỗ Trợ Kỹ Thuật</a>
+          <a href="/policy.html#system-requirements" class="hover:text-white/70 transition">Cấu Hình</a>
         </div>
       </div>
 
@@ -2657,10 +2670,10 @@
           <div class="space-y-2 pt-2">
             <div class="text-xs font-bold text-white">Tải Ngay Bộ Cài Đặt Phù Hợp:</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <a href="https://cam.babyguard.site/download/windows-app" class="py-3 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-900/30 hover:from-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
+              <a href="/download/BabyGuard_Windows.zip" class="py-3 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-900/30 hover:from-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
                 <span>🪟 Tải Cho Windows (.ZIP)</span>
               </a>
-              <a href="https://cam.babyguard.site/download/BabyGuard_Mac.pkg" class="py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-900/30 hover:from-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
+              <a href="/download/BabyGuard_Mac.pkg" class="py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-900/30 hover:from-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
                 <span>🍏 Tải Cho Mac (.PKG)</span>
               </a>
             </div>
@@ -2900,7 +2913,7 @@
               📦 Bản cài đặt đầy đủ • Bấm đúp file .bat
             </div>
           </div>
-          <a href="https://cam.babyguard.site/download/windows-app" class="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-900/30 hover:from-blue-500 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 transition active:scale-95">
+          <a href="/download/BabyGuard_Windows.zip" class="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-900/30 hover:from-blue-500 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 transition active:scale-95">
             <span>⬇️ TẢI BỘ CÀI WINDOWS (.ZIP)</span>
           </a>
         </div>
@@ -2924,7 +2937,7 @@
             </div>
           </div>
           <div class="space-y-1.5">
-            <a href="https://cam.babyguard.site/download/BabyGuard_Mac.pkg" class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-900/30 hover:from-emerald-500 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 border border-emerald-500/40 transition active:scale-95">
+            <a href="/download/BabyGuard_Mac.pkg" class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-900/30 hover:from-emerald-500 text-white font-bold text-xs text-center shadow flex items-center justify-center gap-1.5 border border-emerald-500/40 transition active:scale-95">
               <span>🍏 TẢI BẢN CÀI TỰ ĐỘNG (.PKG)</span>
             </a>
           </div>
@@ -2971,6 +2984,64 @@
 
     </div>
   </div>
+
+  <!-- MULTI-LANGUAGE SCRIPT (VI / EN) -->
+  <script>
+    const landingI18n = {
+      vi: {
+        nav_download: "Tải Về Ngay",
+        mission_label: "Sứ Mệnh:",
+        mission_text: "\"Thà báo nhầm còn hơn bỏ sót.\"",
+        mission_sub: "Bảo vệ bé 24/7 • Bắn tin tức thì qua Telegram của ba mẹ",
+        trial_btn: "Dùng Thử 14 Ngày →",
+        hero_tag: "AN TOÀN CHO BÉ • BẢO MẬT GIA ĐÌNH 100% LOCAL",
+        hero_h1: "Bảo vệ bé yêu.<br><span class=\"text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400\">Bảo mật tuyệt đối.</span>",
+        hero_desc: "Hệ thống AI giám sát giấc ngủ, đo nhịp thở không chạm, chống nằm sấp và nhận diện tiếng khóc. Toàn bộ hình ảnh xử lý trực tiếp trên máy tính tại phòng ngủ — Tuyệt đối không bao giờ đưa video riêng tư của con lên Cloud.",
+        sec_title: "Lá Chắn Bảo Mật Tuyệt Đối Của BabyGuard AI (100% Local Edge AI)",
+        sec_desc: "Toàn bộ thuật toán AI phân tích hình ảnh và âm thanh trực tiếp trên chip máy tính tại phòng ngủ. KHÔNG BAO GIỜ gửi video lên Cloud của bên thứ ba. Mất mạng internet máy vẫn phát hiện bé khóc và lật úp hú còi báo động bình thường. Luồng xem từ xa trên điện thoại được mã hóa End-to-End điểm-tới-điểm bảo mật tuyệt đối!"
+      },
+      en: {
+        nav_download: "Download Now",
+        mission_label: "Mission:",
+        mission_text: "\"Better a false alarm than a missed hazard.\"",
+        mission_sub: "24/7 Infant Protection • Instant Telegram Alerts to Parents",
+        trial_btn: "14-Day Free Trial →",
+        hero_tag: "INFANT SAFETY • 100% LOCAL ON-DEVICE PRIVACY",
+        hero_h1: "Protect Your Baby.<br><span class=\"text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400\">Zero Cloud Exposure.</span>",
+        hero_desc: "Ambient AI infant monitor: optical non-contact respiration tracking, prone rollover prevention, and acoustic cry classification. 100% processed locally on your home computer — your nursery video never touches third-party clouds.",
+        sec_title: "Absolute Privacy Shield by BabyGuard AI (100% Local Edge AI)",
+        sec_desc: "All computer vision and acoustic models run entirely on your local machine. Video streams are NEVER uploaded to third-party cloud servers. Works seamlessly offline without internet. Remote smartphone viewing is protected by End-to-End Encryption!"
+      }
+    };
+
+    let currentLandingLang = localStorage.getItem("babyguard_lang") || "vi";
+
+    function applyLandingLanguage(lang) {
+      currentLandingLang = lang;
+      localStorage.setItem("babyguard_lang", lang);
+      const dict = landingI18n[lang] || landingI18n.vi;
+
+      const flag = document.getElementById("langFlag");
+      const text = document.getElementById("langText");
+      if (flag) flag.innerText = lang === "vi" ? "🇻🇳" : "🇬🇧";
+      if (text) text.innerText = lang === "vi" ? "VI" : "EN";
+
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const k = el.getAttribute("data-i18n");
+        if (dict[k]) el.innerHTML = dict[k];
+      });
+
+      document.documentElement.lang = lang;
+    }
+
+    function toggleLanguage() {
+      applyLandingLanguage(currentLandingLang === "vi" ? "en" : "vi");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      applyLandingLanguage(currentLandingLang);
+    });
+  </script>
 
 </body>
 </html>

@@ -23,6 +23,9 @@ health_events.json
 *.zip
 *.dmg
 *.pkg
+!docs/download/BabyGuard_Mac.pkg
+!docs/download/BabyGuard_Windows.zip
+!docs/download/app.apk
 static/download/
 
 # Sensitive personal configurations (Keep config.example.json)

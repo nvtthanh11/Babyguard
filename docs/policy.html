@@ -6,16 +6,14 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0b0f17">
   <meta name="supported-color-schemes" content="dark">
-  <title>Điều Khoản Sử Dụng & Chính Sách Bảo Mật | BabyGuard AI</title>
-  <meta name="description" content="Chính sách bảo mật dữ liệu trẻ em, sơ đồ kết nối trực tiếp nội bộ, tuyên bố miễn trừ y tế và cấu hình thiết bị tối thiểu của BabyGuard AI.">
+  <title>Điều Khoản Dịch Vụ & Chính Sách Bảo Mật | BabyGuard AI</title>
+  <meta name="description" content="Chính sách bảo vệ dữ liệu trẻ em theo Nghị định 13/2023/NĐ-CP, kiến trúc On-Device Edge AI, tuyên bố miễn trừ y tế và quy định cấp phép của BabyGuard AI.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍼</text></svg>">
   
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -24,6 +22,7 @@
         extend: {
           fontFamily: {
             sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
           }
         }
       }
@@ -31,264 +30,219 @@
   </script>
   <style>
     :root, html { background-color: #0b0f17 !important; color-scheme: dark !important; }
-    body {
-      background-color: #0b0f17 !important;
-      color: #cbd5e1 !important;
-      color-scheme: dark !important;
-    }
-    .anchor-offset {
-      scroll-margin-top: 90px;
-    }
-    /* Hide scrollbars */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
+    body { background-color: #0b0f17 !important; color: #cbd5e1 !important; color-scheme: dark !important; }
+    .anchor-offset { scroll-margin-top: 90px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body class="font-sans antialiased selection:bg-slate-700 selection:text-white min-h-screen flex flex-col justify-between">
 
-  <!-- TOP BAR / HEADER (TỐI GIẢN) -->
+  <!-- HEADER -->
   <header class="sticky top-0 z-40 bg-[#0b0f17]/95 backdrop-blur border-b border-slate-800/80">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       
-      <!-- LOGO -->
       <a href="/" class="flex items-center gap-2.5 group">
         <span class="text-2xl">🍼</span>
         <div>
           <span class="font-bold text-base text-white tracking-tight">BabyGuard AI</span>
-          <span class="text-slate-500 text-xs hidden sm:inline ml-2 pl-2 border-l border-slate-800">Điều Khoản & Chính Sách</span>
+          <span class="text-slate-500 text-xs hidden sm:inline ml-2 pl-2 border-l border-slate-800" data-i18n="legal_title">Điều Khoản & Bảo Mật Pháp Lý</span>
         </div>
       </a>
 
-      <!-- BACK TO HOME -->
-      <a href="/" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition border border-slate-800">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        <span>Trang Chủ</span>
-      </a>
+      <div class="flex items-center gap-3">
+        <!-- LANGUAGE TOGGLE -->
+        <button id="langToggleBtn" onclick="toggleLanguage()" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition border border-slate-800 cursor-pointer">
+          <span id="langFlag">🇻🇳</span>
+          <span id="langText">VI</span>
+        </button>
+
+        <!-- BACK TO HOME -->
+        <a href="/" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition border border-slate-800">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          <span data-i18n="nav_home">Trang Chủ</span>
+        </a>
+      </div>
     </div>
   </header>
 
   <!-- TITLE SECTION -->
   <section class="py-10 border-b border-slate-800/60 bg-[#0f1420]/40">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-3">
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-        Điều Khoản Dịch Vụ & Chính Sách Bảo Mật
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] font-semibold tracking-wide uppercase">
+        <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+        <span data-i18n="badge_legal">TUÂN THỦ NGHỊ ĐỊNH 13/2023/NĐ-CP & LUẬT TRẺ EM 2016</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight" data-i18n="hero_title">
+        Điều Khoản Dịch Vụ & Chính Sách Bảo Vệ Dữ Liệu
       </h1>
-      <p class="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-        Cam kết bảo mật dữ liệu trẻ em theo mô hình nội bộ trực tiếp, minh bạch phạm vi hỗ trợ và quy định sử dụng phần mềm.
+      <p class="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed" data-i18n="hero_desc">
+        Cam kết bảo vệ dữ liệu cá nhân của trẻ em theo mô hình On-Device Local Edge AI, minh bạch phạm vi hỗ trợ và tuyệt đối tuân thủ pháp luật hiện hành.
       </p>
-      <div class="text-[11px] text-slate-500 pt-1">
-        Cập nhật: Tháng 11/2026 • Áp dụng cho phiên bản BabyGuard AI 2.x
+      <div class="text-[11px] text-slate-500 pt-1" data-i18n="effective_date">
+        Hiệu lực: Tháng 11/2026 • Áp dụng cho Hệ sinh thái BabyGuard AI
       </div>
     </div>
   </section>
 
-  <!-- STICKY NAVIGATION PILLS (TỐI GIẢN, KHÔNG MÀU MÈ) -->
+  <!-- NAVIGATION PILLS -->
   <div class="sticky top-16 z-30 bg-[#0b0f17]/95 backdrop-blur border-b border-slate-800/80 py-2.5">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 flex items-center gap-2 overflow-x-auto no-scrollbar text-xs font-medium">
-      <a href="#medical-disclaimer" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition">
+      <a href="#medical-disclaimer" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition" data-i18n="tab_1">
         1. Miễn Trừ Y Tế
       </a>
-      <a href="#privacy-policy" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition">
-        2. Bảo Mật & Sơ Đồ Luồng
+      <a href="#privacy-policy" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition" data-i18n="tab_2">
+        2. Bảo Mật & Dữ Liệu Trẻ Em
       </a>
-      <a href="#terms-of-service" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition">
-        3. Điều Khoản Dịch Vụ
+      <a href="#terms-of-service" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition" data-i18n="tab_3">
+        3. Cấp Phép Bản Quyền (EULA)
       </a>
-      <a href="#refund-support" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition">
-        4. Dùng Thử & Hoàn Tiền
+      <a href="#support-policy" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition" data-i18n="tab_4">
+        4. Hỗ Trợ & Trách Nhiệm
       </a>
-      <a href="#system-requirements" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition">
+      <a href="#system-requirements" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition" data-i18n="tab_5">
         5. Cấu Hình Tối Thiểu
       </a>
     </div>
   </div>
 
   <!-- MAIN CONTENT -->
-  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-12 flex-1">
 
-    <!-- 1. MEDICAL DISCLAIMER -->
+    <!-- 1. TUYÊN BỐ MIỄN TRỪ Y TẾ -->
     <section id="medical-disclaimer" class="anchor-offset p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-slate-800/80 space-y-5">
       <div class="border-b border-slate-800/80 pb-3">
-        <h2 class="text-lg sm:text-xl font-bold text-white">1. Tuyên Bố Miễn Trừ Trách Nhiệm Y Tế (Medical Disclaimer)</h2>
+        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+          <span>🩺</span>
+          <span data-i18n="sec1_title">1. Tuyên Bố Miễn Trừ Trách Nhiệm Y Tế (Medical Disclaimer)</span>
+        </h2>
       </div>
 
-      <!-- NOTICE BOX -->
-      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 text-xs sm:text-sm leading-relaxed space-y-2">
-        <p class="font-bold text-slate-200">
-          LƯU Ý QUAN TRỌNG KHI SỬ DỤNG:
-        </p>
-        <p>
-          BabyGuard AI là <b>phần mềm hỗ trợ giám sát an toàn và ghi nhận thói quen sinh hoạt của trẻ (Wellness & Safety Tool)</b>. Phần mềm <b>không phải là thiết bị y tế chẩn đoán chuyên dụng</b> theo quy định của FDA và Nghị định 98/2021/NĐ-CP của Chính phủ.
+      <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 leading-relaxed space-y-1.5">
+        <div class="font-bold flex items-center gap-1.5 text-amber-200">
+          <span>⚠️</span>
+          <span data-i18n="sec1_warn_head">LƯU Ý PHÁP LÝ QUAN TRỌNG VỀ ĐẶC TÍNH SẢN PHẨM:</span>
+        </div>
+        <p data-i18n="sec1_warn_body">
+          BabyGuard AI là <b>phần mềm hỗ trợ giám sát an toàn và ghi nhận thói quen sinh hoạt của trẻ trong môi trường gia đình (Wellness & Smart Monitoring Assistant)</b>. 
+          Phần mềm <b>KHÔNG PHẢI là thiết bị y tế chẩn đoán chuyên dụng</b> theo quy định của Nghị định 98/2021/NĐ-CP của Chính phủ và Luật Khám bệnh, chữa bệnh số 15/2023/QH15.
         </p>
       </div>
 
       <div class="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
-        <h3 class="font-semibold text-white">1.1. Không Thay Thế Cho Sự Giám Sát Của Người Lớn</h3>
-        <p>
-          Không có bất kỳ thuật toán phần mềm nào có thể thay thế sự hiện diện và chăm sóc trực tiếp của cha mẹ hoặc người giám hộ. Ba mẹ luôn là người chịu trách nhiệm trực tiếp đối với sự an toàn của con.
+        <h3 class="font-semibold text-white" data-i18n="sec1_sub1_head">1.1. Không Thay Thế Sự Giám Sát Của Người Lớn</h3>
+        <p data-i18n="sec1_sub1_body">
+          Không có bất kỳ giải pháp công nghệ hay thuật toán nhân tạo nào có thể thay thế được sự hiện diện, quan sát và chăm sóc trực tiếp của cha mẹ hoặc người giám hộ. Cha mẹ luôn là người chịu trách nhiệm cao nhất và trực tiếp đối với sự an toàn của trẻ.
         </p>
 
-        <h3 class="font-semibold text-white">1.2. Tính Chất Của Dữ Liệu Theo Dõi</h3>
-        <p>
-          Các chỉ số như nhịp thở quang học, nhận diện tiếng khóc, ho, hay chu kỳ giấc ngủ được đo lường tự động mang tính chất tham khảo thói quen sinh hoạt theo các hướng dẫn nhi khoa quốc tế (AAP, WHO). Dữ liệu này không cấu thành chẩn đoán y khoa hay chỉ định điều trị.
-        </p>
-
-        <h3 class="font-semibold text-white">1.3. Xử Trí Khi Có Dấu Hiệu Bất Thường</h3>
-        <p>
-          Khi phát hiện trẻ có biểu hiện bất thường như tím tái, khó thở, sốt cao hoặc co giật, phụ huynh cần đưa trẻ đến cơ sở y tế gần nhất hoặc gọi cấp cứu y tế ngay lập tức, không chờ đợi kết quả từ phần mềm.
+        <h3 class="font-semibold text-white" data-i18n="sec1_sub2_head">1.2. Tính Chất Tham Khảo Của Các Chỉ Số</h3>
+        <p data-i18n="sec1_sub2_body">
+          Các chỉ số như nhịp thở quang học vi mô (BPM), tư thế ngủ, phân tích chu kỳ NREM/REM hay đối chiếu biểu đồ tăng trưởng WHO chỉ mang tính chất tham khảo khoa học. Khi nhận thấy trẻ có bất kỳ dấu hiệu bất thường nào về sức khỏe, phụ huynh cần lập tức tham vấn ý kiến bác sĩ chuyên khoa Nhi hoặc đưa trẻ đến cơ sở y tế gần nhất.
         </p>
       </div>
     </section>
 
-    <!-- 2. PRIVACY & DIRECT LOCAL ARCHITECTURE -->
-    <section id="privacy-policy" class="anchor-offset p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-slate-800/80 space-y-6">
+    <!-- 2. BẢO MẬT DỮ LIỆU TRẺ EM -->
+    <section id="privacy-policy" class="anchor-offset p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-slate-800/80 space-y-5">
       <div class="border-b border-slate-800/80 pb-3">
-        <h2 class="text-lg sm:text-xl font-bold text-white">2. Chính Sách Bảo Mật Quyền Riêng Tư & Dữ Liệu Trẻ Em</h2>
+        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+          <span>🛡️</span>
+          <span data-i18n="sec2_title">2. Chính Sách Bảo Mật & Bảo Vệ Dữ Liệu Trẻ Em</span>
+        </h2>
       </div>
 
       <div class="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
-        <h3 class="font-semibold text-white">2.1. Tuân Thủ Quy Định Pháp Lý</h3>
-        <p>
-          BabyGuard AI tuân thủ nghiêm ngặt Nghị định 13/2023/NĐ-CP của Chính phủ Việt Nam về bảo vệ dữ liệu cá nhân, Luật Trẻ Em 2016, cũng như các tiêu chuẩn quốc tế COPPA và GDPR. Chúng tôi không thu thập, bán hay chia sẻ bất kỳ dữ liệu hình ảnh, sinh trắc học nào của trẻ.
+        <p data-i18n="sec2_p1">
+          Chúng tôi coi trọng tuyệt đối quyền bí mật đời sống riêng tư của trẻ em theo quy định tại <b>Điều 21 Luật Trẻ em 2016</b> và <b>Điều 20 Nghị định 13/2023/NĐ-CP về Bảo vệ Dữ liệu Cá nhân của Trẻ em</b>.
         </p>
 
-        <h3 class="font-semibold text-white">2.2. Dữ Liệu Video & Hình Ảnh Nôi Bé</h3>
-        <p>
-          Toàn bộ hình ảnh từ camera nôi được xử lý và phân tích trực tiếp trên máy tính/thiết bị của gia đình. Các đoạn video clip sự kiện (khi có báo động nằm sấp hoặc tiếng khóc) được lưu trữ trực tiếp trên ổ cứng máy của ba mẹ (`recordings/`). Ba mẹ có toàn quyền quản lý, cài đặt tự động xóa sau 3-7 ngày hoặc xóa vĩnh viễn bất kỳ lúc nào.
-        </p>
-
-        <h3 class="font-semibold text-white">2.3. Sơ Đồ Luồng Dữ Liệu Trực Tiếp (Không Cổng Trung Gian)</h3>
-        <p class="text-slate-400">
-          Hệ thống hoạt động theo mô hình nội bộ trực tiếp, bảo đảm không có bất kỳ bên thứ ba nào can thiệp:
-        </p>
-
-        <!-- SƠ ĐỒ 3 BƯỚC TỐI GIẢN (THEO YÊU CẦU CỦA BA) -->
-        <div class="p-5 sm:p-6 rounded-xl bg-slate-950 border border-slate-800 space-y-5">
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center text-center">
-            
-            <!-- BƯỚC 1 -->
-            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
-              <div class="text-xl">📹</div>
-              <div class="font-bold text-white text-xs sm:text-sm">1. Camera Nôi Bé</div>
-              <p class="text-[11px] text-slate-400 leading-normal">
-                Webcam USB hoặc Camera quan sát nôi trong nhà
-              </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="font-bold text-white flex items-center gap-1.5">
+              <span>🔒</span>
+              <span data-i18n="sec2_card1_title">100% On-Device Edge AI</span>
             </div>
-
-            <!-- MŨI TÊN 1 -->
-            <div class="hidden md:flex flex-col items-center justify-center text-slate-500 font-bold">
-              <span class="text-base text-slate-400">➔</span>
-              <span class="text-[10px] text-slate-500">Mạng nội bộ LAN</span>
-            </div>
-            <div class="md:hidden text-center text-slate-500 text-xs py-0.5">↓ Mạng nội bộ LAN</div>
-
-            <!-- BƯỚC 2 -->
-            <div class="p-4 rounded-xl bg-slate-900 border border-slate-700/80 space-y-1.5">
-              <div class="text-xl">💻</div>
-              <div class="font-bold text-white text-xs sm:text-sm">2. Hệ Thống Nội Bộ Gia Đình</div>
-              <p class="text-[11px] text-slate-300 font-medium leading-normal">
-                Máy tính / Điện thoại của ba mẹ
-              </p>
-              <p class="text-[10px] text-slate-400 pt-1 leading-normal">
-                • Phân tích & lưu trữ 100% trên máy của ba mẹ<br/>
-                • Tự động xóa clip theo cài đặt
-              </p>
-            </div>
-
-            <!-- MŨI TÊN 2 -->
-            <div class="hidden md:flex flex-col items-center justify-center text-slate-500 font-bold">
-              <span class="text-base text-slate-400">➔</span>
-              <span class="text-[10px] text-slate-500">Kết nối trực tiếp</span>
-            </div>
-            <div class="md:hidden text-center text-slate-500 text-xs py-0.5">↓ Kết nối trực tiếp</div>
-
-            <!-- BƯỚC 3 -->
-            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
-              <div class="text-xl">📱</div>
-              <div class="font-bold text-white text-xs sm:text-sm">3. Điện Thoại Ba Mẹ</div>
-              <p class="text-[11px] text-slate-400 leading-normal">
-                Nhận chuông báo động & theo dõi trực tiếp
-              </p>
-            </div>
-
+            <p class="text-slate-400 text-xs leading-relaxed" data-i18n="sec2_card1_desc">
+              Toàn bộ mô hình phân tích thị giác (YOLOv8, YuNet) và âm thanh hoạt động độc lập ngay trên phần cứng máy tính của gia đình. Không một khung hình hay đoạn ghi âm phòng ngủ nào bị tải lên máy chủ đám mây của bên thứ ba.
+            </p>
           </div>
 
-          <!-- SUMMARY STATEMENT -->
-          <div class="pt-3 border-t border-slate-800/80 text-center text-xs text-slate-300 leading-relaxed font-medium">
-            <span class="text-slate-100 font-semibold">✓ Không qua bất kỳ cổng trung gian nào</span> • 
-            <span>Tất cả hình ảnh bé được lưu trên máy của ba mẹ</span> • 
-            <span>Bảo mật dữ liệu riêng tư tuyệt đối</span>
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="font-bold text-white flex items-center gap-1.5">
+              <span>🔑</span>
+              <span data-i18n="sec2_card2_title">Mã Hóa Điểm-Tới-Điểm (E2EE)</span>
+            </div>
+            <p class="text-slate-400 text-xs leading-relaxed" data-i18n="sec2_card2_desc">
+              Khi phụ huynh mở luồng xem trực tiếp từ điện thoại qua mạng 4G/5G, luồng dữ liệu được thiết lập thông qua giao thức đường truyền mã hóa điểm-tới-điểm bảo mật tuyệt đối, không có máy chủ trung gian lưu trữ video.
+            </p>
           </div>
-
         </div>
 
-      </div>
-    </section>
-
-    <!-- 3. TERMS OF SERVICE -->
-    <section id="terms-of-service" class="anchor-offset p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-slate-800/80 space-y-4">
-      <div class="border-b border-slate-800/80 pb-3">
-        <h2 class="text-lg sm:text-xl font-bold text-white">3. Điều Khoản Dịch Vụ & Bản Quyền</h2>
-      </div>
-
-      <div class="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
-        <h3 class="font-semibold text-white">3.1. Quyền Sử Dụng</h3>
-        <p>
-          Bản quyền BabyGuard AI cấp quyền sử dụng cá nhân cho gia đình trên thiết bị máy tính cá nhân. Người dùng được nhận toàn bộ các bản cập nhật tính năng mới và tối ưu hóa hoàn toàn miễn phí trọn đời sản phẩm.
-        </p>
-
-        <h3 class="font-semibold text-white">3.2. An Toàn Vật Lý Cho Bé</h3>
-        <p>
-          Phụ huynh cần đảm bảo vị trí lắp đặt camera hoặc điện thoại vững chắc, dây cáp sạc được giấu gọn gàng bên ngoài nôi ở khoảng cách an toàn, tuân thủ nguyên tắc giấc ngủ an toàn của Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP).
+        <h3 class="font-semibold text-white pt-2" data-i18n="sec2_sub1_head">2.1. Quyền Của Chủ Thể Dữ Liệu</h3>
+        <p data-i18n="sec2_sub1_body">
+          Phụ huynh có toàn quyền kiểm soát, sao lưu hoặc xóa bỏ toàn bộ lịch sử video, dữ liệu giấc ngủ và chỉ số sức khỏe của trẻ trên máy tính của mình bất cứ lúc nào bằng cách xóa thư mục dữ liệu hoặc gỡ cài đặt phần mềm.
         </p>
       </div>
     </section>
 
-    <!-- 4. TRIAL, REFUND & CONTACT -->
-    <section id="refund-support" class="anchor-offset p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-slate-800/80 space-y-5">
+    <!-- 3. THỎA THUẬN CẤP PHÉP BẢN QUYỀN (EULA) -->
+    <section id="terms-of-service" class="anchor-offset p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-slate-800/80 space-y-5">
       <div class="border-b border-slate-800/80 pb-3">
-        <h2 class="text-lg sm:text-xl font-bold text-white">4. Dùng Thử 14 Ngày, Hoàn Tiền & Kênh Hỗ Trợ</h2>
+        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+          <span>📜</span>
+          <span data-i18n="sec3_title">3. Thỏa Thuận Cấp Phép Sử Dụng Phần Mềm (EULA)</span>
+        </h2>
       </div>
 
       <div class="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
-        <h3 class="font-semibold text-white">4.1. Chính Sách Dùng Thử Miễn Phí</h3>
-        <p>
-          Khách hàng được trải nghiệm toàn bộ tính năng cao cấp trong 14 ngày dùng thử miễn phí, không yêu cầu nhập thông tin thẻ thanh toán trước.
+        <h3 class="font-semibold text-white" data-i18n="sec3_sub1_head">3.1. Phạm Vi Cấp Phép Sử Dụng</h3>
+        <p data-i18n="sec3_sub1_body">
+          Bản quyền BabyGuard AI cấp cho người dùng quyền sử dụng phi độc quyền, không thể chuyển nhượng, phục vụ mục đích bảo vệ an toàn cho con em trong phạm vi gia đình cá nhân. Người dùng được nhận toàn bộ các bản vá lỗi và bản cập nhật tính năng mới trong suốt vòng đời của sản phẩm.
         </p>
 
-        <h3 class="font-semibold text-white">4.2. Chính Sách Hoàn Tiền 100%</h3>
-        <p>
-          Nếu phần mềm không tương thích với thiết bị của gia đình và đội ngũ kỹ thuật không thể hỗ trợ khắc phục trong vòng 7 ngày kể từ khi thanh toán, chúng tôi cam kết hoàn tiền 100% số tiền đã mua.
+        <h3 class="font-semibold text-white" data-i18n="sec3_sub2_head">3.2. Giới Hạn Trách Nhiệm</h3>
+        <p data-i18n="sec3_sub2_body">
+          Người dùng cam kết không thực hiện các hành vi dịch ngược mã nguồn (reverse engineering), can thiệp bẻ khóa thuật toán hoặc phân phối lại phần mềm trái phép. Chúng tôi không chịu trách nhiệm đối với các sự cố bắt nguồn từ việc sử dụng thiết bị phần cứng không đạt cấu hình tối thiểu hoặc kết nối mạng gia đình không ổn định.
+        </p>
+      </div>
+    </section>
+
+    <!-- 4. HỖ TRỢ VÀ TRÁCH NHIỆM DỊCH VỤ -->
+    <section id="support-policy" class="anchor-offset p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-slate-800/80 space-y-5">
+      <div class="border-b border-slate-800/80 pb-3">
+        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+          <span>🤝</span>
+          <span data-i18n="sec4_title">4. Cam Kết Dịch Vụ Khách Hàng & Kênh Hỗ Trợ Kỹ Thuật</span>
+        </h2>
+      </div>
+
+      <div class="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+        <h3 class="font-semibold text-white" data-i18n="sec4_sub1_head">4.1. Cam Kết Hỗ Trợ Kỹ Thuật 1-1</h3>
+        <p data-i18n="sec4_sub1_body">
+          Chúng tôi cam kết đồng hành cùng gia đình trong toàn bộ quá trình sử dụng, hỗ trợ cài đặt từ xa, căn chỉnh góc camera tối ưu và xử lý mọi vướng mắc kỹ thuật để đảm bảo hệ thống vận hành ổn định và chính xác nhất.
         </p>
 
-        <h3 class="font-semibold text-white">4.3. Kênh Liên Hệ Hỗ Trợ Kỹ Thuật</h3>
         <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-          <p class="text-slate-300 font-medium">
-            Khi cần hỗ trợ kỹ thuật hoặc hướng dẫn cài đặt, ba mẹ vui lòng liên hệ trực tiếp:
+          <p class="text-slate-300 font-medium" data-i18n="sec4_sub2_head">
+            Kênh liên hệ hỗ trợ kỹ thuật trực tiếp:
           </p>
-          <ul class="space-y-1.5 text-slate-300 pt-1">
-            <li>• <b>Telegram Hỗ trợ Kỹ thuật:</b> <a href="https://t.me/nvtthanh11" target="_blank" class="text-slate-100 underline hover:text-white font-semibold">@nvtthanh11</a></li>
-            <li>• <b>Website Chính Thức:</b> <a href="https://babyguard.site" class="text-slate-100 underline hover:text-white font-semibold">https://babyguard.site</a></li>
+          <ul class="space-y-1.5 text-slate-300 pt-1 font-mono text-[11px]">
+            <li>• <b>Telegram Hỗ trợ Kỹ thuật:</b> <a href="https://t.me/nvtthanh11" target="_blank" class="text-blue-400 underline hover:text-blue-300">@nvtthanh11</a></li>
+            <li>• <b>Website Chính Thức:</b> <a href="https://babyguard.site" class="text-blue-400 underline hover:text-blue-300">https://babyguard.site</a></li>
+            <li>• <b>Hotline Hỗ Trợ:</b> <span class="text-white">0943.435.433</span></li>
           </ul>
         </div>
       </div>
     </section>
 
-    <!-- 5. MINIMUM SYSTEM REQUIREMENTS (YÊU CẦU CẤU HÌNH TỐI THIỂU) -->
+    <!-- 5. YÊU CẦU CẤU HÌNH TỐI THIỂU -->
     <section id="system-requirements" class="anchor-offset p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-slate-800/80 space-y-5">
       <div class="border-b border-slate-800/80 pb-3">
-        <h2 class="text-lg sm:text-xl font-bold text-white">5. Yêu Cầu Cấu Hình Thiết Bị Tối Thiểu</h2>
+        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+          <span>⚙️</span>
+          <span data-i18n="sec5_title">5. Yêu Cầu Cấu Hình Phần Cứng Tối Thiểu</span>
+        </h2>
       </div>
-
-      <p class="text-xs sm:text-sm text-slate-400">
-        Để hệ thống AI xử lý hình ảnh và âm thanh mượt mà theo thời gian thực, thiết bị cần đáp ứng cấu hình cơ bản sau:
-      </p>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
         
@@ -296,11 +250,11 @@
         <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
           <div class="font-bold text-white text-sm flex items-center gap-1.5">
             <span>💻</span>
-            <span>Máy Tính Windows</span>
+            <span>Windows PC / Laptop</span>
           </div>
           <ul class="space-y-1 text-slate-300 text-[11px] leading-relaxed">
-            <li>• <b>Hệ điều hành:</b> Windows 10 hoặc 11 (64-bit)</li>
-            <li>• <b>Bộ vi xử lý:</b> Intel Core i3 (thế hệ 6 trở lên) hoặc AMD Ryzen 3</li>
+            <li>• <b>Hệ điều hành:</b> Windows 10 / 11 (64-bit)</li>
+            <li>• <b>CPU:</b> Intel Core i3 (Gen 6+) hoặc AMD Ryzen 3</li>
             <li>• <b>RAM:</b> Tối thiểu 4 GB (Khuyến nghị 8 GB)</li>
             <li>• <b>Ổ cứng:</b> Trống tối thiểu 2 GB</li>
           </ul>
@@ -310,27 +264,27 @@
         <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
           <div class="font-bold text-white text-sm flex items-center gap-1.5">
             <span>🍏</span>
-            <span>Máy Tính Mac (Apple)</span>
+            <span>macOS (MacBook / Mac mini)</span>
           </div>
           <ul class="space-y-1 text-slate-300 text-[11px] leading-relaxed">
-            <li>• <b>Hệ điều hành:</b> macOS 11.0 (Big Sur) trở lên</li>
-            <li>• <b>Bộ vi xử lý:</b> Apple Silicon (M1/M2/M3/M4) hoặc Intel Core i5</li>
+            <li>• <b>Hệ điều hành:</b> macOS 11.0 Big Sur trở lên</li>
+            <li>• <b>Chipset:</b> Apple Silicon M1-M4 hoặc Intel Core i5</li>
             <li>• <b>RAM:</b> Tối thiểu 4 GB</li>
             <li>• <b>Ổ cứng:</b> Trống tối thiểu 2 GB</li>
           </ul>
         </div>
 
-        <!-- PHONE / TABLET -->
+        <!-- MOBILE -->
         <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
           <div class="font-bold text-white text-sm flex items-center gap-1.5">
             <span>📱</span>
-            <span>Điện Thoại / Tablet</span>
+            <span>Điện Thoại Xem Từ Xa</span>
           </div>
           <ul class="space-y-1 text-slate-300 text-[11px] leading-relaxed">
             <li>• <b>Android:</b> Android 8.0 trở lên, RAM 2 GB</li>
             <li>• <b>iOS:</b> iPhone / iPad từ iOS 14.0 trở lên</li>
             <li>• <b>Trình duyệt:</b> Safari, Chrome, Edge</li>
-            <li>• <b>Kết nối:</b> Mạng WiFi gia đình thông thường</li>
+            <li>• <b>Mạng kết nối:</b> WiFi, 4G, 5G</li>
           </ul>
         </div>
 
@@ -339,21 +293,133 @@
 
   </main>
 
-  <!-- FOOTER (TỐI GIẢN) -->
+  <!-- FOOTER -->
   <footer class="bg-[#0b0f17] text-slate-500 py-8 border-t border-slate-800/80 text-xs mt-12">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div>
-        © 2026 BabyGuard AI. Bản quyền thuộc về gia đình bé.
+        © 2026 BabyGuard AI. <span data-i18n="footer_rights">Bảo vệ an toàn cho thế hệ tương lai.</span>
       </div>
       <div class="flex gap-4 text-slate-400">
-        <a href="/" class="hover:text-white transition">Trang Chủ</a>
-        <a href="#medical-disclaimer" class="hover:text-white transition">Miễn Trừ Y Tế</a>
-        <a href="#privacy-policy" class="hover:text-white transition">Bảo Mật</a>
-        <a href="#system-requirements" class="hover:text-white transition">Cấu Hình</a>
-        <a href="https://t.me/nvtthanh11" target="_blank" class="hover:text-white transition">Hỗ Trợ Telegram</a>
+        <a href="/" class="hover:text-white transition" data-i18n="nav_home">Trang Chủ</a>
+        <a href="#medical-disclaimer" class="hover:text-white transition" data-i18n="tab_1">Miễn Trừ Y Tế</a>
+        <a href="#privacy-policy" class="hover:text-white transition" data-i18n="tab_2">Bảo Mật</a>
+        <a href="#terms-of-service" class="hover:text-white transition" data-i18n="tab_3">Bản Quyền</a>
+        <a href="https://t.me/nvtthanh11" target="_blank" class="hover:text-white transition">Telegram</a>
       </div>
     </div>
   </footer>
 
+  <!-- MULTI-LANGUAGE SCRIPT -->
+  <script>
+    const i18nData = {
+      vi: {
+        legal_title: "Điều Khoản & Bảo Mật Pháp Lý",
+        nav_home: "Trang Chủ",
+        badge_legal: "TUÂN THỦ NGHỊ ĐỊNH 13/2023/NĐ-CP & LUẬT TRẺ EM 2016",
+        hero_title: "Điều Khoản Dịch Vụ & Chính Sách Bảo Vệ Dữ Liệu",
+        hero_desc: "Cam kết bảo vệ dữ liệu cá nhân của trẻ em theo mô hình On-Device Local Edge AI, minh bạch phạm vi hỗ trợ và tuyệt đối tuân thủ pháp luật hiện hành.",
+        effective_date: "Hiệu lực: Tháng 11/2026 • Áp dụng cho Hệ sinh thái BabyGuard AI",
+        tab_1: "1. Miễn Trừ Y Tế",
+        tab_2: "2. Bảo Mật & Dữ Liệu Trẻ Em",
+        tab_3: "3. Cấp Phép Bản Quyền (EULA)",
+        tab_4: "4. Hỗ Trợ & Trách Nhiệm",
+        tab_5: "5. Cấu Hình Tối Thiểu",
+        sec1_title: "1. Tuyên Bố Miễn Trừ Trách Nhiệm Y Tế (Medical Disclaimer)",
+        sec1_warn_head: "LƯU Ý PHÁP LÝ QUAN TRỌNG VỀ ĐẶC TÍNH SẢN PHẨM:",
+        sec1_warn_body: "BabyGuard AI là phần mềm hỗ trợ giám sát an toàn và ghi nhận thói quen sinh hoạt của trẻ trong môi trường gia đình (Wellness & Smart Monitoring Assistant). Phần mềm KHÔNG PHẢI là thiết bị y tế chẩn đoán chuyên dụng theo quy định của Nghị định 98/2021/NĐ-CP của Chính phủ và Luật Khám bệnh, chữa bệnh số 15/2023/QH15.",
+        sec1_sub1_head: "1.1. Không Thay Thế Sự Giám Sát Của Người Lớn",
+        sec1_sub1_body: "Không có bất kỳ giải pháp công nghệ hay thuật toán nhân tạo nào có thể thay thế được sự hiện diện, quan sát và chăm sóc trực tiếp của cha mẹ hoặc người giám hộ. Cha mẹ luôn là người chịu trách nhiệm cao nhất và trực tiếp đối với sự an toàn của trẻ.",
+        sec1_sub2_head: "1.2. Tính Chất Tham Khảo Của Các Chỉ Số",
+        sec1_sub2_body: "Các chỉ số như nhịp thở quang học vi mô (BPM), tư thế ngủ, phân tích chu kỳ NREM/REM hay đối chiếu biểu đồ tăng trưởng WHO chỉ mang tính chất tham khảo khoa học. Khi nhận thấy trẻ có bất kỳ dấu hiệu bất thường nào về sức khỏe, phụ huynh cần lập tức tham vấn ý kiến bác sĩ chuyên khoa Nhi hoặc đưa trẻ đến cơ sở y tế gần nhất.",
+        sec2_title: "2. Chính Sách Bảo Mật & Bảo Vệ Dữ Liệu Trẻ Em",
+        sec2_p1: "Chúng tôi coi trọng tuyệt đối quyền bí mật đời sống riêng tư của trẻ em theo quy định tại Điều 21 Luật Trẻ em 2016 và Điều 20 Nghị định 13/2023/NĐ-CP về Bảo vệ Dữ liệu Cá nhân của Trẻ em.",
+        sec2_card1_title: "100% On-Device Edge AI",
+        sec2_card1_desc: "Toàn bộ mô hình phân tích thị giác (YOLOv8, YuNet) và âm thanh hoạt động độc lập ngay trên phần cứng máy tính của gia đình. Không một khung hình hay đoạn ghi âm phòng ngủ nào bị tải lên máy chủ đám mây của bên thứ ba.",
+        sec2_card2_title: "Mã Hóa Điểm-Tới-Điểm (E2EE)",
+        sec2_card2_desc: "Khi phụ huynh mở luồng xem trực tiếp từ điện thoại qua mạng 4G/5G, luồng dữ liệu được thiết lập thông qua giao thức đường truyền mã hóa điểm-tới-điểm bảo mật tuyệt đối, không có máy chủ trung gian lưu trữ video.",
+        sec2_sub1_head: "2.1. Quyền Của Chủ Thể Dữ Liệu",
+        sec2_sub1_body: "Phụ huynh có toàn quyền kiểm soát, sao lưu hoặc xóa bỏ toàn bộ lịch sử video, dữ liệu giấc ngủ và chỉ số sức khỏe của trẻ trên máy tính của mình bất cứ lúc nào bằng cách xóa thư mục dữ liệu hoặc gỡ cài đặt phần mềm.",
+        sec3_title: "3. Thỏa Thuận Cấp Phép Sử Dụng Phần Mềm (EULA)",
+        sec3_sub1_head: "3.1. Phạm Vi Cấp Phép Sử Dụng",
+        sec3_sub1_body: "Bản quyền BabyGuard AI cấp cho người dùng quyền sử dụng phi độc quyền, không thể chuyển nhượng, phục vụ mục đích bảo vệ an toàn cho con em trong phạm vi gia đình cá nhân. Người dùng được nhận toàn bộ các bản vá lỗi và bản cập nhật tính năng mới trong suốt vòng đời của sản phẩm.",
+        sec3_sub2_head: "3.2. Giới Hạn Trách Nhiệm",
+        sec3_sub2_body: "Người dùng cam kết không thực hiện các hành vi dịch ngược mã nguồn (reverse engineering), can thiệp bẻ khóa thuật toán hoặc phân phối lại phần mềm trái phép. Chúng tôi không chịu trách nhiệm đối với các sự cố bắt nguồn từ việc sử dụng thiết bị phần cứng không đạt cấu hình tối thiểu hoặc kết nối mạng gia đình không ổn định.",
+        sec4_title: "4. Cam Kết Dịch Vụ Khách Hàng & Kênh Hỗ Trợ Kỹ Thuật",
+        sec4_sub1_head: "4.1. Cam Kết Hỗ Trợ Kỹ Thuật 1-1",
+        sec4_sub1_body: "Chúng tôi cam kết đồng hành cùng gia đình trong toàn bộ quá trình sử dụng, hỗ trợ cài đặt từ xa, căn chỉnh góc camera tối ưu và xử lý mọi vướng mắc kỹ thuật để đảm bảo hệ thống vận hành ổn định và chính xác nhất.",
+        sec4_sub2_head: "Kênh liên hệ hỗ trợ kỹ thuật trực tiếp:",
+        sec5_title: "5. Yêu Cầu Cấu Hình Phần Cứng Tối Thiểu",
+        footer_rights: "Bảo vệ an toàn cho thế hệ tương lai."
+      },
+      en: {
+        legal_title: "Terms of Service & Privacy Policy",
+        nav_home: "Home",
+        badge_legal: "COMPLIANT WITH DECREE 13/2023/ND-CP, COPPA & GDPR",
+        hero_title: "Terms of Service & Data Protection Policy",
+        hero_desc: "Committed to safeguarding children's personal data via On-Device Local Edge AI architecture, transparent technical scope, and full legal compliance.",
+        effective_date: "Effective: November 2026 • Applicable to BabyGuard AI Ecosystem",
+        tab_1: "1. Medical Disclaimer",
+        tab_2: "2. Child Data Privacy",
+        tab_3: "3. Software License (EULA)",
+        tab_4: "4. Support & Warranty",
+        tab_5: "5. System Requirements",
+        sec1_title: "1. Medical Disclaimer",
+        sec1_warn_head: "IMPORTANT LEGAL NOTICE REGARDING PRODUCT CHARACTERISTICS:",
+        sec1_warn_body: "BabyGuard AI is an ambient software tool designed for household safety monitoring and infant habit logging (Wellness & Smart Monitoring Assistant). It is NOT a diagnostic medical device under Decree 98/2021/ND-CP, FDA guidelines, or international medical regulations.",
+        sec1_sub1_head: "1.1. Not a Substitute for Adult Supervision",
+        sec1_sub1_body: "No automated software algorithm or AI model can ever replace the physical presence, direct observation, and attentive care of parents or legal guardians. Parents remain solely and directly responsible for their child's safety at all times.",
+        sec1_sub2_head: "1.2. Informational Nature of Analytics",
+        sec1_sub2_body: "All metrics, including optical thoracic respiration (BPM), sleep posture detection, NREM/REM sleep cycles, and WHO percentile growth tracking, are provided for informational and scientific reference only. If a child exhibits any sign of distress, parents must immediately consult a certified pediatrician or visit the nearest healthcare facility.",
+        sec2_title: "2. Privacy Policy & Child Data Protection",
+        sec2_p1: "We strictly uphold children's fundamental right to digital privacy in accordance with Vietnamese Decree 13/2023/ND-CP, the 2016 Child Law, US COPPA, and European GDPR Article 8.",
+        sec2_card1_title: "100% On-Device Edge AI",
+        sec2_card1_desc: "All computer vision (YOLOv8, YuNet) and acoustic classifiers run entirely locally on your household computer hardware. No video frames, audio recordings, or biometric streams are ever uploaded to third-party cloud servers.",
+        sec2_card2_title: "End-to-End Encrypted Tunnel (E2EE)",
+        sec2_card2_desc: "When parents stream live video to their smartphones via 4G/5G, connections are established via authenticated point-to-point encrypted tunnels with zero intermediary storage.",
+        sec2_sub1_head: "2.1. Data Subject Rights",
+        sec2_sub1_body: "Parents retain absolute control over their child's data. You may review, export, or permanently delete all local recordings, sleep logs, and health metrics at any moment simply by deleting data folders or uninstalling the application.",
+        sec3_title: "3. End User License Agreement (EULA)",
+        sec3_sub1_head: "3.1. Scope of License Grant",
+        sec3_sub1_body: "BabyGuard AI grants you a personal, non-exclusive, non-transferable license to use the software solely for home safety monitoring within your immediate household. The license includes all security patches and software updates released during the product lifecycle.",
+        sec3_sub2_head: "3.2. Limitation of Liability",
+        sec3_sub2_body: "Users agree not to decompile, reverse engineer, or redistribute the proprietary software. We shall not be liable for system interruptions arising from incompatible hardware, non-compliant webcams, or unstable home network environments.",
+        sec4_title: "4. Customer Service Commitment & Technical Support",
+        sec4_sub1_head: "4.1. Dedicated 1-on-1 Technical Assistance",
+        sec4_sub1_body: "We are committed to providing personalized remote setup assistance, optimal camera calibration guidance, and prompt technical support to ensure your system operates with the highest stability and accuracy.",
+        sec4_sub2_head: "Direct Technical Support Channels:",
+        sec5_title: "5. Minimum Hardware Requirements",
+        footer_rights: "Protecting the safety of the next generation."
+      }
+    };
+
+    let currentLang = localStorage.getItem("babyguard_lang") || "vi";
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem("babyguard_lang", lang);
+      const dict = i18nData[lang] || i18nData.vi;
+
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) {
+          el.innerText = dict[key];
+        }
+      });
+
+      const flag = document.getElementById("langFlag");
+      const text = document.getElementById("langText");
+      if (flag) flag.innerText = lang === "vi" ? "🇻🇳" : "🇬🇧";
+      if (text) text.innerText = lang === "vi" ? "VI" : "EN";
+      document.documentElement.lang = lang;
+    }
+
+    function toggleLanguage() {
+      setLanguage(currentLang === "vi" ? "en" : "vi");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setLanguage(currentLang);
+    });
+  </script>
 </body>
 </html>

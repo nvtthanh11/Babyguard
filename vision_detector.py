@@ -614,8 +614,9 @@ class VisionTracker:
 
     def _classify_person(self, xyxy, kpts, frame_h, frame_w):
         """
-        Phân loại chính xác đâu là Người Lớn (Adult) và đâu là Em Bé (Baby)
-        dựa trên kích thước, hình thái và cv2.pointPolygonTest đối chiếu trực tiếp với Safe Zone.
+        Phân loại chính xác tuyệt đối đâu là Người Lớn (Bà ngoại, Ba, Mẹ) và đâu là Em Bé (A Siu)
+        dựa trên giải phẫu nhân trắc học (Khoảng cách 2 mắt, Chiều dài thân, Chiều rộng vai, Tỷ lệ diện tích)
+        và vị trí tương quan với Lòng Nôi (Crib Safe Zone).
         """
         box_w = float(xyxy[2] - xyxy[0])
         box_h = float(xyxy[3] - xyxy[1])
@@ -625,29 +626,59 @@ class VisionTracker:
         h_ratio = box_h / float(frame_h)
         area_ratio = box_area / frame_area
 
-        # Đo khoảng cách 2 vai (Keypoints 5 và 6)
+        # 1. Đo chiều rộng 2 vai (Keypoints 5 và 6)
         shoulder_w = 0.0
         if kpts[5, 2] > 0.20 and kpts[6, 2] > 0.20:
             shoulder_w = float(np.linalg.norm(kpts[5, :2] - kpts[6, :2]))
 
+        # 2. Đo khoảng cách 2 mắt (Keypoints 1 và 2) - Đặc trưng nhân trắc học quan trọng nhất!
+        # Bé sơ sinh 1-3 tháng: khoảng cách 2 mắt chỉ tầm 10px - 22px
+        # Người lớn (Bà ngoại, Ba, Mẹ): khoảng cách 2 mắt >= 26px - 65px
+        eye_dist = 0.0
+        if kpts[1, 2] > 0.20 and kpts[2, 2] > 0.20:
+            eye_dist = float(np.linalg.norm(kpts[1, :2] - kpts[2, :2]))
+
+        # 3. Đo chiều dài thân mình Torso (Từ điểm giữa 2 vai đến điểm giữa 2 hông)
+        # Bé sơ sinh: thân rất ngắn (30px - 75px)
+        # Người lớn cúi / ngồi: thân mình dài >= 85px - 220px
+        torso_len = 0.0
+        if kpts[5, 2] > 0.20 and kpts[6, 2] > 0.20 and (kpts[11, 2] > 0.20 or kpts[12, 2] > 0.20):
+            mid_sh = (kpts[5, :2] + kpts[6, :2]) / 2.0
+            if kpts[11, 2] > 0.20 and kpts[12, 2] > 0.20:
+                mid_hip = (kpts[11, :2] + kpts[12, :2]) / 2.0
+            elif kpts[11, 2] > 0.20:
+                mid_hip = kpts[11, :2]
+            else:
+                mid_hip = kpts[12, :2]
+            torso_len = float(np.linalg.norm(mid_sh - mid_hip))
+
         bcx = (xyxy[0] + xyxy[2]) / 2.0
         bcy = (xyxy[1] + xyxy[3]) / 2.0
 
-        # Kiểm tra trực tiếp trọng tâm cơ thể với đa giác Safe Zone do người dùng cài đặt
-        in_crib_zone = self._is_point_in_safe_zone(bcx, bcy, frame_w, frame_h, margin_px=35.0)
+        # Kiểm tra trực tiếp trọng tâm cơ thể với đa giác Safe Zone của nôi
+        in_crib_zone = self._is_point_in_safe_zone(bcx, bcy, frame_w, frame_h, margin_px=25.0)
         touches_border = (xyxy[0] < 20 or xyxy[1] < 20 or xyxy[2] > (frame_w - 20) or xyxy[3] > (frame_h - 20))
 
-        # Tiêu chuẩn Người Lớn (Adult):
-        # 1. Thân hình to lớn vượt kích thước trẻ sơ sinh:
-        #    - shoulder_w > 120.0px (người lớn thường > 170px, bé sơ sinh < 95px)
-        #    - area_ratio > 0.14 (diện tích người lớn > 14-35% khung hình, bé chỉ 5-11%)
-        #    - h_ratio > 0.58 (người lớn cao lớn trùm gần hết khung hình)
-        #    - h_ratio > 0.48 kết hợp shoulder_w > 100.0px
-        # 2. Hoặc người lớn từ ngoài mép màn hình thò vào / ngồi bên mép:
-        #    - touches_border và (box_w > 180 hoặc box_h > 220 hoặc shoulder_w > 90.0)
-        is_adult = (shoulder_w > 120.0) or (area_ratio > 0.14) or (h_ratio > 0.58) or \
-                   (h_ratio > 0.48 and shoulder_w > 100.0) or \
-                   (touches_border and (box_w > 180 or box_h > 220 or shoulder_w > 90.0))
+        # =========================================================================
+        # BỘ QUY TẮC THÉP PHÂN BIỆT NGƯỜI LỚN (BÀ NGOẠI / BA MẸ) VS EM BÉ A SIU:
+        # =========================================================================
+        # Quy tắc 1: Khoảng cách 2 mắt người lớn vượt trội (>= 26px)
+        is_adult_eye = (eye_dist >= 26.0)
+
+        # Quy tắc 2: Chiều dài thân mình người lớn vượt trội (>= 85px)
+        is_adult_torso = (torso_len >= 85.0)
+
+        # Quy tắc 3: Vai rộng người lớn (>= 85px, trẻ 2 tháng tuổi vai chỉ 35px - 75px)
+        is_adult_shoulder = (shoulder_w >= 85.0)
+
+        # Quy tắc 4: Tỷ lệ vóc dáng lớn (h_ratio > 0.38 hoặc area_ratio > 0.09 hoặc box_h > 210px hoặc box_w > 180px)
+        is_adult_scale = (h_ratio > 0.38) or (area_ratio > 0.09) or (box_h > 210.0) or (box_w > 180.0)
+
+        # Quy tắc 5: Đứng / ngồi ngoài nôi (người lớn túc trực / đi lại bên cạnh nôi)
+        is_outside_adult = (not in_crib_zone) and (box_h > 130.0 or box_w > 110.0 or shoulder_w > 60.0 or touches_border)
+
+        # Tổng hợp: Chỉ cần thỏa mãn một trong các đặc trưng người lớn -> XÁC ĐỊNH LÀ NGƯỜI LỚN
+        is_adult = is_adult_eye or is_adult_torso or is_adult_shoulder or is_adult_scale or is_outside_adult
 
         return {
             "is_adult": is_adult,
@@ -655,6 +686,8 @@ class VisionTracker:
             "touches_border": touches_border,
             "h_ratio": h_ratio,
             "shoulder_w": shoulder_w,
+            "eye_dist": eye_dist,
+            "torso_len": torso_len,
             "area_ratio": area_ratio,
             "box_w": box_w,
             "box_h": box_h
@@ -1901,6 +1934,60 @@ class VisionTracker:
 
         threading.Thread(target=_audit_worker, daemon=True).start()
 
+    def _maybe_recalibrate_crib_when_empty(self, frame, h: int, w: int):
+        """
+        Tự động kiểm tra và căn chỉnh lại Khung Nôi bằng AI Local (YOLOv8 Edge)
+        MỖI KHI BÉ ĐƯỢC BẾ RA KHỎI NÔI (Nôi trống):
+        Khi bé không còn trong nôi, toàn bộ lòng nôi và 4 góc đệm lộ ra rõ ràng nhất.
+        Nếu nôi bị dịch chuyển trong quá trình bé nằm/người lớn va quẹt -> Tự động cập nhật lại khung nôi mới!
+        Hoàn toàn chạy offline 100% bằng YOLOv8, không tốn 1 byte quota của Gemini.
+        """
+        now = time.time()
+        # Debounce: Chỉ kiểm tra tối đa một lần mỗi 15 giây khi nôi trống
+        if (now - getattr(self, "last_empty_crib_calib_time", 0.0)) < 15.0:
+            return
+        if getattr(self, "local_crib", None) is None or not self.local_crib.is_ready():
+            return
+
+        self.last_empty_crib_calib_time = now
+        try:
+            crib_res = self.local_crib.detect_crib_and_objects(frame)
+            if crib_res.get("crib_found") and crib_res.get("crib_box"):
+                bx1, by1, bx2, by2 = crib_res["crib_box"]
+                pad_x = int((bx2 - bx1) * 0.03)
+                pad_y = int((by2 - by1) * 0.03)
+                bx1 = max(0, bx1 - pad_x)
+                by1 = max(0, by1 - pad_y)
+                bx2 = min(w, bx2 + pad_x)
+                by2 = min(h, by2 + pad_y)
+                clean_poly = [
+                    [round(bx1 / w, 3), round(by1 / h, 3)],
+                    [round(bx2 / w, 3), round(by1 / h, 3)],
+                    [round(bx2 / w, 3), round(by2 / h, 3)],
+                    [round(bx1 / w, 3), round(by2 / h, 3)]
+                ]
+
+                # So sánh độ xê dịch với khung nôi hiện tại
+                cur_poly = getattr(self, "safe_zone_polygon", None)
+                should_update = False
+                if not cur_poly or len(cur_poly) != 4:
+                    should_update = True
+                else:
+                    cur_cx = sum(p[0] for p in cur_poly) / 4.0
+                    cur_cy = sum(p[1] for p in cur_poly) / 4.0
+                    new_cx = (bx1 + bx2) / (2.0 * w)
+                    new_cy = (by1 + by2) / (2.0 * h)
+                    shift_dist = ((new_cx - cur_cx) ** 2 + (new_cy - cur_cy) ** 2) ** 0.5
+                    # Nếu nôi bị dịch chuyển > 2.5% khung hình -> Cập nhật
+                    if shift_dist > 0.025:
+                        should_update = True
+
+                if should_update:
+                    self._commit_safe_zone(clean_poly)
+                    print(f"[VisionTracker] 🎯 [Nôi Trống] Phát hiện nôi bị dịch chuyển -> Tự động căn chỉnh & khóa lại khung nôi mới: {clean_poly}")
+        except Exception as e_calib:
+            print(f"[VisionTracker] Lỗi tự động căn nôi khi nôi trống: {e_calib}")
+
     def _apply_empty_crib_state(self, status_text: str = "Bé không có trong nôi", pose_text: str = "Ngoài giường", hold_seconds: float = 0.0):
         """
         Đưa toàn bộ biến trạng thái Tracking, Nhịp thở và Giấc ngủ về trạng thái 'Ngoài giường' (Nôi trống)
@@ -2516,6 +2603,8 @@ class VisionTracker:
                     status_text="Bé không có trong nôi",
                     pose_text="Không phát hiện bé"
                 )
+                # TỰ ĐỘNG TRACKING LẠI KHUNG NÔI KHI BÉ ĐƯỢC BẾ RA KHỎI NÔI (Nôi trống)
+                self._maybe_recalibrate_crib_when_empty(frame, h, w)
 
         # Update Sleep & Wake Window Analytics Tracker
         if self.sleep_tracker:

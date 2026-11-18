@@ -451,13 +451,40 @@ class DailyStoryTracker:
             except Exception as e:
                 print(f"[DailyStoryTracker] Lỗi gọi Gemini tạo truyện: {e}")
 
-        # 2. Dự phòng bằng kho truyện mẫu dài chất lượng cao (Masterclass Library)
+        # 2. Dự phòng bằng Hồ Đệm Truyện (Story Buffer Pool - 100+ truyện phân bổ 7 trụ cột)
         weekday = target_pillar["weekday"]
         matched_fallback = None
-        for fb in CURATED_FALLBACK_STORIES:
-            if fb.get("weekday") == weekday:
-                matched_fallback = fb.copy()
-                break
+
+        buffer_file = os.path.join(BASE_DIR, "story_buffer.json")
+        if os.path.exists(buffer_file):
+            try:
+                with open(buffer_file, "r", encoding="utf-8") as bf:
+                    buf_list = json.load(bf)
+                
+                # Tìm truyện phù hợp theo thứ trong tuần
+                for idx, b_item in enumerate(buf_list):
+                    if b_item.get("weekday") == weekday:
+                        matched_fallback = b_item.copy()
+                        # Xóa truyện đã kể khỏi kho đệm để nhẹ máy
+                        buf_list.pop(idx)
+                        break
+
+                if matched_fallback:
+                    with open(buffer_file, "w", encoding="utf-8") as bf:
+                        json.dump(buf_list, bf, ensure_ascii=False, indent=2)
+                    print(f"[DailyStoryTracker] 📚 Đã bốc 1 truyện từ Hồ đệm ({matched_fallback['title']}). Còn lại trong kho: {len(buf_list)} truyện.")
+
+                    # Nếu kho truyện còn ít (<= 10 câu), ghi log nhắc nhở nạp bù
+                    if len(buf_list) <= 10:
+                        print(f"[DailyStoryTracker] ⚠️ Kho truyện dự phòng sắp hết (còn {len(buf_list)} câu). Sẽ tự động nạp bù vào giờ rảnh ban ngày.")
+            except Exception as be:
+                print(f"[DailyStoryTracker] Lỗi đọc story_buffer.json: {be}")
+
+        if not matched_fallback:
+            for fb in CURATED_FALLBACK_STORIES:
+                if fb.get("weekday") == weekday:
+                    matched_fallback = fb.copy()
+                    break
         if not matched_fallback:
             matched_fallback = CURATED_FALLBACK_STORIES[0].copy()
 

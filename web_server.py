@@ -1478,7 +1478,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         return summary_dict
 
     def _trigger_morning_ai_sleep_report(summary_snapshot: dict):
-        if _ai_sleep_State["generating"] or gemini_verifier is None or not gemini_verifier.is_ready():
+        if _ai_sleep_State["generating"]:
             return
         _ai_sleep_State["generating"] = True
 
@@ -1487,32 +1487,43 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                 cfg = load_config()
                 b_name = cfg.get("baby_name", "Bé A Siu")
                 enriched = _enrich_summary_with_health_metrics(summary_snapshot.copy())
-                res = gemini_verifier.generate_daily_sleep_report(enriched)
-                if res.get("success") and res.get("report"):
+                
+                # 1. Gọi bộ sinh báo cáo (Tự động kích hoạt Fallback Rule-based nếu Gemini API hết quota / bận)
+                res = None
+                if gemini_verifier:
+                    res = gemini_verifier.generate_daily_sleep_report(enriched)
+                
+                sent_report_ok = False
+                if res and res.get("success") and res.get("report"):
                     rep = res["report"]
                     rep["telegram_sent"] = True
                     sleep_tracker.save_daily_ai_report(rep)
-                    _ai_sleep_State["last_auto_date"] = summary_snapshot.get("today_date", "")
                     
                     tele_text = rep.get("telegram_text")
-                    story = enriched.get("daily_story")
+                    if tele_text and alert_manager is not None:
+                        # Gửi và ghim Báo cáo Sức khỏe (unpin_old=True để dọn sạch tin ghim ngày cũ)
+                        alert_manager.send_telegram_text(tele_text, pin=True, tag_recipients=True, unpin_old=True)
+                        print("[WebServer] 📌 Đã gửi và ghim Báo cáo Sức khỏe Buổi sáng lên Telegram!")
+                        sent_report_ok = True
 
-                    if alert_manager is not None:
-                        # 1. Gửi và ghim Báo cáo Sức khỏe (unpin_old=True để dọn sạch tin ghim ngày cũ)
-                        if tele_text:
-                            alert_manager.send_telegram_text(tele_text, pin=True, tag_recipients=True, unpin_old=True)
-                            print("[WebServer] 📌 Đã gửi và ghim Báo cáo Sức khỏe Buổi sáng lên Telegram!")
+                # 2. Gửi và ghim Câu Chuyện Ý Nghĩa Của Ngày (ĐỘC LẬP HOÀN TOÀN với trạng thái của Gemini)
+                story = enriched.get("daily_story")
+                if not story and daily_story_tracker:
+                    age_info = calculate_exact_age(cfg.get("baby_birth_date", "2026-09-05"))
+                    story = daily_story_tracker.get_today_story(baby_name=b_name, age_display=age_info.get("age_display", ""))
 
-                        # 2. Gửi và ghim Câu Chuyện Ý Nghĩa Của Ngày Hôm Đó (unpin_old=False để ghim đồng thời cả 2 tin)
-                        if story and daily_story_tracker:
-                            time.sleep(2.0)
-                            story_tele = daily_story_tracker.format_telegram_story(story, baby_name=b_name)
-                            alert_manager.send_telegram_text(story_tele, pin=True, tag_recipients=True, unpin_old=False)
-                            print("[WebServer] 📌 Đã gửi và ghim Câu Chuyện Ý Nghĩa Hôm Nay lên Telegram!")
-                            
-                            # Ghi nhận vào file log câu chuyện
-                            daily_story_tracker.log_story_history(story, context="Morning Pin 07:00", telegram_pinned=True)
+                if story and alert_manager is not None and daily_story_tracker:
+                    time.sleep(2.0)
+                    story_tele = daily_story_tracker.format_telegram_story(story, baby_name=b_name)
+                    alert_manager.send_telegram_text(story_tele, pin=True, tag_recipients=True, unpin_old=False)
+                    print("[WebServer] 📌 Đã gửi và ghim Câu Chuyện Ý Nghĩa Hôm Nay lên Telegram!")
+                    daily_story_tracker.log_story_history(story, context="Morning Pin 07:00", telegram_pinned=True)
 
+                if sent_report_ok:
+                    _ai_sleep_State["last_auto_date"] = summary_snapshot.get("today_date", "")
+
+            except Exception as e_bg:
+                print(f"[WebServer] ❌ Lỗi tổng hợp báo cáo buổi sáng: {e_bg}")
             finally:
                 _ai_sleep_State["generating"] = False
 
@@ -1532,7 +1543,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                 if hasattr(sleep_tracker, "check_cycle_rollover"):
                     sleep_tracker.check_cycle_rollover(now_t)
 
-                # 1. Kể từ 07:00 sáng trở đi: Thu thập dữ liệu 24h & kích hoạt Gemini chấm điểm gửi ghim Telegram
+                # 1. Kể từ 07:00 sáng trở đi: Thu thập dữ liệu 24h & kích hoạt Gemini/Fallback chấm điểm gửi ghim Telegram
                 if now_dt.hour >= 7:
                     cur_cycle = getattr(sleep_tracker, "today_date", "")
                     rep = getattr(sleep_tracker, "daily_ai_report", None)
@@ -1542,8 +1553,7 @@ Start-Process "$destDir\\BabyGuard AI.bat"
                         and rep.get("telegram_sent") is True
                     ) or (_ai_sleep_State.get("last_auto_date") == cur_cycle)
 
-                    if not already_sent and not _ai_sleep_State["generating"] and gemini_verifier and gemini_verifier.is_ready():
-                        _ai_sleep_State["last_auto_date"] = cur_cycle
+                    if not already_sent and not _ai_sleep_State["generating"]:
                         cfg = load_config()
                         age_m = int(cfg.get("baby_age_months", 1))
                         vis_st = vision_tracker.get_status() if vision_tracker else {}

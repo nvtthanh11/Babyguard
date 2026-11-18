@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-11-17",
+  "citations": {
+    "aap_sleep": "Viện Hàn lâm Nhi khoa Hoa Kỳ (AAP 2022) & AASM - Safe Sleep Guidelines and Pediatric Sleep Architecture",
+    "who_growth": "Tổ chức Y tế Thế giới (WHO 2006) - Child Growth Standards & IMCI Neonatal Guidelines",
+    "bts_chest_cough": "Hội Lồng ngực Anh (BTS) & Trường Môn Lồng ngực Hoa Kỳ (CHEST 2020) - Pediatric Cough Clinical Practice Guidelines",
+    "nelson_pediatrics": "Nelson Textbook of Pediatrics (21st Edition) - Normal Sleep-Wake States & Infant Behavior Development",
+    "aha_choke": "Hội Tim mạch Hoa Kỳ (AHA PALS) - Pediatric Advanced Life Support & Foreign Body Airway Obstruction"
+  },
+  "respiration_rate_bpm": {
+    "under_2_months": {
+      "min": 30,
+      "max": 60,
+      "critical_low": 20,
+      "critical_high": 65,
+      "unit": "BPM"
+    },
+    "2_to_12_months": {
+      "min": 25,
+      "max": 50,
+      "critical_low": 18,
+      "critical_high": 55,
+      "unit": "BPM"
+    }
+  },
+  "whimper_rem_physiological": {
+    "daily_benchmark_range": [
+      15,
+      35
+    ],
+    "meaning_vi": "Phản xạ sinh lý lành tính trong giấc ngủ động REM. Não bộ tích cực phát triển kết nối nơ-ron và bé đang tự học cách trấn an (self-soothing) để nối tiếp cữ ngủ. Ba mẹ không nên can thiệp bế ẵm hay đánh thức bé."
+  },
+  "cough_protective_reflex": {
+    "safe_daily_limit": 10,
+    "meaning_vi": "Phản xạ sinh lý tự nhiên bình thường để làm sạch bụi và dịch hầu họng theo chuẩn Hội Lồng ngực Anh BTS."
+  },
+  "choke_emergency": {
+    "emergency_safe_limit": 0,
+    "reflux_advice_vi": "Bế vác thẳng đứng và vỗ ợ hơi kỹ 15–20 phút SAU KHI BÚ (lúc thức); khi đặt bé ngủ BẮT BUỘC nằm ngửa trên nôi đệm phẳng 0 độ, không kê gối."
+  },
+  "head_orientation_plagiocephaly": {
+    "max_single_side_pct": 70,
+    "advice_vi": "Luân phiên đổi hướng quay đầu của bé giữa các cữ ngủ ngửa để phòng ngừa hội chứng bẹp đầu lệch tư thế (Plagiocephaly) theo chuẩn AAP."
+  },
+  "tummy_time": {
+    "target_minutes_daily": [
+      15,
+      30
+    ],
+    "advice_vi": "Tập nằm sấp khi thức có người lớn quan sát giúp cứng cáp cơ cổ, vai gáy và hỗ trợ vận động thô."
+  },
+  "who_growth_median_boy": {
+    "month_0": {
+      "weight_median_kg": 3.3,
+      "length_median_cm": 49.9
+    },
+    "month_1": {
+      "weight_median_kg": 4.5,
+      "length_median_cm": 54.7
+    },
+    "month_2": {
+      "weight_median_kg": 5.6,
+      "length_median_cm": 58.4
+    },
+    "month_3": {
+      "weight_median_kg": 6.4,
+      "length_median_cm": 61.4
+    }
+  },
+  "who_growth_median_girl": {
+    "month_0": {
+      "weight_median_kg": 3.2,
+      "length_median_cm": 49.1
+    },
+    "month_1": {
+      "weight_median_kg": 4.2,
+      "length_median_cm": 53.7
+    },
+    "month_2": {
+      "weight_median_kg": 5.1,
+      "length_median_cm": 57.1
+    },
+    "month_3": {
+      "weight_median_kg": 5.8,
+      "length_median_cm": 59.8
+    }
+  }
+}

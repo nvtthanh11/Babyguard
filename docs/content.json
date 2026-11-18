@@ -24,21 +24,22 @@
     "windows": {
       "name": "Windows (10 / 11)",
       "file_type": ".ZIP",
-      "url": "https://cam.babyguard.site/download/windows-app",
-      "github_url": "https://github.com/nvtthanh11/Babyguard/releases/download/v2.1.0/BabyGuard_Windows.zip",
+      "url": "/download/BabyGuard_Windows.zip",
+      "github_url": "https://github.com/nvtthanh11/Babyguard/raw/main/docs/download/BabyGuard_Windows.zip",
       "note": "Bản cài đặt đầy đủ • Giải nén bấm đúp file .bat là chạy"
     },
     "mac": {
       "name": "macOS (Apple Silicon & Intel)",
       "file_type": ".PKG",
-      "url": "https://cam.babyguard.site/download/BabyGuard_Mac.pkg",
-      "github_url": "https://github.com/nvtthanh11/Babyguard/releases/download/v2.1.0/BabyGuard_Mac.pkg",
+      "url": "/download/BabyGuard_Mac.pkg",
+      "github_url": "https://github.com/nvtthanh11/Babyguard/raw/main/docs/download/BabyGuard_Mac.pkg",
       "note": "Bộ cài Apple Installer • Bấm đúp file .pkg là tự động kích hoạt"
     },
     "android": {
       "name": "Android Mobile App",
       "file_type": ".APK",
       "url": "/download/app.apk",
+      "github_url": "https://github.com/nvtthanh11/Babyguard/raw/main/docs/download/app.apk",
       "note": "Cài nhanh 5 giây • Quét mã QR xem camera 4G/5G"
     },
     "mac_cli": "curl -fsSL https://babyguard.site/install-mac | bash"
