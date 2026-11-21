@@ -16,6 +16,7 @@ from gemini_verifier import GeminiHybridVerifier
 from tunnel_manager import TunnelManager
 from web_server import create_app
 from auto_updater import AutoUpdateWorker
+from license_manager import LicenseManager
 
 if getattr(sys, 'frozen', False):
     BASE_DIR = os.path.dirname(sys.executable)
@@ -58,6 +59,16 @@ def main():
     print("=" * 60)
 
     config = load_config()
+
+    # 0. License Manager (Kiểm tra 14 ngày dùng thử Full AI & Chế độ Camera Tiêu chuẩn Miễn phí)
+    license_manager = LicenseManager(config)
+    ai_enabled = license_manager.is_ai_enabled()
+    lic_stat = license_manager.get_status()
+    print(f"[BabyGuard AI] 🔑 Trạng thái bản quyền: {lic_stat.get('tier_display')}")
+    if ai_enabled:
+        print(f"[BabyGuard AI] 🚀 ĐẦY ĐỦ TÍNH NĂNG AI: Đang kích hoạt ({lic_stat.get('mode')}).")
+    else:
+        print("[BabyGuard AI] 📹 CHẾ ĐỘ CAMERA TIÊU CHUẨN: Miễn phí vĩnh viễn (các tính năng AI đã tắt sau 14 ngày dùng thử).")
 
     # 1. Alert Manager & Recorders & Media & Gemini Hybrid Verifier
     alert_manager = AlertManager(config)
@@ -102,6 +113,8 @@ def main():
             )
 
     def on_prone():
+        if not license_manager.is_ai_enabled():
+            return
         if not vision_tracker.baby_detected or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
             return
         last_alert = gemini_verifier.last_alert_result.get("prone", {})
@@ -118,6 +131,8 @@ def main():
             video_recorder.trigger_recording("prone", msg, on_complete_callback=handle_video_completion)
 
     def on_covered_face():
+        if not license_manager.is_ai_enabled():
+            return
         if not vision_tracker.baby_detected or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
             return
         frame = vision_tracker.get_latest_frame(annotated=True)
@@ -139,6 +154,8 @@ def main():
             video_recorder.trigger_recording("covered_face", msg, on_complete_callback=handle_video_completion)
 
     def on_danger_zone():
+        if not license_manager.is_ai_enabled():
+            return
         if not vision_tracker.baby_detected or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
             return
         last_alert = gemini_verifier.last_alert_result.get("danger_zone", {})
@@ -157,6 +174,8 @@ def main():
             video_recorder.trigger_recording("danger_zone", msg, on_complete_callback=handle_video_completion)
 
     def on_apnea():
+        if not license_manager.is_ai_enabled():
+            return
         if not config.get("breathing_monitor_enabled", True):
             return
         if not vision_tracker.baby_detected or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
@@ -206,13 +225,16 @@ def main():
         cute_moments_enabled=config.get("cute_moments_enabled", True),
         moments_dir=os.path.join(BASE_DIR, "moments"),
         show_baby_box=config.get("show_baby_box", True),
-        show_skeleton=config.get("show_skeleton", False)
+        show_skeleton=config.get("show_skeleton", False),
+        ai_enabled=ai_enabled
     )
     vision_tracker.surface_material_vi = config.get("crib_surface_material", "Vùng đệm an toàn")
     alert_manager.on_baby_out_of_crib_callback = vision_tracker.set_baby_out_of_crib
 
     # 3. Audio Cry, Cough & Choke Detector
     def on_cry(*args, **kwargs):
+        if not license_manager.is_ai_enabled():
+            return
         # Trích xuất Telemetry âm học (hỗ trợ cả dict và tuple cũ)
         if len(args) == 1 and isinstance(args[0], dict):
             telem = args[0]
@@ -333,6 +355,8 @@ def main():
             video_recorder.trigger_recording("cry", msg, on_complete_callback=handle_video_completion)
 
     def on_cough(prob, volume, top_label):
+        if not license_manager.is_ai_enabled():
+            return
         cur_cfg = load_config()
         if not cur_cfg.get("cough_alert_enabled", True):
             return
@@ -354,6 +378,8 @@ def main():
             video_recorder.trigger_recording("cough", msg, on_complete_callback=handle_video_completion)
 
     def on_choke(prob, volume, top_label):
+        if not license_manager.is_ai_enabled():
+            return
         cur_cfg = load_config()
         if not cur_cfg.get("choke_alert_enabled", True):
             return
@@ -428,7 +454,8 @@ def main():
         audio_callback=video_recorder.add_audio_samples,
         cry_alert_enabled=config.get("cry_alert_enabled", True),
         cough_alert_enabled=config.get("cough_alert_enabled", True),
-        choke_alert_enabled=config.get("choke_alert_enabled", True)
+        choke_alert_enabled=config.get("choke_alert_enabled", True),
+        ai_enabled=ai_enabled
     )
     music_player.attach_audio_detector(audio_detector)
 

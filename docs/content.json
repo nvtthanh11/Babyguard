@@ -8,8 +8,8 @@
     "hotline": "0943.435.433"
   },
   "top_banner": {
-    "badge": "KHUYÊN DÙNG",
-    "text": "Bảo vệ bé 24/7 • Bắn tin tức thì qua Telegram của ba mẹ",
+    "badge": "14 NGÀY DÙNG THỬ FULL AI",
+    "text": "Trải nghiệm 14 ngày Full Tính Năng AI • Sau 14 ngày vẫn dùng camera miễn phí trọn đời hoặc nâng cấp AI Pro",
     "cta_text": "Tải Về Dùng Thử Miễn Phí 14 Ngày →",
     "cta_link": "#download"
   },
@@ -18,7 +18,7 @@
     "title_line1": "Bảo vệ bé yêu.",
     "title_line2": "Bảo mật tuyệt đối.",
     "description": "Hệ thống AI giám sát giấc ngủ, đo nhịp thở không chạm, chống nằm sấp và nhận diện tiếng khóc. Toàn bộ hình ảnh xử lý trực tiếp trên máy tính tại phòng ngủ — Tuyệt đối không bao giờ đưa video riêng tư của con lên Cloud.",
-    "badge_trial": "Tải về miễn phí • 14 ngày sau mới thanh toán 49k (Dùng vĩnh viễn)"
+    "badge_trial": "Dùng thử 14 ngày Full AI • Sau 14 ngày vẫn dùng camera miễn phí trọn đời"
   },
   "downloads": {
     "windows": {
@@ -112,18 +112,52 @@
     "amount": "49.000đ",
     "raw_amount": 49000,
     "trial_days": 14,
-    "plan_name": "Bản Quyền Vĩnh Viễn Trọn Đời",
-    "badge": "GÓI SỞ HỮU TRỌN ĐỜI DUY NHẤT",
-    "description": "Ba mẹ được tải về và dùng thử hoàn toàn MIỄN PHÍ 100% trong 14 ngày đầu tiên. Sau 14 ngày, nếu thực sự hài lòng và an tâm, chỉ thanh toán 49.000 VNĐ duy nhất một lần để sở hữu vĩnh viễn trọn đời.",
+    "plan_name": "BabyGuard AI Pro (Bản Quyền Vĩnh Viễn)",
+    "badge": "14 NGÀY DÙNG THỬ FULL AI • SAU ĐÓ MIỄN PHÍ VĨNH VIỄN HOẶC NÂNG CẤP",
+    "description": "Ba mẹ được tải về và dùng thử hoàn toàn MIỄN PHÍ 100% đầy đủ tính năng AI trong 14 ngày đầu tiên. Sau 14 ngày, ba mẹ vẫn tiếp tục được sử dụng camera MIỄN PHÍ VĨNH VIỄN (đã tắt tính năng AI). Nếu thực sự an tâm và muốn tiếp tục sử dụng trọn bộ AI bảo vệ bé, chỉ cần nâng cấp 49.000 VNĐ duy nhất một lần để sở hữu vĩnh viễn trọn đời.",
     "benefits": [
-      "Tải về dùng thử miễn phí 100%, không cần thẻ tín dụng",
-      "14 ngày trải nghiệm đầy đủ 100% tính năng AI cao cấp",
-      "Mua 1 lần duy nhất — Sở hữu & sử dụng vĩnh viễn",
+      "14 ngày đầu trải nghiệm đầy đủ 100% tính năng AI cao cấp",
+      "Sau 14 ngày: Vẫn dùng camera miễn phí vĩnh viễn trọn đời",
+      "Nâng cấp AI Pro chỉ 49.000đ mua 1 lần duy nhất — Dùng vĩnh viễn",
       "0đ phí thuê bao tháng, 0đ phí duy trì hằng năm",
       "Bảo mật 100% Local, tuyệt đối không rò rỉ video",
       "Cập nhật miễn phí trọn đời các phiên bản AI mới",
       "Tiết kiệm hơn 10 - 15 triệu đồng so với camera ngoại"
     ],
+    "plans_comparison": {
+      "standard": {
+        "name": "Bản Camera Tiêu Chuẩn",
+        "price": "0đ",
+        "sub": "Miễn phí vĩnh viễn",
+        "desc": "Dành cho nhu cầu quan sát camera gia đình thông thường, xem trực tiếp HD 24/7 và bảo mật tuyệt đối không lưu Cloud.",
+        "features": [
+          "Xem trực tiếp video HD 24/7 trên máy tính & điện thoại",
+          "Bảo mật 100% Local (Zero-Cloud Storage, không sợ lộ clip)",
+          "Xem qua mạng LAN hoặc qua kết nối từ xa cá nhân",
+          "Phát nhạc ru ngủ & điều khiển xoay camera thủ công",
+          "❌ Không có AI phát hiện nằm sấp & úp mặt",
+          "❌ Không có AI cảnh báo ngạt thở & dị vật che mặt",
+          "❌ Không có AI phân tích tiếng khóc & tiếng sặc sữa",
+          "❌ Không có Bác sĩ AI Gemini 07:00 & Album Flipbook 3D"
+        ]
+      },
+      "pro": {
+        "name": "Bản BabyGuard AI Pro",
+        "price": "49.000đ",
+        "sub": "Dùng thử 14 ngày miễn phí • Mua 1 lần dùng vĩnh viễn",
+        "desc": "Trọn bộ trợ lý AI bảo vệ giấc ngủ và an toàn tính mạng cho bé từng giây từng phút.",
+        "features": [
+          "Bao gồm toàn bộ tính năng của Bản Camera Tiêu Chuẩn",
+          "✅ 14 ngày dùng thử miễn phí 100% trước khi quyết định",
+          "✅ AI phát hiện nằm sấp / úp mặt / chăn trùm trong < 1 giây",
+          "✅ AI đo nhịp thở quang học & cảnh báo ngưng thở",
+          "✅ AI phân biệt tiếng sặc sữa, tiếng ho, khóc gắt tức thì",
+          "✅ AI nhận diện ranh giới nôi & mép giường chống rơi ngã",
+          "✅ Bác sĩ Nhi Gemini: Báo cáo giấc ngủ 7h sáng & Album Flipbook 3D",
+          "✅ Hỗ trợ kỹ thuật ưu tiên 1:1 từ chuyên gia công nghệ"
+        ]
+      }
+    },
     "payment": {
       "bank_name": "MB Bank (Ngân hàng Quân Đội)",
       "account_number": "1550107316004",
@@ -137,8 +171,12 @@
       "a": "Ba mẹ hoàn toàn KHÔNG CẦN mua thêm thiết bị chuyên dụng đắt đỏ nào! Chỉ cần tận dụng 1 chiếc máy tính có sẵn ở nhà (Laptop Windows, MacBook, PC văn phòng hoặc máy tính mini) cắm webcam USB hoặc dùng luôn camera laptop hướng vào nôi bé. Hệ thống sẽ biến chiếc camera đó thành trạm AI giám sát y tế thông minh."
     },
     {
-      "q": "Chính sách dùng thử miễn phí 14 ngày và phí 49.000 VNĐ như thế nào?",
-      "a": "Ba mẹ được tải về và dùng thử hoàn toàn MIỄN PHÍ 100% trong 14 ngày đầu tiên để trải nghiệm chất lượng thực tế mà không cần nhập thẻ tín dụng hay trả trước bất kỳ chi phí nào. Sau 14 ngày, nếu thực sự thấy BabyGuard AI mang lại sự an tâm tuyệt đối cho giấc ngủ của con, ba mẹ chỉ cần thanh toán duy nhất 1 lần 49.000 VNĐ để kích hoạt sở hữu vĩnh viễn trọn đời. Cam kết 0đ phí thuê bao tháng, 0đ phí duy trì hàng năm!"
+      "q": "Chính sách dùng thử 14 ngày và Bản Camera Miễn Phí Vĩnh Viễn như thế nào?",
+      "a": "Khi tải về, ba mẹ được trải nghiệm trọn vẹn 100% tính năng AI cao cấp trong 14 ngày đầu tiên hoàn toàn MIỄN PHÍ mà không cần nhập thẻ tín dụng hay trả trước bất kỳ chi phí nào. Sau 14 ngày, ba mẹ vẫn được tiếp tục sử dụng BabyGuard AI hoàn toàn MIỄN PHÍ VĨNH VIỄN như một chiếc camera an ninh gia đình (xem trực tiếp video HD, xem qua điện thoại, bảo mật tuyệt đối không lưu cloud, không có tính năng AI). Nếu ba mẹ thực sự an tâm và muốn tiếp tục sử dụng các tính năng AI thông minh (cảnh báo úp mặt, ngạt thở, tiếng khóc, báo cáo y tế bác sĩ nhi), chỉ cần thanh toán duy nhất 1 lần 49.000 VNĐ để mở khóa vĩnh viễn trọn đời."
+    },
+    {
+      "q": "Sau 14 ngày dùng thử, nếu tôi không nâng cấp thì camera có bị khóa không?",
+      "a": "Hoàn toàn KHÔNG BỊ KHÓA! Ba mẹ vẫn được sử dụng BabyGuard AI miễn phí trọn đời như một chiếc camera giám sát gia đình độ nét cao. Phần mềm vẫn cho phép xem trực tiếp trên máy tính, điện thoại, phát nhạc ru ngủ thủ công và lưu trữ cục bộ bảo mật 100%. Chỉ các tính năng phân tích và cảnh báo AI thông minh sẽ tạm khóa cho đến khi ba mẹ kích hoạt nâng cấp gói AI Pro."
     },
     {
       "q": "Dữ liệu video phòng ngủ của con tôi có bị đưa lên mạng không?",

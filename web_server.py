@@ -1555,6 +1555,13 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
                     if not already_sent and not _ai_sleep_State["generating"]:
                         cfg = load_config()
+                        from license_manager import LicenseManager
+                        lm = LicenseManager(cfg)
+                        if not lm.is_ai_enabled():
+                            print("[WebServer] 📹 Hệ thống đang ở Chế độ Camera Tiêu Chuẩn (hết hạn 14 ngày dùng thử AI). Bỏ qua Báo cáo Bác sĩ AI 07:00 sáng.")
+                            _ai_sleep_State["last_auto_date"] = cur_cycle
+                            continue
+
                         age_m = int(cfg.get("baby_age_months", 1))
                         vis_st = vision_tracker.get_status() if vision_tracker else {}
                         aud_st = audio_detector.get_status() if audio_detector else {}
@@ -2206,6 +2213,11 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         cfg = load_config()
         lm = LicenseManager(cfg)
         res = lm.activate_key(key)
+        if res.get("success"):
+            if vision_tracker:
+                vision_tracker.ai_enabled = True
+            if audio_detector:
+                audio_detector.ai_enabled = True
         return res
 
     @app.post("/api/license/self-activate")
@@ -2220,6 +2232,10 @@ Start-Process "$destDir\\BabyGuard AI.bat"
         cfg["developer_mode"] = True
         save_config(cfg)
         lm = LicenseManager(cfg)
+        if vision_tracker:
+            vision_tracker.ai_enabled = True
+        if audio_detector:
+            audio_detector.ai_enabled = True
         return {
             "success": True,
             "message": "Đã tự kích hoạt quyền Tác Giả (Developer Master Lifetime) thành công!",

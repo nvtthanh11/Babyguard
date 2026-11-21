@@ -197,12 +197,27 @@ class LicenseManager:
     """
     Bộ quản lý bản quyền thương mại BabyGuard AI:
     - Quản lý định danh phần cứng máy tính
-    - Quản lý thời hạn dùng thử 14 ngày (Trial)
-    - Kích hoạt bản quyền vĩnh viễn / gói đăng ký
+    - Quản lý thời hạn dùng thử 14 ngày (Trial Full AI)
+    - Phân cấp bản quyền: 
+      + 14 ngày đầu: Đầy đủ 100% tính năng AI Pro
+      + Sau 14 ngày: Tiếp tục dùng Chế độ Camera Tiêu Chuẩn Miễn Phí Vĩnh Viễn (đã tắt tính năng AI)
+      + Kích hoạt bản quyền: Mở khóa vĩnh viễn toàn bộ tính năng AI Pro
     """
     def __init__(self, config: dict = None):
         self.config = config or {}
         self.machine_id = get_machine_fingerprint()
+
+    def is_ai_enabled(self) -> bool:
+        """
+        Kiểm tra xem các tính năng AI (chống lật sấp, cảnh báo ngạt mặt,
+        nhịp thở quang học, phát hiện tiếng khóc/tiếng sặc, báo cáo Gemini 7h...)
+        có được kích hoạt hay không.
+        - Còn trong 14 ngày dùng thử: TRUE (Full AI)
+        - Đã kích hoạt bản quyền Pro/Lifetime: TRUE
+        - Hết 14 ngày và chưa kích hoạt: FALSE (vẫn dùng Camera Tiêu chuẩn Miễn phí)
+        """
+        status = self.get_status()
+        return bool(status.get("ai_enabled", False))
 
     def get_status(self) -> dict:
         stored_key = self.config.get("license_key", "").strip()
@@ -213,34 +228,43 @@ class LicenseManager:
             if res.get("valid"):
                 return {
                     "valid": True,
+                    "ai_enabled": True,
+                    "mode": "AI_PRO",
                     "status": "activated",
                     "tier": res.get("tier", "LIFETIME"),
-                    "tier_display": "Bản quyền Thương Mại Vĩnh Viễn" if res.get("is_lifetime") else f"Gói Bản Quyền {res.get('tier')}",
+                    "tier_display": "Bản Quyền AI Pro Thương Mại Vĩnh Viễn" if res.get("is_lifetime") else f"Gói Bản Quyền AI Pro {res.get('tier')}",
                     "is_lifetime": res.get("is_lifetime", False),
                     "expires_at": res.get("expires_at", "Vĩnh viễn"),
                     "machine_id": self.machine_id,
-                    "license_key": stored_key[:6] + "..." + stored_key[-4:] if len(stored_key) > 10 else stored_key
+                    "license_key": stored_key[:6] + "..." + stored_key[-4:] if len(stored_key) > 10 else stored_key,
+                    "message": "Đang hoạt động với đầy đủ 100% tính năng AI Pro bảo vệ bé."
                 }
             else:
                 return {
                     "valid": False,
+                    "ai_enabled": False,
+                    "mode": "FREE_STANDARD_CAMERA",
                     "status": "invalid_key",
-                    "tier": "UNLICENSED",
-                    "tier_display": "Mã Bản Quyền Không Hợp Lệ",
+                    "tier": "FREE_CAMERA",
+                    "tier_display": "Camera Tiêu Chuẩn (Miễn Phí Vĩnh Viễn - Đã Tắt AI)",
                     "reason": res.get("reason", "error"),
-                    "machine_id": self.machine_id
+                    "machine_id": self.machine_id,
+                    "message": "Mã bản quyền không hợp lệ. Đang chạy Chế độ Camera Tiêu chuẩn Miễn phí Vĩnh viễn (đã tắt tính năng AI)."
                 }
 
-        # 2. Không có key -> Kiểm tra thời hạn Dùng thử (14 ngày)
+        # 2. Không có key -> Kiểm tra thời hạn Dùng thử 14 ngày Full AI
         state = _get_or_init_trial_state(self.machine_id)
         if state.get("tampered"):
             return {
                 "valid": False,
+                "ai_enabled": False,
+                "mode": "FREE_STANDARD_CAMERA",
                 "status": "tampered",
-                "tier": "TRIAL",
-                "tier_display": "Dùng Thử Bị Can Thiệp",
+                "tier": "FREE_CAMERA",
+                "tier_display": "Camera Tiêu Chuẩn (Miễn Phí Vĩnh Viễn - Đã Tắt AI)",
                 "machine_id": self.machine_id,
-                "days_left": 0
+                "days_left": 0,
+                "message": "Dữ liệu dùng thử bị can thiệp. Hệ thống chuyển sang Chế độ Camera Tiêu chuẩn Miễn phí Vĩnh viễn."
             }
 
         elapsed_days = (time.time() - state["installed_at"]) / 86400.0
@@ -249,23 +273,30 @@ class LicenseManager:
         if days_left > 0:
             return {
                 "valid": True,
+                "ai_enabled": True,
+                "mode": "AI_PRO_TRIAL",
                 "status": "trial",
                 "tier": "TRIAL",
-                "tier_display": f"Bản Dùng Thử Miễn Phí (Còn {days_left} ngày)",
+                "tier_display": f"Dùng Thử AI Pro Miễn Phí (Còn {days_left} ngày)",
                 "days_left": days_left,
                 "machine_id": self.machine_id,
                 "is_lifetime": False,
-                "expires_at": f"Còn {days_left} ngày dùng thử"
+                "expires_at": f"Còn {days_left} ngày trải nghiệm AI",
+                "message": f"Bạn đang dùng thử miễn phí đầy đủ 100% tính năng AI Pro (còn {days_left} ngày). Sau 14 ngày, bạn vẫn được sử dụng camera miễn phí trọn đời."
             }
         else:
             return {
                 "valid": False,
-                "status": "trial_expired",
-                "tier": "EXPIRED",
-                "tier_display": "Hết Hạn Dùng Thử",
+                "ai_enabled": False,
+                "mode": "FREE_STANDARD_CAMERA",
+                "status": "trial_expired_free_camera",
+                "tier": "FREE_CAMERA",
+                "tier_display": "Camera Tiêu Chuẩn (Miễn Phí Vĩnh Viễn - Đã Tắt AI)",
                 "days_left": 0,
                 "machine_id": self.machine_id,
-                "is_lifetime": False
+                "is_lifetime": False,
+                "expires_at": "Hết 14 ngày dùng thử AI",
+                "message": "Đã hết 14 ngày dùng thử AI. Bạn vẫn được tiếp tục sử dụng camera miễn phí vĩnh viễn (đã tắt toàn bộ tính năng AI). Nâng cấp lên BabyGuard AI Pro để kích hoạt lại giám sát thông minh cho bé!"
             }
 
     def activate_key(self, key_str: str) -> dict:

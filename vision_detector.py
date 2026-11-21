@@ -54,11 +54,13 @@ class VisionTracker:
                  danger_zone_x_percent: float = None,
                  safe_zone_polygon: list = None,
                  show_baby_box: bool = False,
-                 show_skeleton: bool = False):
+                 show_skeleton: bool = False,
+                 ai_enabled: bool = True):
         self.camera_index = camera_index
         self.width = width
         self.height = height
         self.target_fps = fps
+        self.ai_enabled = ai_enabled
         self.motion_threshold = motion_threshold
         self.on_motion_callback = on_motion_callback
         self.on_prone_callback = on_prone_callback
@@ -2031,6 +2033,21 @@ class VisionTracker:
     def _process_frame(self, frame):
         h, w = frame.shape[:2]
         now_t = time.time()
+
+        # CHẾ ĐỘ CAMERA TIÊU CHUẨN (MIỄN PHÍ VĨNH VIỄN - KHI HẾT 14 NGÀY DÙNG THỬ AI)
+        if not getattr(self, "ai_enabled", True):
+            self.baby_detected = False
+            self.baby_status = "Camera Tiêu Chuẩn (Miễn Phí Vĩnh Viễn)"
+            self.sleep_pose = "Camera Tiêu Chuẩn"
+            self.breathing_bpm = 0.0
+            self.breathing_status = "AI Đã Tắt"
+            annotated = frame.copy()
+            # Overlay nhẹ nhàng thông báo camera tiêu chuẩn
+            cv2.rectangle(annotated, (16, 16), (460, 52), (18, 16, 14), -1)
+            cv2.rectangle(annotated, (16, 16), (460, 52), (100, 100, 100), 1)
+            cv2.putText(annotated, "CAMERA TIEU CHUAN (MIEN PHI) - AI DA TAT", (28, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.48, (200, 200, 200), 1, cv2.LINE_AA)
+            return annotated
 
         # CHẾ ĐỘ CAMERA THƯỜNG (ECO MODE - MÁY YẾU / TIẾT KIỆM CPU & PIN)
         if getattr(self, "eco_camera_mode", False):

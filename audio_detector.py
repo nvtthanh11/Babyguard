@@ -35,7 +35,8 @@ class AudioCryDetector:
     def __init__(self, model_path: str, device_index: int = None, sample_rate: int = 16000, 
                  cry_threshold: float = 0.30, cough_threshold: float = 0.25, choke_threshold: float = 0.20,
                  on_cry_callback=None, on_cough_callback=None, on_choke_callback=None, on_whimper_callback=None, audio_callback=None,
-                 cry_alert_enabled: bool = True, cough_alert_enabled: bool = True, choke_alert_enabled: bool = True):
+                 cry_alert_enabled: bool = True, cough_alert_enabled: bool = True, choke_alert_enabled: bool = True,
+                 ai_enabled: bool = True):
         self.model_path = model_path
         self.sample_rate = sample_rate
         self.cry_threshold = cry_threshold
@@ -50,6 +51,7 @@ class AudioCryDetector:
         self.cry_alert_enabled = cry_alert_enabled
         self.cough_alert_enabled = cough_alert_enabled
         self.choke_alert_enabled = choke_alert_enabled
+        self.ai_enabled = ai_enabled
         
         # Local Edge AI VAD Filter
         self.acoustic_filter = LocalAcousticFilter() if LocalAcousticFilter is not None else None
@@ -209,6 +211,9 @@ class AudioCryDetector:
     def _inference_loop(self):
         """Background thread running YAMNet inference 2 times per second with DSP Bandpass & Envelope Follower."""
         while self.is_running:
+            if not getattr(self, "ai_enabled", True):
+                time.sleep(1.0)
+                continue
             if getattr(self, "eco_camera_mode", False):
                 time.sleep(0.5)
                 continue
