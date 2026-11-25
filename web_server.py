@@ -353,11 +353,16 @@ def create_app(vision_tracker, audio_detector, alert_manager, video_recorder, mu
         _write_security_audit_log("PIN_CHANGED", client_ip, "Đã đổi Mã PIN gia đình thành công.")
         return {"success": True, "message": "Đã đổi Mã PIN bảo vệ gia đình thành công!"}
 
-    @app.get("/cam")
+    @app.api_route("/cam", methods=["GET", "HEAD"])
     @app.api_route("/station", methods=["GET", "HEAD"])
     @app.api_route("/station/{secret_key}", methods=["GET", "HEAD"])
     async def view_station_mode(request: Request, secret_key: str = None):
         """Chế độ Máy Trạm AI độc lập trên điện thoại (Phone Station Mode)."""
+        # Nếu có tham số token/key/k -> Đây là link xem camera của ba mẹ từ Telegram/Web!
+        q_key = request.query_params.get("key", "") or request.query_params.get("token", "") or request.query_params.get("k", "")
+        if q_key:
+            return await view_camera_live(request, secret_key=q_key)
+
         response = templates.TemplateResponse(
             request=request,
             name="station.html",
@@ -816,8 +821,11 @@ Start-Process "$destDir\\BabyGuard AI.bat"
             if t_url:
                 remote_url = t_url
 
-        local_pair_url = f"http://{primary_ip}:{port}/cam?key={acc_key}"
-        remote_pair_url = f"{remote_url}/cam?key={acc_key}" if remote_url else ""
+        if remote_url in ("https://babyguard.site", "http://babyguard.site"):
+            remote_url = "https://cam.babyguard.site"
+
+        local_pair_url = f"http://{primary_ip}:{port}/cam/{acc_key}"
+        remote_pair_url = f"{remote_url.rstrip('/')}/cam/{acc_key}" if remote_url else ""
 
         return {
             "success": True,
@@ -2372,7 +2380,9 @@ Start-Process "$destDir\\BabyGuard AI.bat"
 
         merchant_id = sepay_cfg.get("merchant_id", "SP-TEST-NV5B9824")
         amount = int(sepay_cfg.get("default_amount", 49000))
-        tunnel_url = cfg.get("remote_access_url", "https://babyguard.site")
+        tunnel_url = cfg.get("remote_access_url", "https://cam.babyguard.site")
+        if tunnel_url in ("https://babyguard.site", "http://babyguard.site"):
+            tunnel_url = "https://cam.babyguard.site"
         ipn_url = f"{tunnel_url.rstrip('/')}/api/sepay/ipn"
 
         bank_bin = sepay_cfg.get("bank_bin", "970422")

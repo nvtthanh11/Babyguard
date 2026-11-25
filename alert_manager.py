@@ -304,7 +304,11 @@ class AlertManager:
                     except Exception as ce:
                         print(f"[AlertManager] Lỗi lưu auto-pair config: {ce}")
 
-            fixed_cam_url = f"https://babyguard.site/cam?token={current_access_key}" if current_access_key else "https://cam.babyguard.site"
+            remote_base = str(self.config.get("remote_access_url", "")).strip().rstrip("/")
+            if not remote_base or remote_base in ("https://babyguard.site", "http://babyguard.site"):
+                remote_base = "https://cam.babyguard.site"
+
+            fixed_cam_url = f"{remote_base}/cam/{current_access_key}" if current_access_key else f"{remote_base}/cam"
 
             if is_start_pair or should_auto_add:
                 reply_text = (

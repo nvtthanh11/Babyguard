@@ -471,13 +471,18 @@ def main():
     # 4. Remote Access Tunnel Manager (Cloudflare Quick Tunnel)
     _last_notified_tunnel_url = [None]
     def on_tunnel_ready(url):
-        alert_manager.update_config({"remote_access_url": url})
-        print(f"[BabyGuard AI] 🌐 Link xem từ xa (4G/5G) đã sẵn sàng: {url}")
-        if _last_notified_tunnel_url[0] != url:
-            _last_notified_tunnel_url[0] = url
+        clean_url = str(url).strip().rstrip("/")
+        if not clean_url or clean_url in ("https://babyguard.site", "http://babyguard.site"):
+            clean_url = "https://cam.babyguard.site"
+        alert_manager.update_config({"remote_access_url": clean_url})
+        print(f"[BabyGuard AI] 🌐 Link xem từ xa (4G/5G) đã sẵn sàng: {clean_url}")
+        if _last_notified_tunnel_url[0] != clean_url:
+            _last_notified_tunnel_url[0] = clean_url
+            acc_key = alert_manager.config.get("access_key") or alert_manager._load_access_key()
+            direct_cam_url = f"{clean_url}/cam/{acc_key}" if acc_key else clean_url
             msg = (
                 "🍼 <b>BABYGUARD AI — KẾT NỐI TỪ XA ĐÃ SẴN SÀNG!</b>\n\n"
-                f"📱 <b>Link xem camera từ xa trên 4G/5G:</b>\n👉 <a href='{url}'>{url}</a>\n\n"
+                f"📱 <b>Link xem camera từ xa trên 4G/5G:</b>\n👉 <a href='{direct_cam_url}'>{direct_cam_url}</a>\n\n"
                 f"🏠 <b>Link xem tại nhà (WiFi):</b>\n👉 http://localhost:{port}\n\n"
                 "<i>Ba mẹ có thể bấm trực tiếp vào link trên điện thoại khi ở ngoài để xem bé mọi lúc mọi nơi!</i>"
             )

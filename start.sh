@@ -22,7 +22,7 @@ fi
 # 1.1 Khởi tạo môi trường riêng .venv (Chống lỗi externally-managed-environment trên macOS Sonoma/Sequoia)
 if [ ! -d "$DIR/.venv" ]; then
     echo "📦 Đang khởi tạo môi trường chạy riêng biệt cho BabyGuard AI..."
-    $SYSTEM_PYTHON -m venv "$DIR/.venv" 2>/dev/null
+    $SYSTEM_PYTHON -m venv --system-site-packages "$DIR/.venv" 2>/dev/null
 fi
 
 if [ -f "$DIR/.venv/bin/python" ]; then

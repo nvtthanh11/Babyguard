@@ -493,14 +493,39 @@ class AudioCryDetector:
             return
         self.is_running = True
         
-        # Determine audio device index if not explicitly passed
+        # Determine audio device index if not explicitly passed or if invalid
         device = self.device_index
-        if device is None:
-            # Auto-detect Brio 100
+        need_autodetect = (device is None)
+        if device is not None:
+            try:
+                info = sd.query_devices(device)
+                if info.get("max_input_channels", 0) <= 0:
+                    print(f"[AudioDetector] ⚠️ Cổng âm thanh {device} ({info.get('name')}) không hỗ trợ đầu vào Micro (0 input). Đang tự động chuyển sang Micro hợp lệ...")
+                    need_autodetect = True
+            except Exception:
+                need_autodetect = True
+
+        if need_autodetect:
+            device = None
+            # 1. Ưu tiên tìm camera/webcam có mic (Brio...)
             for idx, dev in enumerate(sd.query_devices()):
-                if "Brio" in dev["name"] and dev["max_input_channels"] > 0:
+                if ("Brio" in dev["name"] or "Camera" in dev["name"] or "Webcam" in dev["name"]) and dev["max_input_channels"] > 0:
                     device = idx
                     break
+            # 2. Nếu không tìm thấy, lấy default input device
+            if device is None:
+                try:
+                    default_dev = sd.default.device[0]
+                    if default_dev >= 0 and sd.query_devices(default_dev)["max_input_channels"] > 0:
+                        device = default_dev
+                except Exception:
+                    pass
+            # 3. Quét bất kỳ thiết bị nào có max_input_channels > 0
+            if device is None:
+                for idx, dev in enumerate(sd.query_devices()):
+                    if dev["max_input_channels"] > 0:
+                        device = idx
+                        break
 
         print(f"[AudioDetector] Starting audio stream on device {device} at {self.sample_rate}Hz...")
         self.stream = sd.InputStream(
