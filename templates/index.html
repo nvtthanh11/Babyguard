@@ -38,15 +38,15 @@
                         sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                     },
                     colors: {
-                        obsidian: '#090D16',
-                        cardbg: '#111827',
-                        cardhover: '#172033',
-                        bordercol: '#1F293D',
+                        obsidian: '#0A0B0E',
+                        cardbg: '#14161D',
+                        cardhover: '#1B1E28',
+                        bordercol: 'rgba(255, 255, 255, 0.08)',
                         safe: '#10B981',
                         danger: '#F43F5E',
                         warning: '#F59E0B',
                         sleep: '#8B5CF6',
-                        vital: '#06B6D4'
+                        vital: '#34D399'
                     }
                 }
             }
@@ -54,10 +54,47 @@
     </script>
     <style>
         body {
-            background-color: #090D16;
-            color: #F1F5F9;
+            background: radial-gradient(circle at 50% 0%, #161822 0%, #0A0B0E 100%) !important;
+            color: #F8FAFC !important;
             font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+        }
+        .bg-obsidian {
+            background-color: rgba(10, 11, 14, 0.88) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        .bg-cardbg {
+            background-color: rgba(20, 22, 29, 0.85) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6) !important;
+        }
+        .hover\:bg-cardhover:hover {
+            background-color: rgba(27, 30, 40, 0.9) !important;
+        }
+        .border-bordercol {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        /* HUD Dynamic Island capsules on video */
+        #video-container .bg-slate-950\/85,
+        #video-container .bg-slate-950\/80,
+        #video-container .bg-slate-900\/80,
+        #hud-pose-badge,
+        #hud-surface-badge {
+            background-color: rgba(10, 11, 15, 0.78) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+        }
+        /* Refined warm glow accents */
+        #video-container {
+            border-radius: 24px !important;
+            box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.7), 0 0 35px -8px rgba(245, 158, 11, 0.15) !important;
         }
         .safe-area-pb {
             padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 12px));
