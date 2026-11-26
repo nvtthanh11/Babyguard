@@ -91,6 +91,80 @@
             border: 1px solid rgba(255, 255, 255, 0.12) !important;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
         }
+        /* =========================================================================
+           QUIET LUXURY - MONOCHROME RESTRAINT (Xóa bỏ hoàn toàn màu mè lòe loẹt)
+           ========================================================================= */
+        /* 1. Đồng bộ toàn bộ chữ màu mè (cyan, indigo, purple, teal) về trắng bạc & xám khói sang trọng */
+        .text-cyan-300, .text-cyan-400,
+        .text-indigo-300, .text-indigo-400,
+        .text-purple-300, .text-purple-400,
+        .text-teal-300, .text-teal-400,
+        .text-blue-400 {
+            color: #F8FAFC !important;
+        }
+        .text-cyan-200, .text-indigo-200, .text-teal-200, .text-purple-200 {
+            color: #94A3B8 !important;
+        }
+        .text-amber-300, .text-amber-400 {
+            color: #E2E8F0 !important;
+        }
+
+        /* 2. Triệt tiêu toàn bộ dải màu gradient lòe loẹt trên nút bấm và banner */
+        .bg-gradient-to-r,
+        .bg-gradient-to-tr,
+        .bg-gradient-to-br {
+            background-image: none !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            color: #F8FAFC !important;
+        }
+
+        /* 3. Chỉ giữ duy nhất MỘT màu điểm nhấn chức năng: Xanh ngọc bích #34D399 cho trạng thái an toàn */
+        .text-emerald-400, .text-emerald-300 {
+            color: #34D399 !important;
+        }
+        .bg-emerald-500\/20, .bg-emerald-500\/15 {
+            background-color: rgba(52, 211, 153, 0.1) !important;
+            border-color: rgba(52, 211, 153, 0.2) !important;
+            color: #34D399 !important;
+        }
+
+        /* 4. Tab điều hướng tối giản thanh lịch (không màu mè) */
+        .tab-btn {
+            background-color: transparent !important;
+            border-color: transparent !important;
+            color: #94A3B8 !important;
+        }
+        .tab-btn:hover {
+            color: #FFFFFF !important;
+            background-color: rgba(255, 255, 255, 0.04) !important;
+        }
+        .tab-btn#tab-btn-live,
+        .tab-btn.bg-cardbg {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: #FFFFFF !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            box-shadow: none !important;
+        }
+
+        /* 5. Cụm Dynamic Island HUD trên video: Kính đen khói thanh thoát */
+        #hud-pose-badge, #hud-surface-badge,
+        #video-container .bg-slate-950\/85,
+        #video-container .bg-slate-950\/80,
+        #video-container .bg-slate-900\/80 {
+            background-color: rgba(12, 13, 17, 0.82) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #F8FAFC !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        /* 6. Đồng bộ viền nút bấm sang kính mờ tinh xảo */
+        .border-teal-500\/40,
+        .border-indigo-500\/30,
+        .border-cyan-500\/30 {
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
         /* Refined warm glow accents */
         #video-container {
             border-radius: 24px !important;
