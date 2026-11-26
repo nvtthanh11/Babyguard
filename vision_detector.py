@@ -2653,20 +2653,20 @@ class VisionTracker:
             pts = self._get_interpolated_crib_polygon(w, h)
             is_alert = (getattr(self, "is_near_edge", False) and self.baby_detected) or getattr(self, "covered_face_active", False)
             if is_alert:
-                box_color = (40, 50, 245) # Bright red
+                box_color = (40, 50, 245) # Bright red alert
                 corner_color = (60, 80, 255)
                 box_thickness = 2
             else:
-                box_color = (70, 215, 90) # Emerald neon
-                corner_color = (120, 255, 150)
-                box_thickness = 2
+                box_color = (100, 115, 105) # Subtle muted quiet slate
+                corner_color = (130, 145, 135)
+                box_thickness = 1
 
             # 2a. Vẽ viền đa giác Safe Zone 3D bẻ theo đúng góc phối cảnh tấm đệm / nôi
             cv2.polylines(annotated, [pts], isClosed=True, color=box_color, thickness=box_thickness, lineType=cv2.LINE_AA)
 
             # 2b. Vẽ 4 góc định vị phát sáng bẻ theo đúng góc xiên phối cảnh của từng cạnh
-            c_len = 32.0
-            c_thick = 3
+            c_len = 20.0
+            c_thick = 2
             n_pts = len(pts)
             for i in range(n_pts):
                 p_curr = pts[i].astype(np.float32)
