@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" class="dark">
+<html lang="vi" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -15,8 +15,11 @@
     <!-- Prevent theme flash on load -->
     <script>
         (function() {
-            var theme = localStorage.getItem('babyguard_theme') || 'dark';
-            if (theme === 'light') {
+            var theme = localStorage.getItem('babyguard_theme') || 'light';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
                 document.documentElement.classList.remove('dark');
                 document.documentElement.classList.add('light');
             }
@@ -38,15 +41,15 @@
                         sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                     },
                     colors: {
-                        obsidian: '#090D16',
-                        cardbg: '#111827',
-                        cardhover: '#172033',
-                        bordercol: '#1F293D',
-                        safe: '#10B981',
-                        danger: '#F43F5E',
-                        warning: '#F59E0B',
-                        sleep: '#8B5CF6',
-                        vital: '#06B6D4'
+                        obsidian: '#08090C',
+                        cardbg: '#111319',
+                        cardhover: '#181A22',
+                        bordercol: 'rgba(255, 255, 255, 0.08)',
+                        safe: '#059669',
+                        danger: '#E11D48',
+                        warning: '#D97706',
+                        sleep: '#7C3AED',
+                        vital: '#0284C7'
                     }
                 }
             }
@@ -155,120 +158,166 @@
         }
 
         /* =========================================================================
-           LIGHT THEME OVERRIDES (High-Contrast Medical / Apple Health Style)
+           LIGHT THEME (Apple Ceramic White & Frosted Glass - Luxury Standard)
            ========================================================================= */
         html:not(.dark) {
             color-scheme: light;
         }
         html:not(.dark) body {
-            background-color: #F8FAFC !important;
-            color: #0F172A !important;
+            background-color: #FBFBFD !important;
+            color: #1D1D1F !important;
+            background-image: radial-gradient(at 0% 0%, rgba(220, 230, 242, 0.4) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(230, 235, 245, 0.4) 0px, transparent 50%) !important;
+            background-attachment: fixed !important;
         }
-        html:not(.dark) .bg-obsidian,
-        html:not(.dark) .bg-obsidian\/85 {
-            background-color: rgba(248, 250, 252, 0.94) !important;
+        html:not(.dark) header,
+        html:not(.dark) .bg-obsidian\/85,
+        html:not(.dark) .bg-obsidian {
+            background-color: rgba(255, 255, 255, 0.88) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border-color: rgba(0, 0, 0, 0.06) !important;
+        }
+        html:not(.dark) nav {
+            background-color: rgba(255, 255, 255, 0.82) !important;
+            backdrop-filter: blur(20px) !important;
+            border-color: rgba(0, 0, 0, 0.06) !important;
+        }
+        html:not(.dark) .tab-btn {
+            color: #6E6E73 !important;
+        }
+        html:not(.dark) .tab-btn:hover {
+            color: #1D1D1F !important;
+            background-color: rgba(0, 0, 0, 0.03) !important;
+        }
+        html:not(.dark) .tab-btn.bg-cardbg {
+            background-color: #FFFFFF !important;
+            color: #059669 !important;
+            border-color: rgba(5, 150, 105, 0.25) !important;
+            box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.06) !important;
         }
         html:not(.dark) .bg-cardbg {
             background-color: #FFFFFF !important;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+            border-color: rgba(0, 0, 0, 0.06) !important;
+            box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
         }
         html:not(.dark) .hover\:bg-cardhover:hover {
-            background-color: #F1F5F9 !important;
+            background-color: #F8F9FA !important;
         }
         html:not(.dark) .border-bordercol,
         html:not(.dark) .border-bordercol\/80 {
-            border-color: #E2E8F0 !important;
+            border-color: rgba(0, 0, 0, 0.06) !important;
         }
         html:not(.dark) .text-slate-100,
         html:not(.dark) .text-slate-200 {
-            color: #0F172A !important;
+            color: #1D1D1F !important;
         }
-        html:not(.dark) .text-slate-300 {
-            color: #1E293B !important;
-        }
+        html:not(.dark) .text-slate-300,
         html:not(.dark) .text-slate-200 {
-            color: #475569 !important;
+            color: #424245 !important;
         }
-
-        /* High-Contrast Color Overrides in Light Mode (Chống lóa / mất chữ trên nền trắng) */
-        html:not(.dark) .text-emerald-300,
-        html:not(.dark) .text-emerald-400 {
-            color: #065F46 !important; /* Deep Forest Emerald */
+        html:not(.dark) .text-slate-400 {
+            color: #6E6E73 !important;
         }
-        html:not(.dark) .text-amber-300,
-        html:not(.dark) .text-amber-400 {
-            color: #92400E !important; /* Deep Warm Amber */
+        html:not(.dark) .text-slate-500,
+        html:not(.dark) .text-slate-600 {
+            color: #86868B !important;
         }
-        html:not(.dark) .text-cyan-300,
-        html:not(.dark) .text-cyan-400 {
-            color: #0E7490 !important; /* Deep Ocean Cyan */
-        }
-        html:not(.dark) .text-rose-300,
-        html:not(.dark) .text-rose-400 {
-            color: #9F1239 !important; /* Deep Ruby Rose */
-        }
-        html:not(.dark) .text-indigo-300,
-        html:not(.dark) .text-indigo-400 {
-            color: #3730A3 !important; /* Deep Royal Indigo */
-        }
-        html:not(.dark) .text-purple-300,
-        html:not(.dark) .text-purple-400 {
-            color: #5B21B6 !important; /* Deep Violet */
-        }
-
         html:not(.dark) .bg-slate-900,
         html:not(.dark) .bg-slate-950 {
-            background-color: #F1F5F9 !important;
+            background-color: #FFFFFF !important;
         }
         html:not(.dark) .border-slate-800,
         html:not(.dark) .border-slate-700,
         html:not(.dark) .border-slate-700\/70,
         html:not(.dark) .border-slate-800\/80 {
-            border-color: #E2E8F0 !important;
+            border-color: rgba(0, 0, 0, 0.07) !important;
         }
         html:not(.dark) .bg-slate-800 {
-            background-color: #E2E8F0 !important;
-            color: #0F172A !important;
+            background-color: #F4F5F7 !important;
+            color: #1D1D1F !important;
         }
         html:not(.dark) .hover\:bg-slate-700:hover,
         html:not(.dark) .hover\:bg-slate-800:hover {
-            background-color: #CBD5E1 !important;
+            background-color: #E8EAED !important;
+        }
+        html:not(.dark) .text-emerald-300,
+        html:not(.dark) .text-emerald-400 {
+            color: #059669 !important; /* Rich Apple Emerald */
+        }
+        html:not(.dark) .text-amber-300,
+        html:not(.dark) .text-amber-400 {
+            color: #B45309 !important; /* Warm Amber Satin */
+        }
+        html:not(.dark) .text-cyan-300,
+        html:not(.dark) .text-cyan-400 {
+            color: #0284C7 !important; /* Pure Sky Azure */
+        }
+        html:not(.dark) .text-rose-300,
+        html:not(.dark) .text-rose-400 {
+            color: #E11D48 !important; /* Ruby */
+        }
+        html:not(.dark) .text-indigo-300,
+        html:not(.dark) .text-indigo-400 {
+            color: #4F46E5 !important;
+        }
+        html:not(.dark) .text-purple-300,
+        html:not(.dark) .text-purple-400 {
+            color: #7C3AED !important;
         }
 
-        /* Giữ nguyên Badge Kính Đen Sang Trọng trên Video và Ảnh (Permanent Dark Glass) */
+        /* Video Frame & Dynamic Island HUD */
+        #video-container,
+        #video-feed-container {
+            border-radius: 24px !important;
+            box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.12) !important;
+        }
+        #video-container .bg-slate-950\/85,
         #video-container .bg-slate-950\/80,
         #video-container .bg-slate-900\/80,
         #video-container .bg-slate-950\/90,
         #video-container .bg-black\/60,
         .photo-overlay-badge,
-        .video-overlay-badge {
-            background-color: rgba(15, 23, 42, 0.88) !important;
+        .video-overlay-badge,
+        #hud-pose-badge,
+        #hud-surface-badge {
+            background-color: rgba(15, 23, 42, 0.82) !important;
             color: #FFFFFF !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
+            border-color: rgba(255, 255, 255, 0.18) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
         }
         #video-container span,
         #video-container p {
             text-shadow: 0 1px 2px rgba(0,0,0,0.6);
         }
-
         html:not(.dark) .camera-action-bar {
-            background-color: rgba(255, 255, 255, 0.95) !important;
-            border-color: #E2E8F0 !important;
-            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08) !important;
+            background-color: rgba(255, 255, 255, 0.94) !important;
+            backdrop-filter: blur(20px) !important;
+            border-color: rgba(0, 0, 0, 0.06) !important;
+            box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.06) !important;
+            border-radius: 20px !important;
         }
         html:not(.dark) input,
         html:not(.dark) select,
         html:not(.dark) textarea {
             background-color: #FFFFFF !important;
-            color: #0F172A !important;
-            border-color: #CBD5E1 !important;
+            color: #1D1D1F !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
         }
         html:not(.dark) input::placeholder {
-            color: #94A3B8 !important;
+            color: #86868B !important;
         }
-        html:not(.dark) ::-webkit-scrollbar-track { background: #F1F5F9; }
-        html:not(.dark) ::-webkit-scrollbar-thumb { background: #CBD5E1; }
-        html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        html:not(.dark) ::-webkit-scrollbar-track { background: #FBFBFD; }
+        html:not(.dark) ::-webkit-scrollbar-thumb { background: #D2D2D7; border-radius: 9999px; }
+        html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: #86868B; }
+
+        /* Pro Banner & Quick Actions */
+        html:not(.dark) #free-camera-upgrade-banner {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(99, 102, 241, 0.06) 50%, rgba(16, 185, 129, 0.08) 100%) !important;
+            border-color: rgba(245, 158, 11, 0.25) !important;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
@@ -4134,7 +4183,7 @@
         // =========================================================================
         // LIGHT / DARK THEME MANAGEMENT
         // =========================================================================
-        let currentTheme = localStorage.getItem('babyguard_theme') || 'dark';
+        let currentTheme = localStorage.getItem('babyguard_theme') || 'light';
 
         function applyTheme(theme) {
             currentTheme = (theme === 'light') ? 'light' : 'dark';
