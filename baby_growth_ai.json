@@ -1,14 +1,14 @@
 {
-  "analyzed_at": "13:54 - 04/11/2026",
-  "days_gap": 7,
-  "weight_gain_g": 700,
-  "height_gain_cm": 0.0,
-  "velocity_str": "+700g (100.0g/ngày), +0.0cm trong 7 ngày",
+  "analyzed_at": "00:01 - 27/11/2026",
+  "days_gap": 27,
+  "weight_gain_g": 900,
+  "height_gain_cm": 5.0,
+  "velocity_str": "+900g (33.3g/ngày), +5.0cm trong 27 ngày | Trung bình từ lúc sinh: 36.2g/ngày (Chuẩn vàng: 25-35g/ngày)",
   "status_badge": "✅ Nằm Trong Ngưỡng An Toàn WHO",
-  "velocity_evaluation_vi": "Bé A Siu hiện đạt cân nặng 3.9 kg và chiều cao 55.0 cm (+700g (100.0g/ngày), +0.0cm trong 7 ngày). Thể trạng của bé nằm trọn trong dải phát triển sinh lý an toàn theo quy chuẩn WHO, hấp thu dinh dưỡng tốt và tăng trưởng đều đặn.",
-  "who_percentile_comparison_vi": "Cân nặng 3.9 kg và chiều cao 55.0 cm nằm trọn vẹn trong vùng an toàn theo Tiêu chuẩn Tăng trưởng Trẻ em của Tổ chức Y tế Thế giới (WHO: 3.4 - 5.7 kg, chiều dài 51.1 - 58.4 cm, mức trung vị 4.5 kg). Thể trạng của bé hoàn toàn an toàn và đạt chuẩn quốc tế.",
+  "velocity_evaluation_vi": "Bé A Siu hiện đạt cân nặng 4.8 kg và chiều cao 60.0 cm (+900g (33.3g/ngày), +5.0cm trong 27 ngày | Trung bình từ lúc sinh: 36.2g/ngày (Chuẩn vàng: 25-35g/ngày)). Thể trạng của bé nằm trọn trong dải phát triển sinh lý an toàn theo quy chuẩn WHO, hấp thu dinh dưỡng tốt và tăng trưởng đều đặn.",
+  "who_percentile_comparison_vi": "Cân nặng 4.8 kg và chiều cao 60.0 cm nằm trọn vẹn trong vùng an toàn theo Tiêu chuẩn Tăng trưởng Trẻ em của Tổ chức Y tế Thế giới (WHO: 4.31 - 6.88 kg, chiều dài 54.4 - 61.8 cm, mức trung vị 5.5 kg). Thể trạng của bé hoàn toàn an toàn và đạt chuẩn quốc tế.",
   "recommendations_vi": [
-    "Duy trì tổng lượng sữa mẹ hoặc sữa công thức khoảng 585 ml/ngày (140 - 160 ml/kg/ngày theo khuyến cáo dinh dưỡng Nhi khoa), chia đều các cữ bú.",
+    "Duy trì tổng lượng sữa mẹ hoặc sữa công thức khoảng 720 ml/ngày (140 - 160 ml/kg/ngày theo khuyến cáo dinh dưỡng Nhi khoa), chia đều các cữ bú.",
     "Tập cho bé nằm sấp có kiểm soát (Tummy Time) 3 - 5 phút mỗi ngày khi bé thức để rèn luyện cơ cổ và vai theo khuyến cáo AAP.",
     "Bổ sung đều đặn 400 IU Vitamin D3 mỗi buổi sáng để hỗ trợ hấp thu canxi và hoàn thiện khung xương."
   ],

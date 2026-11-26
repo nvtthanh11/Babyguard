@@ -260,8 +260,36 @@
             color: #FFFFFF !important;
         }
 
-        /* 2. Nút Hành Động Chính (Primary Action Buttons) kiểu Apple White Pill:
-              Nền trắng tinh khiết #FFFFFF + Chữ đen đậm #0A0B0E -> Đạt tương phản 17.5:1 (AAA) */
+        /* 1.1 Khắc phục dấu chấm đệm (bullet •) và text mờ đạt chuẩn WCAG AAA (7.03:1) */
+        .text-slate-600 {
+            color: #94A3B8 !important;
+        }
+
+        /* 1.2 Phân đoạn chu kỳ giấc ngủ (Sleep Cycle Bar) đạt chuẩn WCAG AAA (8.11:1 - 9.16:1) */
+        #guide-current-phase-name {
+            color: #E2E8F0 !important;
+        }
+        div[title*="Ngủ Động REM"],
+        .bg-purple-500 {
+            background-color: #6B21A8 !important;
+            color: #FFFFFF !important;
+            font-weight: 800 !important;
+        }
+        div[title*="Ngủ Sâu NREM"],
+        .bg-cyan-500 {
+            background-color: #06B6D4 !important;
+            color: #0A0B0E !important;
+            font-weight: 800 !important;
+        }
+        div[title*="Chuyển giao chu kỳ"],
+        .bg-amber-500 {
+            background-color: #F59E0B !important;
+            color: #0A0B0E !important;
+            font-weight: 800 !important;
+        }
+
+        /* 2. Nút Hành Động Chính (Primary Action Buttons) kiểu Apple White Pill trên toàn hệ thống & Modal:
+              Nền trắng tinh khiết #FFFFFF + Chữ đen đậm #0A0B0E -> Đạt tương phản 19.68:1 (AAA) */
         button[onclick*="openVaccineTabFromModal"],
         button[onclick*="openGrowthModal"],
         button[onclick*="saveSafeZone"],
@@ -269,6 +297,16 @@
         button#wz-btn-finish,
         button[onclick*="submitFamilyPin"],
         button[onclick*="openLicenseModal"],
+        button[onclick*="startVietQRCheckout"],
+        #lic-tab-btn-auto,
+        a[href*="app.apk"],
+        a[href*="/download/apk"],
+        button[onclick*="copyPairingLink"],
+        button[onclick*="saveManualPairing"],
+        button[onclick*="saveCustomDeviceUrl"],
+        #media-modal-download-btn,
+        #montage-modal-download-btn,
+        #montage-modal-telegram-btn,
         .btn-apple-primary {
             background-color: #FFFFFF !important;
             background-image: none !important;
@@ -281,15 +319,39 @@
         button#btn-save-growth *,
         button#wz-btn-finish *,
         button[onclick*="submitFamilyPin"] *,
-        button[onclick*="openLicenseModal"] * {
+        button[onclick*="openLicenseModal"] *,
+        button[onclick*="startVietQRCheckout"] *,
+        #lic-tab-btn-auto *,
+        a[href*="app.apk"] *,
+        a[href*="/download/apk"] *,
+        button[onclick*="copyPairingLink"] *,
+        button[onclick*="saveManualPairing"] *,
+        button[onclick*="saveCustomDeviceUrl"] *,
+        #media-modal-download-btn *,
+        #montage-modal-download-btn *,
+        #montage-modal-telegram-btn * {
             color: #0A0B0E !important;
             font-weight: 700 !important;
         }
         button[onclick*="openVaccineTabFromModal"]:hover,
         button[onclick*="openGrowthModal"]:hover,
-        button#btn-save-growth:hover {
+        button#btn-save-growth:hover,
+        button[onclick*="startVietQRCheckout"]:hover,
+        #lic-tab-btn-auto:hover {
             background-color: #F1F5F9 !important;
             transform: translateY(-1px) !important;
+        }
+
+        /* 2.1 Vòng tròn số bước hướng dẫn (Step Badge): Tương phản AAA (19.68:1) */
+        #user-guide-modal .w-6.h-6,
+        #user-guide-modal .w-7.h-7,
+        #user-guide-modal .w-8.h-8,
+        #guide-tab-content-quick .w-8.h-8,
+        .step-number-badge {
+            background-color: #FFFFFF !important;
+            color: #0A0B0E !important;
+            font-weight: 900 !important;
+            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2) !important;
         }
 
         /* 3. Nút Hành Động Phụ (Secondary Action Buttons) kiểu Glass:
@@ -8270,18 +8332,52 @@
             badgeText.innerText = `👶 ${text}`;
         }
 
-        function parseNum(val) {
+        function parseWeight(val) {
             if (val === null || val === undefined) return NaN;
             let s = String(val).trim().toLowerCase().replace(',', '.');
             s = s.replace(/[^0-9.]/g, '');
             if (!s) return NaN;
             let n = parseFloat(s);
             if (isNaN(n)) return NaN;
-            // Nếu ba mẹ nhập theo gram (vd 3900g -> 3.9kg)
-            if (n > 50) {
+            // Nếu ba mẹ nhập theo gram (vd 3900 hoặc 4800g -> 3.9kg hoặc 4.8kg)
+            if (n >= 500) {
                 n = Number((n / 1000).toFixed(2));
             }
             return n;
+        }
+
+        function parseHeight(val) {
+            if (val === null || val === undefined) return NaN;
+            let s = String(val).trim().toLowerCase().replace(',', '.');
+            s = s.replace(/[^0-9.]/g, '');
+            if (!s) return NaN;
+            let n = parseFloat(s);
+            if (isNaN(n)) return NaN;
+            // Chiều cao trẻ sơ sinh tính bằng cm (chuẩn 40 - 120cm).
+            // Nếu ba mẹ lỡ nhập theo mét (vd 0.6m -> tự đổi thành 60cm)
+            if (n > 0 && n <= 1.5) {
+                n = Number((n * 100).toFixed(1));
+            }
+            return n;
+        }
+
+        function parseHead(val) {
+            if (val === null || val === undefined) return null;
+            let s = String(val).trim().toLowerCase().replace(',', '.');
+            s = s.replace(/[^0-9.]/g, '');
+            if (!s) return null;
+            let n = parseFloat(s);
+            if (isNaN(n)) return null;
+            // Vòng đầu tính bằng cm (chuẩn 30 - 60cm). Nếu nhập mét (vd 0.38m -> 38cm)
+            if (n > 0 && n <= 1.0) {
+                n = Number((n * 100).toFixed(1));
+            }
+            return n;
+        }
+
+        function parseNum(val) {
+            // Giữ lại để tương thích ngược, mặc định parse cân nặng
+            return parseWeight(val);
         }
 
         function setGrowthDefaultDate() {
@@ -8454,9 +8550,9 @@
             let dt = document.getElementById('input-growth-date').value;
             const note = document.getElementById('input-growth-note').value.trim();
 
-            const wt = parseNum(wtVal);
-            const ht = parseNum(htVal);
-            const head = headVal ? parseNum(headVal) : null;
+            const wt = parseWeight(wtVal);
+            const ht = parseHeight(htVal);
+            const head = headVal ? parseHead(headVal) : null;
 
             if (isNaN(wt) || wt <= 0 || isNaN(ht) || ht <= 0) {
                 showToast("Vui lòng nhập cân nặng (kg) và chiều cao (cm) hợp lệ", "⚠️");
