@@ -522,10 +522,10 @@ class VisionTracker:
             tag_bg = (20, 75, 140)
             tag_border = (80, 220, 255)
         else:
-            box_color = (70, 215, 90) # Neon emerald
-            bracket_color = (110, 250, 130)
-            tag_bg = (15, 50, 30)
-            tag_border = (110, 250, 130)
+            box_color = (120, 150, 110) # Subtle quiet sage
+            bracket_color = (150, 185, 140)
+            tag_bg = (16, 22, 18)
+            tag_border = (120, 150, 110)
 
         # 1. Vẽ 4 góc định vị thông minh (Corner Brackets) dày dặn 2px
         c_len = max(18, min(42, int(min(w_box, h_box) * 0.22)))
@@ -2070,7 +2070,7 @@ class VisionTracker:
             self._apply_empty_crib_state(status_text="Bé không có trong nôi", pose_text="Ngoài giường")
             if self.danger_zone_enabled:
                 pts = self._get_interpolated_crib_polygon(w, h)
-                cv2.polylines(annotated, [pts], isClosed=True, color=(70, 215, 90), thickness=2, lineType=cv2.LINE_AA)
+                cv2.polylines(annotated, [pts], isClosed=True, color=(100, 115, 105), thickness=1, lineType=cv2.LINE_AA)
             return annotated
 
         # 1. Quét nhận diện khuôn mặt chuyên dụng bằng YuNet (Face-First Detector)
@@ -2117,7 +2117,7 @@ class VisionTracker:
                 self._apply_empty_crib_state(status_text=s_txt, pose_text=p_txt)
                 if self.danger_zone_enabled:
                     pts = self._get_interpolated_crib_polygon(w, h)
-                    cv2.polylines(annotated, [pts], isClosed=True, color=(70, 215, 90), thickness=2, lineType=cv2.LINE_AA)
+                    cv2.polylines(annotated, [pts], isClosed=True, color=(100, 115, 105), thickness=1, lineType=cv2.LINE_AA)
                 return annotated
 
         # BẢO VỆ CHỐNG NHẬN NHẦM MẶT NGƯỜI LỚN NẰM NGOÀI NÔI THÀNH EM BÉ:

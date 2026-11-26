@@ -91,45 +91,140 @@
             border: 1px solid rgba(255, 255, 255, 0.12) !important;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
         }
+        
         /* =========================================================================
-           QUIET LUXURY - MONOCHROME RESTRAINT (Xóa bỏ hoàn toàn màu mè lòe loẹt)
+           APPLE QUIET LUXURY - TOÀN DIỆN TRIỆT TIÊU MÀU MÈ (MONOCHROME RESTRAINT)
            ========================================================================= */
-        /* 1. Đồng bộ toàn bộ chữ màu mè (cyan, indigo, purple, teal) về trắng bạc & xám khói sang trọng */
-        .text-cyan-300, .text-cyan-400,
-        .text-indigo-300, .text-indigo-400,
-        .text-purple-300, .text-purple-400,
-        .text-teal-300, .text-teal-400,
-        .text-blue-400 {
+        /* 1. Nền canvas chính & Phân tầng thẻ kính */
+        body {
+            background-color: #0A0B0E !important;
+            background-image: radial-gradient(circle at 50% 0%, #171922 0%, #0A0B0E 100%) !important;
             color: #F8FAFC !important;
         }
-        .text-cyan-200, .text-indigo-200, .text-teal-200, .text-purple-200 {
+        .bg-obsidian,
+        header {
+            background-color: rgba(10, 11, 14, 0.9) !important;
+            border-color: rgba(255, 255, 255, 0.07) !important;
+        }
+        .bg-cardbg,
+        div.bg-cardbg {
+            background-color: rgba(18, 20, 27, 0.9) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        /* 2. Triệt tiêu toàn bộ nút bấm màu mè (Nói Với Bé, Kết Nối, v.v.) */
+        #talkback-btn,
+        button#talkback-btn,
+        .bg-emerald-500 {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: #FFFFFF !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            box-shadow: none !important;
+        }
+        #talkback-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+        }
+
+        /* 3. Triệt tiêu 5 màu cầu vồng của nhóm 'Ghi Nhận Y Tế Nhanh' (Bé Ho, Sặc Sữa, Trớ Sữa, Cữ Bú, Ợ Hơi) */
+        [onclick*="quickLogHealthEvent"],
+        .grid-cols-5 button {
+            background-color: rgba(255, 255, 255, 0.04) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            color: #E2E8F0 !important;
+            box-shadow: none !important;
+        }
+        [onclick*="quickLogHealthEvent"]:hover,
+        .grid-cols-5 button:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: #FFFFFF !important;
+        }
+
+        /* 4. Triệt tiêu toàn bộ màu mè ở cột phải 'Chu Kỳ Giấc Ngủ' & 'Gemini AI' */
+        .border-purple-500\/25,
+        .border-purple-500\/30,
+        .border-indigo-500\/25,
+        .border-indigo-500\/30,
+        .border-amber-500\/25,
+        .border-amber-500\/30,
+        .border-teal-500\/40,
+        .border-cyan-500\/30 {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        .bg-purple-500\/15,
+        .bg-indigo-500\/15,
+        .bg-indigo-500\/10,
+        .bg-amber-500\/10,
+        .bg-amber-500\/15,
+        .bg-rose-500\/15,
+        .bg-cyan-500\/15,
+        .bg-teal-500\/20 {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* 5. Đồng bộ toàn bộ chữ màu (tím, xanh cyan, vàng, cam, hồng) về màu trắng bạc & xám khói */
+        .text-purple-300, .text-purple-400,
+        .text-indigo-300, .text-indigo-400,
+        .text-cyan-300, .text-cyan-400,
+        .text-amber-300, .text-amber-400,
+        .text-teal-300, .text-teal-400,
+        .text-rose-300, .text-rose-400,
+        .text-blue-400,
+        #vital-sleep-time-lg,
+        #vital-sleep-stage-pill,
+        #vital-sleep-card-title,
+        #vital-gemini-card-title,
+        #header-sleep-nap,
+        #header-breathing-pill,
+        #hud-breathing,
+        #card-breathing-rpm {
+            color: #F8FAFC !important;
+        }
+        .text-purple-200, .text-indigo-200, .text-cyan-200, .text-amber-200, .text-teal-200 {
             color: #94A3B8 !important;
         }
-        .text-amber-300, .text-amber-400 {
-            color: #E2E8F0 !important;
-        }
 
-        /* 2. Triệt tiêu toàn bộ dải màu gradient lòe loẹt trên nút bấm và banner */
+        /* 6. Banner chuyển tiếp & Footer CTA: Xóa bỏ nền tím / cam gradient */
         .bg-gradient-to-r,
         .bg-gradient-to-tr,
-        .bg-gradient-to-br {
+        .bg-gradient-to-br,
+        div[class*="from-purple-900"],
+        div[class*="from-teal-500"],
+        div[class*="from-emerald-950"] {
             background-image: none !important;
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-            color: #F8FAFC !important;
+            background-color: rgba(255, 255, 255, 0.04) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
         }
 
-        /* 3. Chỉ giữ duy nhất MỘT màu điểm nhấn chức năng: Xanh ngọc bích #34D399 cho trạng thái an toàn */
-        .text-emerald-400, .text-emerald-300 {
+        /* 7. CHỈ DUY NHẤT một màu điểm nhấn chức năng: Xanh ngọc bích #34D399 cho trạng thái an toàn */
+        .text-emerald-400,
+        .text-emerald-300,
+        #vital-gemini-usage-count,
+        #hud-pose-badge span.text-emerald-400 {
             color: #34D399 !important;
         }
-        .bg-emerald-500\/20, .bg-emerald-500\/15 {
+        .bg-emerald-500\/15,
+        .bg-emerald-500\/20 {
             background-color: rgba(52, 211, 153, 0.1) !important;
-            border-color: rgba(52, 211, 153, 0.2) !important;
-            color: #34D399 !important;
+            border-color: rgba(52, 211, 153, 0.25) !important;
         }
 
-        /* 4. Tab điều hướng tối giản thanh lịch (không màu mè) */
+        /* 8. Cụm Dynamic Island HUD trên video: Đen khói huyền bí, viền mỏng tinh tế */
+        #video-container .bg-slate-950\/85,
+        #video-container .bg-slate-950\/80,
+        #video-container .bg-slate-900\/80,
+        #hud-pose-badge,
+        #hud-surface-badge,
+        .video-overlay-badge {
+            background-color: rgba(10, 11, 15, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        /* 9. Header & Tabs: Tĩnh lặng, không màu mè */
         .tab-btn {
             background-color: transparent !important;
             border-color: transparent !important;
@@ -139,33 +234,17 @@
             color: #FFFFFF !important;
             background-color: rgba(255, 255, 255, 0.04) !important;
         }
-        .tab-btn#tab-btn-live,
-        .tab-btn.bg-cardbg {
+        .tab-btn#tab-btn-live {
             background-color: rgba(255, 255, 255, 0.08) !important;
             color: #FFFFFF !important;
-            border-color: rgba(255, 255, 255, 0.12) !important;
-            box-shadow: none !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
         }
-
-        /* 5. Cụm Dynamic Island HUD trên video: Kính đen khói thanh thoát */
-        #hud-pose-badge, #hud-surface-badge,
-        #video-container .bg-slate-950\/85,
-        #video-container .bg-slate-950\/80,
-        #video-container .bg-slate-900\/80 {
-            background-color: rgba(12, 13, 17, 0.82) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        #nav-vaccine-badge {
+            background-color: rgba(255, 255, 255, 0.1) !important;
             color: #F8FAFC !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
         }
-
-        /* 6. Đồng bộ viền nút bấm sang kính mờ tinh xảo */
-        .border-teal-500\/40,
-        .border-indigo-500\/30,
-        .border-cyan-500\/30 {
-            border-color: rgba(255, 255, 255, 0.1) !important;
-        }
-        
-        /* Refined warm glow accents */
+/* Refined warm glow accents */
         #video-container {
             border-radius: 24px !important;
             box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.7), 0 0 35px -8px rgba(245, 158, 11, 0.15) !important;
