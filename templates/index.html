@@ -38,15 +38,15 @@
                         sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                     },
                     colors: {
-                        obsidian: '#0A0B0E',
-                        cardbg: '#14161D',
-                        cardhover: '#1B1E28',
-                        bordercol: 'rgba(255, 255, 255, 0.08)',
+                        obsidian: '#090D16',
+                        cardbg: '#111827',
+                        cardhover: '#172033',
+                        bordercol: '#1F293D',
                         safe: '#10B981',
                         danger: '#F43F5E',
                         warning: '#F59E0B',
                         sleep: '#8B5CF6',
-                        vital: '#34D399'
+                        vital: '#06B6D4'
                     }
                 }
             }
@@ -54,330 +54,10 @@
     </script>
     <style>
         body {
-            background: radial-gradient(circle at 50% 0%, #161822 0%, #0A0B0E 100%) !important;
-            color: #F8FAFC !important;
+            background-color: #090D16;
+            color: #F1F5F9;
             font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
-            min-height: 100vh;
-        }
-        .bg-obsidian {
-            background-color: rgba(10, 11, 14, 0.88) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-        }
-        .bg-cardbg {
-            background-color: rgba(20, 22, 29, 0.85) !important;
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6) !important;
-        }
-        .hover\:bg-cardhover:hover {
-            background-color: rgba(27, 30, 40, 0.9) !important;
-        }
-        .border-bordercol {
-            border-color: rgba(255, 255, 255, 0.08) !important;
-        }
-        /* HUD Dynamic Island capsules on video */
-        #video-container .bg-slate-950\/85,
-        #video-container .bg-slate-950\/80,
-        #video-container .bg-slate-900\/80,
-        #hud-pose-badge,
-        #hud-surface-badge {
-            background-color: rgba(10, 11, 15, 0.78) !important;
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
-        }
-        
-        /* =========================================================================
-           APPLE QUIET LUXURY - TOÀN DIỆN TRIỆT TIÊU MÀU MÈ (MONOCHROME RESTRAINT)
-           ========================================================================= */
-        /* 1. Nền canvas chính & Phân tầng thẻ kính */
-        body {
-            background-color: #0A0B0E !important;
-            background-image: radial-gradient(circle at 50% 0%, #171922 0%, #0A0B0E 100%) !important;
-            color: #F8FAFC !important;
-        }
-        .bg-obsidian,
-        header {
-            background-color: rgba(10, 11, 14, 0.9) !important;
-            border-color: rgba(255, 255, 255, 0.07) !important;
-        }
-        .bg-cardbg,
-        div.bg-cardbg {
-            background-color: rgba(18, 20, 27, 0.9) !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6) !important;
-        }
-
-        /* 2. Triệt tiêu toàn bộ nút bấm màu mè (Nói Với Bé, Kết Nối, v.v.) */
-        #talkback-btn,
-        button#talkback-btn,
-        .bg-emerald-500 {
-            background-color: rgba(255, 255, 255, 0.08) !important;
-            color: #FFFFFF !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
-            box-shadow: none !important;
-        }
-        #talkback-btn:hover {
-            background-color: rgba(255, 255, 255, 0.15) !important;
-        }
-
-        /* 3. Triệt tiêu 5 màu cầu vồng của nhóm 'Ghi Nhận Y Tế Nhanh' (Bé Ho, Sặc Sữa, Trớ Sữa, Cữ Bú, Ợ Hơi) */
-        [onclick*="quickLogHealthEvent"],
-        .grid-cols-5 button {
-            background-color: rgba(255, 255, 255, 0.04) !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-            color: #E2E8F0 !important;
-            box-shadow: none !important;
-        }
-        [onclick*="quickLogHealthEvent"]:hover,
-        .grid-cols-5 button:hover {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            border-color: rgba(255, 255, 255, 0.2) !important;
-            color: #FFFFFF !important;
-        }
-
-        /* 4. Triệt tiêu toàn bộ màu mè ở cột phải 'Chu Kỳ Giấc Ngủ' & 'Gemini AI' */
-        .border-purple-500\/25,
-        .border-purple-500\/30,
-        .border-indigo-500\/25,
-        .border-indigo-500\/30,
-        .border-amber-500\/25,
-        .border-amber-500\/30,
-        .border-teal-500\/40,
-        .border-cyan-500\/30 {
-            border-color: rgba(255, 255, 255, 0.08) !important;
-        }
-        .bg-purple-500\/15,
-        .bg-indigo-500\/15,
-        .bg-indigo-500\/10,
-        .bg-amber-500\/10,
-        .bg-amber-500\/15,
-        .bg-rose-500\/15,
-        .bg-cyan-500\/15,
-        .bg-teal-500\/20 {
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-        }
-
-        /* 5. Đồng bộ toàn bộ chữ màu (tím, xanh cyan, vàng, cam, hồng) về màu trắng bạc & xám khói */
-        .text-purple-300, .text-purple-400,
-        .text-indigo-300, .text-indigo-400,
-        .text-cyan-300, .text-cyan-400,
-        .text-amber-300, .text-amber-400,
-        .text-teal-300, .text-teal-400,
-        .text-rose-300, .text-rose-400,
-        .text-blue-400,
-        #vital-sleep-time-lg,
-        #vital-sleep-stage-pill,
-        #vital-sleep-card-title,
-        #vital-gemini-card-title,
-        #header-sleep-nap,
-        #header-breathing-pill,
-        #hud-breathing,
-        #card-breathing-rpm {
-            color: #F8FAFC !important;
-        }
-        .text-purple-200, .text-indigo-200, .text-cyan-200, .text-amber-200, .text-teal-200 {
-            color: #94A3B8 !important;
-        }
-
-        /* 6. Banner chuyển tiếp & Footer CTA: Xóa bỏ nền tím / cam gradient */
-        .bg-gradient-to-r,
-        .bg-gradient-to-tr,
-        .bg-gradient-to-br,
-        div[class*="from-purple-900"],
-        div[class*="from-teal-500"],
-        div[class*="from-emerald-950"] {
-            background-image: none !important;
-            background-color: rgba(255, 255, 255, 0.04) !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-        }
-
-        /* 7. CHỈ DUY NHẤT một màu điểm nhấn chức năng: Xanh ngọc bích #34D399 cho trạng thái an toàn */
-        .text-emerald-400,
-        .text-emerald-300,
-        #vital-gemini-usage-count,
-        #hud-pose-badge span.text-emerald-400 {
-            color: #34D399 !important;
-        }
-        .bg-emerald-500\/15,
-        .bg-emerald-500\/20 {
-            background-color: rgba(52, 211, 153, 0.1) !important;
-            border-color: rgba(52, 211, 153, 0.25) !important;
-        }
-
-        /* 8. Cụm Dynamic Island HUD trên video: Đen khói huyền bí, viền mỏng tinh tế */
-        #video-container .bg-slate-950\/85,
-        #video-container .bg-slate-950\/80,
-        #video-container .bg-slate-900\/80,
-        #hud-pose-badge,
-        #hud-surface-badge,
-        .video-overlay-badge {
-            background-color: rgba(10, 11, 15, 0.8) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            color: #FFFFFF !important;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
-        }
-
-        /* 9. Header & Tabs: Tĩnh lặng, không màu mè */
-        .tab-btn {
-            background-color: transparent !important;
-            border-color: transparent !important;
-            color: #94A3B8 !important;
-        }
-        .tab-btn:hover {
-            color: #FFFFFF !important;
-            background-color: rgba(255, 255, 255, 0.04) !important;
-        }
-        .tab-btn#tab-btn-live {
-            background-color: rgba(255, 255, 255, 0.08) !important;
-            color: #FFFFFF !important;
-            border-color: rgba(255, 255, 255, 0.14) !important;
-        }
-        #nav-vaccine-badge {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            color: #F8FAFC !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
-        }
-
-        /* =========================================================================
-           WCAG AAA CONTRAST ENFORCEMENT - XÓA BỎ HOÀN TOÀN LỖI CHỮ ĐEN TRÊN NỀN TỐI
-           ========================================================================= */
-        /* 1. Mọi chữ bên trong tất cả các nút bấm tối màu PHẢI là màu trắng tinh khiết */
-        button.text-slate-950,
-        button .text-slate-950,
-        button.text-slate-900,
-        button .text-slate-900,
-        button.text-black,
-        button .text-black,
-        .text-slate-950,
-        .text-slate-900 {
-            color: #FFFFFF !important;
-        }
-
-        /* 1.1 Khắc phục dấu chấm đệm (bullet •) và text mờ đạt chuẩn WCAG AAA (7.03:1) */
-        .text-slate-600 {
-            color: #94A3B8 !important;
-        }
-
-        /* 1.2 Phân đoạn chu kỳ giấc ngủ (Sleep Cycle Bar) đạt chuẩn WCAG AAA (8.11:1 - 9.16:1) */
-        #guide-current-phase-name {
-            color: #E2E8F0 !important;
-        }
-        div[title*="Ngủ Động REM"],
-        .bg-purple-500 {
-            background-color: #6B21A8 !important;
-            color: #FFFFFF !important;
-            font-weight: 800 !important;
-        }
-        div[title*="Ngủ Sâu NREM"],
-        .bg-cyan-500 {
-            background-color: #06B6D4 !important;
-            color: #0A0B0E !important;
-            font-weight: 800 !important;
-        }
-        div[title*="Chuyển giao chu kỳ"],
-        .bg-amber-500 {
-            background-color: #F59E0B !important;
-            color: #0A0B0E !important;
-            font-weight: 800 !important;
-        }
-
-        /* 2. Nút Hành Động Chính (Primary Action Buttons) kiểu Apple White Pill trên toàn hệ thống & Modal:
-              Nền trắng tinh khiết #FFFFFF + Chữ đen đậm #0A0B0E -> Đạt tương phản 19.68:1 (AAA) */
-        button[onclick*="openVaccineTabFromModal"],
-        button[onclick*="openGrowthModal"],
-        button[onclick*="saveSafeZone"],
-        button#btn-save-growth,
-        button#wz-btn-finish,
-        button[onclick*="submitFamilyPin"],
-        button[onclick*="openLicenseModal"],
-        button[onclick*="startVietQRCheckout"],
-        #lic-tab-btn-auto,
-        a[href*="app.apk"],
-        a[href*="/download/apk"],
-        button[onclick*="copyPairingLink"],
-        button[onclick*="saveManualPairing"],
-        button[onclick*="saveCustomDeviceUrl"],
-        #media-modal-download-btn,
-        #montage-modal-download-btn,
-        #montage-modal-telegram-btn,
-        .btn-apple-primary {
-            background-color: #FFFFFF !important;
-            background-image: none !important;
-            border: 1px solid #FFFFFF !important;
-            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15) !important;
-        }
-        button[onclick*="openVaccineTabFromModal"] *,
-        button[onclick*="openGrowthModal"] *,
-        button[onclick*="saveSafeZone"] *,
-        button#btn-save-growth *,
-        button#wz-btn-finish *,
-        button[onclick*="submitFamilyPin"] *,
-        button[onclick*="openLicenseModal"] *,
-        button[onclick*="startVietQRCheckout"] *,
-        #lic-tab-btn-auto *,
-        a[href*="app.apk"] *,
-        a[href*="/download/apk"] *,
-        button[onclick*="copyPairingLink"] *,
-        button[onclick*="saveManualPairing"] *,
-        button[onclick*="saveCustomDeviceUrl"] *,
-        #media-modal-download-btn *,
-        #montage-modal-download-btn *,
-        #montage-modal-telegram-btn * {
-            color: #0A0B0E !important;
-            font-weight: 700 !important;
-        }
-        button[onclick*="openVaccineTabFromModal"]:hover,
-        button[onclick*="openGrowthModal"]:hover,
-        button#btn-save-growth:hover,
-        button[onclick*="startVietQRCheckout"]:hover,
-        #lic-tab-btn-auto:hover {
-            background-color: #F1F5F9 !important;
-            transform: translateY(-1px) !important;
-        }
-
-        /* 2.1 Vòng tròn số bước hướng dẫn (Step Badge): Tương phản AAA (19.68:1) */
-        #user-guide-modal .w-6.h-6,
-        #user-guide-modal .w-7.h-7,
-        #user-guide-modal .w-8.h-8,
-        #guide-tab-content-quick .w-8.h-8,
-        .step-number-badge {
-            background-color: #FFFFFF !important;
-            color: #0A0B0E !important;
-            font-weight: 900 !important;
-            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2) !important;
-        }
-
-        /* 3. Nút Hành Động Phụ (Secondary Action Buttons) kiểu Glass:
-              Nền kính mờ rgba(255,255,255,0.08) + Viền 1px + Chữ trắng tinh #FFFFFF -> Tương phản 14.2:1 */
-        button[onclick*="dismissVaccineModal"],
-        button[onclick*="closeModal"] {
-            background-color: rgba(255, 255, 255, 0.08) !important;
-            border: 1px solid rgba(255, 255, 255, 0.14) !important;
-            color: #FFFFFF !important;
-        }
-        button[onclick*="dismissVaccineModal"]:hover {
-            background-color: rgba(255, 255, 255, 0.16) !important;
-        }
-
-        /* 4. Thẻ Modal & Popup: Kính mờ siêu sâu với viền sáng rõ */
-        #vaccine-due-modal > div,
-        .modal-content,
-        [role="dialog"] > div {
-            background-color: #12141A !important;
-            border: 1px solid rgba(255, 255, 255, 0.14) !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
-        }
-/* Refined warm glow accents */
-        #video-container {
-            border-radius: 24px !important;
-            box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.7), 0 0 35px -8px rgba(245, 158, 11, 0.15) !important;
         }
         .safe-area-pb {
             padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 12px));
@@ -589,6 +269,24 @@
         html:not(.dark) ::-webkit-scrollbar-track { background: #F1F5F9; }
         html:not(.dark) ::-webkit-scrollbar-thumb { background: #CBD5E1; }
         html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    
+        /* Prevent horizontal overflow on mobile screens */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
+        /* High-contrast WCAG AAA for Vaccine Urgent Modal buttons */
+        #vaccine-urgent-modal button[onclick*="openVaccineTabFromModal"] {
+            background-color: #FFFFFF !important;
+            background-image: none !important;
+            border: 1px solid #FFFFFF !important;
+            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15) !important;
+        }
+        #vaccine-urgent-modal button[onclick*="openVaccineTabFromModal"] * {
+            color: #0A0B0E !important;
+            font-weight: 700 !important;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
@@ -8339,7 +8037,6 @@
             if (!s) return NaN;
             let n = parseFloat(s);
             if (isNaN(n)) return NaN;
-            // Nếu ba mẹ nhập theo gram (vd 3900 hoặc 4800g -> 3.9kg hoặc 4.8kg)
             if (n >= 500) {
                 n = Number((n / 1000).toFixed(2));
             }
@@ -8353,8 +8050,6 @@
             if (!s) return NaN;
             let n = parseFloat(s);
             if (isNaN(n)) return NaN;
-            // Chiều cao trẻ sơ sinh tính bằng cm (chuẩn 40 - 120cm).
-            // Nếu ba mẹ lỡ nhập theo mét (vd 0.6m -> tự đổi thành 60cm)
             if (n > 0 && n <= 1.5) {
                 n = Number((n * 100).toFixed(1));
             }
@@ -8368,7 +8063,6 @@
             if (!s) return null;
             let n = parseFloat(s);
             if (isNaN(n)) return null;
-            // Vòng đầu tính bằng cm (chuẩn 30 - 60cm). Nếu nhập mét (vd 0.38m -> 38cm)
             if (n > 0 && n <= 1.0) {
                 n = Number((n * 100).toFixed(1));
             }
@@ -8376,7 +8070,6 @@
         }
 
         function parseNum(val) {
-            // Giữ lại để tương thích ngược, mặc định parse cân nặng
             return parseWeight(val);
         }
 
