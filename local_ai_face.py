@@ -104,22 +104,27 @@ class LocalFaceAnalyzer:
                 is_awake = True
                 eye_status = "Bé đang cười 😊"
             else:
-                eye_y = int((re[1] + le[1]) / 2)
-                eye_x1 = max(0, int(min(re[0], le[0]) - eye_dist * 0.2))
-                eye_x2 = min(w, int(max(re[0], le[0]) + eye_dist * 0.2))
-                eye_crop_h = max(6, int(eye_dist * 0.35))
-                eye_crop = frame[max(0, eye_y - eye_crop_h):min(h, eye_y + eye_crop_h), eye_x1:eye_x2]
+                rad = max(8, int(eye_dist * 0.35))
+                # Crop mắt phải
+                rx1, rx2 = max(0, int(re[0] - rad)), min(w, int(re[0] + rad))
+                ry1, ry2 = max(0, int(re[1] - rad)), min(h, int(re[1] + rad))
+                r_crop = frame[ry1:ry2, rx1:rx2]
+                r_lap = float(cv2.Laplacian(cv2.cvtColor(r_crop, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()) if r_crop.size > 0 else 0.0
 
-                if eye_crop.size > 0:
-                    gray_eye = cv2.cvtColor(eye_crop, cv2.COLOR_BGR2GRAY)
-                    lap_var = float(cv2.Laplacian(gray_eye, cv2.CV_64F).var())
-                    # Mắt mở có tròng đen, viền mi rõ -> Laplacian var cao (> 48.0)
-                    if lap_var > 48.0 and conf > 0.4:
-                        eye_status = "Mở mắt (Đang thức)"
-                        is_awake = True
-                    else:
-                        eye_status = "Nhắm mắt (Đang ngủ)"
-                        is_awake = False
+                # Crop mắt trái
+                lx1, lx2 = max(0, int(le[0] - rad)), min(w, int(le[0] + rad))
+                ly1, ly2 = max(0, int(le[1] - rad)), min(h, int(le[1] + rad))
+                l_crop = frame[ly1:ly2, lx1:lx2]
+                l_lap = float(cv2.Laplacian(cv2.cvtColor(l_crop, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()) if l_crop.size > 0 else 0.0
+
+                max_lap = max(r_lap, l_lap)
+                # Chỉ cần 1 trong 2 mắt mở (hoặc cả 2 mắt mở) có viền mi / tròng đen rõ rệt (> 45.0) -> Báo THỨC ngay!
+                if max_lap > 45.0 and conf > 0.35:
+                    eye_status = "Mở mắt (Đang thức)"
+                    is_awake = True
+                else:
+                    eye_status = "Nhắm mắt (Đang ngủ)"
+                    is_awake = False
 
             return {
                 "face_detected": True,
@@ -192,71 +197,14 @@ class LocalFaceAnalyzer:
             lc = np.array([best_face[12], best_face[13]], dtype=np.float32) # Khóe môi trái
             conf = float(best_face[14])
             
-            # 1. Tính toán nụ cười qua tỷ số hình học
-            eye_dist = np.linalg.norm(re - le)
-            mouth_width = np.linalg.norm(rc - lc)
-            
-            smile_score = 0.0
-            is_smiling = False
-            
-            if eye_dist > 10.0:
-                # Tỷ số độ rộng miệng so với khoảng cách 2 mắt
-                # Trẻ sơ sinh bình thường: 0.50 - 0.60; khi cười kéo khóe môi sang 2 bên: > 0.72
-                ratio = mouth_width / eye_dist
-                # Kiểm tra góc nâng khóe môi so với mũi (khi cười khóe môi nâng lên)
-                mouth_center_y = (rc[1] + lc[1]) / 2.0
-                nose_mouth_dist = mouth_center_y - nt[1]
-                
-                if ratio > 0.68 and nose_mouth_dist > 5.0:
-                    smile_score = min(1.0, (ratio - 0.65) / 0.25)
-                    if smile_score > 0.45:
-                        is_smiling = True
-                        self.last_smile_time = time.time()
-                        
-            # 2. Phân tích trạng thái mắt (EAR & độ tương phản vùng mắt)
-            # Crop vùng mắt để kiểm tra độ sáng & chuyển động
-            eye_status = "Nhắm mắt / Ngủ"
-            is_awake = False
-            
-            # Nếu phát hiện nụ cười rõ ràng -> bé đang thức hoặc cười trong mơ
-            if is_smiling:
-                is_awake = True
-                eye_status = "Bé đang cười"
-            else:
-                # Kiểm tra diện tích mắt
-                eye_y = int((re[1] + le[1]) / 2)
-                eye_x1 = max(0, int(min(re[0], le[0]) - eye_dist * 0.2))
-                eye_x2 = min(w, int(max(re[0], le[0]) + eye_dist * 0.2))
-                eye_crop_h = max(6, int(eye_dist * 0.35))
-                eye_crop = frame[max(0, eye_y - eye_crop_h):min(h, eye_y + eye_crop_h), eye_x1:eye_x2]
-                
-                if eye_crop.size > 0:
-                    gray_eye = cv2.cvtColor(eye_crop, cv2.COLOR_BGR2GRAY)
-                    # Tính độ sắc nét / độ biến thiên Laplacian vùng mắt
-                    lap_var = cv2.Laplacian(gray_eye, cv2.CV_64F).var()
-                    # Mắt mở có tròng đen, viền mi rõ -> Laplacian var cao (> 45)
-                    if lap_var > 55.0 and conf > 0.5:
-                        eye_status = "Mở mắt (Đang thức)"
-                        is_awake = True
-                    else:
-                        eye_status = "Nhắm mắt (Đang ngủ)"
-                        is_awake = False
-                        
-            return {
-                "face_detected": True,
-                "is_smiling": is_smiling,
-                "smile_score": round(smile_score, 3),
-                "eye_status": eye_status,
-                "is_awake": is_awake,
-                "face_box": [fx, fy, fx + fw, fy + fh],
-                "landmarks": {
-                    "right_eye": [float(re[0]), float(re[1])],
-                    "left_eye": [float(le[0]), float(le[1])],
-                    "nose_tip": [float(nt[0]), float(nt[1])],
-                    "right_mouth": [float(rc[0]), float(rc[1])],
-                    "left_mouth": [float(lc[0]), float(lc[1])]
-                }
-            }
+            lms_list = [
+                [float(re[0]), float(re[1])],
+                [float(le[0]), float(le[1])],
+                [float(nt[0]), float(nt[1])],
+                [float(rc[0]), float(rc[1])],
+                [float(lc[0]), float(lc[1])]
+            ]
+            return self.analyze_from_landmarks(frame, bbox=[fx, fy, fw, fh], landmarks=lms_list, conf=conf)
             
         except Exception as e:
             print(f"[LocalFaceAnalyzer] Lỗi phân tích mặt: {e}")

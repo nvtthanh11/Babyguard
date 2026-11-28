@@ -872,16 +872,19 @@ class SleepTracker:
                 else:
                     pending_dur = now - self.pending_since
                     if self.current_state == "ASLEEP" and raw_target == "AWAKE":
-                        # Chuyển nhanh sang THỨC:
-                        # - Nếu phát hiện Mắt mở / Cười / Khóc / Gemini xác nhận: chỉ cần 2.5 - 3.5s
-                        # - Nếu bé ọ ẹ / có âm thanh: 5.0s
-                        # - Nếu từ vận động cơ thể (vung tay chân): 10.0s - 12.0s
-                        if is_awake_face or is_smiling or is_crying or gemini_confirms_awake:
-                            required_wait = 3.0
+                        # Chuyển tức thì sang THỨC:
+                        # - Nếu phát hiện Mắt mở: chỉ cần 0.5s (1-2 khung hình) là báo thức ngay!
+                        # - Nếu bé cười / khóc / Gemini xác nhận: 2.0s
+                        # - Nếu bé ọ ẹ / có âm thanh: 4.0s
+                        # - Nếu từ vận động cơ thể (vung tay chân): 8.0s - 10.0s
+                        if is_awake_face:
+                            required_wait = 0.5
+                        elif is_smiling or is_crying or gemini_confirms_awake:
+                            required_wait = 2.0
                         elif is_vocalizing:
-                            required_wait = 5.0
+                            required_wait = 4.0
                         else:
-                            required_wait = 10.0 if motion_score > 10.0 else 12.0
+                            required_wait = 8.0 if motion_score > 10.0 else 10.0
                     elif self.current_state == "ASLEEP" and raw_target == "OUT":
                         required_wait = 20.0
                     elif self.current_state in ("AWAKE", "OUT") and raw_target == "ASLEEP":

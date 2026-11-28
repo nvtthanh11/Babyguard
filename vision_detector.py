@@ -2411,6 +2411,14 @@ class VisionTracker:
 
                 if getattr(self, "is_smiling_face", False):
                     self.baby_status = "Bé đang cười vui vẻ 😊"
+                elif getattr(self, "is_awake_face", False):
+                    # Thấy bé mở mắt -> Báo THỨC ngay lập tức
+                    if self.smoothed_motion > self.motion_threshold:
+                        self.baby_status = "Đang thức (Mắt mở • Vận động)"
+                    else:
+                        self.baby_status = "Đang thức (Mắt mở)"
+                    if self.on_motion_callback and self.smoothed_motion > self.motion_threshold:
+                        self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
                 elif is_actually_awake:
                     if self.smoothed_motion > self.motion_threshold:
                         self.baby_status = "Đang thức chơi / Vận động"
@@ -2418,8 +2426,6 @@ class VisionTracker:
                             self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
                     elif self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
                         self.baby_status = "Nằm yên tĩnh (Vào giấc ngủ)"
-                    elif getattr(self, "is_awake_face", False):
-                        self.baby_status = "Đang thức tỉnh táo (Quan sát)"
                     elif self.smoothed_motion < 2.5:
                         self.baby_status = "Nằm yên tĩnh / Thư giãn"
                     else:
@@ -2568,6 +2574,14 @@ class VisionTracker:
 
                 if getattr(self, "is_smiling_face", False):
                     self.baby_status = "Bé đang cười vui vẻ 😊"
+                elif getattr(self, "is_awake_face", False):
+                    # Thấy bé mở mắt -> Báo THỨC ngay lập tức
+                    if self.smoothed_motion > self.motion_threshold:
+                        self.baby_status = "Đang thức (Mắt mở • Vận động)"
+                    else:
+                        self.baby_status = "Đang thức (Mắt mở)"
+                    if self.on_motion_callback and self.smoothed_motion > self.motion_threshold:
+                        self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
                 elif is_actually_awake:
                     if self.smoothed_motion > self.motion_threshold:
                         self.baby_status = "Đang thức chơi / Vận động"
@@ -2575,8 +2589,6 @@ class VisionTracker:
                             self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
                     elif self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
                         self.baby_status = "Nằm yên tĩnh (Vào giấc ngủ)"
-                    elif getattr(self, "is_awake_face", False):
-                        self.baby_status = "Đang thức tỉnh táo (Quan sát)"
                     elif self.smoothed_motion < 2.5:
                         self.baby_status = "Nằm yên tĩnh / Thư giãn"
                     else:
