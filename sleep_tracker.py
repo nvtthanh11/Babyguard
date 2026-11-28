@@ -387,6 +387,7 @@ class SleepTracker:
         self.activity_level_pct = 0
         self.gemini_awake_hint = None  # None, True (thức), False (ngủ)
         self.gemini_hint_until = 0.0
+        self.last_awake_evidence_time = 0.0
 
         # Bộ đệm chống nhiễu chuyển trạng thái (Debounce Timers)
         self.pending_state = None
@@ -667,7 +668,9 @@ class SleepTracker:
         now = time.time()
         with self.lock:
             self.gemini_awake_hint = bool(is_awake)
-            self.gemini_hint_until = now + 45.0
+            self.gemini_hint_until = now + 90.0
+            if is_awake:
+                self.last_awake_evidence_time = now
             if is_awake and self.current_state == "ASLEEP":
                 duration = int(now - self.state_since)
                 if duration >= 180:
@@ -764,7 +767,16 @@ class SleepTracker:
                 self._save_data()
                 print(f"[SleepTracker] 🌅 Đã lật chu kỳ ngày mới sang ngày {cur_cycle_date} (Khóa 07:00 sáng).")
 
-    def update_state(self, baby_detected: bool, is_moving: bool, motion_score: float = 0.0, is_crying: bool = False):
+    def update_state(
+        self,
+        baby_detected: bool,
+        is_moving: bool,
+        motion_score: float = 0.0,
+        is_crying: bool = False,
+        is_awake_face: bool = False,
+        is_smiling: bool = False,
+        is_vocalizing: bool = False
+    ):
         now = time.time()
         self.check_cycle_rollover(now)
         with self.lock:
@@ -784,22 +796,51 @@ class SleepTracker:
             else:
                 self.activity_level_pct = 0
 
-            # Xác định trạng thái mục tiêu dựa trên Mật độ vận động & Tiêu chí Bất Động Sinh Học
-            is_still = (motion_score < 4.0 and not is_moving and self.activity_level_pct < 12)
+            # Ghi nhận dấu hiệu thức tỉnh táo (Mắt mở, Cười, Khóc, Âm thanh ọ ẹ/trò chuyện, hoặc Vận động tay chân rõ rệt)
+            if is_awake_face or is_smiling or is_crying or is_vocalizing or motion_score >= 7.5:
+                self.last_awake_evidence_time = now
+
+            has_recent_awake_evidence = (now - getattr(self, "last_awake_evidence_time", 0.0)) < 30.0
             gemini_confirms_awake = (now < self.gemini_hint_until and self.gemini_awake_hint is True)
 
+            # Xác định trạng thái mục tiêu dựa trên AI Đa Phương Thức (Khuôn mặt + Cử động + Âm thanh + Gemini)
             if not baby_detected:
                 raw_target = "OUT"
             else:
-                if gemini_confirms_awake or is_crying:
+                # 1. Các tín hiệu chắc chắn thức: Mắt mở, bé cười, khóc, âm thanh giao tiếp/ọ ẹ, hoặc Gemini xác thực
+                if is_awake_face or is_smiling or is_crying or gemini_confirms_awake or is_vocalizing:
                     raw_target = "AWAKE"
                 elif self.current_state == "ASLEEP":
-                    # Chỉ đề xuất chuyển sang AWAKE nếu mật độ vận động cao >= 40% (còn cựa quậy ngắn < 60-90s là pha Ngủ động REM)
-                    raw_target = "AWAKE" if (self.activity_level_pct >= 40 and (is_moving or motion_score > 14.0)) else "ASLEEP"
+                    # Đang trong cữ ngủ: Chuyển sang AWAKE nếu có vận động thức rõ ràng (vận động liên tục >= 20% hoặc score > 5.5)
+                    # hoặc vừa thấy mắt mở/cười gần đây (< 30s)
+                    is_awake_motion = (self.activity_level_pct >= 20 and (is_moving or motion_score > 5.5)) or (motion_score > 11.0)
+                    if is_awake_motion or has_recent_awake_evidence:
+                        raw_target = "AWAKE"
+                    else:
+                        raw_target = "ASLEEP"
                 elif self.current_state == "AWAKE":
-                    raw_target = "ASLEEP" if is_still else "AWAKE"
+                    # Đang thức: Bé chỉ có thể chuyển sang ngủ khi:
+                    # - Mắt không mở (is_awake_face is False)
+                    # - Không cười, không nói/ọ ẹ
+                    # - Không có bằng chứng thức trong 30 giây gần nhất
+                    # - Cơ thể thực sự bất động liên tục (motion_score < 3.5, activity < 8%)
+                    is_truly_still_sleeping = (
+                        motion_score < 3.5 
+                        and not is_moving 
+                        and self.activity_level_pct < 8 
+                        and not has_recent_awake_evidence 
+                        and not is_awake_face
+                    )
+                    raw_target = "ASLEEP" if is_truly_still_sleeping else "AWAKE"
                 else:
-                    raw_target = "ASLEEP" if is_still else "AWAKE"
+                    is_truly_still_sleeping = (
+                        motion_score < 3.5 
+                        and not is_moving 
+                        and self.activity_level_pct < 8 
+                        and not has_recent_awake_evidence 
+                        and not is_awake_face
+                    )
+                    raw_target = "ASLEEP" if is_truly_still_sleeping else "AWAKE"
 
             # Cập nhật thời lượng pha REM / Deep Sleep khi bé đang trong trạng thái ASLEEP
             if self.current_state == "ASLEEP" and baby_detected:
@@ -819,7 +860,7 @@ class SleepTracker:
 
             # --- CƠ CHẾ DEBOUNCE SINH HỌC HAI CHIỀU (NGỦ <-> THỨC <-> NGOÀI NÔI) ---
             if raw_target == self.current_state:
-                if self.pending_state == "AWAKE" and self.activity_level_pct >= 40:
+                if self.pending_state == "AWAKE" and (self.activity_level_pct >= 20 or is_awake_face):
                     pass
                 else:
                     self.pending_state = None
@@ -831,19 +872,28 @@ class SleepTracker:
                 else:
                     pending_dur = now - self.pending_since
                     if self.current_state == "ASLEEP" and raw_target == "AWAKE":
-                        # Nếu có xác nhận từ Gemini hoặc tiếng khóc thực sự thì chuyển nhanh; nếu chỉ vận động thì chờ đủ 90s liên tục với activity_level_pct >= 40%
-                        required_wait = 5.0 if (gemini_confirms_awake or is_crying) else 90.0
+                        # Chuyển nhanh sang THỨC:
+                        # - Nếu phát hiện Mắt mở / Cười / Khóc / Gemini xác nhận: chỉ cần 2.5 - 3.5s
+                        # - Nếu bé ọ ẹ / có âm thanh: 5.0s
+                        # - Nếu từ vận động cơ thể (vung tay chân): 10.0s - 12.0s
+                        if is_awake_face or is_smiling or is_crying or gemini_confirms_awake:
+                            required_wait = 3.0
+                        elif is_vocalizing:
+                            required_wait = 5.0
+                        else:
+                            required_wait = 10.0 if motion_score > 10.0 else 12.0
                     elif self.current_state == "ASLEEP" and raw_target == "OUT":
-                        required_wait = 25.0
+                        required_wait = 20.0
                     elif self.current_state in ("AWAKE", "OUT") and raw_target == "ASLEEP":
-                        # Bé nằm bất động trong nôi: Chỉ cần 12-18s bất động là nhận diện đang ngủ
-                        required_wait = 12.0 if motion_score < 2.5 else 18.0
+                        # Bé chuyển từ THỨC sang NGỦ: Cần nằm bất động nhắm mắt đủ lâu (50s - 65s) chuẩn sinh lý
+                        # Tránh tình trạng bé chỉ nằm yên quan sát 10-15s đã bị hệ thống báo nhầm sang ngủ
+                        required_wait = 50.0 if motion_score < 1.5 else 65.0
                     else:
-                        required_wait = 6.0
+                        required_wait = 5.0
 
                     if pending_dur >= required_wait:
                         duration = int(now - self.state_since)
-                        if self.current_state == "ASLEEP" and duration >= 180:
+                        if self.current_state == "ASLEEP" and duration >= 120:
                             self.total_sleep_today += duration
                             self.wake_count_today += 1
                             session = {

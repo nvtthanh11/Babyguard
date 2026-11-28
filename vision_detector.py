@@ -246,6 +246,10 @@ class VisionTracker:
         self.last_tracked_pose = "Đang ngủ ngoan"
         self.last_tracked_status = "Đang ngủ ngoan"
         self.last_tracked_bpm = 0.0
+        self.audio_detector = None
+        self.is_awake_face = False
+        self.is_smiling_face = False
+        self.last_awake_face_time = 0.0
         
         # Tầng 1: Debounce thời gian theo dõi thay đổi tư thế ngủ (Bé phải giữ tư thế mới >= 10 giây mới gửi Gemini)
         self.last_confirmed_pose = "Đang quét..."
@@ -2007,6 +2011,9 @@ class VisionTracker:
             self.prone_frame_count = 0
             self.sleep_pose = pose_text
             self.baby_status = status_text
+            self.is_awake_face = False
+            self.is_smiling_face = False
+            self.last_awake_face_time = 0.0
             self.motion_score = 0.0
             self.smoothed_motion = 0.0
             self.breathing_bpm = 0.0
@@ -2076,6 +2083,26 @@ class VisionTracker:
         # 1. Quét nhận diện khuôn mặt chuyên dụng bằng YuNet (Face-First Detector)
         baby_face_info, has_adult_face, adult_face_box = self._detect_baby_face(frame)
         self.last_baby_face_info = baby_face_info
+
+        # 1.1 Phân tích trạng thái mắt (Mở/Nhắm) & Nụ cười tức thì qua Local Edge AI
+        self.is_awake_face = False
+        self.is_smiling_face = False
+        if baby_face_info is not None and getattr(self, "local_face", None) is not None and self.local_face.is_ready():
+            try:
+                face_ana = self.local_face.analyze_from_landmarks(
+                    frame,
+                    bbox=baby_face_info.get("bbox"),
+                    landmarks=baby_face_info.get("landmarks"),
+                    conf=float(baby_face_info.get("conf", 0.8))
+                )
+                if face_ana.get("is_awake"):
+                    self.is_awake_face = True
+                    self.last_awake_face_time = now_t
+                if face_ana.get("is_smiling"):
+                    self.is_smiling_face = True
+                    self.last_awake_face_time = now_t
+            except Exception:
+                pass
 
         # 2. Run YOLO inference với conf=0.22 chuẩn xác để loại bỏ nhiễu chăn gối, tối ưu imgsz=480 tăng tốc gấp đôi
         results = self.model(frame, device=self.device, verbose=False, conf=0.22, imgsz=480)
@@ -2379,18 +2406,29 @@ class VisionTracker:
 
             if not getattr(self, "covered_face_active", False):
                 is_awake_mode = (self.sleep_tracker is not None and self.sleep_tracker.current_state == "AWAKE")
-                if self.smoothed_motion > self.motion_threshold:
-                    self.baby_status = "Đang thức chơi / Vận động" if is_awake_mode else "Cựa quậy / Thức giấc"
-                    if self.on_motion_callback:
-                        self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
+                has_recent_face_awake = (now_t - getattr(self, "last_awake_face_time", 0.0)) < 25.0
+                is_actually_awake = is_awake_mode or getattr(self, "is_awake_face", False) or has_recent_face_awake
+
+                if getattr(self, "is_smiling_face", False):
+                    self.baby_status = "Bé đang cười vui vẻ 😊"
+                elif is_actually_awake:
+                    if self.smoothed_motion > self.motion_threshold:
+                        self.baby_status = "Đang thức chơi / Vận động"
+                        if self.on_motion_callback:
+                            self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
+                    elif self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
+                        self.baby_status = "Nằm yên tĩnh (Vào giấc ngủ)"
+                    elif getattr(self, "is_awake_face", False):
+                        self.baby_status = "Đang thức tỉnh táo (Quan sát)"
+                    elif self.smoothed_motion < 2.5:
+                        self.baby_status = "Nằm yên tĩnh / Thư giãn"
+                    else:
+                        self.baby_status = "Đang thức tỉnh táo"
                 else:
-                    if is_awake_mode:
-                        if self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
-                            self.baby_status = "Nằm yên tĩnh (Vào giấc ngủ)"
-                        elif self.smoothed_motion < 2.5:
-                            self.baby_status = "Nằm yên tĩnh / Thư giãn"
-                        else:
-                            self.baby_status = "Đang thức tỉnh táo (Quan sát)"
+                    if self.smoothed_motion > self.motion_threshold:
+                        self.baby_status = "Cựa quậy / Trở mình (Ngủ động REM)"
+                        if self.on_motion_callback:
+                            self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
                     else:
                         self.baby_status = "Đang ngủ ngoan"
 
@@ -2525,18 +2563,29 @@ class VisionTracker:
 
             if not getattr(self, "covered_face_active", False):
                 is_awake_mode = (self.sleep_tracker is not None and self.sleep_tracker.current_state == "AWAKE")
-                if self.smoothed_motion > self.motion_threshold:
-                    self.baby_status = "Đang thức chơi / Vận động" if is_awake_mode else "Cựa quậy / Thức giấc"
-                    if self.on_motion_callback:
-                        self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
+                has_recent_face_awake = (now_t - getattr(self, "last_awake_face_time", 0.0)) < 25.0
+                is_actually_awake = is_awake_mode or getattr(self, "is_awake_face", False) or has_recent_face_awake
+
+                if getattr(self, "is_smiling_face", False):
+                    self.baby_status = "Bé đang cười vui vẻ 😊"
+                elif is_actually_awake:
+                    if self.smoothed_motion > self.motion_threshold:
+                        self.baby_status = "Đang thức chơi / Vận động"
+                        if self.on_motion_callback:
+                            self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
+                    elif self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
+                        self.baby_status = "Nằm yên tĩnh (Vào giấc ngủ)"
+                    elif getattr(self, "is_awake_face", False):
+                        self.baby_status = "Đang thức tỉnh táo (Quan sát)"
+                    elif self.smoothed_motion < 2.5:
+                        self.baby_status = "Nằm yên tĩnh / Thư giãn"
+                    else:
+                        self.baby_status = "Đang thức tỉnh táo"
                 else:
-                    if is_awake_mode:
-                        if self.sleep_tracker and getattr(self.sleep_tracker, "pending_state", None) == "ASLEEP":
-                            self.baby_status = "Nằm yên tĩnh (Vào giấc ngủ)"
-                        elif self.smoothed_motion < 2.5:
-                            self.baby_status = "Nằm yên tĩnh / Thư giãn"
-                        else:
-                            self.baby_status = "Đang thức tỉnh táo (Quan sát)"
+                    if self.smoothed_motion > self.motion_threshold:
+                        self.baby_status = "Cựa quậy / Trở mình (Ngủ động REM)"
+                        if self.on_motion_callback:
+                            self._safe_dispatch_callback(self.on_motion_callback, self.smoothed_motion)
                     else:
                         self.baby_status = "Đang ngủ ngoan"
 
@@ -2625,10 +2674,31 @@ class VisionTracker:
 
         # Update Sleep & Wake Window Analytics Tracker
         if self.sleep_tracker:
+            is_crying = False
+            is_vocalizing = False
+            if getattr(self, "audio_detector", None) is not None:
+                try:
+                    a_stat = self.audio_detector.get_status()
+                    is_crying = bool(a_stat.get("is_crying", False))
+                    top_snd = str(a_stat.get("top_sound", "")).lower()
+                    is_vocalizing = bool(
+                        a_stat.get("is_fussing", False)
+                        or (a_stat.get("recent_whimpers_60s", 0) >= 1)
+                        or ("trò chuyện" in top_snd)
+                        or ("cười" in top_snd)
+                    )
+                except Exception:
+                    pass
+
+            has_recent_face_awake = (now_t - getattr(self, "last_awake_face_time", 0.0)) < 25.0
             self.sleep_tracker.update_state(
-                self.baby_detected,
-                (self.smoothed_motion > self.motion_threshold),
-                self.smoothed_motion
+                baby_detected=self.baby_detected,
+                is_moving=(self.smoothed_motion > self.motion_threshold or self.smoothed_motion > 6.0),
+                motion_score=self.smoothed_motion,
+                is_crying=is_crying,
+                is_awake_face=(getattr(self, "is_awake_face", False) or has_recent_face_awake),
+                is_smiling=getattr(self, "is_smiling_face", False),
+                is_vocalizing=is_vocalizing
             )
 
         # 1. Khung Định Vị Em Bé Quanh Người Bé (Smart Baby Target Brackets & Tag): Tối giản theo yêu cầu người dùng (Mặc định tắt để hình ảnh bé luôn trong trẻo, không bị che chắn)

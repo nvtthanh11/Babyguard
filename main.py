@@ -263,6 +263,8 @@ def main():
         if (not vision_tracker.baby_detected) and (not getattr(vision_tracker, "adult_holding_baby", False)):
             return
 
+        sleep_tracker.last_awake_evidence_time = time.time()
+
         # Tạo Bức Ảnh Ghép 4 Ô (Composite 4-Panel Mosaic: T-3.5s, T-1.5s, T-0s, Cận cảnh Mặt/Thân)
         mosaic_frame = vision_tracker.create_cry_audit_mosaic()
 
@@ -430,6 +432,7 @@ def main():
         """Ghi nhận âm thầm tiếng ọ ẹ / trở mình sinh lý REM để đối chiếu quy chuẩn quốc tế (AAP/Nelson)."""
         if (not vision_tracker.baby_detected) or getattr(vision_tracker, "baby_out_of_crib_confirmed", False):
             return
+        sleep_tracker.last_awake_evidence_time = time.time()
         msg = whimper_entry.get("note", "Bé ọ ẹ / trở mình (Sinh lý)")
         dur = whimper_entry.get("duration_seconds", 1.0)
         vol = whimper_entry.get("volume", 0.0)
@@ -458,6 +461,7 @@ def main():
         ai_enabled=ai_enabled
     )
     music_player.attach_audio_detector(audio_detector)
+    vision_tracker.audio_detector = audio_detector
 
     # Start AI Workers
     vision_tracker.eco_camera_mode = config.get("eco_camera_mode", False)
